@@ -213,45 +213,58 @@ class S3StorageBackend(AbstractStorageBackend):
             Bucket=self.bucket_name, Delete={"Objects": keys_to_delete}
         )
 
+    def _key_exists(self, key: str, is_folder: bool) -> bool:
+        if is_folder:
+            probe = self.client.list_objects_v2(
+                Bucket=self.bucket_name,
+                Prefix=key if key.endswith("/") else key + "/",
+                MaxKeys=1,
+            )
+            return probe.get("KeyCount", 0) > 0
+        try:
+            self.client.head_object(Bucket=self.bucket_name, Key=key)
+            return True
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "404":
+                return False
+            raise
+
+    def _unique_key(self, key: str, is_folder: bool = False) -> str:
+        """Increment the name segment of *key* until nothing exists at that path."""
+        if not self._key_exists(key, is_folder):
+            return key
+        parts = key.rstrip("/").rsplit("/", 1)
+        parent = parts[0] + "/" if len(parts) > 1 else ""
+        name = parts[-1]
+        while True:
+            name = self._increment_name(name, is_folder=is_folder)
+            candidate = parent + name
+            if not self._key_exists(candidate, is_folder):
+                return candidate
+
     def copy(self, source_path: str, destination_path: str) -> None:
         full_source = self._full_path(source_path)
         full_destination = self._full_path(destination_path)
 
-        # Destination is the target directory — source name is auto-appended,
-        # so "same path" means copying into the parent the source already lives in.
-        source_name = full_source.rstrip("/").split("/")[-1]
-        resolved_destination = full_destination.rstrip("/") + "/" + source_name
-        if resolved_destination.rstrip("/") == full_source.rstrip("/"):
-            raise ValueError(
-                "Source and destination are the same path — cannot copy to itself."
-            )
-
         copy_source = {"Bucket": self.bucket_name, "Key": full_source}
 
-        # Check if source is a single object
+        # Single file
         if self.exists(source_path):
-            # Destination is always the target directory — append source filename
             source_name = full_source.rstrip("/").split("/")[-1]
-            full_destination = full_destination.rstrip("/") + "/" + source_name
+            target_key = full_destination.rstrip("/") + "/" + source_name
+            target_key = self._unique_key(target_key)
             self.client.copy_object(
                 CopySource=copy_source,
                 Bucket=self.bucket_name,
-                Key=full_destination,
+                Key=target_key,
             )
             return
 
-        # Try as a folder prefix
+        # Folder
         source_prefix = full_source if full_source.endswith("/") else full_source + "/"
-        # Preserve the source folder name inside the destination.
-        # e.g. copy("dir/", "temp_dir/") -> temp_dir/dir/<contents>
         source_folder_name = full_source.rstrip("/").split("/")[-1]
         dest_base = full_destination.rstrip("/") + "/" + source_folder_name
-
-        # Folder copy into its own parent resolves to the same path
-        if dest_base.rstrip("/") == full_source.rstrip("/"):
-            raise ValueError(
-                "Source and destination are the same path — cannot copy to itself."
-            )
+        dest_base = self._unique_key(dest_base, is_folder=True)
 
         copied = False
         paginator = self.client.get_paginator("list_objects_v2")

@@ -12,6 +12,35 @@ from tables.services.storage_service.dataclasses import (
 
 
 class AbstractStorageBackend(ABC):
+    @staticmethod
+    def _increment_name(name: str, is_folder: bool = False) -> str:
+        """
+        Increment a copy-suffix on a name.
+
+        file.txt   -> file (1).txt -> file (2).txt
+        folder     -> folder (1)   -> folder (2)
+        """
+        if is_folder:
+            base, counter = name, 0
+            if base.endswith(")") and " (" in base:
+                prefix, _, num = base[:-1].rpartition(" (")
+                if num.isdigit():
+                    base, counter = prefix, int(num)
+            return f"{base} ({counter + 1})"
+
+        stem, dot, ext = name.rpartition(".")
+        if not dot:
+            stem, ext = name, ""
+        else:
+            ext = dot + ext
+
+        counter = 0
+        if stem.endswith(")") and " (" in stem:
+            prefix, _, num = stem[:-1].rpartition(" (")
+            if num.isdigit():
+                stem, counter = prefix, int(num)
+        return f"{stem} ({counter + 1}){ext}"
+
     def _iter_archive_entries(self, archive_file) -> Iterator[tuple[str, bytes]]:
         """
         Yield (relative_path, bytes) for every file inside a ZIP or TAR archive.

@@ -117,18 +117,27 @@ class LocalStorageBackend(AbstractStorageBackend):
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(source), str(destination))
 
+    def _unique_path(self, target: Path) -> Path:
+        """Increment the name until the path doesn't exist on disk."""
+        if not target.exists():
+            return target
+        is_folder = target.is_dir()
+        parent = target.parent
+        name = target.name
+        while True:
+            name = self._increment_name(name, is_folder=is_folder)
+            candidate = parent / name
+            if not candidate.exists():
+                return candidate
+
     def copy(self, source_path: str, destination_path: str) -> None:
         source = self._resolve(source_path)
         destination = self._resolve(destination_path)
         if not source.exists():
             raise FileNotFoundError(f"Source path does not exist: {source_path}")
         # Destination is always the target directory — place source inside it
-        target = destination / source.name
-        if target.exists():
-            raise FileExistsError(
-                f"Destination already exists: {destination_path}/{source.name}"
-            )
         destination.mkdir(parents=True, exist_ok=True)
+        target = self._unique_path(destination / source.name)
         if source.is_dir():
             shutil.copytree(str(source), str(target))
         else:
