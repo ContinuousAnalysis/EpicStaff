@@ -3,7 +3,6 @@ import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
-    AppIconComponent,
     ButtonComponent,
     CheckboxComponent,
     CustomInputComponent,
@@ -13,18 +12,19 @@ import {
 
 import { AuthService } from '../../../../services/auth/auth.service';
 import { SetupService } from '../../../../services/auth/setup.service';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-sign-up',
     imports: [
         CommonModule,
         ReactiveFormsModule,
-        AppIconComponent,
         ButtonComponent,
         CustomInputComponent,
         PasswordStrengthComponent,
         ValidationErrorsComponent,
         CheckboxComponent,
+        AppSvgIconComponent,
     ],
     templateUrl: './sign-up-page.component.html',
     styleUrls: ['../login-page/login-page.component.scss', './sign-up-page.component.scss'],
