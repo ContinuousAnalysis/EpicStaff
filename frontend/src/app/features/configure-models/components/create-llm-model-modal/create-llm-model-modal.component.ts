@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    AppIconComponent,
     AppSvgIconComponent,
     ButtonComponent,
     CustomInputComponent,
@@ -27,13 +26,12 @@ export interface CreateLlmModelDialogData {
     imports: [
         CommonModule,
         ReactiveFormsModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         CustomInputComponent,
         ButtonComponent,
         ToggleSwitchComponent,
         TooltipComponent,
         ValidationErrorsComponent,
-        AppSvgIconComponent,
     ],
     templateUrl: './create-llm-model-modal.component.html',
     styleUrls: ['./create-llm-model-modal.component.scss'],

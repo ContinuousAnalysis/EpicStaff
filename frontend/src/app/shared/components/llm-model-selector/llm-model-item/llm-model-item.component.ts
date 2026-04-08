@@ -3,21 +3,21 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { FullLLMConfig } from '@shared/services';
 import { getProviderIconPath } from '@shared/utils';
 
-import { AppIconComponent } from '../../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-llm-model-item',
     standalone: true,
-    imports: [CommonModule, AppIconComponent],
+    imports: [CommonModule, AppSvgIconComponent],
     template: `
         <div class="model-item" [class.selected]="isSelected" (click)="onSelect()">
-            <app-icon
+            <app-svg-icon
                 [icon]="getProviderIcon()"
                 size="20px"
                 [ariaLabel]="config.providerDetails?.name || ''"
                 class="provider-icon"
             >
-            </app-icon>
+            </app-svg-icon>
             <div class="model-text">
                 <span class="model-name">{{ config.modelDetails?.name || 'Unknown Model' }}</span>
                 <span *ngIf="config.custom_name" class="custom-name"> ({{ config.custom_name }}) </span>

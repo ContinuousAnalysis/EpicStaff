@@ -1,14 +1,14 @@
 export const PROVIDER_ICON_PATHS: Record<string, string> = {
-    openai: 'llm-providers-logos/openai-logo',
-    anthropic: 'llm-providers-logos/claude-logo',
-    ollama: 'llm-providers-logos/ollama-logo',
-    huggingface: 'llm-providers-logos/huggingface-logo',
-    groq: 'llm-providers-logos/groq-logo',
-    azure: 'llm-providers-logos/azure-logo',
-    gemini: 'llm-providers-logos/gemini-logo',
-    cohere: 'llm-providers-logos/cohere-logo',
-    mistral: 'llm-providers-logos/mistral-logo',
+    openai: 'llm-openai',
+    anthropic: 'llm-claude',
+    ollama: 'llm-ollama',
+    huggingface: 'llm-huggingface',
+    groq: 'llm-groq',
+    azure: 'llm-azure',
+    gemini: 'llm-gemini',
+    cohere: 'llm-cohere',
+    mistral: 'llm-mistral',
 
     // Default icon
-    default: 'llm-providers-logos/logo',
+    default: 'logo',
 };

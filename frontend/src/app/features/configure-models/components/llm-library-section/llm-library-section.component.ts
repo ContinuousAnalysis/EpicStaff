@@ -11,7 +11,7 @@ import {
     SelectComponent,
     SelectItem,
 } from '@shared/components';
-import { AppIconComponent } from '@shared/components';
+import { AppSvgIconComponent } from '@shared/components';
 import { ModelTypes } from '@shared/models';
 import { Observable } from 'rxjs';
 
@@ -36,7 +36,7 @@ import { VoiceModelConfigDialogComponent } from '../voice-config-model/voice-mod
         CommonModule,
         FormsModule,
         LlmLibraryCardComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
         LoadingSpinnerComponent,
         SelectComponent,
     ],

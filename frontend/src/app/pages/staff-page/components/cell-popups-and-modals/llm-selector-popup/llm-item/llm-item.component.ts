@@ -9,7 +9,7 @@ import {
     Output,
     SimpleChanges,
 } from '@angular/core';
-import { AppIconComponent } from '@shared/components';
+import { AppSvgIconComponent } from '@shared/components';
 import { getProviderIconPath } from '@shared/utils';
 
 import { MergedConfig } from '../../../../../../features/staff/services/full-agent.service';
@@ -17,16 +17,16 @@ import { MergedConfig } from '../../../../../../features/staff/services/full-age
 @Component({
     selector: 'app-llm-item',
     standalone: true,
-    imports: [NgClass, NgIf, AppIconComponent, AppIconComponent],
+    imports: [NgClass, NgIf, AppSvgIconComponent],
     template: `
         <div class="llm-item-container">
             <div class="llm-item" [ngClass]="{ 'selected-item': isSelected }" (click)="onSelect()">
-                <app-icon
+                <app-svg-icon
                     [icon]="getProviderIcon(item)"
                     size="16px"
                     [ariaLabel]="item.provider_name || ''"
                     class="provider-icon"
-                ></app-icon>
+                ></app-svg-icon>
 
                 <div class="llm-name">
                     {{ getModelName(item) }}
