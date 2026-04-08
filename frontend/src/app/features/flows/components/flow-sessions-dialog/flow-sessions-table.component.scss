@@ -145,7 +145,7 @@ table {
         min-width: 160px;
         flex-shrink: 0;
         flex-wrap: nowrap;
-        justify-content: flex-start;
+        justify-content: flex-end;
     }
 }
 
@@ -282,4 +282,39 @@ table {
 
 .arrow-icon {
     cursor: pointer;
+    margin-left: 0;
 }
+
+app-icon-button {
+    margin-left: 10px;
+}
+
+
+tr.row-expanded td {
+    border-bottom: none;
+}
+
+tr.preview-row td.preview-cell {
+    padding: 0;
+    border-top: none;
+}
+
+.preview-content {
+    app-graph-messages {
+        --message-padding: 0.5rem 1rem;
+    }
+    
+    max-height: 500px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-color, #2a2a3a);
+    background: rgba(0,0,0,.32);
+    padding: 0;
+}
+
+.view-btn--active {
+    background-color: transparent;
+    border: 1px solid rgba(104, 95, 255, 1);
+
+}
+
+

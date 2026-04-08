@@ -9,6 +9,7 @@ import { GraphSessionStatus } from '../../services/flows-sessions.service';
     imports: [CommonModule],
     template: `
         <span class="status-badge" [ngClass]="statusClass">
+            <i [class]="statusIcon"></i>
             {{ statusLabel }}
         </span>
     `,
@@ -56,6 +57,27 @@ export class FlowSessionStatusBadgeComponent {
                 return 'status-stop';
             default:
                 return 'status-unknown';
+        }
+    }
+
+    get statusIcon(): string {
+        switch (this.status) {
+            case GraphSessionStatus.RUNNING:
+                return 'ti ti-player-play';
+            case GraphSessionStatus.ERROR:
+                return 'ti ti-alert-triangle';
+            case GraphSessionStatus.ENDED:
+                return 'ti ti-check';
+            case GraphSessionStatus.WAITING_FOR_USER:
+                return 'ti ti-hourglass';
+            case GraphSessionStatus.PENDING:
+                return 'ti ti-clock';
+            case GraphSessionStatus.EXPIRED:
+                return 'ti ti-clock-pause';
+            case GraphSessionStatus.STOP:
+                return 'ti ti-player-stop';
+            default:
+                return 'ti ti-question-mark';
         }
     }
 }

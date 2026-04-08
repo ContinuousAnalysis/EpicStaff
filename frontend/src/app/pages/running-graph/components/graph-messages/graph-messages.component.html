@@ -1,5 +1,5 @@
 <!-- graph-messages.component.html -->
-<div class="messages-container" #messagesContainer (scroll)="onMessagesScroll()">
+<div class="messages-container" [class.messages-container--compact]="compact" #messagesContainer (scroll)="onMessagesScroll()">
     <!-- Connection status indicator -->
     <div class="connection-status" *ngIf="connectionStatus === 'reconnecting' || connectionStatus === 'disconnected'">
         <div class="status-indicator" [class]="connectionStatus">
@@ -262,6 +262,10 @@
                 }
             </div>
         }
+    </div>
+
+    <div class="empty-list" *ngIf="messages.length === 0">
+        No messages to show
     </div>
 
     <!-- Loading dots for running session -->

@@ -37,7 +37,7 @@
         flex-direction: column;
         flex: 1;
         min-height: 0;
-        overflow: hidden;
+        overflow-y: auto;
 
         .filter-controls {
             margin-bottom: 16px;
@@ -47,7 +47,7 @@
         .table-container {
             flex: 1;
             min-height: 0;
-            overflow: hidden;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
         }

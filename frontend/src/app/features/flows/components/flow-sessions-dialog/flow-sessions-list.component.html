@@ -11,11 +11,7 @@
 
     <div class="dialog-content">
         <div class="filter-controls">
-            <app-flow-session-status-filter-dropdown
-                [value]="statusFilter()"
-                (valueChange)="onStatusFilterChange($event)"
-            >
-            </app-flow-session-status-filter-dropdown>
+            
         </div>
 
         <div class="table-container">
@@ -27,6 +23,8 @@
                 (deleteSelected)="onDeleteSelected($event)"
                 (viewSession)="onViewSession($event)"
                 (stopSession)="onStopSession($event)"
+                [statusFilter]="statusFilter()"
+                (statusFilterChange)="onStatusFilterChange($event)"
             >
             </app-flow-sessions-table>
         </div>

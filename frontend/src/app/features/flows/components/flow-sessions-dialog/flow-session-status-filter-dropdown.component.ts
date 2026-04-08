@@ -26,26 +26,11 @@ interface StatusOption {
     template: `
         <div class="status-filter-dropdown-custom" [class.open]="open" (appClickOutside)="closeDropdown()">
             <button class="dropdown-toggle" (click)="toggleDropdown($event)">
-                <span class="selected-icons">
-                    @if (selectedValues().length === 0) {
-                        <i [class]="options[0].icon"></i> {{ options[0].label }}
-                    } @else if (selectedValues().length === 1) {
-                        <i [class]="selectedOptions()[0].icon" [style.color]="selectedOptions()[0].color"></i>
-                        {{ selectedOptions()[0].label }}
-                    } @else {
-                        <span class="icon-multi">
-                            @for (opt of selectedOptions(); track opt.value) {
-                                <i [class]="opt.icon" [style.color]="opt.color"></i>
-                            }
-                        </span>
-                        Mixed ({{ selectedValues().length }})
-                    }
-                </span>
-                <span class="dropdown-arrow-wrapper">
-                    <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24">
-                        <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none" />
-                    </svg>
-                </span>
+                Status
+                <img
+                    src="assets/icons/ui/status-filter.svg"
+                    alt="status-filter"
+                />
             </button>
             @if (open) {
                 <ul class="dropdown-menu">

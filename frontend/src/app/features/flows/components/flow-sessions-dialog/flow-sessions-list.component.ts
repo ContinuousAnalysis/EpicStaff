@@ -15,7 +15,6 @@ import { IconButtonComponent, PaginationControlsComponent } from '@shared/compon
 
 import { GraphDto } from '../../models/graph.model';
 import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../../services/flows-sessions.service';
-import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-filter-dropdown.component';
 import { FlowSessionsTableComponent } from './flow-sessions-table.component';
 
 @Component({
@@ -28,7 +27,6 @@ import { FlowSessionsTableComponent } from './flow-sessions-table.component';
         IconButtonComponent,
         FlowSessionsTableComponent,
         PaginationControlsComponent,
-        FlowSessionStatusFilterDropdownComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -135,6 +133,7 @@ export class FlowSessionsListComponent implements OnInit {
     }
 
     onStatusFilterChange(values: string[]) {
+        this.currentPage.set(1);
         this.statusFilter.set(values);
     }
 
