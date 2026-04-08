@@ -1,6 +1,6 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
@@ -32,6 +32,8 @@ import { StorageTreeComponent } from './components/storage-tree/storage-tree.com
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StoragePageComponent {
+    @ViewChild(StorageTreeComponent) storageTree?: StorageTreeComponent;
+
     private destroyRef = inject(DestroyRef);
     private storageApiService = inject(StorageApiService);
     private toastService = inject(ToastService);
@@ -113,6 +115,14 @@ export class StoragePageComponent {
                     },
                     error: () => this.toastService.error(`Failed to load folder "${item.name}"`),
                 });
+        }
+    }
+
+    onPreviewContextAction(event: { action: string; item: StorageItem; selectedItems?: StorageItem[] }): void {
+        if (event.action === 'rename') {
+            this.storageTree?.startRename(event.item);
+        } else {
+            this.onContextAction(event);
         }
     }
 

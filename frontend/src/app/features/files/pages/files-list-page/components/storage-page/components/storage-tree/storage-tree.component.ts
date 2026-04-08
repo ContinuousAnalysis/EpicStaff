@@ -1,5 +1,15 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, output, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    ElementRef,
+    EventEmitter,
+    Input,
+    Output,
+    output,
+    signal,
+    ViewChild,
+} from '@angular/core';
 
 import { AppIconComponent } from '../../../../../../../../shared/components/app-icon/app-icon.component';
 import { StorageItem } from '../../../../../../models/storage.models';
@@ -26,6 +36,8 @@ export class StorageTreeComponent {
     closeSidebar = output<void>();
     openCreateFolder = output<string>();
     selectionChange = output<StorageItem[]>();
+
+    @ViewChild('renameInput') renameInputRef?: ElementRef<HTMLInputElement>;
 
     selectedItem = signal<StorageItem | null>(null);
     selectedPaths = signal<Set<string>>(new Set<string>());
@@ -95,14 +107,22 @@ export class StorageTreeComponent {
         this.contextMenuItem.set(null);
     }
 
+    startRename(item: StorageItem): void {
+        this.renamingFromPath = item.path || item.name;
+        this.renameValue = item.name;
+        this.renamingItem.set(item);
+        setTimeout(() => {
+            this.renameInputRef?.nativeElement.focus();
+            this.renameInputRef?.nativeElement.select();
+        });
+    }
+
     onContextMenuAction(action: string): void {
         const item = this.contextMenuItem();
         if (!item) return;
 
         if (action === 'rename') {
-            this.renamingFromPath = item.path || item.name;
-            this.renameValue = item.name;
-            this.renamingItem.set(item);
+            this.startRename(item);
         } else {
             this.contextAction.emit({ action, item });
         }
