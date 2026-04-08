@@ -34,13 +34,13 @@
             (mouseleave)="hoveredItem.set(null)"
         >
             @if (node.type === 'folder' && !node.is_empty) {
-                <app-icon
-                    class="storage-tree__chevron"
-                    [class.storage-tree__chevron--expanded]="node.isExpanded"
-                    icon="ui/triangle-right"
-                    size="0.5rem"
+                <button
+                    class="storage-tree__chevron-btn"
+                    [class.storage-tree__chevron-btn--expanded]="node.isExpanded"
                     (click)="onFolderChevronClick($event, node)"
-                ></app-icon>
+                >
+                    <app-icon icon="ui/triangle-right" size="0.5rem"></app-icon>
+                </button>
             } @else {
                 <span class="storage-tree__chevron-placeholder"></span>
             }

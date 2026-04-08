@@ -102,7 +102,7 @@
 
             .storage-tree__name,
             .storage-tree__icon,
-            .storage-tree__chevron {
+            .storage-tree__chevron-btn {
                 color: #685fff;
             }
 
@@ -116,18 +116,35 @@
         }
     }
 
-    &__chevron {
+    &__chevron-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         flex-shrink: 0;
-        transition: transform 0.15s ease;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        background: transparent;
+        border: none;
+        cursor: pointer;
         color: var(--color-text-secondary);
+        border-radius: 3px;
 
-        &--expanded {
+        app-icon {
+            transition: transform 0.15s ease;
+        }
+
+        &--expanded app-icon {
             transform: rotate(90deg);
+        }
+
+        &:hover {
+            background-color: rgba(217, 217, 222, 0.08);
         }
     }
 
     &__chevron-placeholder {
-        width: 0.5rem;
+        width: 24px;
         flex-shrink: 0;
     }
 
