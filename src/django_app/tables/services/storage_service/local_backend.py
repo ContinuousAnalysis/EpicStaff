@@ -34,6 +34,16 @@ class LocalStorageBackend(AbstractStorageBackend):
             raise PermissionError(f"Path traversal detected: {path}")
         return resolved
 
+    def list_all_keys(self, prefix: str) -> list[str]:
+        directory = self._resolve(prefix)
+        if not directory.exists() or not directory.is_dir():
+            return []
+        keys = []
+        for entry in directory.rglob("*"):
+            if entry.is_file():
+                keys.append(str(entry.relative_to(self.base_path)))
+        return keys
+
     def list_(self, prefix: str) -> list[FileListItem]:
         directory = self._resolve(prefix)
         if not directory.exists() or not directory.is_dir():
@@ -157,8 +167,13 @@ class LocalStorageBackend(AbstractStorageBackend):
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
             for path in paths:
-                file_bytes = self.download(path)
-                archive.writestr(path.lstrip("/"), file_bytes)
+                if path.endswith("/"):
+                    for key in self.list_all_keys(path):
+                        file_bytes = self.download(key)
+                        archive.writestr(key.lstrip("/"), file_bytes)
+                else:
+                    file_bytes = self.download(path)
+                    archive.writestr(path.lstrip("/"), file_bytes)
         buffer.seek(0)
         yield buffer.read()
 

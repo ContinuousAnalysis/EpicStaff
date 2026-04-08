@@ -155,10 +155,15 @@ class StorageManager:
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
             for path in paths:
-                file_bytes = self._backend.download(
-                    self._build_storage_key(org_id, path)
-                )
-                archive.writestr(path.lstrip("/"), file_bytes)
+                storage_key = self._build_storage_key(org_id, path)
+                if path.endswith("/"):
+                    for key in self._backend.list_all_keys(storage_key):
+                        file_bytes = self._backend.download(key)
+                        archive_name = self._strip_org_prefix(org_id, key)
+                        archive.writestr(archive_name.lstrip("/"), file_bytes)
+                else:
+                    file_bytes = self._backend.download(storage_key)
+                    archive.writestr(path.lstrip("/"), file_bytes)
         buffer.seek(0)
         yield buffer.read()
 

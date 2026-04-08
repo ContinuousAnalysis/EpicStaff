@@ -88,6 +88,10 @@ class AbstractStorageBackend(ABC):
         """Return True if the path exists."""
 
     @abstractmethod
+    def list_all_keys(self, prefix: str) -> list[str]:
+        """Recursively list all file keys under prefix (excludes folder markers)."""
+
+    @abstractmethod
     def download_zip(self, paths: list[str]) -> Iterator[bytes]:
         """Yield a streaming zip archive containing the given paths."""
 

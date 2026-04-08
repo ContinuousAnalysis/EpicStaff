@@ -49,6 +49,19 @@ class S3StorageBackend(AbstractStorageBackend):
             return full_key[len(self.organization_prefix) :]
         return full_key
 
+    def list_all_keys(self, prefix: str) -> list[str]:
+        full_prefix = self._full_path(prefix)
+        if not full_prefix.endswith("/"):
+            full_prefix += "/"
+        paginator = self.client.get_paginator("list_objects_v2")
+        keys = []
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=full_prefix):
+            for obj in page.get("Contents", []):
+                if obj["Key"].endswith("/"):
+                    continue
+                keys.append(self._strip_prefix(obj["Key"]))
+        return keys
+
     def list_(self, prefix: str) -> list[FileListItem]:
         full_prefix = self._full_path(prefix)
         if full_prefix and not full_prefix.endswith("/"):
@@ -296,9 +309,14 @@ class S3StorageBackend(AbstractStorageBackend):
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
             for path in paths:
-                file_bytes = self.download(path)
-                archive_name = path.lstrip("/")
-                archive.writestr(archive_name, file_bytes)
+                if path.endswith("/"):
+                    for key in self.list_all_keys(path):
+                        file_bytes = self.download(key)
+                        archive.writestr(key.lstrip("/"), file_bytes)
+                else:
+                    file_bytes = self.download(path)
+                    archive_name = path.lstrip("/")
+                    archive.writestr(archive_name, file_bytes)
         buffer.seek(0)
         yield buffer.read()
 
