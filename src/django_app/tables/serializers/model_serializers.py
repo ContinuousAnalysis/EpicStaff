@@ -261,7 +261,7 @@ class LLMModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
         fields = "__all__"
 
     def create(self, validated_data):
-        tags_data = validated_data.pop("capabilities", [])
+        tags_data = validated_data.pop("tags", [])
         instance = super().create(validated_data)
 
         if tags_data:
@@ -272,7 +272,7 @@ class LLMModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        tags_data = validated_data.pop("capabilities", None)
+        tags_data = validated_data.pop("tags", None)
 
         if tags_data is not None:
             resolved_tags = self._resolve_tags(tags_data)

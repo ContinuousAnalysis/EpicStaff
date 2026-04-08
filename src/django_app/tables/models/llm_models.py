@@ -81,7 +81,7 @@ class LLMConfig(AbstractDefaultFillableModel):
     frequency_penalty = models.FloatField(default=0.0, null=True, blank=True)
     logit_bias = models.JSONField(null=True, blank=True)
     response_format = models.JSONField(null=True, blank=True)
-    seed = models.IntegerField(null=True, blank=True, default=42)
+    seed = models.IntegerField(null=True, blank=True)
     api_key = models.TextField(null=True, blank=True)
     headers = models.JSONField(default=dict, blank=True)
     extra_headers = models.JSONField(default=dict, blank=True)
