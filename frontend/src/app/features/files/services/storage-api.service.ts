@@ -130,7 +130,10 @@ export class StorageApiService {
     }
 
     copy(from: string, to: string): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}copy/`, { from_path: from, to_path: to });
+        return this.http.post<void>(`${this.apiUrl}copy/`, {
+            from_path: from,
+            to_path: this.normalizeCopyTargetPath(to),
+        });
     }
 
     addToFlow(path: string, flowId: number, variableName: string): Observable<void> {
@@ -167,5 +170,10 @@ export class StorageApiService {
             parentPath: path.slice(0, slashIndex),
             folderName: path.slice(slashIndex + 1),
         };
+    }
+
+    private normalizeCopyTargetPath(path: string): string {
+        const normalized = this.normalizePath(path);
+        return normalized === '' ? '/' : normalized;
     }
 }

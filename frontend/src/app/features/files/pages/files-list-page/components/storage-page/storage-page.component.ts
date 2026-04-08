@@ -9,6 +9,11 @@ import { ToastService } from '../../../../../../services/notifications/toast.ser
 import { DragDropAreaComponent } from '../../../../../../shared/components/drag-drop-area/drag-drop-area.component';
 import { SpinnerComponent } from '../../../../../../shared/components/spinner/spinner.component';
 import {
+    CopyToDialogComponent,
+    CopyToDialogData,
+    CopyToDialogResult,
+} from '../../../../components/copy-to-dialog/copy-to-dialog.component';
+import {
     CreateFolderDialogComponent,
     CreateFolderDialogData,
     CreateFolderDialogResult,
@@ -138,7 +143,7 @@ export class StoragePageComponent {
                 this.handleRename(event);
                 break;
             case 'copy':
-                // TODO: Implement copy-to-folder dialog
+                this.handleCopy(event.item);
                 break;
             case 'duplicate-here':
                 // TODO: Implement duplicate in current folder
@@ -209,6 +214,25 @@ export class StoragePageComponent {
                 },
                 error: () => this.toastService.error('Failed to upload files'),
             });
+    }
+
+    private handleCopy(item: StorageItem): void {
+        const dialogRef = this.dialog.open<CopyToDialogResult, CopyToDialogData>(CopyToDialogComponent, {
+            data: { item },
+        });
+        dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+            if (!result) return;
+            this.storageApiService
+                .copy(item.path, result.toPath)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: () => {
+                        this.toastService.success(`"${item.name}" copied`);
+                        this.loadTree();
+                    },
+                    error: () => this.toastService.error(`Failed to copy "${item.name}"`),
+                });
+        });
     }
 
     private handleRename(event: { item: StorageItem; renameFromPath?: string }): void {
