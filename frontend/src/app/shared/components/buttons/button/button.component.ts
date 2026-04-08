@@ -15,6 +15,7 @@ export class ButtonComponent {
     @Input() type: 'primary' | 'secondary' | 'ghost' | 'icon' | 'outline-primary' | 'outline-secondary' = 'primary';
     @Input() mod: 'default' | 'small' = 'default';
     @Input() leftIcon?: string; // e.g., 'ui/x'
+    @Input() iconSize: string = '1.1rem';
     @Input() leftIconColor?: string;
     @Input() rightIcon?: string; // e.g., 'ui/chevron-down'
     @Input() rightIconColor?: string;

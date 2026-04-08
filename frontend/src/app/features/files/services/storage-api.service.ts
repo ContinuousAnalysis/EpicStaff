@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 
 import { ConfigService } from '../../../services/config/config.service';
 import {
@@ -34,6 +34,41 @@ export class StorageApiService {
                 params: { path },
             })
             .pipe(map((res) => res.items ?? []));
+    }
+
+    ensureFolderAndUpload(
+        targetFolder: string,
+        files: File[]
+    ): Observable<{ alreadyExists: boolean; created: boolean; uploadedCount: number }> {
+        const normalizedTarget = this.normalizePath(targetFolder);
+        const { parentPath, folderName } = this.splitParentAndName(normalizedTarget);
+
+        return this.list(parentPath).pipe(
+            switchMap((items) => {
+                const exists = (items ?? []).some(
+                    (item) => item.type === 'folder' && item.name?.trim().toLowerCase() === folderName.toLowerCase()
+                );
+                if (exists) {
+                    if (!files.length) {
+                        return of({ alreadyExists: true, created: false, uploadedCount: 0 });
+                    }
+                    return this.uploadMany(normalizedTarget, files).pipe(
+                        map(() => ({ alreadyExists: true, created: false, uploadedCount: files.length }))
+                    );
+                }
+
+                return this.mkdir(normalizedTarget).pipe(
+                    switchMap(() => {
+                        if (!files.length) {
+                            return of({ alreadyExists: false, created: true, uploadedCount: 0 });
+                        }
+                        return this.uploadMany(normalizedTarget, files).pipe(
+                            map(() => ({ alreadyExists: false, created: true, uploadedCount: files.length }))
+                        );
+                    })
+                );
+            })
+        );
     }
 
     info(path: string): Observable<StorageItemInfo> {
@@ -112,5 +147,25 @@ export class StorageApiService {
                 params: { session_id: sessionId },
             })
             .pipe(map((res) => res.items ?? []));
+    }
+
+    private normalizePath(path: string): string {
+        return path
+            .trim()
+            .replace(/\\/g, '/')
+            .replace(/\/{2,}/g, '/')
+            .replace(/^\/+|\/+$/g, '');
+    }
+
+    private splitParentAndName(path: string): { parentPath: string; folderName: string } {
+        const slashIndex = path.lastIndexOf('/');
+        if (slashIndex === -1) {
+            return { parentPath: '', folderName: path };
+        }
+
+        return {
+            parentPath: path.slice(0, slashIndex),
+            folderName: path.slice(slashIndex + 1),
+        };
     }
 }

@@ -33,6 +33,7 @@ export class StoragePreviewComponent implements OnChanges {
     @Input() item: StorageItem | null = null;
     @Input() showSidebar = true;
     @Output() toggleSidebar = new EventEmitter<void>();
+    @Output() contextAction = new EventEmitter<{ action: string; item: StorageItem }>();
 
     private destroyRef = inject(DestroyRef);
     private storageApiService = inject(StorageApiService);
@@ -45,6 +46,9 @@ export class StoragePreviewComponent implements OnChanges {
     imageUrl = signal<string | null>(null);
     isLoadingPreview = signal<boolean>(false);
     previewError = signal<string | null>(null);
+
+    kebabMenuOpen = signal<boolean>(false);
+    kebabMenuPosition = signal<{ right: number; top: number }>({ right: 0, top: 0 });
 
     private currentBlobUrl: string | null = null;
 
@@ -83,6 +87,24 @@ export class StoragePreviewComponent implements OnChanges {
         if (this.item) {
             this.storageApiService.download(this.item.path);
         }
+    }
+
+    onKebabClick(event: MouseEvent): void {
+        event.stopPropagation();
+        const btn = event.currentTarget as HTMLElement;
+        const rect = btn.getBoundingClientRect();
+        this.kebabMenuPosition.set({ right: window.innerWidth - rect.right, top: rect.bottom + 4 });
+        this.kebabMenuOpen.set(true);
+    }
+
+    closeKebabMenu(): void {
+        this.kebabMenuOpen.set(false);
+    }
+
+    onKebabMenuAction(action: string): void {
+        this.kebabMenuOpen.set(false);
+        if (!this.item) return;
+        this.contextAction.emit({ action, item: this.item });
     }
 
     private loadPreview(): void {

@@ -24,16 +24,43 @@
                     }
                 </div>
             </div>
-            <div class="storage-preview__header-actions">
-                <button class="storage-preview__add-to-flow" type="button" (click)="onDownload()">
-                    <app-icon icon="ui/add-to-flow" size="0.8125rem"></app-icon>
-                    <span>Add to flow</span>
-                </button>
-                <button class="storage-preview__kebab" aria-label="More actions">
-                    <app-icon icon="ui/dots-vertical" size="1rem"></app-icon>
-                </button>
-            </div>
+            <app-button
+                class="storage-preview__add-to-flow"
+                type="outline-primary"
+                mod="small"
+                [leftIcon]="'ui/add-to-flow'"
+                iconSize="12px"
+                ariaLabel="Add to flow"
+                (click)="onDownload()"
+            >
+                Add to flow
+            </app-button>
+            <button class="storage-preview__kebab" aria-label="More actions" (click)="onKebabClick($event)">
+                <app-icon icon="ui/dots-vertical" size="1rem"></app-icon>
+            </button>
         </div>
+
+        @if (kebabMenuOpen()) {
+            <div class="storage-preview__overlay" (click)="closeKebabMenu()"></div>
+            <div
+                class="storage-preview__context-menu"
+                [style.right.px]="kebabMenuPosition().right"
+                [style.top.px]="kebabMenuPosition().top"
+            >
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('download')">
+                    Download
+                </button>
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('copy')">
+                    Copy to...
+                </button>
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('rename')">Rename</button>
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('view-details')">
+                    View details
+                </button>
+                <div class="storage-preview__context-menu-divider"></div>
+                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('delete')">Delete</button>
+            </div>
+        }
 
         <div class="storage-preview__body">
             @if (previewBadge && previewType() !== 'pdf') {

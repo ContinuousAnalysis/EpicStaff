@@ -161,22 +161,21 @@ export class StoragePageComponent {
             if (!result) return;
             const targetFolder = result.folderName.trim();
             if (!targetFolder) return;
-            const targetExists = this.findFolderByPath(targetFolder) !== null;
-
-            if (targetExists) {
-                this.toastService.info(`Folder "${targetFolder}" already exists`);
-                this.uploadFilesToPath(targetFolder, result.files);
-                return;
-            }
-
+            const validFiles = this.filterAllowedFiles(result.files);
             this.storageApiService
-                .mkdir(targetFolder)
+                .ensureFolderAndUpload(targetFolder, validFiles)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
-                    next: () => {
-                        this.toastService.success(`Folder "${targetFolder}" created`);
+                    next: (flow) => {
+                        if (flow.alreadyExists) {
+                            this.toastService.info(`Folder "${targetFolder}" already exists`);
+                        } else if (flow.created) {
+                            this.toastService.success(`Folder "${targetFolder}" created`);
+                        }
+                        if (flow.uploadedCount > 0) {
+                            this.toastService.success(`${flow.uploadedCount} file(s) uploaded`);
+                        }
                         this.loadTree();
-                        this.uploadFilesToPath(targetFolder, result.files);
                     },
                     error: () => this.toastService.error('Failed to create folder'),
                 });
@@ -318,56 +317,6 @@ export class StoragePageComponent {
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
-    }
-
-    private uploadFilesToPath(path: string, files: File[]): void {
-        if (!files.length) {
-            return;
-        }
-        const validFiles = this.filterAllowedFiles(files);
-        if (!validFiles.length) {
-            return;
-        }
-        this.storageApiService
-            .uploadMany(path, validFiles)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.toastService.success(`${validFiles.length} file(s) uploaded`);
-                    this.loadTree();
-                },
-                error: () => this.toastService.error('Failed to upload files'),
-            });
-    }
-
-    private findFolderByPath(path: string): StorageItem | null {
-        const normalized = this.normalizeStoragePath(path);
-        if (!normalized) {
-            return null;
-        }
-        const visit = (items: StorageItem[]): StorageItem | null => {
-            for (const item of items) {
-                const itemPathNormalized = this.normalizeStoragePath(item.path);
-                if (item.type === 'folder' && itemPathNormalized === normalized) {
-                    return item;
-                }
-                if (item.children?.length) {
-                    const found = visit(item.children);
-                    if (found) return found;
-                }
-            }
-            return null;
-        };
-        return visit(this.treeData());
-    }
-
-    private normalizeStoragePath(path: string): string {
-        return path
-            .trim()
-            .replace(/\\/g, '/')
-            .replace(/\/{2,}/g, '/')
-            .replace(/^\/+|\/+$/g, '')
-            .toLowerCase();
     }
 
     private filterAllowedFiles(files: File[]): File[] {

@@ -21,6 +21,7 @@
                     [item]="selectedFile()"
                     [showSidebar]="showSidebar()"
                     (toggleSidebar)="toggleSidebar()"
+                    (contextAction)="onContextAction($event)"
                 />
             </div>
         }
