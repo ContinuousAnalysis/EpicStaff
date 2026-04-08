@@ -1,5 +1,4 @@
-import { DIALOG_DATA, DialogModule, DialogRef } from '@angular/cdk/dialog';
-import { CommonModule } from '@angular/common';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
@@ -12,7 +11,7 @@ interface StorageDetailsDialogData extends StorageItemInfo {
 @Component({
     selector: 'app-storage-details-dialog',
     standalone: true,
-    imports: [CommonModule, DialogModule, AppIconComponent],
+    imports: [AppIconComponent],
     templateUrl: './storage-details-dialog.component.html',
     styleUrls: ['./storage-details-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
