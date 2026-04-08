@@ -35,6 +35,7 @@ export class StoragePageComponent {
     isLoading = signal<boolean>(true);
     treeData = signal<StorageItem[]>([]);
     selectedFile = signal<StorageItem | null>(null);
+    selectedItems = signal<StorageItem[]>([]);
     showSidebar = signal<boolean>(true);
     private readonly allowedUploadExtensions = new Set([
         'pdf',
@@ -118,7 +119,17 @@ export class StoragePageComponent {
     }): void {
         switch (event.action) {
             case 'download':
-                this.storageApiService.download(event.item.path);
+                if (event.item.type === 'folder') {
+                    this.storageApiService
+                        .downloadZip([event.item.path])
+                        .pipe(takeUntilDestroyed(this.destroyRef))
+                        .subscribe({
+                            next: (blob) => this.downloadBlobFile(blob, `${event.item.name}.zip`),
+                            error: () => this.toastService.error('Failed to download folder'),
+                        });
+                } else {
+                    this.storageApiService.download(event.item.path);
+                }
                 break;
             case 'delete':
                 this.handleDelete(event.item);

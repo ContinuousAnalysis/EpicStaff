@@ -25,6 +25,7 @@ export class StorageTreeComponent {
     }>();
     closeSidebar = output<void>();
     openCreateFolder = output<string>();
+    selectionChange = output<StorageItem[]>();
 
     selectedItem = signal<StorageItem | null>(null);
     selectedPaths = signal<Set<string>>(new Set<string>());
@@ -70,7 +71,7 @@ export class StorageTreeComponent {
         event.preventDefault();
         event.stopPropagation();
         if (!this.isItemSelected(item)) {
-            this.selectedPaths.set(new Set([item.path]));
+            this.setSelectedPaths(new Set([item.path]));
             this.selectedItem.set(item);
             this.selectionAnchorPath = item.path;
         }
@@ -81,7 +82,7 @@ export class StorageTreeComponent {
 
     onKebabClick(event: MouseEvent, item: StorageItem): void {
         event.stopPropagation();
-        this.selectedPaths.set(new Set([item.path]));
+        this.setSelectedPaths(new Set([item.path]));
         this.selectedItem.set(item);
         this.selectionAnchorPath = item.path;
         this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
@@ -219,7 +220,7 @@ export class StorageTreeComponent {
             if (startIndex !== -1 && endIndex !== -1) {
                 const [from, to] = startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
                 const ranged = visibleNodes.slice(from, to + 1);
-                this.selectedPaths.set(new Set(ranged.map((n) => n.path)));
+                this.setSelectedPaths(new Set(ranged.map((n) => n.path)));
                 return;
             }
         }
@@ -230,13 +231,19 @@ export class StorageTreeComponent {
             } else {
                 currentSelection.add(path);
             }
-            this.selectedPaths.set(currentSelection);
+            this.setSelectedPaths(currentSelection);
             this.selectionAnchorPath = path;
             return;
         }
 
-        this.selectedPaths.set(new Set([path]));
+        this.setSelectedPaths(new Set([path]));
         this.selectionAnchorPath = path;
+    }
+
+    private setSelectedPaths(paths: Set<string>): void {
+        this.selectedPaths.set(paths);
+        const visible = this.collectVisibleNodes(this.items);
+        this.selectionChange.emit(visible.filter((n) => paths.has(n.path)));
     }
 
     private collectVisibleNodes(nodes: StorageItem[]): StorageItem[] {

@@ -31,9 +31,10 @@ type PreviewType = 'text' | 'json' | 'pdf' | 'image' | 'unsupported';
 })
 export class StoragePreviewComponent implements OnChanges {
     @Input() item: StorageItem | null = null;
+    @Input() selectedItems: StorageItem[] = [];
     @Input() showSidebar = true;
     @Output() toggleSidebar = new EventEmitter<void>();
-    @Output() contextAction = new EventEmitter<{ action: string; item: StorageItem }>();
+    @Output() contextAction = new EventEmitter<{ action: string; item: StorageItem; selectedItems?: StorageItem[] }>();
 
     private destroyRef = inject(DestroyRef);
     private storageApiService = inject(StorageApiService);
@@ -104,7 +105,15 @@ export class StoragePreviewComponent implements OnChanges {
     onKebabMenuAction(action: string): void {
         this.kebabMenuOpen.set(false);
         if (!this.item) return;
-        this.contextAction.emit({ action, item: this.item });
+        if (action === 'download' && this.selectedItems.length > 1) {
+            this.contextAction.emit({
+                action: 'download-selected',
+                item: this.item,
+                selectedItems: this.selectedItems,
+            });
+        } else {
+            this.contextAction.emit({ action, item: this.item });
+        }
     }
 
     private loadPreview(): void {

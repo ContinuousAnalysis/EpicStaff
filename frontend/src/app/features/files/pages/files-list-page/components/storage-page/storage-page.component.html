@@ -14,11 +14,13 @@
                     (contextAction)="onContextAction($event)"
                     (closeSidebar)="toggleSidebar()"
                     (openCreateFolder)="onOpenCreateFolder($event)"
+                    (selectionChange)="selectedItems.set($event)"
                 />
             </div>
             <div class="storage-page__content">
                 <app-storage-preview
                     [item]="selectedFile()"
+                    [selectedItems]="selectedItems()"
                     [showSidebar]="showSidebar()"
                     (toggleSidebar)="toggleSidebar()"
                     (contextAction)="onContextAction($event)"
