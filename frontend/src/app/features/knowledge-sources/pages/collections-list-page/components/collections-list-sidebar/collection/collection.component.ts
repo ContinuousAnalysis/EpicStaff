@@ -1,7 +1,7 @@
 import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { AppIconComponent } from '@shared/components';
 
-import { AppIconComponent } from '../../../../../../../shared/components/app-icon/app-icon.component';
 import { CollectionStatus, GetCollectionRequest } from '../../../../../models/collection.model';
 
 @Component({

@@ -2,21 +2,19 @@ import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { AppIconComponent, ButtonComponent, ConfirmationDialogService, SearchComponent } from '@shared/components';
+import { AppSvgIconComponent, ButtonComponent, ConfirmationDialogService, SearchComponent } from '@shared/components';
 import { EMPTY, groupBy, mergeMap, of, Subject } from 'rxjs';
 import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 
-import { ToastService } from "../../../../services/notifications";
-import { UpdateNaiveRagDocumentDtoRequest, } from "../../models/naive-rag-document.model";
-import { RagConfiguration } from "../../models/rag-configuration";
-import { NaiveRagService } from "../../services/naive-rag.service";
-import { NaiveRagDocumentsStorageService } from "../../services/naive-rag-documents-storage.service";
-import { DocumentChunksSectionComponent } from "../document-chunks-section/document-chunks-section.component";
-import {
-    EditFileParametersDialogComponent
-} from "../edit-file-parameters-dialog/edit-file-parameters-dialog.component";
-import { ConfigurationTableComponent } from "./configuration-table/configuration-table.component";
-import { DocFieldChange } from "./configuration-table/configuration-table.interface";
+import { ToastService } from '../../../../services/notifications';
+import { UpdateNaiveRagDocumentDtoRequest } from '../../models/naive-rag-document.model';
+import { RagConfiguration } from '../../models/rag-configuration';
+import { NaiveRagService } from '../../services/naive-rag.service';
+import { NaiveRagDocumentsStorageService } from '../../services/naive-rag-documents-storage.service';
+import { DocumentChunksSectionComponent } from '../document-chunks-section/document-chunks-section.component';
+import { EditFileParametersDialogComponent } from '../edit-file-parameters-dialog/edit-file-parameters-dialog.component';
+import { ConfigurationTableComponent } from './configuration-table/configuration-table.component';
+import { DocFieldChange } from './configuration-table/configuration-table.interface';
 
 @Component({
     selector: 'app-naive-rag-configuration',
@@ -26,9 +24,9 @@ import { DocFieldChange } from "./configuration-table/configuration-table.interf
         FormsModule,
         SearchComponent,
         ConfigurationTableComponent,
-        AppIconComponent,
         ButtonComponent,
         DocumentChunksSectionComponent,
+        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -184,7 +182,6 @@ export class NaiveRagConfigurationComponent implements OnInit, RagConfiguration 
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.tuneChunkOpened.set(false));
     }
 
-    // todo check this
     getConfigurationData(): unknown {
         return true;
     }

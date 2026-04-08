@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
-import { AppIconComponent } from "@shared/components";
+
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-file-uploader',
     templateUrl: './file-uploader.component.html',
     styleUrls: ['./file-uploader.component.scss'],
-    imports: [AppIconComponent],
+    imports: [AppSvgIconComponent],
 
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

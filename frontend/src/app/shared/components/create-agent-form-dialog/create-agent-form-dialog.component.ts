@@ -1,49 +1,45 @@
+import { DialogRef } from '@angular/cdk/dialog';
+import { CommonModule } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
-    Component, DestroyRef, inject,
+    Component,
+    DestroyRef,
+    inject,
     OnInit,
     signal,
 } from '@angular/core';
-import { DialogRef } from '@angular/cdk/dialog';
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ErrorStateMatcher } from '@angular/material/core';
 import {
-    FormBuilder,
-    FormGroup,
-    Validators,
-    FormsModule,
-    ReactiveFormsModule,
-} from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { Tab, TabId } from "./tabs";
-import { MATERIAL_FORMS } from '../../material-forms';
+    AdvancedTabComponent,
+    ButtonComponent,
+    CustomInputComponent,
+    ExecutionTabComponent,
+    GeneralTabComponent,
+    RagTabComponent,
+    TabButtonComponent,
+    TextareaComponent,
+} from '@shared/components';
+import { buildToolIdsArray } from '@shared/utils';
 
-import { RealtimeAgentService, AgentsService } from '@services';
-import { ToastService } from '../../../services/notifications';
+import {
+    GetCollectionRagsResponse,
+    GetCollectionRequest,
+} from '../../../features/knowledge-sources/models/collection.model';
+import { CollectionsApiService } from '../../../features/knowledge-sources/services/collections-api.service';
 import {
     FullLLMConfig,
     FullLLMConfigService,
 } from '../../../features/settings-dialog/services/llms/full-llm-config.service';
-import {
-    GetAgentRequest,
-    ToolUniqueName,
-} from '@shared/models';
-import { buildToolIdsArray } from '@shared/utils';
-import { CustomErrorStateMatcher } from '../../error-state-matcher';
-import { ErrorStateMatcher } from '@angular/material/core';
 import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
-import { CollectionsApiService } from "../../../features/knowledge-sources/services/collections-api.service";
-import {
-    GetCollectionRagsResponse,
-    GetCollectionRequest
-} from "../../../features/knowledge-sources/models/collection.model";
-import { ValidationErrorsComponent } from "../app-validation-errors/validation-errors.component";
-import {
-    AdvancedTabComponent, ButtonComponent,
-    CustomInputComponent,
-    ExecutionTabComponent, GeneralTabComponent, RagTabComponent, TabButtonComponent,
-    TextareaComponent
-} from "@shared/components";
+import { CreateAgentRequest, GetAgentRequest, ToolUniqueName } from '../../../features/staff/models/agent.model';
+import { CustomErrorStateMatcher } from '../../error-state-matcher';
+import { MATERIAL_FORMS } from '../../material-forms';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
+import { ValidationErrorsComponent } from '../app-validation-errors/validation-errors.component';
+import { Tab, TabId } from './tabs';
 
 export type AgentDialogResult =
     | { kind: 'create'; payload: CreateAgentRequest }
@@ -58,8 +54,6 @@ export type AgentDialogResult =
         FormsModule,
         ReactiveFormsModule,
         ...MATERIAL_FORMS,
-        ToolsSelectorComponent,
-        AppIconComponent,
         AppSvgIconComponent,
         ValidationErrorsComponent,
         CustomInputComponent,
@@ -83,9 +77,6 @@ export class CreateAgentFormComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private fb = inject(FormBuilder);
     private cdr = inject(ChangeDetectorRef);
-    private agentService = inject(AgentsService);
-    private realtimeAgentService = inject(RealtimeAgentService);
-    private toastService = inject(ToastService);
     private fullLLMConfigService = inject(FullLLMConfigService);
     private collectionsService = inject(CollectionsApiService);
     public dialogRef = inject(DialogRef<AgentDialogResult | undefined>);
@@ -129,9 +120,10 @@ export class CreateAgentFormComponent implements OnInit {
         this.loadLLMConfigs();
         this.loadKnowledgeSources();
 
-        this.agentForm.get('knowledge_collection')?.valueChanges
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(id => this.onKnowledgeSourceChange(id));
+        this.agentForm
+            .get('knowledge_collection')
+            ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((id) => this.onKnowledgeSourceChange(id));
     }
 
     private onKnowledgeSourceChange(collectionId: number | null): void {
@@ -144,9 +136,10 @@ export class CreateAgentFormComponent implements OnInit {
     }
 
     private getRagsByCollectionId(id: number): void {
-        this.collectionsService.getRagsByCollectionId(id)
+        this.collectionsService
+            .getRagsByCollectionId(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(rags => this.agentRags = rags);
+            .subscribe((rags) => (this.agentRags = rags));
     }
 
     private initializeForm(): void {
@@ -168,10 +161,14 @@ export class CreateAgentFormComponent implements OnInit {
             respect_context_window: [editMode ? agent?.respect_context_window : false],
             knowledge_collection: [editMode ? agent?.knowledge_collection : null],
 
-            rag: [editMode ? {
-                rag_id: agent?.rag?.rag_id || null,
-                rag_type: agent?.rag?.rag_type || null,
-            } : null],
+            rag: [
+                editMode
+                    ? {
+                          rag_id: agent?.rag?.rag_id || null,
+                          rag_type: agent?.rag?.rag_type || null,
+                      }
+                    : null,
+            ],
             search_configs: [editMode ? agent?.search_configs : null],
 
             allow_delegation: [editMode ? agent?.allow_delegation : true],
@@ -183,7 +180,8 @@ export class CreateAgentFormComponent implements OnInit {
     }
 
     private loadLLMConfigs(): void {
-        this.fullLLMConfigService.getFullLLMConfigs()
+        this.fullLLMConfigService
+            .getFullLLMConfigs()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((configs: FullLLMConfig[]) => {
                 this.llmConfigs = configs;
@@ -193,7 +191,8 @@ export class CreateAgentFormComponent implements OnInit {
 
     private loadKnowledgeSources(): void {
         this.isLoadingKnowledgeSources = true;
-        this.collectionsService.getCollections()
+        this.collectionsService
+            .getCollections()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (collections) => {
@@ -229,15 +228,9 @@ export class CreateAgentFormComponent implements OnInit {
         const pythonToolIds = formData.python_code_tools ?? [];
         const mcpToolIds = formData.mcp_tools ?? [];
 
-        const toolIds = buildToolIdsArray(
-            configuredToolIds,
-            pythonToolIds,
-            mcpToolIds
-        ) as ToolUniqueName[];
+        const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds, mcpToolIds) as ToolUniqueName[];
 
-        const searchConfigs = formData.rag?.rag_type
-            ? { [formData.rag.rag_type]: formData.search_configs }
-            : null;
+        const searchConfigs = formData.rag?.rag_type ? { [formData.rag.rag_type]: formData.search_configs } : null;
 
         const basePayload = {
             role: formData.role,
@@ -264,49 +257,54 @@ export class CreateAgentFormComponent implements OnInit {
         };
 
         if (this.isEditMode && this.agentToEdit) {
-            this.agentService
-                .updateAgent({
-                    ...this.agentToEdit,
-                    ...basePayload,
-                })
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe({
-                    next: (updatedAgent) => {
-                        const completeAgent: GetAgentRequest = {
-                            ...this.agentToEdit!,
-                            ...updatedAgent,
-                            tools: this.agentToEdit!.tools,
-                        };
+            const updateRequest = {
+                ...this.agentToEdit,
+                ...basePayload,
+            };
 
-                        this.dialogRef.close(completeAgent);
-                    },
-                    error: (error) => {
-                        console.error('Error updating agent:', error);
-                        this.toastService.error('Failed to update agent');
-                    },
-                    complete: () => this.isSubmitting.set(false),
-                });
+            // this.agentService
+            //     .updateAgent({
+            //         ...this.agentToEdit,
+            //         ...basePayload,
+            //     })
+            //     .pipe(takeUntilDestroyed(this.destroyRef))
+            //     .subscribe({
+            //         next: (updatedAgent) => {
+            //             const completeAgent: GetAgentRequest = {
+            //                 ...this.agentToEdit!,
+            //                 ...updatedAgent,
+            //                 tools: this.agentToEdit!.tools,
+            //             };
+            //
+            //             this.dialogRef.close(completeAgent);
+            //         },
+            //         error: (error) => {
+            //             console.error('Error updating agent:', error);
+            //             this.toastService.error('Failed to update agent');
+            //         },
+            //         complete: () => this.isSubmitting.set(false),
+            //     });
             // todo
             this.dialogRef.close({ kind: 'update', payload: updateRequest });
         } else {
-            this.agentService
-                .createAgent(basePayload)
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe({
-                    next: (createdAgent: GetAgentRequest) => {
-                        this.toastService.success(
-                            `Agent ${createdAgent.role} created`
-                        );
-                        this.dialogRef.close(createdAgent);
-                    },
-                    error: (error) => {
-                        console.error('Error creating agent:', error);
-                        this.toastService.error('Failed to create agent');
-                    },
-                    complete: () => this.isSubmitting.set(false),
-                });
+            // this.agentService
+            //     .createAgent(basePayload)
+            //     .pipe(takeUntilDestroyed(this.destroyRef))
+            //     .subscribe({
+            //         next: (createdAgent: GetAgentRequest) => {
+            //             this.toastService.success(
+            //                 `Agent ${createdAgent.role} created`
+            //             );
+            //             this.dialogRef.close(createdAgent);
+            //         },
+            //         error: (error) => {
+            //             console.error('Error creating agent:', error);
+            //             this.toastService.error('Failed to create agent');
+            //         },
+            //         complete: () => this.isSubmitting.set(false),
+            //     });
             // todo
-            this.dialogRef.close({ kind: 'create', payload: agentRequest });
+            this.dialogRef.close({ kind: 'create', payload: basePayload });
         }
     }
 

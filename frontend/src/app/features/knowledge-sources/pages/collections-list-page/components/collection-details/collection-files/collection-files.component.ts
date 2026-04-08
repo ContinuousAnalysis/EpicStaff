@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, model } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AppSvgIconComponent } from '@shared/components';
 
-import { AppIconComponent } from '../../../../../../../shared/components/app-icon/app-icon.component';
 import { ListComponent } from '../../../../../../../shared/components/list/list.component';
 import { ListActionsComponent } from '../../../../../../../shared/components/list/list-actions/list-actions.component';
 import { ListRowComponent } from '../../../../../../../shared/components/list/list-row/list-row.component';
@@ -13,7 +13,7 @@ import { DocumentsStorageService } from '../../../../../services/documents-stora
     selector: 'app-collection-details-files',
     templateUrl: './collection-files.component.html',
     styleUrls: ['./collection-files.component.scss'],
-    imports: [AppIconComponent, FileSizePipe, ListActionsComponent, ListComponent, ListRowComponent],
+    imports: [FileSizePipe, ListActionsComponent, ListComponent, ListRowComponent, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CollectionFilesComponent {

@@ -1,13 +1,13 @@
-import { NgComponentOutlet } from "@angular/common";
-import { ChangeDetectionStrategy, Component, computed, input, OnChanges, signal } from "@angular/core";
-import { FormGroup, ReactiveFormsModule } from "@angular/forms";
-import { SelectComponent } from "@shared/components";
-import { MATERIAL_FORMS } from "@shared/material-forms";
+import { NgComponentOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, input, OnChanges, signal } from '@angular/core';
+import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { SelectComponent } from '@shared/components';
+import { MATERIAL_FORMS } from '@shared/material-forms';
 
-import { CHUNK_STRATEGIES_SELECT_ITEMS } from "../../../constants/constants";
-import { ADDITIONAL_PARAMS_FORM_COMPONENT_MAP } from "../../../enums/additional-params-form.map";
-import { NaiveRagChunkStrategy } from "../../../enums/naive-rag-chunk-strategy";
-import { TableDocument } from "../../naive-rag-configuration/configuration-table/configuration-table.interface";
+import { CHUNK_STRATEGIES_SELECT_ITEMS } from '../../../constants/constants';
+import { ADDITIONAL_PARAMS_FORM_COMPONENT_MAP } from '../../../enums/additional-params-form.map';
+import { NaiveRagChunkStrategy } from '../../../enums/naive-rag-chunk-strategy';
+import { TableDocument } from '../../naive-rag-configuration/configuration-table/configuration-table.interface';
 
 @Component({
     selector: 'app-document-config',
@@ -22,7 +22,6 @@ export class DocumentConfigComponent implements OnChanges {
 
     selectedStrategy = signal<NaiveRagChunkStrategy | null>(null);
 
-    // todo check if this needed
     onSelectedStrategyChange(value: unknown): void {
         if (value == null) {
             this.selectedStrategy.set(null);
