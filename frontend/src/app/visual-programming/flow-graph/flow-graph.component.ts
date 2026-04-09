@@ -23,11 +23,9 @@ import {
     FCanvasComponent,
     FCreateConnectionEvent,
     FCreateNodeEvent,
-    FDragStartedEvent,
     FFlowComponent,
     FFlowModule,
     FReassignConnectionEvent,
-    FSelectionChangeEvent,
     FZoomDirective,
     ICurrentSelection,
 } from '@foblex/flow';
@@ -93,7 +91,6 @@ import { UndoRedoService } from '../services/undo-redo.service';
 })
 export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     public readonly GRID_CELL_SIZE = 20;
-    private readonly draggedNodeIds = new Set<string>();
 
     @Input() flowState!: FlowModel;
     @Input() nodesMode!: 'project-graph' | 'flow-graph';
@@ -382,7 +379,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
 
         // Assume fFlowComponent.getSelection() returns a FSelectionChangeEvent
 
-        const selections: FSelectionChangeEvent = this.fFlowComponent.getSelection();
+        const selections: ICurrentSelection = this.fFlowComponent.getSelection();
         this.clipboardService.copy(selections);
     }
     // Triggered on paste
@@ -750,64 +747,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.flowService.updateNode(updatedNode);
     }
 
-    //NODE POSITION CHANGED LOGIC
-    private draggingElements = new Set<string>();
-    private isDragging = false;
-
-    public onDragStarted(event: FDragStartedEvent): void {
-        // Set the drag flag
-        this.isDragging = true;
-
-        // Clear previous tracking
-        this.draggingElements.clear();
-
-        // Add all dragged elements to our tracking set
-        if (event.fData && event.fData.fNodeIds) {
-            event.fData.fNodeIds.forEach((id: string) => {
-                this.draggingElements.add(id);
-            });
-        }
-
-        // Save state for undo
-        this.undoRedoService.stateChanged();
-    }
-
-    /**
-     * Handles the end of a drag operation
-     */
-    public onDragEnded(): void {
-        for (const id of this.draggedNodeIds) {
-            const currentNodes = this.flowService.nodes();
-            const current = currentNodes.find((n) => n.id === id);
-            if (!current) continue;
-            const otherNodes = currentNodes.filter((n) => n.id !== id);
-            const freePos = this.findNearestFreePosition(
-                current.position,
-                this.getCollisionBounds(current),
-                otherNodes
-            );
-            if (freePos.x !== current.position.x || freePos.y !== current.position.y) {
-                this.flowService.updateNode({ ...current, position: freePos });
-            }
-        }
-        this.draggedNodeIds.clear();
-
-        // Reset all tracking
-        setTimeout(() => {
-            this.isDragging = false;
-            this.draggingElements.clear();
-        }, 100);
-    }
-
     public onNodePositionChanged(newPos: IPoint, node: NodeModel): void {
-        this.draggedNodeIds.add(node.id);
-
-        // If we're not in a tracked drag operation, save state
-        if (!this.isDragging || !this.draggingElements.has(node.id)) {
-            this.undoRedoService.stateChanged();
-        }
-
-        // Create an updated node with the new position
         const updatedNode = {
             ...node,
             position: {
@@ -816,7 +756,6 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             },
         };
 
-        // Update the node
         this.flowService.updateNode(updatedNode);
     }
 

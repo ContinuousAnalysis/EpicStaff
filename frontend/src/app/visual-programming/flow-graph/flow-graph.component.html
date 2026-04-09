@@ -18,10 +18,7 @@
         (fLoaded)="onInitialized()"
         (fCreateConnection)="onConnectionAdded($event)"
         (fReassignConnection)="onReassignConnection($event)"
-        (fDragStarted)="onDragStarted($event)"
-        (fDragEnded)="onDragEnded()"
         (fCreateNode)="onCreateNode($event)"
-        (fDragEnded)="onDragEnded()"
     >
         <f-background>
             <f-circle-pattern></f-circle-pattern>
@@ -83,13 +80,15 @@
                     [fBehavior]="connection.behavior || 'fixed'"
                     [fType]="connection.type || 'segment'"
                     [fOffset]="30"
-                    [fStartColor]="'#555'"
-                    [fEndColor]="'#555'"
                     [fOutputId]="connection.sourcePortId"
                     [fInputId]="connection.targetPortId"
                     [fConnectionId]="connection.id"
                     [class.dashed-connection]="connection.category === 'virtual'"
                 >
+                    <f-connection-gradient
+                        [fStartColor]="connection.startColor || '#555'"
+                        [fEndColor]="connection.endColor || '#555'"
+                    ></f-connection-gradient>
                     <svg
                         viewBox="0 0 10 10"
                         fMarker

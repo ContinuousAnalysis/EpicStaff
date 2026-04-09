@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { FExternalItemDirective, FExternalItemPlaceholderDirective, FExternalItemPreviewDirective } from '@foblex/flow';
+import { FExternalItem, FExternalItemPlaceholder, FExternalItemPreview } from '@foblex/flow';
 
 import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
 import { NodeType } from '../../../core/enums/node-type';
@@ -18,13 +18,7 @@ import { NodePreviewComponent } from './node-preview/node-preview.component';
 @Component({
     selector: 'app-node-item',
     standalone: true,
-    imports: [
-        CommonModule,
-        FExternalItemDirective,
-        FExternalItemPlaceholderDirective,
-        FExternalItemPreviewDirective,
-        NodePreviewComponent,
-    ],
+    imports: [CommonModule, FExternalItem, FExternalItemPlaceholder, FExternalItemPreview, NodePreviewComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <button
