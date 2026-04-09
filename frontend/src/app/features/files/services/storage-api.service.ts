@@ -58,17 +58,12 @@ export class StorageApiService {
         return upload$.pipe(map((count) => ({ type: 'upload' as const, count })));
     }
 
-    ensureFolderAndUpload(
-        targetFolder: string,
-        files: File[]
-    ): Observable<{ uploadedCount: number }> {
+    ensureFolderAndUpload(targetFolder: string, files: File[]): Observable<{ uploadedCount: number }> {
         const normalizedTarget = this.normalizePath(targetFolder);
         if (!files.length) {
             return of({ uploadedCount: 0 });
         }
-        return this.uploadMany(normalizedTarget, files).pipe(
-            map(() => ({ uploadedCount: files.length }))
-        );
+        return this.uploadMany(normalizedTarget, files).pipe(map(() => ({ uploadedCount: files.length })));
     }
 
     info(path: string): Observable<StorageItemInfo> {
@@ -159,7 +154,6 @@ export class StorageApiService {
             .replace(/\/{2,}/g, '/')
             .replace(/^\/+|\/+$/g, '');
     }
-
 
     private normalizeCopyTargetPath(path: string): string {
         const normalized = this.normalizePath(path);

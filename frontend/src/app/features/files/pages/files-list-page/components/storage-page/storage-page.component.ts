@@ -51,17 +51,41 @@ export class StoragePageComponent {
     showSidebar = signal<boolean>(true);
     private readonly blockedUploadExtensions = new Set([
         // Windows executables & installers
-        'exe', 'msi', 'com', 'scr', 'pif',
+        'exe',
+        'msi',
+        'com',
+        'scr',
+        'pif',
         // Windows scripting
-        'bat', 'cmd', 'vbs', 'vbe', 'wsh', 'wsf', 'ps1', 'psm1', 'psd1',
+        'bat',
+        'cmd',
+        'vbs',
+        'vbe',
+        'wsh',
+        'wsf',
+        'ps1',
+        'psm1',
+        'psd1',
         // Unix/macOS executables
-        'sh', 'bash', 'csh', 'ksh', 'zsh', 'app', 'command', 'elf',
+        'sh',
+        'bash',
+        'csh',
+        'ksh',
+        'zsh',
+        'app',
+        'command',
+        'elf',
         // Java archives (executable)
-        'jar', 'war', 'ear',
+        'jar',
+        'war',
+        'ear',
         // Shared libraries
-        'dll', 'so', 'dylib',
+        'dll',
+        'so',
+        'dylib',
         // Not allowed archive formats
-        'rar', '7z', 
+        'rar',
+        '7z',
     ]);
 
     readonly onOpenCreateFolder = (folderPath: string): void => {

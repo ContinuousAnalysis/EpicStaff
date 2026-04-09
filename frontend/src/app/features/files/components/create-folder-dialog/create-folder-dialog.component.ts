@@ -175,11 +175,7 @@ export class CreateFolderDialogComponent implements OnInit {
         if (!this.isValid()) return;
         const destination = this.selectedPath();
         const subfolder = this.folderName().trim();
-        const targetPath = subfolder
-            ? destination
-                ? `${destination}/${subfolder}`
-                : subfolder
-            : destination;
+        const targetPath = subfolder ? (destination ? `${destination}/${subfolder}` : subfolder) : destination;
         const files = this.files();
         this.dialogRef.close({ targetPath, files, mkdirOnly: files.length === 0 });
     }
