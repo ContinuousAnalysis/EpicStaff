@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, input, signal } from '@angular/core';
+import { inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, Subscription, switchMap } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
 import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
@@ -10,6 +11,11 @@ import { CustomInputComponent } from '../../../../shared/components/form-input/f
 import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { PythonNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
+import {
+    PythonCodeResult,
+    PythonCodeRunService,
+    RunPythonCodeRequest,
+} from '../../../services/python-code-run.service';
 import { SidePanelService } from '../../../services/side-panel.service';
 import { InputMapComponent } from '../../input-map/input-map.component';
 
@@ -45,8 +51,31 @@ interface InputMapPair {
 
                                     <!-- Input Map Key-Value Pairs -->
                                     <div class="input-map">
-                                        <app-input-map [activeColor]="activeColor"></app-input-map>
+                                        <app-input-map
+                                            [activeColor]="activeColor"
+                                            [testMode]="isOpenTestMode()"
+                                            (testModeChange)="isOpenTestMode.set($event)"
+                                            (runTest)="onRunTest($event)"
+                                        ></app-input-map>
                                     </div>
+
+                                    <!-- Test Result Display -->
+                                    @if (testResult()) {
+                                        <div class="test-result-block" [class.error]="testResult()!.status === 'error'">
+                                            @if (testRunning()) {
+                                                <div class="test-status">Running...</div>
+                                            } @else if (testResult()!.status === 'success') {
+                                                <div class="test-output">
+                                                    <pre>{{ testResult()!.output }}</pre>
+                                                </div>
+                                            } @else if (testResult()!.status === 'error') {
+                                                <div class="test-error">
+                                                    <span>Error:</span>
+                                                    <pre>{{ testResult()!.error }}</pre>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
 
                                     <!-- Output Variable Path -->
                                     <app-custom-input
@@ -132,8 +161,31 @@ interface InputMapPair {
 
                             <!-- Input Map Key-Value Pairs -->
                             <div class="input-map">
-                                <app-input-map [activeColor]="activeColor"></app-input-map>
+                                <app-input-map
+                                    [activeColor]="activeColor"
+                                    [testMode]="isOpenTestMode()"
+                                    (testModeChange)="isOpenTestMode.set($event)"
+                                    (runTest)="onRunTest($event)"
+                                ></app-input-map>
                             </div>
+
+                            <!-- Test Result Display -->
+                            @if (testResult()) {
+                                <div class="test-result-block" [class.error]="testResult()!.status === 'error'">
+                                    @if (testRunning()) {
+                                        <div class="test-status">Running...</div>
+                                    } @else if (testResult()!.status === 'success') {
+                                        <div class="test-output">
+                                            <pre>{{ testResult()!.output }}</pre>
+                                        </div>
+                                    } @else if (testResult()!.status === 'error') {
+                                        <div class="test-error">
+                                            <span>Error:</span>
+                                            <pre>{{ testResult()!.error }}</pre>
+                                        </div>
+                                    }
+                                </div>
+                            }
 
                             <!-- Output Variable Path -->
                             <app-custom-input
@@ -391,6 +443,58 @@ interface InputMapPair {
                     cursor: pointer;
                 }
             }
+
+            .test-result-block {
+                padding: 1rem;
+                border-radius: 6px;
+                background: rgba(76, 175, 80, 0.1);
+                border: 1px solid rgba(76, 175, 80, 0.3);
+                margin-top: 0.75rem;
+
+                &.error {
+                    background: rgba(244, 67, 54, 0.1);
+                    border-color: rgba(244, 67, 54, 0.3);
+                }
+            }
+
+            .test-status {
+                color: #4caf50;
+                font-weight: 500;
+            }
+
+            .test-output {
+                color: #d4d4d4;
+
+                pre {
+                    margin: 0;
+                    padding: 0.5rem;
+                    background: rgba(0, 0, 0, 0.3);
+                    border-radius: 4px;
+                    overflow-x: auto;
+                    font-size: 0.85rem;
+                    font-family: monospace;
+                }
+            }
+
+            .test-error {
+                color: #f44336;
+
+                span {
+                    font-weight: 500;
+                    display: block;
+                    margin-bottom: 0.5rem;
+                }
+
+                pre {
+                    margin: 0;
+                    padding: 0.5rem;
+                    background: rgba(0, 0, 0, 0.3);
+                    border-radius: 4px;
+                    overflow-x: auto;
+                    font-size: 0.85rem;
+                    font-family: monospace;
+                }
+            }
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -399,12 +503,21 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     public readonly isExpanded = input<boolean>(false);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
 
+    isOpenTestMode = signal(false);
+    testResult = signal<PythonCodeResult | null>(null);
+    testRunning = signal(false);
+    private pollSubscription?: Subscription;
+
     pythonCode: string = '';
     initialPythonCode: string = '';
     codeEditorHasError: boolean = false;
     private readonly pythonCodeChange$ = new Subject<string>();
+    private readonly destroyRef = inject(DestroyRef);
 
-    constructor(private readonly sidePanelService: SidePanelService) {
+    constructor(
+        private readonly sidePanelService: SidePanelService,
+        private readonly pythonCodeRunService: PythonCodeRunService
+    ) {
         super();
         this.pythonCodeChange$.pipe(debounceTime(300), takeUntilDestroyed()).subscribe(() => {
             this.sidePanelService.triggerAutosave();
@@ -516,5 +629,48 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
     toggleCodeEditorFullWidth(): void {
         this.isCodeEditorFullWidth.update((value) => !value);
+    }
+
+    onRunTest(inputs: Record<string, string>): void {
+        this.pollSubscription?.unsubscribe();
+        this.testRunning.set(true);
+        this.testResult.set(null);
+
+        const libraries = this.form.value.libraries
+            ? this.form.value.libraries
+                  .split(',')
+                  .map((lib: string) => lib.trim())
+                  .filter((lib: string) => lib.length > 0)
+            : [];
+
+        const payload: RunPythonCodeRequest = {
+            python_code_id: this.node().backendId,
+            code: this.pythonCode,
+            entrypoint: 'main',
+            libraries,
+            inputs,
+        };
+
+        this.pythonCodeRunService
+            .runPythonCode(payload)
+            .pipe(
+                switchMap(({ execution_id }) => this.pythonCodeRunService.pollResult(execution_id)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: (result) => {
+                    this.testResult.set(result);
+                    if (result.status !== 'pending') {
+                        this.testRunning.set(false);
+                    }
+                },
+                error: (err: Error) => {
+                    this.testResult.set({
+                        status: 'error',
+                        error: err.message || 'Unknown error',
+                    });
+                    this.testRunning.set(false);
+                },
+            });
     }
 }
