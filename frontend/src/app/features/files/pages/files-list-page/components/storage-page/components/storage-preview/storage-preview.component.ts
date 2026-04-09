@@ -1,16 +1,5 @@
 import { DecimalPipe, JsonPipe } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    DestroyRef,
-    EventEmitter,
-    inject,
-    Input,
-    OnChanges,
-    Output,
-    signal,
-    SimpleChanges,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
@@ -29,12 +18,12 @@ type PreviewType = 'text' | 'json' | 'pdf' | 'image' | 'unsupported';
     styleUrls: ['./storage-preview.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StoragePreviewComponent implements OnChanges {
-    @Input() item: StorageItem | null = null;
-    @Input() selectedItems: StorageItem[] = [];
-    @Input() showSidebar = true;
-    @Output() toggleSidebar = new EventEmitter<void>();
-    @Output() contextAction = new EventEmitter<{ action: string; item: StorageItem; selectedItems?: StorageItem[] }>();
+export class StoragePreviewComponent {
+    item = input<StorageItem | null>(null);
+    selectedItems = input<StorageItem[]>([]);
+    showSidebar = input(true);
+    toggleSidebar = output<void>();
+    contextAction = output<{ action: string; item: StorageItem; selectedItems?: StorageItem[] }>();
 
     private destroyRef = inject(DestroyRef);
     private storageApiService = inject(StorageApiService);
@@ -53,24 +42,27 @@ export class StoragePreviewComponent implements OnChanges {
 
     private currentBlobUrl: string | null = null;
 
-    ngOnChanges(changes: SimpleChanges): void {
-        if (changes['item']) {
-            this.loadPreview();
-        }
+    constructor() {
+        effect(() => {
+            this.loadPreview(this.item());
+        });
     }
 
     get breadcrumbs(): string[] {
-        if (!this.item) return [];
-        return this.item.path.split('/').filter(Boolean);
+        const item = this.item();
+        if (!item) return [];
+        return item.path.split('/').filter(Boolean);
     }
 
     get hasFileSelected(): boolean {
-        return !!this.item && this.item.type === 'file';
+        const item = this.item();
+        return !!item && item.type === 'file';
     }
 
     get fileExtension(): string {
-        if (!this.item) return '';
-        return getFileExtension(this.item.name);
+        const item = this.item();
+        if (!item) return '';
+        return getFileExtension(item.name);
     }
 
     get previewBadge(): string | null {
@@ -85,8 +77,9 @@ export class StoragePreviewComponent implements OnChanges {
     }
 
     onDownload(): void {
-        if (this.item) {
-            this.storageApiService.download(this.item.path);
+        const item = this.item();
+        if (item) {
+            this.storageApiService.download(item.path);
         }
     }
 
@@ -104,19 +97,17 @@ export class StoragePreviewComponent implements OnChanges {
 
     onKebabMenuAction(action: string): void {
         this.kebabMenuOpen.set(false);
-        if (!this.item) return;
-        if (action === 'download' && this.selectedItems.length > 1) {
-            this.contextAction.emit({
-                action: 'download-selected',
-                item: this.item,
-                selectedItems: this.selectedItems,
-            });
+        const item = this.item();
+        if (!item) return;
+        const selectedItems = this.selectedItems();
+        if (action === 'download' && selectedItems.length > 1) {
+            this.contextAction.emit({ action: 'download-selected', item, selectedItems });
         } else {
-            this.contextAction.emit({ action, item: this.item });
+            this.contextAction.emit({ action, item });
         }
     }
 
-    private loadPreview(): void {
+    private loadPreview(currentItem: StorageItem | null): void {
         this.revokeCurrentBlob();
         this.textContent.set('');
         this.jsonContent.set(null);
@@ -124,13 +115,12 @@ export class StoragePreviewComponent implements OnChanges {
         this.imageUrl.set(null);
         this.previewError.set(null);
 
-        const currentItem = this.item;
         if (!currentItem || currentItem.type === 'folder') {
             this.previewType.set('unsupported');
             return;
         }
 
-        const ext = this.fileExtension;
+        const ext = getFileExtension(currentItem.name);
         const type = this.resolvePreviewType(ext);
         this.previewType.set(type);
 

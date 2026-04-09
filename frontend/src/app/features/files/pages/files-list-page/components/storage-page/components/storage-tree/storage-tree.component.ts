@@ -1,15 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    ElementRef,
-    EventEmitter,
-    Input,
-    Output,
-    output,
-    signal,
-    ViewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, input, output, signal, ViewChild } from '@angular/core';
 
 import { AppIconComponent } from '../../../../../../../../shared/components/app-icon/app-icon.component';
 import { StorageItem } from '../../../../../../models/storage.models';
@@ -23,11 +13,11 @@ import { getFileExtension } from '../../../../../../utils/storage-file.utils';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StorageTreeComponent {
-    @Input() items: StorageItem[] = [];
-    @Output() fileSelected = new EventEmitter<StorageItem>();
-    @Output() folderSelected = new EventEmitter<StorageItem>();
-    @Output() folderToggled = new EventEmitter<StorageItem>();
-    @Output() contextAction = new EventEmitter<{
+    items = input<StorageItem[]>([]);
+    fileSelected = output<StorageItem>();
+    folderSelected = output<StorageItem>();
+    folderToggled = output<StorageItem>();
+    contextAction = output<{
         action: string;
         item: StorageItem;
         selectedItems?: StorageItem[];
@@ -212,7 +202,7 @@ export class StorageTreeComponent {
     onMoreMenuAction(action: string): void {
         this.closeMoreMenu();
         const selectedSet = this.selectedPaths();
-        const selectedItems = this.collectVisibleNodes(this.items).filter((node) => selectedSet.has(node.path));
+        const selectedItems = this.collectVisibleNodes(this.items()).filter((node) => selectedSet.has(node.path));
         if ((action === 'download-selected' || action === 'delete-selected') && selectedItems.length === 0) {
             return;
         }
@@ -234,7 +224,7 @@ export class StorageTreeComponent {
         const currentSelection = new Set(this.selectedPaths());
 
         if (isShift && this.selectionAnchorPath) {
-            const visibleNodes = this.collectVisibleNodes(this.items);
+            const visibleNodes = this.collectVisibleNodes(this.items());
             const startIndex = visibleNodes.findIndex((n) => n.path === this.selectionAnchorPath);
             const endIndex = visibleNodes.findIndex((n) => n.path === path);
             if (startIndex !== -1 && endIndex !== -1) {
@@ -262,7 +252,7 @@ export class StorageTreeComponent {
 
     private setSelectedPaths(paths: Set<string>): void {
         this.selectedPaths.set(paths);
-        const visible = this.collectVisibleNodes(this.items);
+        const visible = this.collectVisibleNodes(this.items());
         this.selectionChange.emit(visible.filter((n) => paths.has(n.path)));
     }
 

@@ -1,5 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -43,18 +43,10 @@ export class FilesListPageComponent {
         { label: 'Storage', link: 'storage' },
     ];
 
-    public searchTerm: string = '';
+    readonly searchTerm = signal('');
 
     public get isStorageTabActive(): boolean {
         return this.router.url.includes('/storage');
-    }
-
-    public onSearchTermChange(term: string): void {
-        this.searchTerm = term;
-    }
-
-    public clearSearch(): void {
-        this.searchTerm = '';
     }
 
     public onCreateFolderClick(): void {

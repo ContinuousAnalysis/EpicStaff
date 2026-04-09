@@ -39,11 +39,11 @@
                         type="text"
                         class="search-input"
                         placeholder="Search collections, folders, files..."
-                        [(ngModel)]="searchTerm"
-                        (ngModelChange)="onSearchTermChange($event)"
+                        [ngModel]="searchTerm()"
+                        (ngModelChange)="searchTerm.set($event)"
                     />
-                    @if (searchTerm) {
-                        <button type="button" class="clear-btn" aria-label="Clear" (click)="clearSearch()">
+                    @if (searchTerm()) {
+                        <button type="button" class="clear-btn" aria-label="Clear" (click)="searchTerm.set('')">
                             <app-icon icon="ui/x" size="1.1rem"></app-icon>
                         </button>
                     }

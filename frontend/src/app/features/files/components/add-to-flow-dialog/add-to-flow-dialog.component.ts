@@ -1,14 +1,5 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    DestroyRef,
-    HostListener,
-    inject,
-    OnInit,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
@@ -37,7 +28,7 @@ interface FlowOption {
     styleUrls: ['./add-to-flow-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AddToFlowDialogComponent implements OnInit {
+export class AddToFlowDialogComponent {
     private dialogRef = inject(DialogRef<AddToFlowDialogResult>);
     readonly data: AddToFlowDialogData = inject(DIALOG_DATA);
     private flowsApiService = inject(FlowsApiService);

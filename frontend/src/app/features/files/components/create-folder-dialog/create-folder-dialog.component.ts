@@ -1,14 +1,5 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    DestroyRef,
-    HostListener,
-    inject,
-    OnInit,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
@@ -46,15 +37,15 @@ export interface FolderNode {
     styleUrls: ['./create-folder-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateFolderDialogComponent implements OnInit {
+export class CreateFolderDialogComponent {
     private dialogRef = inject(DialogRef<CreateFolderDialogResult>);
     private data: CreateFolderDialogData = inject(DIALOG_DATA, { optional: true }) ?? {};
     private storageApiService = inject(StorageApiService);
     private destroyRef = inject(DestroyRef);
 
     readonly folderName = signal('');
-    isDragging = signal(false);
-    files = signal<File[]>([]);
+    readonly isDragging = signal(false);
+    readonly files = signal<File[]>([]);
 
     // Destination folder dropdown
     readonly dropdownOpen = signal(false);
@@ -65,14 +56,14 @@ export class CreateFolderDialogComponent implements OnInit {
 
     private readonly allNodes = signal<FolderNode[]>([]);
 
-    get visibleNodes(): FolderNode[] {
+    readonly visibleNodes = computed(() => {
         const query = this.searchQuery().toLowerCase().trim();
         const roots = this.rootNodes();
         if (query) {
             return this.allNodes().filter((n) => n.name.toLowerCase().includes(query));
         }
         return this.buildVisible(roots);
-    }
+    });
 
     get selectedFolderLabel(): string {
         const path = this.selectedPath();

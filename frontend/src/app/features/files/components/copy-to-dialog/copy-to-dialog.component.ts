@@ -1,14 +1,5 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    DestroyRef,
-    HostListener,
-    inject,
-    OnInit,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
@@ -42,7 +33,7 @@ export interface FolderNode {
     styleUrls: ['./copy-to-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CopyToDialogComponent implements OnInit {
+export class CopyToDialogComponent {
     private dialogRef = inject(DialogRef<CopyToDialogResult>);
     readonly data: CopyToDialogData = inject(DIALOG_DATA);
     private storageApiService = inject(StorageApiService);

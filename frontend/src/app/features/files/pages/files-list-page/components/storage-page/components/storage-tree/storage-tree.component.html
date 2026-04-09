@@ -17,7 +17,7 @@
     </div>
 
     <div class="storage-tree__list">
-        <ng-container *ngTemplateOutlet="treeNodes; context: { $implicit: items, level: 0 }"></ng-container>
+        <ng-container *ngTemplateOutlet="treeNodes; context: { $implicit: items(), level: 0 }"></ng-container>
     </div>
 </div>
 

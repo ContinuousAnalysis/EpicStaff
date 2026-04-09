@@ -44,11 +44,11 @@ export class StoragePageComponent {
     private toastService = inject(ToastService);
     private dialog = inject(Dialog);
 
-    isLoading = signal<boolean>(true);
-    treeData = signal<StorageItem[]>([]);
-    selectedFile = signal<StorageItem | null>(null);
-    selectedItems = signal<StorageItem[]>([]);
-    showSidebar = signal<boolean>(true);
+    readonly isLoading = signal<boolean>(true);
+    readonly treeData = signal<StorageItem[]>([]);
+    readonly selectedFile = signal<StorageItem | null>(null);
+    readonly selectedItems = signal<StorageItem[]>([]);
+    readonly showSidebar = signal<boolean>(true);
     private readonly blockedUploadExtensions = new Set([
         // Windows executables & installers
         'exe',

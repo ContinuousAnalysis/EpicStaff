@@ -74,7 +74,7 @@
                                     </span>
                                     <span class="create-folder-dialog__node-name">/</span>
                                 </div>
-                                @for (node of visibleNodes; track node.path) {
+                                @for (node of visibleNodes(); track node.path) {
                                     <div
                                         class="create-folder-dialog__node"
                                         [class.create-folder-dialog__node--selected]="isSelected(node.path)"
