@@ -1,4 +1,5 @@
 from tables.models.graph_models import Condition, ConditionGroup, DecisionTableNode
+from tables.services.graph_bulk_save_service.data_types import NodeRef
 
 
 """
@@ -60,22 +61,13 @@ class _DecisionTableNodeRefsSaveable:
 
     def __init__(
         self,
-        default_next_ref: tuple | None,
-        next_error_ref: tuple | None,
-        group_refs: list,
+        default_next_ref: NodeRef | None,
+        next_error_ref: NodeRef | None,
+        group_refs: list[NodeRef | None],
     ):
-        """
-        Args:
-            default_next_ref: (is_temp: bool, value) or None.
-            next_error_ref:   (is_temp: bool, value) or None.
-            group_refs:       list of (is_temp, value) | None, one per condition group
-                              in positional order matching _create_condition_groups output.
-        """
         self._default_next_ref = default_next_ref
         self._next_error_ref = next_error_ref
-        self._group_refs: list = (
-            group_refs  # positional refs, index == condition group index
-        )
+        self._group_refs = group_refs
 
         # Populated by DecisionTableNodeSaveable.save() after DB writes.
         self._decision_table_node_id: int | None = None
@@ -97,15 +89,15 @@ class _DecisionTableNodeRefsSaveable:
         node_updates: dict = {}
 
         if self._default_next_ref is not None:
-            is_temp, value = self._default_next_ref
+            ref = self._default_next_ref
             node_updates["default_next_node_id"] = (
-                temp_id_map[str(value)] if is_temp else value
+                temp_id_map[str(ref.value)] if ref.is_temp else ref.value
             )
 
         if self._next_error_ref is not None:
-            is_temp, value = self._next_error_ref
+            ref = self._next_error_ref
             node_updates["next_error_node_id"] = (
-                temp_id_map[str(value)] if is_temp else value
+                temp_id_map[str(ref.value)] if ref.is_temp else ref.value
             )
 
         if node_updates:
@@ -115,9 +107,10 @@ class _DecisionTableNodeRefsSaveable:
 
         for group_id, ref in zip(self._group_ids, self._group_refs):
             if ref is not None:
-                is_temp, value = ref
                 ConditionGroup.objects.filter(id=group_id).update(
-                    next_node_id=temp_id_map[str(value)] if is_temp else value
+                    next_node_id=temp_id_map[str(ref.value)]
+                    if ref.is_temp
+                    else ref.value
                 )
 
 
@@ -236,13 +229,11 @@ class _NodeSaveable:
 
 class _EdgeSaveable:
     """
-    Wraps a validated EdgeBulkSerializer and the parsed node refs for each end.
-
-    Each ref is a (is_temp: bool, value: str|int) tuple.
+    Wraps a validated EdgeBulkSerializer and the parsed NodeRef for each end.
     At write time, temp refs are resolved from temp_id_map to real DB ids.
     """
 
-    def __init__(self, serializer, start_ref: tuple, end_ref: tuple, instance=None):
+    def __init__(self, serializer, start_ref: NodeRef, end_ref: NodeRef, instance=None):
         self._s = serializer
         self._start_ref = start_ref
         self._end_ref = end_ref
@@ -256,11 +247,16 @@ class _EdgeSaveable:
         validated.pop("start_temp_id", None)
         validated.pop("end_temp_id", None)
 
-        is_temp, value = self._start_ref
-        validated["start_node_id"] = temp_id_map[str(value)] if is_temp else value
-
-        is_temp, value = self._end_ref
-        validated["end_node_id"] = temp_id_map[str(value)] if is_temp else value
+        validated["start_node_id"] = (
+            temp_id_map[str(self._start_ref.value)]
+            if self._start_ref.is_temp
+            else self._start_ref.value
+        )
+        validated["end_node_id"] = (
+            temp_id_map[str(self._end_ref.value)]
+            if self._end_ref.is_temp
+            else self._end_ref.value
+        )
 
         if self._instance is None:
             s.create(validated)
@@ -275,7 +271,7 @@ class _ConditionalEdgeSaveable:
     If source_temp_id was provided, it is resolved from temp_id_map at write time.
     """
 
-    def __init__(self, serializer, source_ref: tuple, instance=None):
+    def __init__(self, serializer, source_ref: NodeRef, instance=None):
         self._s = serializer
         self._source_ref = source_ref
         self._instance = instance
@@ -287,8 +283,11 @@ class _ConditionalEdgeSaveable:
         _clean_for_write(validated)
         validated.pop("source_temp_id", None)
 
-        is_temp, value = self._source_ref
-        validated["source_node_id"] = temp_id_map[str(value)] if is_temp else value
+        validated["source_node_id"] = (
+            temp_id_map[str(self._source_ref.value)]
+            if self._source_ref.is_temp
+            else self._source_ref.value
+        )
 
         if self._instance is None:
             s.create(validated)

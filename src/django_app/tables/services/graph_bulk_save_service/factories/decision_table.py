@@ -1,3 +1,4 @@
+from tables.services.graph_bulk_save_service.data_types import NodeRef, ParsedNodeRef
 from tables.services.graph_bulk_save_service.factories.base import NodeSaveableFactory
 from tables.services.graph_bulk_save_service.saveables import (
     _DecisionTableNodeRefsSaveable,
@@ -37,45 +38,43 @@ class DecisionTableNodeSaveableFactory(NodeSaveableFactory):
         routing_errors: list[str] = []
 
         # node-level routing refs
-        node_routing_refs: dict = {}  # id_field -> (is_temp, value) | None
+        node_routing_refs: dict[str, NodeRef | None] = {}
 
         for id_field, temp_field in self._NODE_ROUTING_PAIRS:
-            error, ref = self._parse_optional_routing_ref(
+            parsed = self._parse_optional_routing_ref(
                 data, id_field, temp_field, payload_temp_ids
             )
-            if error:
-                routing_errors.append(error)
+            if parsed.error:
+                routing_errors.append(parsed.error)
             else:
-                node_routing_refs[id_field] = ref
-                if (
-                    ref is not None and ref[0]
-                ):  # is_temp → write null until deferred resolve
+                node_routing_refs[id_field] = parsed.ref
+                if parsed.ref is not None and parsed.ref.is_temp:
                     data[id_field] = None
-                elif ref is None:
+                elif parsed.ref is None:
                     # Neither provided — ensure field is explicitly null.
                     data.setdefault(id_field, None)
 
         # per-condition-group routing refs
-        group_routing_refs: list = []  # positional; one entry per condition group
+        group_routing_refs: list[NodeRef | None] = []
 
         if condition_groups_data:
             id_field, temp_field = self._GROUP_ROUTING_PAIR
             for group_idx, group_data in enumerate(condition_groups_data):
-                error, ref = self._parse_optional_routing_ref(
+                parsed = self._parse_optional_routing_ref(
                     group_data,
                     id_field,
                     temp_field,
                     payload_temp_ids,
                     context=f"condition_groups[{group_idx}]",
                 )
-                if error:
-                    routing_errors.append(error)
+                if parsed.error:
+                    routing_errors.append(parsed.error)
                     group_routing_refs.append(None)
                 else:
-                    group_routing_refs.append(ref)
-                    if ref is not None and ref[0]:  # is_temp
+                    group_routing_refs.append(parsed.ref)
+                    if parsed.ref is not None and parsed.ref.is_temp:
                         group_data[id_field] = None
-                    elif ref is None:
+                    elif parsed.ref is None:
                         group_data.setdefault(id_field, None)
 
         extra = {
@@ -129,18 +128,15 @@ class DecisionTableNodeSaveableFactory(NodeSaveableFactory):
         temp_field: str,
         payload_temp_ids: set,
         context: str = "",
-    ) -> tuple:
+    ) -> ParsedNodeRef:
         """
         Parse one optional routing ref pair from data (mutates: pops temp_field).
 
-        Returns (error_string | None, ref_tuple | None).
-        ref_tuple is (is_temp: bool, value) or None (neither field provided).
-
         Rules (nullable field — "at most one"):
           - Both provided → error
-          - Only temp_id  → (True, temp_str), must exist in payload_temp_ids
-          - Only real id  → (False, node_id)
-          - Neither       → None  (field stays null)
+          - Only temp_id  → NodeRef(is_temp=True, ...), must exist in payload_temp_ids
+          - Only real id  → NodeRef(is_temp=False, ...)
+          - Neither       → ref is None (field stays null)
         """
         node_id = data.get(id_field)
         temp_id = data.pop(temp_field, None)  # always strip wire-only field
@@ -151,23 +147,23 @@ class DecisionTableNodeSaveableFactory(NodeSaveableFactory):
         prefix = f"{context}: " if context else ""
 
         if has_id and has_temp:
-            return (
-                f"{prefix}Provide at most one of {id_field} or {temp_field}, not both.",
-                None,
+            return ParsedNodeRef(
+                error=f"{prefix}Provide at most one of {id_field} or {temp_field}, not both."
             )
 
         if has_temp:
             temp_str = str(temp_id)
             if temp_str not in payload_temp_ids:
-                return (
-                    f"{prefix}{temp_field}={temp_str!r} does not match any temp_id "
-                    f"in the node lists of this request.",
-                    None,
+                return ParsedNodeRef(
+                    error=(
+                        f"{prefix}{temp_field}={temp_str!r} does not match any temp_id "
+                        f"in the node lists of this request."
+                    )
                 )
-            return None, (True, temp_str)
+            return ParsedNodeRef(ref=NodeRef(is_temp=True, value=temp_str))
 
         if has_id:
-            return None, (False, node_id)
+            return ParsedNodeRef(ref=NodeRef(is_temp=False, value=node_id))
 
         # Neither provided — field should be null.
-        return None, None
+        return ParsedNodeRef()
