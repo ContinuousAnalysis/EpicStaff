@@ -242,7 +242,7 @@ class S3StorageBackend(AbstractStorageBackend):
             if not self._key_exists(candidate, is_folder):
                 return candidate
 
-    def copy(self, source_path: str, destination_path: str) -> None:
+    def copy(self, source_path: str, destination_path: str) -> list[str]:
         full_source = self._full_path(source_path)
         full_destination = self._full_path(destination_path)
 
@@ -258,7 +258,7 @@ class S3StorageBackend(AbstractStorageBackend):
                 Bucket=self.bucket_name,
                 Key=target_key,
             )
-            return
+            return [target_key]
 
         # Folder
         source_prefix = full_source if full_source.endswith("/") else full_source + "/"
@@ -266,7 +266,7 @@ class S3StorageBackend(AbstractStorageBackend):
         dest_base = full_destination.rstrip("/") + "/" + source_folder_name
         dest_base = self._unique_key(dest_base, is_folder=True)
 
-        copied = False
+        created_keys = []
         paginator = self.client.get_paginator("list_objects_v2")
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=source_prefix):
             for obj in page.get("Contents", []):
@@ -277,10 +277,12 @@ class S3StorageBackend(AbstractStorageBackend):
                     Bucket=self.bucket_name,
                     Key=destination_key,
                 )
-                copied = True
+                created_keys.append(destination_key)
 
-        if not copied:
+        if not created_keys:
             raise FileNotFoundError(f"Source path does not exist: {source_path}")
+
+        return created_keys
 
     def info(self, path: str) -> FileInfo | FolderInfo:
         clean_path = path.rstrip("/")
@@ -310,9 +312,22 @@ class S3StorageBackend(AbstractStorageBackend):
                 modified=head["LastModified"].isoformat(),
             )
         except ClientError as error:
-            if error.response["Error"]["Code"] == "404":
-                raise FileNotFoundError(f"File does not exist: {path}")
-            raise
+            if error.response["Error"]["Code"] != "404":
+                raise
+
+        # Fallback: virtual folder (no marker, but objects exist under prefix)
+        prefix = full_path if full_path.endswith("/") else full_path + "/"
+        response = self.client.list_objects_v2(
+            Bucket=self.bucket_name, Prefix=prefix, MaxKeys=1
+        )
+        if response.get("Contents"):
+            obj = response["Contents"][0]
+            return FolderInfo(
+                name=name,
+                path=clean_path + "/",
+                modified=obj["LastModified"].isoformat(),
+            )
+        raise FileNotFoundError(f"File does not exist: {path}")
 
     def exists(self, path: str) -> bool:
         full_path = self._full_path(path)

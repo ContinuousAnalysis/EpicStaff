@@ -130,7 +130,7 @@ class LocalStorageBackend(AbstractStorageBackend):
             if not candidate.exists():
                 return candidate
 
-    def copy(self, source_path: str, destination_path: str) -> None:
+    def copy(self, source_path: str, destination_path: str) -> list[str]:
         source = self._resolve(source_path)
         destination = self._resolve(destination_path)
         if not source.exists():
@@ -140,8 +140,15 @@ class LocalStorageBackend(AbstractStorageBackend):
         target = self._unique_path(destination / source.name)
         if source.is_dir():
             shutil.copytree(str(source), str(target))
+            # Return all files recursively under the copied folder
+            return [
+                str(f.relative_to(self.base_path))
+                for f in target.rglob("*")
+                if f.is_file()
+            ]
         else:
             shutil.copy2(str(source), str(target))
+            return [str(target.relative_to(self.base_path))]
 
     def info(self, path: str) -> FileInfo | FolderInfo:
         clean_path = path.rstrip("/")

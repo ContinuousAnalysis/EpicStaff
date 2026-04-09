@@ -1,15 +1,17 @@
 from tables.serializers.storage_serializers import (
-    StorageAddToFlowResponseSerializer,
-    StorageAddToFlowSerializer,
+    GraphStorageFileSerializer,
+    StorageAddToGraphSerializer,
     StorageCopySerializer,
     StorageDownloadZipSerializer,
     StorageFromToResponseSerializer,
+    StorageGraphFilesQuerySerializer,
     StorageInfoResponseSerializer,
     StorageListResponseSerializer,
     StorageMkdirResponseSerializer,
     StorageMkdirSerializer,
     StorageMoveSerializer,
     StoragePathQuerySerializer,
+    StorageRemoveFromGraphSerializer,
     StorageRenameSerializer,
     StorageSessionOutputsQuerySerializer,
     StorageSessionOutputsResponseSerializer,
@@ -114,14 +116,27 @@ STORAGE_COPY_SWAGGER = dict(
     responses={200: StorageFromToResponseSerializer},
 )
 
-STORAGE_ADD_TO_FLOW_SWAGGER = dict(
-    operation_summary="Add a storage file reference to a flow",
+STORAGE_ADD_TO_GRAPH_SWAGGER = dict(
+    operation_summary="Add a storage file reference to graphs",
     operation_description=(
-        "Creates a domain variable with a `storage://` reference in the "
-        "flow's start node, linking a storage file or folder to a flow."
+        "Creates a database reference linking a storage file or folder to one or more graphs."
     ),
-    request_body=StorageAddToFlowSerializer,
-    responses={200: StorageAddToFlowResponseSerializer},
+    request_body=StorageAddToGraphSerializer,
+    responses={201: GraphStorageFileSerializer(many=True)},
+)
+
+STORAGE_REMOVE_FROM_GRAPH_SWAGGER = dict(
+    operation_summary="Remove a storage file reference from graphs",
+    operation_description="Removes the database link between a storage path and the given graphs.",
+    request_body=StorageRemoveFromGraphSerializer,
+    responses={204: "Removed successfully"},
+)
+
+STORAGE_GRAPH_FILES_SWAGGER = dict(
+    operation_summary="List storage files attached to a graph",
+    operation_description="Returns all storage paths that have been linked to the given graph.",
+    query_serializer=StorageGraphFilesQuerySerializer,
+    responses={200: GraphStorageFileSerializer(many=True)},
 )
 
 STORAGE_SESSION_OUTPUTS_SWAGGER = dict(

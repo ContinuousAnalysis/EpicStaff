@@ -1,4 +1,5 @@
 import io
+import os
 import tarfile
 import zipfile
 from typing import Iterator
@@ -11,11 +12,45 @@ from tables.services.storage_service.dataclasses import (
     FileInfo,
     FileListItem,
     FileUploadResult,
+    FolderInfo,
     UploadFileResult,
     UploadResult,
 )
+from tables.services.storage_service.db_sync import StorageFileSync
 from tables.services.storage_service.decorators import check_permission
 from tables.services.storage_service.enums import StorageAction
+
+
+_DOCUMENT_EXTENSIONS = frozenset(
+    {
+        # Microsoft Office (OOXML)
+        ".xlsx",
+        ".xlsm",
+        ".xltx",
+        ".docx",
+        ".docm",
+        ".dotx",
+        ".pptx",
+        ".pptm",
+        ".ppsx",
+        ".potx",
+        # OpenDocument
+        ".ods",
+        ".odt",
+        ".odp",
+        ".odg",
+        ".odf",
+        ".ots",
+        ".ott",
+        ".otp",
+        # Other ZIP-based formats that should not be extracted
+        ".epub",
+        ".apk",
+        ".jar",
+        ".war",
+        ".xpi",
+    }
+)
 
 
 class StorageManager:
@@ -91,10 +126,9 @@ class StorageManager:
         result = self._backend.upload(
             self._build_storage_key(org_id, path), file_object
         )
-        return UploadResult(
-            path=self._strip_org_prefix(org_id, result.path),
-            size=result.size,
-        )
+        relative_path = self._strip_org_prefix(org_id, result.path)
+        StorageFileSync.on_upload(org_id, relative_path)
+        return UploadResult(path=relative_path, size=result.size)
 
     @check_permission
     def download(self, user_name: str, org_id: int, path: str) -> bytes:
@@ -103,6 +137,7 @@ class StorageManager:
     @check_permission
     def delete(self, user_name: str, org_id: int, path: str) -> None:
         self._backend.delete(self._build_storage_key(org_id, path))
+        StorageFileSync.on_delete(org_id, path)
 
     @check_permission
     def mkdir(self, user_name: str, org_id: int, path: str) -> None:
@@ -116,6 +151,7 @@ class StorageManager:
             self._build_storage_key(org_id, source_path),
             self._build_storage_key(org_id, destination_path),
         )
+        StorageFileSync.on_move(org_id, source_path, destination_path)
 
     @check_permission
     def rename(
@@ -125,18 +161,21 @@ class StorageManager:
             self._build_storage_key(org_id, source_path),
             self._build_storage_key(org_id, destination_path),
         )
+        StorageFileSync.on_move(org_id, source_path, destination_path)
 
     @check_permission
     def copy(
         self, user_name: str, org_id: int, source_path: str, destination_path: str
     ) -> None:
-        self._backend.copy(
+        actual_keys = self._backend.copy(
             self._build_storage_key(org_id, source_path),
             self._build_storage_key(org_id, destination_path),
         )
+        actual_paths = [self._strip_org_prefix(org_id, k) for k in actual_keys]
+        StorageFileSync.on_copy(org_id, actual_paths)
 
     @check_permission
-    def info(self, user_name: str, org_id: int, path: str) -> FileInfo:
+    def info(self, user_name: str, org_id: int, path: str) -> FileInfo | FolderInfo:
         return self._backend.info(self._build_storage_key(org_id, path))
 
     @check_permission
@@ -156,7 +195,8 @@ class StorageManager:
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
             for path in paths:
                 storage_key = self._build_storage_key(org_id, path)
-                if path.endswith("/"):
+                item_info = self._backend.info(storage_key)
+                if isinstance(item_info, FolderInfo):
                     for key in self._backend.list_all_keys(storage_key):
                         file_bytes = self._backend.download(key)
                         archive_name = self._strip_org_prefix(org_id, key)
@@ -175,7 +215,10 @@ class StorageManager:
         return [self._strip_org_prefix(org_id, p) for p in full_paths]
 
     @staticmethod
-    def _is_archive(file_object) -> bool:
+    def _is_archive(file_object, filename: str = "") -> bool:
+        ext = os.path.splitext(filename)[1].lower()
+        if ext in _DOCUMENT_EXTENSIONS:
+            return False
         pos = file_object.tell()
         result = zipfile.is_zipfile(file_object)
         if not result:
@@ -194,13 +237,15 @@ class StorageManager:
         Upload a file, auto-extracting archives (ZIP/TAR).
         Returns FileUploadResult or ArchiveUploadResult.
         """
-        is_archive = self._is_archive(file_object)
+        is_archive = self._is_archive(file_object, filename=file_object.name)
 
         if is_archive:
             self._require_permission(
                 user_name, org_id, action=StorageAction.UPLOAD, path=path
             )
             extracted = self._upload_archive(org_id, path, file_object)
+            for p in extracted:
+                StorageFileSync.on_upload(org_id, p)
             return ArchiveUploadResult(type="archive", extracted=extracted)
 
         destination = (
@@ -212,11 +257,9 @@ class StorageManager:
         result = self._backend.upload(
             self._build_storage_key(org_id, destination), file_object
         )
-        return FileUploadResult(
-            type="file",
-            path=self._strip_org_prefix(org_id, result.path),
-            size=result.size,
-        )
+        relative_path = self._strip_org_prefix(org_id, result.path)
+        StorageFileSync.on_upload(org_id, relative_path)
+        return FileUploadResult(type="file", path=relative_path, size=result.size)
 
     # --- Cross-org operations ---
 
@@ -238,10 +281,13 @@ class StorageManager:
         self._require_permission(
             user_name, dst_org_id, action=StorageAction.UPLOAD, path=dst_path
         )
-        self._backend.copy(
+        actual_keys = self._backend.copy(
             self._build_storage_key(src_org_id, src_path),
             self._build_storage_key(dst_org_id, dst_path),
         )
+        for key in actual_keys:
+            actual_dst_path = self._strip_org_prefix(dst_org_id, key)
+            StorageFileSync.on_copy_cross_org(dst_org_id, actual_dst_path)
 
     def move_cross_org(
         self,
@@ -266,3 +312,4 @@ class StorageManager:
             self._build_storage_key(src_org_id, src_path),
             self._build_storage_key(dst_org_id, dst_path),
         )
+        StorageFileSync.on_move_cross_org(src_org_id, src_path, dst_org_id, dst_path)

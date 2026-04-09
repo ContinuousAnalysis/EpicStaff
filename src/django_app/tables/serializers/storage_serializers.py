@@ -98,18 +98,15 @@ class StorageCopySerializer(serializers.Serializer):
     )
 
 
-class StorageAddToFlowSerializer(serializers.Serializer):
+class StorageAddToGraphSerializer(serializers.Serializer):
     path = serializers.CharField(
         required=True,
         help_text="Storage path to link",
     )
-    flow_id = serializers.IntegerField(
-        required=True,
-        help_text="Target flow ID",
-    )
-    variable_name = serializers.CharField(
-        required=True,
-        help_text="Variable name for the start node",
+    graph_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False,
+        help_text="Target graph IDs",
     )
 
 
@@ -186,10 +183,30 @@ class StorageMkdirResponseSerializer(serializers.Serializer):
     created = serializers.BooleanField(help_text="Whether the folder was created")
 
 
-class StorageAddToFlowResponseSerializer(serializers.Serializer):
-    path = serializers.CharField(help_text="Storage path linked")
-    flow_id = serializers.IntegerField(help_text="Target flow ID")
-    variable_name = serializers.CharField(help_text="Variable name used")
+class GraphStorageFileSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    graph_id = serializers.IntegerField(read_only=True)
+    path = serializers.CharField(source="storage_file.path", read_only=True)
+    added_at = serializers.DateTimeField(read_only=True)
+
+
+class StorageRemoveFromGraphSerializer(serializers.Serializer):
+    path = serializers.CharField(
+        required=True,
+        help_text="Storage path to unlink",
+    )
+    graph_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False,
+        help_text="Graph IDs to unlink from",
+    )
+
+
+class StorageGraphFilesQuerySerializer(serializers.Serializer):
+    graph_id = serializers.IntegerField(
+        required=True,
+        help_text="Graph ID to list attached files for",
+    )
 
 
 class StorageSessionOutputsResponseSerializer(serializers.Serializer):

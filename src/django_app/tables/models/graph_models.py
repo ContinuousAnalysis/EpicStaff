@@ -563,3 +563,39 @@ class GraphNote(BaseGraphEntity, BaseGlobalNode):
         "Graph", on_delete=models.CASCADE, related_name="graph_note_list"
     )
     content = models.TextField()
+
+
+class StorageFile(models.Model):
+    org = models.ForeignKey(
+        "Organization", on_delete=models.CASCADE, related_name="storage_files"
+    )
+    path = models.CharField(
+        max_length=2048, help_text="Org-relative path, never starts with '/'"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["org", "path"], name="unique_storage_file_per_org"
+            )
+        ]
+        indexes = [models.Index(fields=["org", "path"])]
+
+
+class GraphStorageFile(models.Model):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="storage_files"
+    )
+    storage_file = models.ForeignKey(
+        "StorageFile", on_delete=models.CASCADE, related_name="graph_storage_files"
+    )
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "storage_file"], name="unique_graph_storage_file"
+            )
+        ]

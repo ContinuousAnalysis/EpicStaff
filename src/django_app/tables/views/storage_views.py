@@ -7,14 +7,17 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from tables.models import Organization, OrganizationUser
+from tables.models import GraphStorageFile, Organization, OrganizationUser, StorageFile
 from tables.serializers.storage_serializers import (
-    StorageAddToFlowSerializer,
+    GraphStorageFileSerializer,
+    StorageAddToGraphSerializer,
     StorageCopySerializer,
     StorageDownloadZipSerializer,
+    StorageGraphFilesQuerySerializer,
     StorageMkdirSerializer,
     StorageMoveSerializer,
     StoragePathQuerySerializer,
+    StorageRemoveFromGraphSerializer,
     StorageRenameSerializer,
     StorageSessionOutputsQuerySerializer,
     StorageUploadSerializer,
@@ -22,15 +25,17 @@ from tables.serializers.storage_serializers import (
 from tables.services.storage_service import get_storage_manager
 from tables.storage_permissions import StoragePermission
 from tables.swagger_schemas.storage_schema import (
-    STORAGE_ADD_TO_FLOW_SWAGGER,
+    STORAGE_ADD_TO_GRAPH_SWAGGER,
     STORAGE_COPY_SWAGGER,
     STORAGE_DELETE_SWAGGER,
     STORAGE_DOWNLOAD_SWAGGER,
     STORAGE_DOWNLOAD_ZIP_SWAGGER,
+    STORAGE_GRAPH_FILES_SWAGGER,
     STORAGE_INFO_SWAGGER,
     STORAGE_LIST_SWAGGER,
     STORAGE_MKDIR_SWAGGER,
     STORAGE_MOVE_SWAGGER,
+    STORAGE_REMOVE_FROM_GRAPH_SWAGGER,
     STORAGE_RENAME_SWAGGER,
     STORAGE_SESSION_OUTPUTS_SWAGGER,
     STORAGE_UPLOAD_SWAGGER,
@@ -207,17 +212,55 @@ class StorageAPIView(ViewSet):
             raise ValidationError({"detail": str(e)})
         return Response({"from": from_path, "to": to_path, "success": True})
 
-    @action(detail=False, methods=["post"], url_path="add-to-flow")
-    @swagger_auto_schema(**STORAGE_ADD_TO_FLOW_SWAGGER)
-    def add_to_flow(self, request):
-        serializer = StorageAddToFlowSerializer(data=request.data)
+    @action(detail=False, methods=["post"], url_path="add-to-graph")
+    @swagger_auto_schema(**STORAGE_ADD_TO_GRAPH_SWAGGER)
+    def add_to_graph(self, request):
+        user_name, org_id = self._resolve_context(request)
+        serializer = StorageAddToGraphSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         path = serializer.validated_data["path"]
-        flow_id = serializer.validated_data["flow_id"]
-        variable_name = serializer.validated_data["variable_name"]
+        graph_ids = serializer.validated_data["graph_ids"]
+        if not self.manager.exists(user_name, org_id, path):
+            raise ValidationError({"path": f"File does not exist: {path}"})
+        results = []
+        sf, _ = StorageFile.objects.get_or_create(org_id=org_id, path=path)
+        for graph_id in graph_ids:
+            obj, _ = GraphStorageFile.objects.get_or_create(
+                graph_id=graph_id, storage_file=sf
+            )
+            results.append(obj)
         return Response(
-            {"path": path, "flow_id": flow_id, "variable_name": variable_name}
+            GraphStorageFileSerializer(results, many=True).data,
+            status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=False, methods=["delete"], url_path="remove-from-graph")
+    @swagger_auto_schema(**STORAGE_REMOVE_FROM_GRAPH_SWAGGER)
+    def remove_from_graph(self, request):
+        _, org_id = self._resolve_context(request)
+        serializer = StorageRemoveFromGraphSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        path = serializer.validated_data["path"]
+        graph_ids = serializer.validated_data["graph_ids"]
+        GraphStorageFile.objects.filter(
+            graph_id__in=graph_ids,
+            storage_file__path=path,
+            storage_file__org_id=org_id,
+        ).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=["get"], url_path="graph-files")
+    @swagger_auto_schema(**STORAGE_GRAPH_FILES_SWAGGER)
+    def graph_files(self, request):
+        params = StorageGraphFilesQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        graph_id = params.validated_data["graph_id"]
+        qs = (
+            GraphStorageFile.objects.filter(graph_id=graph_id)
+            .select_related("storage_file")
+            .order_by("added_at")
+        )
+        return Response(GraphStorageFileSerializer(qs, many=True).data)
 
     @action(detail=False, methods=["get"], url_path="session-outputs")
     @swagger_auto_schema(**STORAGE_SESSION_OUTPUTS_SWAGGER)

@@ -26,4 +26,4 @@ def check_permission(method):
         self._require_permission(user_name, org_id, action=action, path=path)
         return method(self, user_name, org_id, *args, **kwargs)
 
-    return wrapper
+    return wrapper  # type: ignore[return-value]
