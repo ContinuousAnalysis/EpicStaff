@@ -3,6 +3,7 @@
         appMouseTracker
         (mousePosition)="updateMouseTrackerPosition($event)"
         (contextmenu)="onContextMenu($event)"
+        (click)="onCloseContextMenu()"
         fDraggable
         [vCellSize]="GRID_CELL_SIZE"
         [hCellSize]="GRID_CELL_SIZE"
@@ -14,11 +15,12 @@
         (redo)="onRedo()"
         (copy)="onCopy()"
         (paste)="onPaste()"
-        (save)="onSave()"
         (fLoaded)="onInitialized()"
+        (fDragStarted)="onDragStarted($event)"
+        (fDragEnded)="onDragEnded()"
         (fCreateConnection)="onConnectionAdded($event)"
         (fReassignConnection)="onReassignConnection($event)"
-        (fCreateNode)="onCreateNode($event)"
+        (fCreateNode)="onNodeDroppedFromPanel($event)"
     >
         <f-background>
             <f-circle-pattern></f-circle-pattern>
@@ -139,16 +141,16 @@
                     >
                         <path d="M0,0 L6,3 0,6Z" stroke="none"></path>
                     </svg>
-                    <div fConnectionCenter class="connection-center">
-                        <!-- Plus Icon (No Click Attached or for adding node in connection) -->
-                        <!-- <div class="icon-button plus-icon" title="Add node">
-          <i class="ti ti-plus"></i>
-        </div> -->
-
-                        <!-- Delete Icon (Click to Remove Connection) -->
-                        <div class="icon-button delete-icon" title="Delete connection" (click)="onDelete()">
+                    <div fConnectionContent class="connection-center" [position]="0.5">
+                        <button
+                            type="button"
+                            class="icon-button delete-icon"
+                            title="Delete connection"
+                            aria-label="Delete connection"
+                            (click)="onDeleteConnection($event, connection.id)"
+                        >
                             <i class="ti ti-trash"></i>
-                        </div>
+                        </button>
                     </div>
                 </f-connection>
             }
@@ -188,11 +190,8 @@
     <!-- <app-flow-zoom-controls></app-flow-zoom-controls> -->
     @if (showContextMenu()) {
         <app-flow-graph-context-menu
-            [position]="contextMenuPostion"
-            [menuContext]="nodesMode"
+            [position]="contextMenuPosition()"
             [currentFlowId]="currentFlowId"
-            appClickOutside
-            (appClickOutside)="onCloseContextMenu()"
             (nodeSelected)="onAddNodeFromContextMenu($event)"
         >
         </app-flow-graph-context-menu>

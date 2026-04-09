@@ -676,7 +676,7 @@ interface InputMapPair {
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeModel> {
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
     public readonly activeEditorTab = signal<'hooks' | 'schema'>('hooks');
 

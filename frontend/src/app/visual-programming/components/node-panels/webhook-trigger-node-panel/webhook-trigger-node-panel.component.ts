@@ -48,7 +48,7 @@ export class WebhookTriggerNodePanelComponent
     private readonly clipboard = inject(Clipboard);
     private readonly toastService = inject(ToastService);
 
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
 
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
     ngrokConfigsLoading = signal<boolean>(false);

@@ -1,29 +1,22 @@
-import { CommonModule, NgFor } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    Component,
-    EventEmitter,
-    inject,
-    Input,
-    OnInit,
-    Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 import { GetGraphLightRequest, GraphDto } from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { NodeType } from '../../../core/enums/node-type';
+import { CreateNodeRequest } from '../../../core/models/node-creation.types';
 
 @Component({
     selector: 'app-flows-menu',
-    imports: [CommonModule, NgFor],
     standalone: true,
     template: `
         <ul>
-            <li *ngFor="let flow of filteredFlows" (click)="onFlowClicked(flow)">
-                <i class="ti ti-hierarchy-2"></i>
-                <span class="flow-name">{{ flow.name }}</span>
-            </li>
+            @for (flow of filteredFlows(); track flow.id) {
+                <li (click)="onFlowClicked(flow)">
+                    <i class="ti ti-hierarchy-2"></i>
+                    <span class="flow-name">{{ flow.name }}</span>
+                </li>
+            }
         </ul>
     `,
     styles: [
@@ -62,34 +55,19 @@ import { NodeType } from '../../../core/enums/node-type';
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FlowsMenuComponent implements OnInit {
-    private flowsApiService = inject(FlowsApiService);
-    private cdr = inject(ChangeDetectorRef);
+export class FlowsMenuComponent {
+    public readonly searchTerm = input('');
+    public readonly currentFlowId = input<number | null>(null);
+    public readonly nodeSelected = output<CreateNodeRequest>();
 
-    @Input() public searchTerm: string = '';
-    @Input() public currentFlowId: number | null = null;
-    @Output() public nodeSelected = new EventEmitter<{
-        type: NodeType;
-        data: GetGraphLightRequest;
-    }>();
+    private readonly flowsApiService = inject(FlowsApiService);
 
-    public flows: GraphDto[] = [];
-
-    ngOnInit(): void {
-        this.flowsApiService.getGraphsLight().subscribe({
-            next: (flows: GraphDto[]) => {
-                this.flows = flows;
-                this.cdr.markForCheck();
-            },
-            error: (err) => console.error('Error fetching flows:', err),
-        });
-    }
-
-    public get filteredFlows(): GraphDto[] {
-        return this.flows
-            .filter((flow) => flow.id !== this.currentFlowId)
-            .filter((flow) => flow.name.toLowerCase().includes(this.searchTerm.toLowerCase()));
-    }
+    public readonly flows = toSignal(this.flowsApiService.getGraphsLight(), { initialValue: [] as GraphDto[] });
+    public readonly filteredFlows = computed(() =>
+        this.flows()
+            .filter((flow) => flow.id !== this.currentFlowId())
+            .filter((flow) => flow.name.toLowerCase().includes(this.searchTerm().toLowerCase()))
+    );
 
     public onFlowClicked(flow: GraphDto): void {
         const lightData: GetGraphLightRequest = {
@@ -98,6 +76,6 @@ export class FlowsMenuComponent implements OnInit {
             description: flow.description,
             tags: flow.tags || [],
         };
-        this.nodeSelected.emit({ type: NodeType.SUBGRAPH, data: lightData });
+        this.nodeSelected.emit({ type: NodeType.SUBGRAPH, overrides: { data: lightData as never } });
     }
 }
