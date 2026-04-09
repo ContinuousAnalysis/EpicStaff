@@ -162,6 +162,9 @@ class DefaultModelsAPIView(BaseDefaultConfigAPIView):
     model = DefaultModels
     serializer = DefaultModelsSerializer
 
+    def get_object(self):
+        return DefaultModels.load()
+
     @swagger_auto_schema(
         operation_summary="Get default models",
         responses={
