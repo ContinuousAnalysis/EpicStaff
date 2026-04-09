@@ -892,29 +892,30 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         }
     }
 
-    private findFreePosition(
-        proposed: { x: number; y: number },
-        bounds: { width: number; height: number; offsetX: number; offsetY: number },
-        existingNodes: NodeModel[]
-    ): { x: number; y: number } {
-        const overlaps = (pos: { x: number; y: number }) =>
-            existingNodes.some((n) => this.rectOverlaps(pos, bounds, n.position, this.getCollisionBounds(n)));
+    // CHECK WHY THIS METHOD IS NOT USED ANYWHERE
+    // private findFreePosition(
+    //     proposed: { x: number; y: number },
+    //     bounds: { width: number; height: number; offsetX: number; offsetY: number },
+    //     existingNodes: NodeModel[]
+    // ): { x: number; y: number } {
+    //     const overlaps = (pos: { x: number; y: number }) =>
+    //         existingNodes.some((n) => this.rectOverlaps(pos, bounds, n.position, this.getCollisionBounds(n)));
 
-        if (!overlaps(proposed)) return proposed;
+    //     if (!overlaps(proposed)) return proposed;
 
-        const MAX_STEPS = 10;
-        for (let row = 0; row <= MAX_STEPS; row++) {
-            for (let col = row === 0 ? 1 : 0; col <= MAX_STEPS; col++) {
-                const candidate = {
-                    x: proposed.x + col * this.GRID_CELL_SIZE,
-                    y: proposed.y + row * this.GRID_CELL_SIZE,
-                };
-                if (!overlaps(candidate)) return candidate;
-            }
-        }
+    //     const MAX_STEPS = 10;
+    //     for (let row = 0; row <= MAX_STEPS; row++) {
+    //         for (let col = row === 0 ? 1 : 0; col <= MAX_STEPS; col++) {
+    //             const candidate = {
+    //                 x: proposed.x + col * this.GRID_CELL_SIZE,
+    //                 y: proposed.y + row * this.GRID_CELL_SIZE,
+    //             };
+    //             if (!overlaps(candidate)) return candidate;
+    //         }
+    //     }
 
-        return proposed; // fallback: never block creation
-    }
+    //     return proposed; // fallback: never block creation
+    // }
 
     private findNearestFreePosition(
         proposed: { x: number; y: number },
