@@ -49,18 +49,19 @@ export class StoragePageComponent {
     selectedFile = signal<StorageItem | null>(null);
     selectedItems = signal<StorageItem[]>([]);
     showSidebar = signal<boolean>(true);
-    private readonly allowedUploadExtensions = new Set([
-        'pdf',
-        'csv',
-        'docx',
-        'txt',
-        'json',
-        'html',
-        'zip',
-        'tar',
-        'gz',
-        'bz2',
-        'xz',
+    private readonly blockedUploadExtensions = new Set([
+        // Windows executables & installers
+        'exe', 'msi', 'com', 'scr', 'pif',
+        // Windows scripting
+        'bat', 'cmd', 'vbs', 'vbe', 'wsh', 'wsf', 'ps1', 'psm1', 'psd1',
+        // Unix/macOS executables
+        'sh', 'bash', 'csh', 'ksh', 'zsh', 'app', 'command', 'elf',
+        // Java archives (executable)
+        'jar', 'war', 'ear',
+        // Shared libraries
+        'dll', 'so', 'dylib',
+        // Not allowed archive formats
+        'rar', '7z', 
     ]);
 
     readonly onOpenCreateFolder = (folderPath: string): void => {
@@ -193,25 +194,17 @@ export class StoragePageComponent {
         );
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
             if (!result) return;
-            const targetFolder = result.folderName.trim();
-            if (!targetFolder) return;
-            const validFiles = this.filterAllowedFiles(result.files);
             this.storageApiService
-                .ensureFolderAndUpload(targetFolder, validFiles)
+                .handleAddFilesResult(result, (f) => this.filterAllowedFiles(f))
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
-                    next: (flow) => {
-                        if (flow.alreadyExists) {
-                            this.toastService.info(`Folder "${targetFolder}" already exists`);
-                        } else if (flow.created) {
-                            this.toastService.success(`Folder "${targetFolder}" created`);
-                        }
-                        if (flow.uploadedCount > 0) {
-                            this.toastService.success(`${flow.uploadedCount} file(s) uploaded`);
-                        }
+                    next: (res) => {
+                        if (res.type === 'mkdir') this.toastService.success(`Folder "${res.path}" created`);
+                        if (res.type === 'upload' && res.count > 0)
+                            this.toastService.success(`${res.count} file(s) uploaded`);
                         this.loadTree();
                     },
-                    error: () => this.toastService.error('Failed to create folder'),
+                    error: () => this.toastService.error('Failed'),
                 });
         });
     }
@@ -395,10 +388,8 @@ export class StoragePageComponent {
         for (const file of files) {
             const lowerName = file.name.toLowerCase();
             const ext = lowerName.includes('.') ? (lowerName.split('.').pop() ?? '') : '';
-            const isTarCompressed =
-                lowerName.endsWith('.tar.gz') || lowerName.endsWith('.tar.bz2') || lowerName.endsWith('.tar.xz');
-            const allowed = this.allowedUploadExtensions.has(ext) || isTarCompressed;
-            if (allowed) {
+            const blocked = this.blockedUploadExtensions.has(ext);
+            if (!blocked) {
                 valid.push(file);
             } else {
                 this.toastService.error(`"${file.name}" is not an allowed file type`);

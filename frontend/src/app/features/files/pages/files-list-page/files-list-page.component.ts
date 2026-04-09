@@ -62,27 +62,17 @@ export class FilesListPageComponent {
 
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
             if (!result) return;
-            const targetFolder = result.folderName.trim();
-            if (!targetFolder) return;
-
             this.storageApiService
-                .ensureFolderAndUpload(targetFolder, result.files)
+                .handleAddFilesResult(result)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
-                    next: (flow) => {
-                        if (flow.alreadyExists) {
-                            this.toastService.info(`Folder "${targetFolder}" already exists`);
-                        } else if (flow.created) {
-                            this.toastService.success(`Folder "${targetFolder}" created`);
-                        }
-                        if (flow.uploadedCount > 0) {
-                            this.toastService.success(`${flow.uploadedCount} file(s) uploaded`);
-                        }
+                    next: (res) => {
+                        if (res.type === 'mkdir') this.toastService.success(`Folder "${res.path}" created`);
+                        if (res.type === 'upload' && res.count > 0)
+                            this.toastService.success(`${res.count} file(s) uploaded`);
                         this.storageApiService.triggerRefresh();
                     },
-                    error: () => {
-                        this.toastService.error('Failed to create folder');
-                    },
+                    error: () => this.toastService.error('Failed'),
                 });
         });
     }

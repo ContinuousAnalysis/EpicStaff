@@ -1,9 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { EMPTY, Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { ConfigService } from '../../../services/config/config.service';
+import { CreateFolderDialogResult } from '../components/create-folder-dialog/create-folder-dialog.component';
 import {
     StorageItem,
     StorageItemInfo,
@@ -36,38 +37,37 @@ export class StorageApiService {
             .pipe(map((res) => res.items ?? []));
     }
 
+    handleAddFilesResult(
+        result: CreateFolderDialogResult,
+        filterFiles: (files: File[]) => File[] = (f) => f
+    ): Observable<{ type: 'mkdir'; path: string } | { type: 'upload'; count: number }> {
+        const targetPath = result.targetPath;
+
+        if (result.mkdirOnly) {
+            if (!targetPath) return EMPTY;
+            return this.mkdir(targetPath).pipe(map(() => ({ type: 'mkdir' as const, path: targetPath })));
+        }
+
+        const validFiles = filterFiles(result.files);
+        if (!validFiles.length) return EMPTY;
+
+        const upload$ = targetPath
+            ? this.ensureFolderAndUpload(targetPath, validFiles).pipe(map((r) => r.uploadedCount))
+            : this.uploadMany('', validFiles).pipe(map(() => validFiles.length));
+
+        return upload$.pipe(map((count) => ({ type: 'upload' as const, count })));
+    }
+
     ensureFolderAndUpload(
         targetFolder: string,
         files: File[]
-    ): Observable<{ alreadyExists: boolean; created: boolean; uploadedCount: number }> {
+    ): Observable<{ uploadedCount: number }> {
         const normalizedTarget = this.normalizePath(targetFolder);
-        const { parentPath, folderName } = this.splitParentAndName(normalizedTarget);
-
-        return this.list(parentPath).pipe(
-            switchMap((items) => {
-                const exists = (items ?? []).some(
-                    (item) => item.type === 'folder' && item.name?.trim().toLowerCase() === folderName.toLowerCase()
-                );
-                if (exists) {
-                    if (!files.length) {
-                        return of({ alreadyExists: true, created: false, uploadedCount: 0 });
-                    }
-                    return this.uploadMany(normalizedTarget, files).pipe(
-                        map(() => ({ alreadyExists: true, created: false, uploadedCount: files.length }))
-                    );
-                }
-
-                return this.mkdir(normalizedTarget).pipe(
-                    switchMap(() => {
-                        if (!files.length) {
-                            return of({ alreadyExists: false, created: true, uploadedCount: 0 });
-                        }
-                        return this.uploadMany(normalizedTarget, files).pipe(
-                            map(() => ({ alreadyExists: false, created: true, uploadedCount: files.length }))
-                        );
-                    })
-                );
-            })
+        if (!files.length) {
+            return of({ uploadedCount: 0 });
+        }
+        return this.uploadMany(normalizedTarget, files).pipe(
+            map(() => ({ uploadedCount: files.length }))
         );
     }
 
@@ -160,17 +160,6 @@ export class StorageApiService {
             .replace(/^\/+|\/+$/g, '');
     }
 
-    private splitParentAndName(path: string): { parentPath: string; folderName: string } {
-        const slashIndex = path.lastIndexOf('/');
-        if (slashIndex === -1) {
-            return { parentPath: '', folderName: path };
-        }
-
-        return {
-            parentPath: path.slice(0, slashIndex),
-            folderName: path.slice(slashIndex + 1),
-        };
-    }
 
     private normalizeCopyTargetPath(path: string): string {
         const normalized = this.normalizePath(path);

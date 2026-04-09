@@ -1,6 +1,6 @@
 <div class="create-folder-dialog">
     <div class="create-folder-dialog__header">
-        <h2 class="create-folder-dialog__title">Create folder</h2>
+        <h2 class="create-folder-dialog__title">Add files</h2>
         <div class="create-folder-dialog__header-actions">
             <button
                 class="create-folder-dialog__icon-btn create-folder-dialog__icon-btn--cancel"
@@ -11,8 +11,8 @@
             </button>
             <button
                 class="create-folder-dialog__icon-btn create-folder-dialog__icon-btn--confirm"
-                aria-label="Create"
-                [disabled]="!folderName.trim()"
+                aria-label="Add files"
+                [disabled]="!isValid()"
                 (click)="onConfirm()"
             >
                 <app-icon icon="ui/check" size="1.1rem"></app-icon>
@@ -21,23 +21,102 @@
     </div>
 
     <div class="create-folder-dialog__body">
-        <div class="create-folder-dialog__field">
-            <label class="create-folder-dialog__label" for="folderName">Folder name</label>
+        <div class="create-folder-dialog__settings">
+        <!-- Destination folder -->
+        <div class="create-folder-dialog__field create-folder-dialog__field--inline">
+            <label class="create-folder-dialog__label">Destination folder</label>
+            <div
+                class="create-folder-dialog__selector"
+                [class.create-folder-dialog__selector--filled]="selectedPath() !== ''"
+                [class.create-folder-dialog__selector--open]="dropdownOpen()"
+                (click)="toggleDropdown($event)"
+            >
+                <span class="create-folder-dialog__selector-text">{{ selectedFolderLabel }}</span>
+                <app-icon
+                    icon="ui/chevron-down"
+                    size="0.875rem"
+                    class="create-folder-dialog__selector-chevron"
+                    [class.create-folder-dialog__selector-chevron--open]="dropdownOpen()"
+                ></app-icon>
+            </div>
+
+            @if (dropdownOpen()) {
+                <div class="create-folder-dialog__dropdown" (click)="stopPropagation($event)">
+                    <div class="create-folder-dialog__search">
+                        <app-icon icon="ui/search" size="0.875rem" class="create-folder-dialog__search-icon"></app-icon>
+                        <input
+                            class="create-folder-dialog__search-input"
+                            type="text"
+                            placeholder="Search folder..."
+                            [ngModel]="searchQuery()"
+                            (ngModelChange)="searchQuery.set($event)"
+                        />
+                    </div>
+                    <div class="create-folder-dialog__tree">
+                        @if (isLoadingRoot()) {
+                            <div class="create-folder-dialog__state">Loading folders...</div>
+                        } @else {
+                            <!-- Root -->
+                            <div
+                                class="create-folder-dialog__node"
+                                [class.create-folder-dialog__node--selected]="isSelected('')"
+                                [style.padding-left.px]="12"
+                                (click)="selectFolder('')"
+                            >
+                                <span class="create-folder-dialog__chevron-btn create-folder-dialog__chevron-btn--open">
+                                    <app-icon icon="ui/triangle-right" size="0.5rem"></app-icon>
+                                </span>
+                                <span class="create-folder-dialog__node-name">/</span>
+                            </div>
+                            @for (node of visibleNodes; track node.path) {
+                                <div
+                                    class="create-folder-dialog__node"
+                                    [class.create-folder-dialog__node--selected]="isSelected(node.path)"
+                                    [style.padding-left.px]="32 + node.level * 20"
+                                    (click)="selectFolder(node.path)"
+                                >
+                                    @if (node.hasChildren) {
+                                        <button
+                                            class="create-folder-dialog__chevron-btn"
+                                            [class.create-folder-dialog__chevron-btn--open]="node.isExpanded"
+                                            (click)="toggleExpand($event, node)"
+                                        >
+                                            <app-icon icon="ui/triangle-right" size="0.5rem"></app-icon>
+                                        </button>
+                                    } @else {
+                                        <span class="create-folder-dialog__chevron-gap"></span>
+                                    }
+                                    <span class="create-folder-dialog__node-name">{{ node.name }}</span>
+                                    @if (node.isLoading) {
+                                        <span class="create-folder-dialog__node-spinner">...</span>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Folder name (optional subfolder) -->
+        <div class="create-folder-dialog__field create-folder-dialog__field--inline">
+            <label class="create-folder-dialog__label">Organize into folder</label>
             <input
-                id="folderName"
                 class="create-folder-dialog__input"
                 type="text"
-                placeholder="Enter folder name"
-                [(ngModel)]="folderName"
-                (keydown.enter)="onConfirm()"
-                autofocus
+                placeholder="Leave blank to use current"
+                [ngModel]="folderName()"
+                (ngModelChange)="folderName.set($event)"
             />
         </div>
 
-        <div class="create-folder-dialog__field">
-            <label class="create-folder-dialog__label"
-                >Files <span class="create-folder-dialog__label-hint">(optional)</span></label
-            >
+        </div><!-- /.settings -->
+
+        <!-- Drop zone + file list -->
+        <div class="create-folder-dialog__field create-folder-dialog__field--files">
+            <label class="create-folder-dialog__label">
+                Selected Files: <span class="create-folder-dialog__count">({{ files().length }})</span>
+            </label>
             <div
                 class="create-folder-dialog__drop-zone"
                 [class.create-folder-dialog__drop-zone--dragging]="isDragging()"
@@ -46,38 +125,36 @@
                 (drop)="onDrop($event)"
             >
                 <app-icon icon="ui/upload" size="2rem" class="create-folder-dialog__drop-icon"></app-icon>
-                <span class="create-folder-dialog__drop-text">Drag & drop files here</span>
-                <span class="create-folder-dialog__drop-or">or</span>
+                <span class="create-folder-dialog__drop-text">Drag and drop files here or click to upload</span>
                 <label class="create-folder-dialog__browse-btn">
                     Browse files
                     <input
                         type="file"
                         multiple
-                        accept=".pdf,.csv,.docx,.txt,.json,.html,.zip,.tar,.gz,.bz2,.xz"
                         hidden
                         (change)="onFileInputChange($event)"
                     />
                 </label>
             </div>
-        </div>
 
-        @if (files().length > 0) {
-            <ul class="create-folder-dialog__file-list">
-                @for (file of files(); track file.name; let i = $index) {
-                    <li class="create-folder-dialog__file-item">
-                        <app-icon icon="ui/file" size="0.875rem" class="create-folder-dialog__file-icon"></app-icon>
-                        <span class="create-folder-dialog__file-name" [title]="file.name">{{ file.name }}</span>
-                        <span class="create-folder-dialog__file-size">{{ formatSize(file.size) }}</span>
-                        <button
-                            class="create-folder-dialog__file-remove"
-                            aria-label="Remove file"
-                            (click)="removeFile(i)"
-                        >
-                            <app-icon icon="ui/x" size="0.75rem"></app-icon>
-                        </button>
-                    </li>
-                }
-            </ul>
-        }
+            @if (files().length > 0) {
+                <ul class="create-folder-dialog__file-list">
+                    @for (file of files(); track file.name; let i = $index) {
+                        <li class="create-folder-dialog__file-item">
+                            <app-icon icon="ui/file" size="0.875rem" class="create-folder-dialog__file-icon"></app-icon>
+                            <span class="create-folder-dialog__file-name" [title]="file.name">{{ file.name }}</span>
+                            <span class="create-folder-dialog__file-size">{{ formatSize(file.size) }}</span>
+                            <button
+                                class="create-folder-dialog__file-remove"
+                                aria-label="Remove file"
+                                (click)="removeFile(i)"
+                            >
+                                <app-icon icon="ui/x" size="0.75rem"></app-icon>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
     </div>
 </div>
