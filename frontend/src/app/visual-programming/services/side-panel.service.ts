@@ -10,6 +10,9 @@ export class SidePanelService {
     private readonly selectedNodeIdSignal = signal<string | null>(null);
     private readonly autosaveTriggerSignal = signal<boolean>(false);
 
+    private readonly expandRequestSignal = signal<boolean>(false);
+    public readonly expandRequest: Signal<boolean> = this.expandRequestSignal.asReadonly();
+
     public readonly selectedNodeId: Signal<string | null> = this.selectedNodeIdSignal.asReadonly();
 
     public readonly selectedNode: Signal<NodeModel | null> = computed(() => {
@@ -21,6 +24,14 @@ export class SidePanelService {
     });
 
     public readonly autosaveTrigger: Signal<boolean> = this.autosaveTriggerSignal.asReadonly();
+
+    public requestExpand(): void {
+        this.expandRequestSignal.set(true);
+    }
+
+    public clearExpandRequest(): void {
+        this.expandRequestSignal.set(false);
+    }
 
     constructor(private readonly flowService: FlowService) {}
 

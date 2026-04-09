@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, input, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -162,6 +162,7 @@ interface InputMapPair {
                             <!-- Input Map Key-Value Pairs -->
                             <div class="input-map">
                                 <app-input-map
+                                    (expand)="(toggleCodeEditorFullWidth)"
                                     [activeColor]="activeColor"
                                     [testMode]="isOpenTestMode()"
                                     (testModeChange)="isOpenTestMode.set($event)"
@@ -522,6 +523,12 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
         this.pythonCodeChange$.pipe(debounceTime(300), takeUntilDestroyed()).subscribe(() => {
             this.sidePanelService.triggerAutosave();
         });
+        effect(() => {
+            if (this.isOpenTestMode()) {
+                this.sidePanelService.requestExpand();
+                this.isCodeEditorFullWidth.set(false);
+            }
+        });
     }
 
     get activeColor(): string {
@@ -644,7 +651,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             : [];
 
         const payload: RunPythonCodeRequest = {
-            python_code_id: this.node().backendId,
+            python_code_id: this.node().data.id ?? null,
             code: this.pythonCode,
             entrypoint: 'main',
             libraries,

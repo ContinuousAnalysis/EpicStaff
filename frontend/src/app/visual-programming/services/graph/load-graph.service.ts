@@ -182,6 +182,7 @@ function buildPythonNode(pn: PythonNode, idx: number): PythonNodeModel {
         node_name: pn.node_name,
         nodeNumber: ui.nodeNumber,
         data: {
+            id: pn.python_code.id,
             name: pn.node_name,
             libraries: pn.python_code.libraries,
             code: pn.python_code.code,

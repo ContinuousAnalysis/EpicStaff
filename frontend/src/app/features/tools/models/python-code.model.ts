@@ -20,6 +20,7 @@ export interface UpdatePythonCodeRequest {
 
 //used when creating python code node
 export interface CustomPythonCode {
+    id?: number | null;
     name: string;
     libraries: string[];
     code: string;

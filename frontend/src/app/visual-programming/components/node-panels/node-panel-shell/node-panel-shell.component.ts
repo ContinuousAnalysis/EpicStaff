@@ -150,6 +150,14 @@ export class NodePanelShellComponent {
                 this.isAutosaving = false;
             }
         });
+
+        effect(() => {
+            const shouldExpand = this.sidePanelService.expandRequest();
+            if (shouldExpand) {
+                this.isExpanded.set(true);
+                this.sidePanelService.clearExpandRequest();
+            }
+        });
     }
 
     protected onCloseClick(): void {
