@@ -51,9 +51,13 @@ export class LLMLibraryService {
             if (!llm.is_visible) return 2;
             return llm.predefined ? 1 : 0;
         },
-        [ModelTypes.EMBEDDING]: (m) => ((m as EmbeddingModel).is_visible ? 0 : 2),
-        [ModelTypes.REALTIME]: () => 0,
-        [ModelTypes.TRANSCRIPTION]: () => 0,
+        [ModelTypes.EMBEDDING]: (m) => {
+            const em = m as EmbeddingModel;
+            if (!em.is_visible) return 2;
+            return em.is_custom ? 0 : 1;
+        },
+        [ModelTypes.REALTIME]: (m) => ((m as RealtimeModel).is_custom ? 0 : 1),
+        [ModelTypes.TRANSCRIPTION]: (m) => ((m as GetRealtimeTranscriptionModelRequest).is_custom ? 0 : 1),
     };
 
     private buildProviderGroups<
