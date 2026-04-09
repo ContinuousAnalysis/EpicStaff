@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
+import { ToastService } from '../../../../../services/notifications/toast.service';
 import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
-import { CustomInputComponent } from '../../../../../shared/components/form-input/form-input.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { ToggleSwitchComponent } from '../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
+import { CustomInputComponent } from '../../../../../shared/components/form-input/form-input.component';
 import { LLM_Provider } from '../../../models/llm-provider.model';
 import { LLM_Model } from '../../../models/llms/LLM.model';
 import { LLM_Models_Service } from '../../../services/llms/llm-models.service';
 import { getProviderIconPath } from '../../../utils/get-provider-icon';
-import { ToastService } from '../../../../../services/notifications/toast.service';
 
 export interface CreateLlmModelDialogData {
     provider: LLM_Provider;
@@ -33,12 +34,13 @@ export interface CreateLlmModelDialogData {
     styleUrls: ['./create-llm-model-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateLlmModelModalComponent {
+export class CreateLlmModelModalComponent implements OnInit {
     private dialogRef = inject(DialogRef);
     private dialogData = inject<CreateLlmModelDialogData>(DIALOG_DATA);
     private fb = inject(FormBuilder);
     private modelsService = inject(LLM_Models_Service);
     private toastService = inject(ToastService);
+    private readonly destroyRef = inject(DestroyRef);
 
     isSubmitting = signal(false);
 
@@ -52,6 +54,17 @@ export class CreateLlmModelModalComponent {
 
     provider = this.dialogData.provider;
     getProviderIcon = getProviderIconPath;
+
+    ngOnInit(): void {
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(event => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.onSubmit();
+                }
+            });
+    }
 
     onClose(): void {
         this.dialogRef.close(null);
@@ -115,4 +128,3 @@ export class CreateLlmModelModalComponent {
         return fallback;
     }
 }
-

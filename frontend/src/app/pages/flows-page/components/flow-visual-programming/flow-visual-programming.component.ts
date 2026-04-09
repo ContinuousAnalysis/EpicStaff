@@ -1,6 +1,5 @@
 import { Dialog as CdkDialog } from '@angular/cdk/dialog';
 import {
-    AfterViewInit,
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
@@ -12,38 +11,22 @@ import {
     ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { isEqual } from 'lodash';
-import {
-    catchError,
-    EMPTY,
-    finalize,
-    forkJoin,
-    map,
-    Observable,
-    of,
-    Subject,
-    switchMap,
-    takeUntil,
-    tap,
-    throwError,
-} from 'rxjs';
-import { v4 as uuidv4 } from 'uuid';
+import { isEqual } from 'lodash-es';
+import { catchError, finalize, map, Observable, of, Subject, switchMap, takeUntil, tap } from 'rxjs';
 
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
 import { FlowSessionsListComponent } from '../../../../features/flows/components/flow-sessions-dialog/flow-sessions-list.component';
-import { CreateGraphDtoRequest, GraphDto, UpdateGraphDtoRequest } from '../../../../features/flows/models/graph.model';
+import { GraphDto } from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { RunGraphService } from '../../../../features/flows/services/run-graph-session.service';
-import { GetProjectRequest } from '../../../../features/projects/models/project.model';
 import { FlowMessagesPanelComponent } from '../../../../pages/running-graph/components/flow-messages-panel/flow-messages-panel.component';
 import { ConfigService } from '../../../../services/config/config.service';
 import { ToastService } from '../../../../services/notifications/toast.service';
 import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
 import { UnsavedChangesDialogService } from '../../../../shared/components/unsaved-changes-dialog';
 import { NodeType } from '../../../../visual-programming/core/enums/node-type';
-import { ConnectionModel } from '../../../../visual-programming/core/models/connection.model';
 import { FlowModel } from '../../../../visual-programming/core/models/flow.model';
 import { NodeModel, StartNodeModel } from '../../../../visual-programming/core/models/node.model';
 import { FlowGraphComponent } from '../../../../visual-programming/flow-graph/flow-graph.component';
@@ -59,20 +42,6 @@ import { FlowUnsavedStateService } from '../../services/flow-unsaved-state.servi
 import { FlowHeaderComponent } from './components/header/flow-header.component';
 import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
 import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
-import {
-    ConditionalEdge,
-    CreateConditionalEdgeRequest,
-    CustomConditionalEdgeModelForNode,
-    GetConditionalEdgeRequest,
-} from './models/conditional-edge.model';
-import { CreateCrewNodeRequest, CrewNode } from './models/crew-node.model';
-import { CreateEdgeRequest, Edge } from './models/edge.model';
-import { CreatePythonNodeRequest, PythonNode } from './models/python-node.model';
-import { CreateStartNodeRequest, StartNode } from './models/start-node.model';
-import { ConditionalEdgeService } from './services/conditional-edge.service';
-import { CrewNodeService } from './services/crew-node.service';
-import { EdgeService } from './services/edge.service';
-import { PythonNodeService } from './services/python-node.service';
 import { StartNodeService } from './services/start-node.service';
 
 @Component({
@@ -167,7 +136,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                 switchMap((graph: GraphDto) =>
                     this.flowApiService.getGraphsLight().pipe(
                         map((flows) => ({ graph, flows })),
-                        catchError((err) => {
+                        catchError(() => {
                             return of({ graph, flows: [] as GraphDto[] });
                         })
                     )
@@ -238,6 +207,12 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                     return this.saveGraphDirectly(flowState, showNotif);
                 }
                 return this.saveGraphWithStartNode(flowState, startNodeInFlow, showNotif);
+            }),
+            finalize(() => {
+                if (this.isSaving) {
+                    this.isSaving = false;
+                    this.cdr.markForCheck();
+                }
             })
         );
     }
@@ -369,7 +344,16 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                             metadata,
                         });
                     }),
-                    switchMap(() => this.graphUpdateService.saveGraph(flowState, this.graph)),
+                    switchMap((startNodeResult) => {
+                        if (startNodeResult?.id != null) {
+                            const sn = flowState.nodes.find((n) => n.type === NodeType.START);
+                            if (sn) sn.backendId = startNodeResult.id;
+
+                            const snInService = this.flowService.nodes()?.find((n) => n.type === NodeType.START);
+                            if (snInService) snInService.backendId = startNodeResult.id;
+                        }
+                        return this.graphUpdateService.saveGraph(flowState, this.graph);
+                    }),
                     tap((result) => {
                         this.graph = result.graph;
                         this.patchBackendIds(result.createdMappings);
@@ -456,7 +440,6 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     }
 
     private generateCurlCommand(flowUuid: string, variables: Record<string, unknown>, apiUrl: string): string {
-        const variablesJson = JSON.stringify(variables, null, 2);
         const payload = JSON.stringify(
             {
                 graph_uuid: flowUuid,
@@ -477,7 +460,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     private async copyToClipboard(text: string): Promise<void> {
         try {
             await navigator.clipboard.writeText(text);
-        } catch (err) {
+        } catch {
             // Fallback for older browsers
             const textArea = document.createElement('textarea');
             textArea.value = text;
@@ -493,6 +476,14 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         if (this.hasUnsavedChanges()) {
             event.preventDefault();
             return (event.returnValue = '');
+        }
+    }
+
+    @HostListener('document:keydown', ['$event'])
+    public handleCtrlS(event: KeyboardEvent): void {
+        if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+            event.preventDefault();
+            this.handleSaveFlow(true).subscribe();
         }
     }
 
