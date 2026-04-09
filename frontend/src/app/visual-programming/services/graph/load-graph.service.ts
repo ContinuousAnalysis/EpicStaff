@@ -319,6 +319,7 @@ function buildSubGraphNode(sn: SubGraphNode, idx: number): SubGraphNodeModel {
     const ui = readUIMetadata(sn.metadata, NodeType.SUBGRAPH, idx, sn.node_name);
     const subgraphDetail = sn.subgraph_detail ?? {
         id: sn.subgraph,
+        uuid: '',
         name: sn.node_name,
         description: '',
         tags: [],

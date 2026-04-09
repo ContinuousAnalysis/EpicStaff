@@ -39,6 +39,7 @@ import {
 } from '../../../../visual-programming/services/graph/save-graph.types';
 import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
 import { FlowUnsavedStateService } from '../../services/flow-unsaved-state.service';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { FlowHeaderComponent } from './components/header/flow-header.component';
 import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
 import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
@@ -48,6 +49,7 @@ import { StartNodeService } from './services/start-node.service';
     selector: 'app-flow-visual-programming',
     standalone: true,
     imports: [
+        AppSvgIconComponent,
         FlowHeaderComponent,
         FlowGraphComponent,
         SpinnerComponent,
@@ -74,7 +76,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     public currentSessionId: string | null = null;
     public panelWidthPx = 450;
     public isDragging = false;
-    private readonly MIN_PANEL_WIDTH = 300;
+    private readonly MIN_PANEL_WIDTH = 430;
     private readonly MAX_PANEL_WIDTH_RATIO = 0.7;
 
     private initialState: FlowModel | undefined;

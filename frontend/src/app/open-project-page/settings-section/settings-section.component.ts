@@ -17,11 +17,16 @@ import { GetProjectRequest } from '../../features/projects/models/project.model'
 import { GetEmbeddingConfigRequest } from '../../features/settings-dialog/models/embeddings/embedding-config.model';
 import { GetLlmConfigRequest } from '../../features/settings-dialog/models/llms/LLM_config.model';
 import { EmbeddingConfigsService } from '../../features/settings-dialog/services/embeddings/embedding_configs.service';
-import { FullEmbeddingConfigService } from '../../features/settings-dialog/services/embeddings/full-embedding.service';
-import { FullEmbeddingConfig } from '../../features/settings-dialog/services/embeddings/full-embedding.service';
-import { FullLLMConfigService } from '../../features/settings-dialog/services/llms/full-llm-config.service';
-import { FullLLMConfig } from '../../features/settings-dialog/services/llms/full-llm-config.service';
+import {
+    FullEmbeddingConfig,
+    FullEmbeddingConfigService,
+} from '../../features/settings-dialog/services/embeddings/full-embedding.service';
+import {
+    FullLLMConfig,
+    FullLLMConfigService,
+} from '../../features/settings-dialog/services/llms/full-llm-config.service';
 import { LLM_Config_Service } from '../../features/settings-dialog/services/llms/llm-config.service';
+import { AppSvgIconComponent } from '../../shared/components/app-svg-icon/app-svg-icon.component';
 import { EmbeddingModelSelectorComponent } from '../../shared/components/embedding-model-selector/embedding-model-selector.component';
 import { HelpTooltipComponent } from '../../shared/components/help-tooltip/help-tooltip.component';
 import { LlmModelSelectorComponent } from '../../shared/components/llm-model-selector/llm-model-selector.component';
@@ -37,6 +42,7 @@ import { LlmModelSelectorComponent } from '../../shared/components/llm-model-sel
         HelpTooltipComponent,
         LlmModelSelectorComponent,
         EmbeddingModelSelectorComponent,
+        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

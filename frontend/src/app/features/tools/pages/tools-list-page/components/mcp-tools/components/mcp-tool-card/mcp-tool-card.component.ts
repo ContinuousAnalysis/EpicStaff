@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 
-import { AppIconComponent } from '../../../../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../../../../shared/components/buttons/button/button.component';
 import { ToggleSwitchComponent } from '../../../../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { GetMcpToolRequest } from '../../../../../../models/mcp-tool.model';
@@ -11,7 +10,7 @@ import { GetMcpToolRequest } from '../../../../../../models/mcp-tool.model';
     standalone: true,
     templateUrl: './mcp-tool-card.component.html',
     styleUrls: ['./mcp-tool-card.component.scss'],
-    imports: [AppIconComponent, ToggleSwitchComponent, ButtonComponent, MatIconModule],
+    imports: [AppSvgIconComponent, ToggleSwitchComponent, ButtonComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class McpToolCardComponent {
@@ -32,7 +31,7 @@ export class McpToolCardComponent {
     constructor(private cdr: ChangeDetectorRef) {}
 
     public get starIcon(): string {
-        return this.starred ? 'ui/star-filled' : 'ui/star';
+        return this.starred ? 'star-filled' : 'star';
     }
 
     public onConfigure(): void {

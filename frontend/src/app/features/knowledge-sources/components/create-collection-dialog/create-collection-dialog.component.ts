@@ -1,10 +1,11 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AppIconComponent, ButtonComponent } from '@shared/components';
+import { ButtonComponent } from '@shared/components';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToastService } from '../../../../services/notifications';
 import { CreateCollectionStep } from '../../models/collection.model';
 import { DisplayedListDocument } from '../../models/document.model';
@@ -30,12 +31,11 @@ export interface StepConfig {
     styleUrls: ['create-collection-dialog.component.scss'],
     imports: [
         ButtonComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
         StepUploadFilesComponent,
         StepSelectRagComponent,
         StepperComponent,
         RagConfigurationComponent,
-        AppIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

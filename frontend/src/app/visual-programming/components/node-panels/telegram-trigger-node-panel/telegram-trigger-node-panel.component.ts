@@ -13,7 +13,6 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    AppIconComponent,
     ButtonComponent,
     CustomInputComponent,
     JsonEditorComponent,
@@ -21,6 +20,7 @@ import {
     SelectItem,
 } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { startWith } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -45,7 +45,7 @@ import { WEBHOOK_NAME_PATTERN } from '../webhook-trigger-node-panel/webhook-trig
         CustomInputComponent,
         ReactiveFormsModule,
         ButtonComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
         MATERIAL_FORMS,
         JsonEditorComponent,
         SelectComponent,

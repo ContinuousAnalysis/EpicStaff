@@ -5,7 +5,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
 import { HideInlineSubtitleOnOverflowDirective } from '../../../../shared/directives/hide-inline-subtitle-on-overflow.directive';
@@ -26,7 +26,7 @@ import { ProjectsStorageService } from '../../services/projects-storage.service'
         ButtonComponent,
         TabButtonComponent,
         FormsModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         HideInlineSubtitleOnOverflowDirective,
     ],
 })

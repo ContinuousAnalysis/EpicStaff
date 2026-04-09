@@ -4,7 +4,7 @@
             <h3 class="title">Embedding Models</h3>
             <p class="subtitle">Configure embedding models for document retrieval and semantic search.</p>
         </div>
-        <app-button type="primary" leftIcon="ui/plus" (click)="createNewConfig()">Add</app-button>
+        <app-button type="primary" leftIcon="plus" (click)="createNewConfig()">Add</app-button>
     </div>
 
     <div class="embedding-configs-list">
@@ -19,7 +19,7 @@
         @else if (status() === 'error') {
             <div class="error-state">
                 <p>{{ errorMessage() }}</p>
-                <app-button type="secondary" leftIcon="ui/refresh" (click)="refreshData()"> Retry </app-button>
+                <app-button type="secondary" leftIcon="refresh" (click)="refreshData()">Retry</app-button>
             </div>
         }
 

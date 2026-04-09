@@ -22,8 +22,8 @@ import {
     ValidationErrors,
     Validators,
 } from '@angular/forms';
+
 import {
-    AppIconComponent,
     ButtonComponent,
     ConfirmationDialogData,
     ConfirmationDialogService,
@@ -31,6 +31,7 @@ import {
     JsonEditorComponent,
 } from '@shared/components';
 
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import {
     ArgsSchema,
     CreatePythonCodeToolRequest,
@@ -55,7 +56,7 @@ interface DialogData {
         ToolLibrariesComponent,
         CodeEditorComponent,
         DialogModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         ButtonComponent,
         HelpTooltipComponent,
         JsonEditorComponent,
