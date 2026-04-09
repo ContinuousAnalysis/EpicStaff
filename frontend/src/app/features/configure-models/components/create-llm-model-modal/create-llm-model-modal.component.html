@@ -1,6 +1,6 @@
 <div class="create-model">
     <div class="create-model__header">
-        <h3 class="create-model__title">Add LLM Model</h3>
+        <h3 class="create-model__title">{{ isEditMode ? 'Edit LLM Model' : 'Add LLM Model' }}</h3>
         <button type="button" class="create-model__close-btn" (click)="onClose()">
             <app-svg-icon icon="x" size="0.875rem" />
         </button>
@@ -62,7 +62,7 @@
     <div class="create-model__footer">
         <app-button type="ghost" (click)="onClose()" [disabled]="isSubmitting()"> Cancel </app-button>
         <app-button type="primary" (click)="onSubmit()" [disabled]="form.invalid || isSubmitting()">
-            {{ isSubmitting() ? 'Adding...' : 'Add Model' }}
+            {{ isSubmitting() ? (isEditMode ? 'Saving...' : 'Adding...') : isEditMode ? 'Save Changes' : 'Add Model' }}
         </app-button>
     </div>
 </div>

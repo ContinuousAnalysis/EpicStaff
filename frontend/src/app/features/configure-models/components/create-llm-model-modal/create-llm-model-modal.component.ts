@@ -19,6 +19,7 @@ import { LlmModelsStorageService } from '../../services/llms/llm-models-storage.
 
 export interface CreateLlmModelDialogData {
     provider: LLMProvider;
+    model?: LLMModel;
 }
 
 @Component({
@@ -44,14 +45,15 @@ export class CreateLlmModelModalComponent {
     private modelsStorageService = inject(LlmModelsStorageService);
     private toastService = inject(ToastService);
 
+    isEditMode = !!this.dialogData.model;
     isSubmitting = signal(false);
 
     form = this.fb.group({
-        name: ['', Validators.required],
-        baseUrl: ['', Validators.pattern(/^$|^https?:\/\/.+/i)],
-        deploymentId: [''],
-        apiVersion: [''],
-        isVisible: [true],
+        name: [this.dialogData.model?.name ?? '', Validators.required],
+        baseUrl: [this.dialogData.model?.base_url ?? '', Validators.pattern(/^$|^https?:\/\/.+/i)],
+        deploymentId: [this.dialogData.model?.deployment_id ?? ''],
+        apiVersion: [this.dialogData.model?.api_version ?? ''],
+        isVisible: [this.dialogData.model?.is_visible ?? true],
     });
 
     provider = this.dialogData.provider;
@@ -70,30 +72,37 @@ export class CreateLlmModelModalComponent {
         const value = this.form.getRawValue();
         this.isSubmitting.set(true);
 
-        this.modelsStorageService
-            .createModel({
-                name: (value.name || '').trim(),
-                base_url: value.baseUrl?.trim() || null,
-                deployment_id: value.deploymentId?.trim() || null,
-                api_version: value.apiVersion?.trim() || null,
-                llm_provider: this.provider.id,
-                is_visible: !!value.isVisible,
-                is_custom: true,
-                predefined: false,
-            })
-            .pipe(finalize(() => this.isSubmitting.set(false)))
-            .subscribe({
-                next: (created: LLMModel) => {
-                    this.dialogRef.close(created);
-                },
-                error: (error) => {
-                    this.toastService.error(this.extractApiErrorMessage(error));
-                },
-            });
+        const request$ = this.isEditMode
+            ? this.modelsStorageService.patchModel(this.dialogData.model!.id, {
+                  name: (value.name || '').trim(),
+                  base_url: value.baseUrl?.trim() || null,
+                  deployment_id: value.deploymentId?.trim() || null,
+                  api_version: value.apiVersion?.trim() || null,
+                  is_visible: !!value.isVisible,
+              })
+            : this.modelsStorageService.createModel({
+                  name: (value.name || '').trim(),
+                  base_url: value.baseUrl?.trim() || null,
+                  deployment_id: value.deploymentId?.trim() || null,
+                  api_version: value.apiVersion?.trim() || null,
+                  llm_provider: this.provider.id,
+                  is_visible: !!value.isVisible,
+                  is_custom: true,
+                  predefined: false,
+              });
+
+        request$.pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+            next: (result: LLMModel) => {
+                this.dialogRef.close(result);
+            },
+            error: (error) => {
+                this.toastService.error(this.extractApiErrorMessage(error));
+            },
+        });
     }
 
     private extractApiErrorMessage(error: unknown): string {
-        const fallback = 'Failed to create model.';
+        const fallback = this.isEditMode ? 'Failed to update model.' : 'Failed to create model.';
         const httpError = error as { error?: unknown; message?: string };
         const payload = httpError?.error;
 

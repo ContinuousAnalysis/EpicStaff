@@ -21,7 +21,6 @@ type AnyModel = LLMModel | EmbeddingModel | RealtimeModel | GetRealtimeTranscrip
 export interface ProviderWithModels<T extends { id: number; name: string } = AnyModel> {
     provider: LLMProvider;
     models: T[];
-    visibleModels: T[];
 }
 
 @Injectable({
@@ -49,11 +48,15 @@ export class LLMLibraryService {
         [ModelTypes.EMBEDDING]: (m) => (m as EmbeddingModel).embedding_provider!,
     };
 
-    private visibilityExtractors: Record<ModelTypes, (model: AnyModel) => boolean> = {
-        [ModelTypes.LLM]: (m) => (m as LLMModel).is_visible,
-        [ModelTypes.EMBEDDING]: (m) => (m as EmbeddingModel).is_visible,
-        [ModelTypes.REALTIME]: (_m) => true,
-        [ModelTypes.TRANSCRIPTION]: (_m) => true,
+    private sortKeyExtractors: Record<ModelTypes, (model: AnyModel) => number> = {
+        [ModelTypes.LLM]: (m) => {
+            const llm = m as LLMModel;
+            if (!llm.is_visible) return 2;
+            return llm.predefined ? 1 : 0;
+        },
+        [ModelTypes.EMBEDDING]: (m) => ((m as EmbeddingModel).is_visible ? 0 : 2),
+        [ModelTypes.REALTIME]: () => 0,
+        [ModelTypes.TRANSCRIPTION]: () => 0,
     };
 
     private buildProviderGroups<
@@ -124,8 +127,8 @@ export class LLMLibraryService {
                 ModelTypes.EMBEDDING,
                 (c) => c.model,
                 (m) => m.embedding_provider!,
-                (_c) => 0,
-                (_c) => []
+                () => 0,
+                () => []
             ),
             ...this.buildProviderGroups(
                 this.realtimeConfigStorage.configs(),
@@ -134,8 +137,8 @@ export class LLMLibraryService {
                 ModelTypes.REALTIME,
                 (c) => c.realtime_model,
                 (m) => m.provider,
-                (_c) => 0,
-                (_c) => []
+                () => 0,
+                () => []
             ),
             ...this.buildProviderGroups(
                 this.transcriptionConfigStorage.configs(),
@@ -144,8 +147,8 @@ export class LLMLibraryService {
                 ModelTypes.TRANSCRIPTION,
                 (c) => c.realtime_transcription_model,
                 (m) => m.provider,
-                (_c) => 0,
-                (_c) => []
+                () => 0,
+                () => []
             ),
         ];
     });
@@ -181,9 +184,9 @@ export class LLMLibraryService {
         }).pipe(
             map(({ models, providers }) => {
                 const getProviderId = this.providerIdExtractors[type];
-                const isVisible = this.visibilityExtractors[type];
+                const getSortKey = this.sortKeyExtractors[type];
                 const modelsMap = this.groupModelsByProvider(models, getProviderId);
-                return this.mapToProviderWithModels(providers, modelsMap, isVisible);
+                return this.mapToProviderWithModels(providers, modelsMap, getSortKey);
             })
         );
     }
@@ -224,17 +227,13 @@ export class LLMLibraryService {
     private mapToProviderWithModels<T extends { id: number; name: string }>(
         providers: LLMProvider[],
         modelsMap: Map<number, T[]>,
-        isVisible: (model: T) => boolean
+        getSortKey: (model: T) => number
     ): ProviderWithModels<T>[] {
         return providers.map((provider) => {
             const allModels = modelsMap.get(provider.id) ?? [];
-            const visibleModels = allModels.filter(isVisible);
+            const models = [...allModels].sort((a, b) => getSortKey(a) - getSortKey(b));
 
-            return {
-                provider,
-                models: allModels,
-                visibleModels,
-            };
+            return { provider, models };
         });
     }
 }

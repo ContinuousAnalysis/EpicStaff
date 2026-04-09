@@ -20,7 +20,7 @@ import {
 } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { AppSvgIconComponent, ButtonComponent, TooltipComponent } from '@shared/components';
+import { AppSvgIconComponent, ButtonComponent, IconButtonComponent, TooltipComponent } from '@shared/components';
 import { LLMModel, LLMProvider, ModelTypes } from '@shared/models';
 import { getProviderIconPath } from '@shared/utils';
 
@@ -45,7 +45,15 @@ const TOP_PROVIDERS = [
 
 @Component({
     selector: 'app-llm-model-selector',
-    imports: [FormsModule, OverlayModule, AppSvgIconComponent, TooltipComponent, UpperCasePipe, ButtonComponent],
+    imports: [
+        FormsModule,
+        OverlayModule,
+        AppSvgIconComponent,
+        TooltipComponent,
+        UpperCasePipe,
+        ButtonComponent,
+        IconButtonComponent,
+    ],
     providers: [
         {
             provide: NG_VALUE_ACCESSOR,
@@ -130,12 +138,11 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
         return providers
             .map((p) => {
                 const providerMatches = p.provider.name.toLowerCase().includes(query);
-                const matchingModels = p.visibleModels.filter((m) => m.name.toLowerCase().includes(query));
-
                 if (providerMatches) return p;
 
+                const matchingModels = p.models.filter((m) => m.name.toLowerCase().includes(query));
                 if (matchingModels.length > 0) {
-                    return { ...p, visibleModels: matchingModels };
+                    return { ...p, models: matchingModels };
                 }
 
                 return null;
@@ -206,18 +213,19 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
     }
 
     getVisibleModels(group: ProviderWithModels<LLMModel>): LLMModel[] {
+        const models = group.models as LLMModel[];
         if (this.searchQuery().trim() || this.expandedProviders().has(group.provider.id)) {
-            return group.visibleModels;
+            return models;
         }
-        return group.visibleModels.slice(0, this.COLLAPSED_COUNT);
+        return models.slice(0, this.COLLAPSED_COUNT);
     }
 
     isCollapsible(group: ProviderWithModels<LLMModel>): boolean {
-        return group.visibleModels.length > this.COLLAPSED_COUNT && !this.searchQuery().trim();
+        return group.models.length > this.COLLAPSED_COUNT && !this.searchQuery().trim();
     }
 
     hiddenCount(group: ProviderWithModels<LLMModel>): number {
-        return group.visibleModels.length - this.COLLAPSED_COUNT;
+        return group.models.length - this.COLLAPSED_COUNT;
     }
 
     toggleExpand(providerId: number): void {
@@ -225,6 +233,19 @@ export class LlmModelSelectorComponent implements ControlValueAccessor {
             const next = new Set(set);
             next.has(providerId) ? next.delete(providerId) : next.add(providerId);
             return next;
+        });
+    }
+
+    openEditModal(model: LLMModel, provider: LLMProvider): void {
+        const dialogRef = this.dialog.open(this.createModelModals[this.provider()], {
+            data: { provider, model },
+            width: '600px',
+        });
+
+        dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+            if (result) {
+                this.modelsResource.reload();
+            }
         });
     }
 

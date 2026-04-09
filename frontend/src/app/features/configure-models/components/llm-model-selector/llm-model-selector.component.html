@@ -73,18 +73,33 @@
                             </app-button>
                         </div>
 
-                        <!-- Visible Models -->
-                        @if (providerData.visibleModels.length > 0) {
+                        <!-- Models -->
+                        @if (providerData.models.length > 0) {
                             <div class="model-selector__models">
                                 @for (model of getVisibleModels(providerData); track model.id) {
-                                    <button
-                                        type="button"
+                                    <div
                                         class="model-selector__model"
                                         [class.model-selector__model--selected]="isModelSelected(model.id)"
-                                        (click)="selectModel(model, providerData.provider)"
+                                        [class.model-selector__model--not-visible]="!model.is_visible"
                                     >
-                                        <span class="model-selector__model-name">{{ model.name }}</span>
-                                    </button>
+                                        <button
+                                            type="button"
+                                            class="model-selector__model-select"
+                                            (click)="selectModel(model, providerData.provider)"
+                                        >
+                                            <span class="model-selector__model-name">{{ model.name }}</span>
+                                        </button>
+                                        @if (!model.predefined) {
+                                            <app-icon-button
+                                                icon="edit"
+                                                size="2rem"
+                                                (click)="
+                                                    openEditModal(model, providerData.provider);
+                                                    $event.stopPropagation()
+                                                "
+                                            />
+                                        }
+                                    </div>
                                 }
                             </div>
                             @if (isCollapsible(providerData)) {
