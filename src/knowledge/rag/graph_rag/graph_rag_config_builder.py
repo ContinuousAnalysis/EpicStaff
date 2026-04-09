@@ -383,40 +383,31 @@ class GraphRagConfigBuilder:
         self,
         config: GraphRagConfig,
         params: GraphRagBasicSearchParams,
-    ) -> GraphRagConfig:
+    ) -> None:
         """
-        Overlay Redis-provided basic search params onto GraphRagConfig.
+        Overlay Redis-provided basic search params onto GraphRagConfig in-place.
 
         Args:
             config: Existing GraphRagConfig (loaded from file)
             params: Basic search params from Redis message
-
-        Returns:
-            The same config with basic_search fields updated
         """
-        if params.prompt is not None:
-            config.basic_search.prompt = build_basic_search_prompt(params.prompt)
+        config.basic_search.prompt = build_basic_search_prompt(params.prompt)
         config.basic_search.k = params.k
         config.basic_search.max_context_tokens = params.max_context_tokens
-        return config
 
     def apply_local_search_params(
         self,
         config: GraphRagConfig,
         params: GraphRagLocalSearchParams,
-    ) -> GraphRagConfig:
+    ) -> None:
         """
-        Overlay Redis-provided local search params onto GraphRagConfig.
+        Overlay Redis-provided local search params onto GraphRagConfig in-place.
 
         Args:
             config: Existing GraphRagConfig (loaded from file)
             params: Local search params from Redis message
-
-        Returns:
-            The same config with local_search fields updated
         """
-        if params.prompt is not None:
-            config.local_search.prompt = build_local_search_prompt(params.prompt)
+        config.local_search.prompt = build_local_search_prompt(params.prompt)
         config.local_search.text_unit_prop = params.text_unit_prop
         config.local_search.community_prop = params.community_prop
         config.local_search.conversation_history_max_turns = (
@@ -425,4 +416,3 @@ class GraphRagConfigBuilder:
         config.local_search.top_k_entities = params.top_k_entities
         config.local_search.top_k_relationships = params.top_k_relationships
         config.local_search.max_context_tokens = params.max_context_tokens
-        return config
