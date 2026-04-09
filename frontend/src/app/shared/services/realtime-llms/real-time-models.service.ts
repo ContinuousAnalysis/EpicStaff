@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { RealtimeModel } from '@shared/models';
+import { CreateRealtimeModel, RealtimeModel } from '@shared/models';
 import { map, Observable } from 'rxjs';
 
 import { ApiGetResponse } from '../../../features/transcription/services/transcription-models.service';
@@ -34,5 +34,13 @@ export class RealtimeModelsService {
         return this.http.get<RealtimeModel>(`${this.apiUrl}${id}/`, {
             headers: this.headers,
         });
+    }
+
+    createModel(data: CreateRealtimeModel): Observable<RealtimeModel> {
+        return this.http.post<RealtimeModel>(this.apiUrl, data, { headers: this.headers });
+    }
+
+    patchModel(id: number, data: Partial<CreateRealtimeModel>): Observable<RealtimeModel> {
+        return this.http.patch<RealtimeModel>(`${this.apiUrl}${id}/`, data, { headers: this.headers });
     }
 }

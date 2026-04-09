@@ -10,15 +10,16 @@ import {
     TooltipComponent,
     ValidationErrorsComponent,
 } from '@shared/components';
-import { LLMProvider } from '@shared/models';
-import { EmbeddingModelsService } from '@shared/services';
+import { EmbeddingModel, LLMProvider } from '@shared/models';
 import { getProviderIconPath } from '@shared/utils';
 import { finalize } from 'rxjs/operators';
 
 import { ToastService } from '../../../../services/notifications';
+import { EmbeddingModelsStorageService } from '../../services/llms/embedding-models-storage.service';
 
 export interface CreateEmbeddingModelDialogData {
     provider: LLMProvider;
+    model?: EmbeddingModel;
 }
 
 @Component({
@@ -42,16 +43,18 @@ export class CreateEmbeddingModelModalComponent {
     private dialogRef = inject(DialogRef);
     private dialogData = inject<CreateEmbeddingModelDialogData>(DIALOG_DATA);
     private fb = inject(FormBuilder);
-    private embeddingModelsService = inject(EmbeddingModelsService);
+    private embeddingModelsService = inject(EmbeddingModelsStorageService);
     private toastService = inject(ToastService);
+
+    isEditMode = !!this.dialogData.model;
 
     isSubmitting = signal(false);
 
     form = this.fb.group({
-        name: ['', Validators.required],
-        baseUrl: ['', Validators.pattern(/^$|^https?:\/\/.+/i)],
-        deployment: [''],
-        isVisible: [true],
+        name: [this.dialogData.model?.name ?? '', Validators.required],
+        baseUrl: [this.dialogData.model?.base_url ?? '', Validators.pattern(/^$|^https?:\/\/.+/i)],
+        deployment: [this.dialogData.model?.deployment ?? ''],
+        isVisible: [this.dialogData.model?.is_visible ?? true],
     });
 
     provider = this.dialogData.provider;
@@ -70,29 +73,35 @@ export class CreateEmbeddingModelModalComponent {
         const value = this.form.getRawValue();
         this.isSubmitting.set(true);
 
-        this.embeddingModelsService
-            .createModel({
-                name: (value.name || '').trim(),
-                base_url: value.baseUrl?.trim() || null,
-                deployment: value.deployment?.trim() || null,
-                embedding_provider: this.provider.id,
-                is_visible: !!value.isVisible,
-                is_custom: true,
-                predefined: false,
-            })
-            .pipe(finalize(() => this.isSubmitting.set(false)))
-            .subscribe({
-                next: (created) => {
-                    this.dialogRef.close(created);
-                },
-                error: (error) => {
-                    this.toastService.error(this.extractApiErrorMessage(error));
-                },
-            });
+        const request$ = this.isEditMode
+            ? this.embeddingModelsService.patchModel(this.dialogData.model!.id, {
+                  name: (value.name || '').trim(),
+                  base_url: value.baseUrl?.trim() || null,
+                  deployment: value.deployment?.trim() || null,
+                  is_visible: !!value.isVisible,
+              })
+            : this.embeddingModelsService.createModel({
+                  name: (value.name || '').trim(),
+                  base_url: value.baseUrl?.trim() || null,
+                  deployment: value.deployment?.trim() || null,
+                  embedding_provider: this.provider.id,
+                  is_visible: !!value.isVisible,
+                  is_custom: true,
+                  predefined: false,
+              });
+
+        request$.pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+            next: (result) => {
+                this.dialogRef.close(result);
+            },
+            error: (error) => {
+                this.toastService.error(this.extractApiErrorMessage(error));
+            },
+        });
     }
 
     private extractApiErrorMessage(error: unknown): string {
-        const fallback = 'Failed to create model.';
+        const fallback = this.isEditMode ? 'Failed to update model.' : 'Failed to create model.';
         const httpError = error as { error?: unknown; message?: string };
         const payload = httpError?.error;
 

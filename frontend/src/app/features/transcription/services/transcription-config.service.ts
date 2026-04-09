@@ -58,7 +58,7 @@ export class TranscriptionConfigsService {
     }
 
     updateTranscriptionConfig(config: UpdateTranscriptionConfigRequest): Observable<GetTranscriptionConfigRequest> {
-        return this.http.put<GetTranscriptionConfigRequest>(this.apiUrl, config, {
+        return this.http.put<GetTranscriptionConfigRequest>(`${this.apiUrl}${config.id}/`, config, {
             headers: this.headers,
         });
     }

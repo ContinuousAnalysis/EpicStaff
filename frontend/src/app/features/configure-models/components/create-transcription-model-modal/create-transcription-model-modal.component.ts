@@ -1,6 +1,5 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -14,12 +13,13 @@ import { LLMProvider } from '@shared/models';
 import { getProviderIconPath } from '@shared/utils';
 import { finalize } from 'rxjs/operators';
 
-import { ConfigService } from '../../../../services/config';
 import { ToastService } from '../../../../services/notifications';
 import { GetRealtimeTranscriptionModelRequest } from '../../../transcription/models/transcription-config.model';
+import { TranscriptionModelsStorageService } from '../../services/llms/transcription-models-storage.service';
 
 export interface CreateTranscriptionModelDialogData {
     provider: LLMProvider;
+    model?: GetRealtimeTranscriptionModelRequest;
 }
 
 @Component({
@@ -42,18 +42,15 @@ export class CreateTranscriptionModelModalComponent {
     private dialogRef = inject(DialogRef);
     private dialogData = inject<CreateTranscriptionModelDialogData>(DIALOG_DATA);
     private fb = inject(FormBuilder);
-    private http = inject(HttpClient);
-    private configService = inject(ConfigService);
+    private transcriptionModelsService = inject(TranscriptionModelsStorageService);
     private toastService = inject(ToastService);
 
-    private get apiUrl(): string {
-        return this.configService.apiUrl + 'realtime-transcription-models/';
-    }
+    isEditMode = !!this.dialogData.model;
 
     isSubmitting = signal(false);
 
     form = this.fb.group({
-        name: ['', Validators.required],
+        name: [this.dialogData.model?.name ?? '', Validators.required],
     });
 
     provider = this.dialogData.provider;
@@ -72,28 +69,23 @@ export class CreateTranscriptionModelModalComponent {
         const value = this.form.getRawValue();
         this.isSubmitting.set(true);
 
-        this.http
-            .post<GetRealtimeTranscriptionModelRequest>(
-                this.apiUrl,
-                {
-                    name: (value.name || '').trim(),
-                    provider: this.provider.id,
-                },
-                { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }
-            )
-            .pipe(finalize(() => this.isSubmitting.set(false)))
-            .subscribe({
-                next: (created) => {
-                    this.dialogRef.close(created);
-                },
-                error: (error) => {
-                    this.toastService.error(this.extractApiErrorMessage(error));
-                },
-            });
+        const name = (value.name || '').trim();
+        const request$ = this.isEditMode
+            ? this.transcriptionModelsService.patchModel(this.dialogData.model!.id, { name })
+            : this.transcriptionModelsService.createModel({ name, provider: this.provider.id, is_custom: true });
+
+        request$.pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+            next: (result) => {
+                this.dialogRef.close(result);
+            },
+            error: (error) => {
+                this.toastService.error(this.extractApiErrorMessage(error));
+            },
+        });
     }
 
     private extractApiErrorMessage(error: unknown): string {
-        const fallback = 'Failed to create model.';
+        const fallback = this.isEditMode ? 'Failed to update model.' : 'Failed to create model.';
         const httpError = error as { error?: unknown; message?: string };
         const payload = httpError?.error;
 

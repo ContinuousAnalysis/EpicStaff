@@ -1,20 +1,21 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import { PROVIDER_ICON_PATHS } from '@shared/constants';
 import { EmbeddingModel, LLMProvider, ModelTypes, RealtimeModel, Tag } from '@shared/models';
-import { EmbeddingModelsService, RealtimeModelsService } from '@shared/services';
 import { forkJoin, Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
 import { LLMModel } from '../../../../shared/models/llms/llm.model';
 import { GetRealtimeTranscriptionModelRequest } from '../../../transcription/models/transcription-config.model';
-import { RealtimeTranscriptionModelsService } from '../../../transcription/services/transcription-models.service';
 import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
 import { EmbeddingConfigStorageService } from './embedding-config-storage.service';
+import { EmbeddingModelsStorageService } from './embedding-models-storage.service';
 import { LlmConfigStorageService } from './llm-config-storage.service';
 import { LlmModelsStorageService } from './llm-models-storage.service';
 import { LlmProvidersStorageService } from './llm-providers-storage.service';
 import { RealtimeConfigStorageService } from './realtime-config-storage.service';
+import { RealtimeModelsStorageService } from './realtime-models-storage.service';
 import { TranscriptionConfigStorageService } from './transcription-config-storage.service';
+import { TranscriptionModelsStorageService } from './transcription-models-storage.service';
 
 type AnyModel = LLMModel | EmbeddingModel | RealtimeModel | GetRealtimeTranscriptionModelRequest;
 
@@ -28,18 +29,14 @@ export interface ProviderWithModels<T extends { id: number; name: string } = Any
 })
 export class LLMLibraryService {
     private readonly configStorage = inject(LlmConfigStorageService);
-    private readonly realtimeModelsService = inject(RealtimeModelsService);
-    private readonly transcriptionModelsService = inject(RealtimeTranscriptionModelsService);
-    private readonly embeddingModelsService = inject(EmbeddingModelsService);
     private readonly llmModelsStorage = inject(LlmModelsStorageService);
     private readonly providersStorage = inject(LlmProvidersStorageService);
     private readonly embeddingConfigStorage = inject(EmbeddingConfigStorageService);
+    private readonly embeddingModelsStorage = inject(EmbeddingModelsStorageService);
     private readonly realtimeConfigStorage = inject(RealtimeConfigStorageService);
+    private readonly realtimeModelsStorage = inject(RealtimeModelsStorageService);
     private readonly transcriptionConfigStorage = inject(TranscriptionConfigStorageService);
-
-    private readonly embeddingModelsSignal = signal<EmbeddingModel[]>([]);
-    private readonly realtimeModelsSignal = signal<RealtimeModel[]>([]);
-    private readonly transcriptionModelsSignal = signal<GetRealtimeTranscriptionModelRequest[]>([]);
+    private readonly transcriptionModelsStorage = inject(TranscriptionModelsStorageService);
 
     private providerIdExtractors: Record<ModelTypes, (model: AnyModel) => number> = {
         [ModelTypes.LLM]: (m) => (m as LLMModel).llm_provider,
@@ -122,7 +119,7 @@ export class LLMLibraryService {
             ),
             ...this.buildProviderGroups(
                 this.embeddingConfigStorage.configs(),
-                this.embeddingModelsSignal(),
+                this.embeddingModelsStorage.models(),
                 providersByType.get(ModelTypes.EMBEDDING) ?? [],
                 ModelTypes.EMBEDDING,
                 (c) => c.model,
@@ -132,7 +129,7 @@ export class LLMLibraryService {
             ),
             ...this.buildProviderGroups(
                 this.realtimeConfigStorage.configs(),
-                this.realtimeModelsSignal(),
+                this.realtimeModelsStorage.models(),
                 providersByType.get(ModelTypes.REALTIME) ?? [],
                 ModelTypes.REALTIME,
                 (c) => c.realtime_model,
@@ -142,7 +139,7 @@ export class LLMLibraryService {
             ),
             ...this.buildProviderGroups(
                 this.transcriptionConfigStorage.configs(),
-                this.transcriptionModelsSignal(),
+                this.transcriptionModelsStorage.models(),
                 providersByType.get(ModelTypes.TRANSCRIPTION) ?? [],
                 ModelTypes.TRANSCRIPTION,
                 (c) => c.realtime_transcription_model,
@@ -159,22 +156,15 @@ export class LLMLibraryService {
             models: this.llmModelsStorage.getModels(),
             llmProviders: this.providersStorage.getProvidersByType(ModelTypes.LLM),
             embeddingConfigs: this.embeddingConfigStorage.getAllConfigs(),
-            embeddingModels: this.embeddingModelsService.getEmbeddingModels(),
+            embeddingModels: this.embeddingModelsStorage.getModels(),
             embeddingProviders: this.providersStorage.getProvidersByType(ModelTypes.EMBEDDING),
             realtimeConfigs: this.realtimeConfigStorage.getAllConfigs(),
-            realtimeModels: this.realtimeModelsService.getAllModels(),
+            realtimeModels: this.realtimeModelsStorage.getModels(),
             realtimeProviders: this.providersStorage.getProvidersByType(ModelTypes.REALTIME),
             transcriptionConfigs: this.transcriptionConfigStorage.getAllConfigs(),
-            transcriptionModels: this.transcriptionModelsService.getAllModels().pipe(map((r) => r.results)),
+            transcriptionModels: this.transcriptionModelsStorage.getModels(),
             transcriptionProviders: this.providersStorage.getProvidersByType(ModelTypes.TRANSCRIPTION),
-        }).pipe(
-            tap(({ embeddingModels, realtimeModels, transcriptionModels }) => {
-                this.embeddingModelsSignal.set(embeddingModels);
-                this.realtimeModelsSignal.set(realtimeModels);
-                this.transcriptionModelsSignal.set(transcriptionModels);
-            }),
-            map(() => void 0)
-        );
+        }).pipe(map(() => void 0));
     }
 
     loadModels(type: ModelTypes): Observable<ProviderWithModels[]> {
@@ -197,13 +187,13 @@ export class LLMLibraryService {
                 return this.llmModelsStorage.getModels();
 
             case ModelTypes.TRANSCRIPTION:
-                return this.transcriptionModelsService.getAllModels().pipe(map((res) => res.results));
+                return this.transcriptionModelsStorage.getModels();
 
             case ModelTypes.REALTIME:
-                return this.realtimeModelsService.getAllModels();
+                return this.realtimeModelsStorage.getModels();
 
             case ModelTypes.EMBEDDING:
-                return this.embeddingModelsService.getEmbeddingModels();
+                return this.embeddingModelsStorage.getModels();
 
             default:
                 return this.llmModelsStorage.getModels();

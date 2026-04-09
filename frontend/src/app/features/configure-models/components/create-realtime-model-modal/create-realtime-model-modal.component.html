@@ -1,6 +1,6 @@
 <div class="create-model">
     <div class="create-model__header">
-        <h3 class="create-model__title">Add Realtime Model</h3>
+        <h3 class="create-model__title">{{ isEditMode ? 'Edit Realtime Model' : 'Add Realtime Model' }}</h3>
         <button type="button" class="create-model__close-btn" (click)="onClose()">
             <app-svg-icon icon="x" size="0.875rem" />
         </button>
@@ -30,7 +30,15 @@
     <div class="create-model__footer">
         <app-button type="outline-primary" (click)="onClose()" [disabled]="isSubmitting()"> Cancel </app-button>
         <app-button type="primary" (click)="onSubmit()" [disabled]="form.invalid || isSubmitting()">
-            {{ isSubmitting() ? 'Adding...' : 'Add Realtime Model' }}
+            {{
+                isSubmitting()
+                    ? isEditMode
+                        ? 'Saving...'
+                        : 'Adding...'
+                    : isEditMode
+                      ? 'Save Changes'
+                      : 'Add Realtime Model'
+            }}
         </app-button>
     </div>
 </div>
