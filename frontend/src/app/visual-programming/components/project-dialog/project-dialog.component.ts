@@ -11,21 +11,28 @@ import {
     ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { SaveWithIndicatorComponent } from 'src/app/shared/components/save-with-indicator/save-with-indicator.component';
-import { UnsavedChangesDialogService } from 'src/app/shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
-import { UnsavedIndicatorComponent } from 'src/app/shared/components/unsaved-indicator/unsaved-indicator.component';
 
 import { OpenProjectPageComponent } from '../../../open-project-page/open-project-page.component';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { SaveWithIndicatorComponent } from '../../../shared/components/save-with-indicator/save-with-indicator.component';
+import { UnsavedChangesDialogService } from '../../../shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
+import { UnsavedIndicatorComponent } from '../../../shared/components/unsaved-indicator/unsaved-indicator.component';
 
 @Component({
     selector: 'app-project-dialog',
     standalone: true,
-    imports: [CommonModule, OpenProjectPageComponent, SaveWithIndicatorComponent, UnsavedIndicatorComponent],
+    imports: [
+        CommonModule,
+        OpenProjectPageComponent,
+        SaveWithIndicatorComponent,
+        UnsavedIndicatorComponent,
+        AppSvgIconComponent,
+    ],
     template: `
         <div class="project-dialog-wrapper">
             <div class="dialog-header">
                 <div class="icon-and-title">
-                    <i class="ti ti-folder"></i>
+                    <app-svg-icon icon="folder" size="1.5rem"></app-svg-icon>
                     <span class="title">{{ data.projectName }}</span>
                     <app-unsaved-indicator [show]="openProjectPage?.hasUnsavedChanges ?? false"></app-unsaved-indicator>
                 </div>
@@ -39,7 +46,7 @@ import { OpenProjectPageComponent } from '../../../open-project-page/open-projec
                     ></app-save-with-indicator>
                     <div class="close-action">
                         <span class="esc-label">ESC</span>
-                        <i class="ti ti-x close-icon" (click)="tryClose()"></i>
+                        <app-svg-icon icon="x" class="close-icon" (click)="tryClose()"></app-svg-icon>
                     </div>
                 </div>
             </div>

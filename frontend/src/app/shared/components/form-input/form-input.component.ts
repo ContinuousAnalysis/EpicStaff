@@ -1,28 +1,29 @@
 import { CommonModule } from '@angular/common';
 import { Component, forwardRef, Input } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-custom-input',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule],
+    imports: [CommonModule, FormsModule, MatTooltipModule, AppSvgIconComponent],
     template: `
         <div class="form-group">
             <div class="label-container" *ngIf="label">
                 <label [for]="id">{{ label }}</label>
                 <span *ngIf="required" class="required"> * </span>
                 <ng-container *ngIf="tooltipText">
-                    <mat-icon
+                    <app-svg-icon
                         *ngIf="!isClassIcon"
+                        [icon]="icon"
+                        size="18px"
                         [matTooltip]="tooltipText"
                         matTooltipPosition="right"
                         matTooltipClass="custom-tooltip"
                         class="help-icon"
-                    >
-                        {{ icon }}
-                    </mat-icon>
+                    />
                     <i
                         *ngIf="isClassIcon"
                         [class]="icon"
@@ -78,7 +79,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
                 }
 
                 .help-icon {
-                    font-size: 18px;
                     width: 18px;
                     height: 18px;
                     color: var(--accent-color);
@@ -154,7 +154,7 @@ export class CustomInputComponent implements ControlValueAccessor {
     @Input() name: string = '';
     @Input() autofocus: boolean = false;
     @Input() tooltipText: string = '';
-    @Input() icon: string = 'help_outline';
+    @Input() icon: string = 'help';
     @Input() required: boolean = false;
     @Input() activeColor: string = '#685fff';
     @Input() errorMessage: string = '';

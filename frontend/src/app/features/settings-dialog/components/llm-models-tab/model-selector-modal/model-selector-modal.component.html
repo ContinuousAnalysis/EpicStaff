@@ -2,8 +2,12 @@
     <!-- Header -->
     <div class="model-selector__header">
         <h3 class="model-selector__title">Select Model</h3>
-        <button type="button" class="model-selector__close-btn" (click)="onClose()">
-            <app-icon icon="ui/x" size="0.875rem" />
+        <button
+            type="button"
+            class="model-selector__close-btn"
+            (click)="onClose()"
+        >
+            <app-svg-icon icon="x" size="0.875rem" />
         </button>
     </div>
 
@@ -27,7 +31,7 @@
             </div>
         } @else if (filteredProviders().length === 0) {
             <div class="model-selector__empty">
-                <app-icon icon="ui/search" size="2rem" />
+                <app-svg-icon icon="search" size="2rem" />
                 <p class="model-selector__empty-title">Model not found</p>
                 <p class="model-selector__empty-text">Please find a provider to add the LLM</p>
             </div>
@@ -37,7 +41,10 @@
                     <!-- Provider Header -->
                     <div class="model-selector__provider-header">
                         <div class="model-selector__provider-info">
-                            <app-icon [icon]="getProviderIcon(providerData.provider.name)" size="1.125rem" />
+                            <app-svg-icon
+                                [icon]="getProviderIcon(providerData.provider.name)"
+                                size="1.125rem"
+                            />
                             <span class="model-selector__provider-name">
                                 {{ providerData.provider.name | uppercase }}
                             </span>

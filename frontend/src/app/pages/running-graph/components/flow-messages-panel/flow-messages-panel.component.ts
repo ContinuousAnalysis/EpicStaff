@@ -13,14 +13,13 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
-import { AppIconComponent } from '@shared/components';
 import { Subject, takeUntil } from 'rxjs';
 
 import { GraphSessionLight, GraphSessionService } from '../../../../features/flows/services/flows-sessions.service';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { GraphMessagesComponent } from '../graph-messages/graph-messages.component';
 
 @Component({
@@ -30,11 +29,11 @@ import { GraphMessagesComponent } from '../graph-messages/graph-messages.compone
         CommonModule,
         FormsModule,
         MatSelectModule,
-        MatIconModule,
+        MatSelectModule,
         MatButtonModule,
         MatTooltipModule,
         GraphMessagesComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
     ],
     templateUrl: './flow-messages-panel.component.html',
     styleUrls: ['./flow-messages-panel.component.scss'],

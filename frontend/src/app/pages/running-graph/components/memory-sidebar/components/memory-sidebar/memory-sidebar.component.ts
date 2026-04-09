@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { Memory, MemoryType } from '../../models/memory.model';
 import { MemoryItemComponent } from './memory-item/memory-item.component';
 
 @Component({
     selector: 'app-memories-sidebar',
     standalone: true,
-    imports: [CommonModule, MemoryItemComponent],
+    imports: [CommonModule, MemoryItemComponent, AppSvgIconComponent],
     template: `
         <!-- Memories Sidebar Overlay -->
         <div class="sidebar-overlay" *ngIf="isOpen" (click)="close.emit()"></div>
@@ -17,7 +18,7 @@ import { MemoryItemComponent } from './memory-item/memory-item.component';
             <div class="sidebar-header">
                 <h2>Session Memories ({{ memories.length }})</h2>
                 <button class="close-button" (click)="close.emit()">
-                    <i class="ti ti-x"></i>
+                    <app-svg-icon icon="x" size="1rem" />
                 </button>
             </div>
 

@@ -9,6 +9,7 @@ import {
 } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 
+import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { MarkdownStrategyModel } from '../../../../../models/strategy.model';
 import { StrategyForm } from '../strategy-config-form.abstract';
 
@@ -19,6 +20,7 @@ import { StrategyForm } from '../strategy-config-form.abstract';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         ChipsInputComponent,
+        AppSvgIconComponent,
         ToggleSwitchComponent,
         MATERIAL_FORMS,
         InputNumberComponent,

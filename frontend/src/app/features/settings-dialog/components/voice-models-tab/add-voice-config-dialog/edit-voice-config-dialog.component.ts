@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { CustomInputComponent } from '../../../../../shared/components/form-input/form-input.component';
 import { UpdateRealtimeModelConfigRequest } from '../../../models/realtime-voice/realtime-llm-config.model';
@@ -14,7 +15,13 @@ import { RealtimeModelConfigsService } from '../../../services/realtime-llms/rea
 @Component({
     selector: 'app-edit-voice-config-dialog',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, ButtonComponent, CustomInputComponent],
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        ButtonComponent,
+        CustomInputComponent,
+        AppSvgIconComponent,
+    ],
     templateUrl: './edit-voice-config-dialog.component.html',
     styleUrls: ['./edit-voice-config-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

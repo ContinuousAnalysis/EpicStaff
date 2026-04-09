@@ -14,8 +14,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
-
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { HelpTooltipComponent } from '../../../../../shared/components/help-tooltip/help-tooltip.component';
 import { JsonEditorComponent } from '../../../../../shared/components/json-editor/json-editor.component';
@@ -57,7 +56,7 @@ export interface AddLlmConfigDialogData {
         SliderWithStepperComponent,
         NumberStepperComponent,
         JsonEditorComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
         HelpTooltipComponent,
     ],
     templateUrl: './add-llm-config-dialog.component.html',

@@ -3,10 +3,11 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 
 import { CollapseOnOverflowDirective } from '../../directives/collapse-on-overflow.directive';
 import { Spinner2Component } from '../spinner-type2/spinner.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-save-with-indicator',
-    imports: [CommonModule, Spinner2Component, CollapseOnOverflowDirective],
+    imports: [CommonModule, Spinner2Component, AppSvgIconComponent, CollapseOnOverflowDirective],
     templateUrl: './save-with-indicator.component.html',
     styleUrl: './save-with-indicator.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

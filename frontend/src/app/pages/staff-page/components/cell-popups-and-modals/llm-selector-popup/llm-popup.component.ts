@@ -15,7 +15,7 @@ import {
     ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, Subject } from 'rxjs';
+import { forkJoin,Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import {
@@ -27,12 +27,13 @@ import {
     FullRealtimeConfigService,
 } from '../../../../../features/settings-dialog/services/realtime-llms/full-reamtime-config.service';
 import { MergedConfig } from '../../../../../features/staff/services/full-agent.service';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { LlmItemComponent } from './llm-item/llm-item.component';
 
 @Component({
     selector: 'app-llm-popup',
     standalone: true,
-    imports: [NgFor, FormsModule, NgIf, NgClass, LlmItemComponent],
+    imports: [NgFor, FormsModule, NgIf, NgClass, LlmItemComponent, AppSvgIconComponent],
     templateUrl: './llm-popup.component.html',
     styleUrls: ['./llm-popup.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

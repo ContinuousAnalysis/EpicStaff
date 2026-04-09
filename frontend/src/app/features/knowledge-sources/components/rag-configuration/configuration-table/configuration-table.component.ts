@@ -11,7 +11,6 @@ import {
     signal,
 } from '@angular/core';
 import {
-    AppIconComponent,
     ButtonComponent,
     CheckboxComponent,
     InputNumberComponent,
@@ -20,6 +19,7 @@ import {
     SelectItem,
 } from '@shared/components';
 
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CHUNK_STRATEGIES_SELECT_ITEMS, FILE_TYPES } from '../../../constants/constants';
 import { NaiveRagDocumentConfig, UpdateNaiveRagDocumentDtoRequest } from '../../../models/naive-rag-document.model';
 import { NaiveRagDocumentsStorageService } from '../../../services/naive-rag-documents-storage.service';
@@ -31,7 +31,7 @@ import { DocFieldChange, TableDocument } from './configuration-table.interface';
     styleUrls: ['./configuration-table.component.scss'],
     imports: [
         SelectComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
         ButtonComponent,
         InputNumberComponent,
         CheckboxComponent,

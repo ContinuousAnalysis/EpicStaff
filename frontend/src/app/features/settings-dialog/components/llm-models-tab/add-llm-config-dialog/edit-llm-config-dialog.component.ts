@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatSliderModule } from '@angular/material/slider';
 
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { CustomInputComponent } from '../../../../../shared/components/form-input/form-input.component';
 import { UpdateLLMConfigRequest } from '../../../models/llms/LLM_config.model';
@@ -13,7 +14,14 @@ import { LLM_Config_Service } from '../../../services/llms/llm-config.service';
 @Component({
     selector: 'app-edit-llm-config-dialog',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, ButtonComponent, CustomInputComponent, MatSliderModule],
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        ButtonComponent,
+        CustomInputComponent,
+        MatSliderModule,
+        AppSvgIconComponent,
+    ],
     templateUrl: './edit-llm-config-dialog.component.html',
     styleUrls: ['./edit-llm-config-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
