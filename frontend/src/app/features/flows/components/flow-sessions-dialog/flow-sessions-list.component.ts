@@ -190,6 +190,7 @@ export class FlowSessionsListComponent implements OnInit {
                         this.sessions.set(sessions.results);
                         this.isLoaded.set(true);
                         this.totalCount = sessions.count;
+                        this.cdr.markForCheck();
                     },
                     error: () => {
                         this.totalCount = 0;
@@ -252,6 +253,7 @@ export class FlowSessionsListComponent implements OnInit {
     }
 
     onStatusFilterChange(values: string[]) {
+        this.currentPage.set(1);
         this.statusFilter.set(values);
     }
 
@@ -260,6 +262,7 @@ export class FlowSessionsListComponent implements OnInit {
     }
 
     onNodeFilterChange(value: string | null) {
+        this.currentPage.set(1);
         this.nodeFilter.set(value);
     }
 }
