@@ -86,6 +86,7 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
 
     public inputsJsonConfig = signal<string>('{}');
     public isInputsJsonValid = signal<boolean>(true);
+    public isSaving = false;
 
     constructor(
         private dialogRef: DialogRef,
@@ -140,6 +141,15 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
             this.inputsJsonConfig.set(this.getDefaultInputsSchema());
         }
 
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((event: KeyboardEvent) => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.createTool();
+                }
+            });
+
         this.cdr.markForCheck();
     }
 
@@ -193,8 +203,12 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
     public createTool(): void {
         this.form.markAllAsTouched();
         if (this.form.invalid || !this.isInputsJsonValid()) {
+            this.toastService.warning('Please fill in all required fields');
+            this.cdr.markForCheck();
             return;
         }
+        if (this.isSaving) return;
+        this.isSaving = true;
 
         const toolName = this.form.value.toolName;
         const toolDescription = this.form.value.toolDescription;
@@ -248,10 +262,12 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: (result: GetPythonCodeToolRequest) => {
+                        this.isSaving = false;
                         this.toastService.success(`Custom Tool updated successfully!`);
                         this.dialogRef.close(result);
                     },
                     error: (error: HttpErrorResponse) => {
+                        this.isSaving = false;
                         console.error('Error updating tool:', error);
                         this.toastService.error('Failed to update custom tool. Please try again.');
                     },
@@ -263,10 +279,12 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: (result: GetPythonCodeToolRequest) => {
+                        this.isSaving = false;
                         this.toastService.success(`Custom Tool created successfully!`);
                         this.dialogRef.close(result);
                     },
                     error: (error: HttpErrorResponse) => {
+                        this.isSaving = false;
                         console.error('Error creating tool:', error);
                         this.toastService.error('Failed to create custom tool. Please try again.');
                     },

@@ -1889,7 +1889,7 @@ class LabelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Label
-        fields = ["id", "name", "parent", "created_at", "full_path"]
+        fields = ["id", "name", "parent", "created_at", "metadata", "full_path"]
         read_only_fields = ["id", "created_at", "full_path"]
         extra_kwargs = {
             "name": {"validators": []},
