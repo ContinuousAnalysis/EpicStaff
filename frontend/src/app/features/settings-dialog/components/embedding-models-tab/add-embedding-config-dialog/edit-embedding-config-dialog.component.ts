@@ -49,14 +49,12 @@ export class EditEmbeddingConfigDialogComponent implements OnInit {
         this.selectedModel.set(this.dialogData.modelDetails ?? null);
         this.selectedModelId.set(this.dialogData.model ?? null);
 
-        this.dialogRef.keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(event => {
-                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-                    event.preventDefault();
-                    this.onSubmit();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onSubmit();
+            }
+        });
     }
 
     private initForm(): void {

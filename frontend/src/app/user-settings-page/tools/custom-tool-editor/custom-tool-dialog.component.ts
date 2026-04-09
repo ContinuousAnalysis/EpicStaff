@@ -141,14 +141,12 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
             this.inputsJsonConfig.set(this.getDefaultInputsSchema());
         }
 
-        this.dialogRef.keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((event: KeyboardEvent) => {
-                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-                    event.preventDefault();
-                    this.createTool();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.createTool();
+            }
+        });
 
         this.cdr.markForCheck();
     }

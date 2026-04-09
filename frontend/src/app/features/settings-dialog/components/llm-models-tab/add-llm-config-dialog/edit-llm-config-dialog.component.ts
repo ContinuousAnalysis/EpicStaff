@@ -40,14 +40,12 @@ export class EditLlmConfigDialogComponent implements OnInit {
             temperature: [Math.round((this.config.temperature ?? 0) * 100), [Validators.min(0), Validators.max(100)]],
         });
 
-        this.dialogRef.keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(event => {
-                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-                    event.preventDefault();
-                    this.onSubmit();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onSubmit();
+            }
+        });
     }
 
     public toggleApiKeyVisibility(): void {

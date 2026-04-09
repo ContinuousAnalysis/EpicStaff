@@ -33,7 +33,7 @@ export class CreateFlowDialogComponent implements OnInit, OnDestroy {
     public errorMessage: string | null = null;
 
     private flowsStorageService = inject(FlowsStorageService);
-    
+
     @ViewChild(LabelDropdownComponent)
     private labelDropdown?: LabelDropdownComponent;
     private keydownSubscription?: Subscription;

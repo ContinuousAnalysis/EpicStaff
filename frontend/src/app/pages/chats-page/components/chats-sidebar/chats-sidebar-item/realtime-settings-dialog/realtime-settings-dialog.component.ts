@@ -1,6 +1,6 @@
 import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, Inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, Inject, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -79,14 +79,12 @@ export class RealtimeSettingsDialogComponent implements OnInit {
             realtime_transcription_config: [this.data.agent.realtime_agent.realtime_transcription_config],
         });
 
-        this.dialogRef.keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((event: KeyboardEvent) => {
-                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-                    event.preventDefault();
-                    this.onConfirm();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onConfirm();
+            }
+        });
     }
 
     loadTranscriptionConfigs(): void {

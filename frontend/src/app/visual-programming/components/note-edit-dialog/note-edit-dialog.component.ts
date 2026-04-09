@@ -1,6 +1,14 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, HostListener, Inject, OnInit } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    DestroyRef,
+    HostListener,
+    Inject,
+    OnInit,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
@@ -163,14 +171,12 @@ export class NoteEditDialogComponent implements OnInit {
         this.noteContent = this.data.node.data.content || '';
         this.cdr.detectChanges();
 
-        this.dialogRef.keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((event: KeyboardEvent) => {
-                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-                    event.preventDefault();
-                    this.close();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.close();
+            }
+        });
     }
 
     close(): void {

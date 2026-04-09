@@ -34,14 +34,12 @@ export class EditVoiceConfigDialogComponent implements OnInit {
     ngOnInit(): void {
         this.initForm();
 
-        this.dialogRef.keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(event => {
-                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-                    event.preventDefault();
-                    this.onSubmit();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onSubmit();
+            }
+        });
     }
 
     private initForm(): void {

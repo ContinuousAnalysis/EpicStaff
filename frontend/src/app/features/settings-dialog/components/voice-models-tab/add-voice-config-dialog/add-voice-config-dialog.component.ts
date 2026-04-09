@@ -44,14 +44,12 @@ export class AddVoiceConfigDialogComponent implements OnInit {
         this.setupProviderIdSubscription();
         this.setupModelIdSubscription();
 
-        this.dialogRef.keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(event => {
-                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-                    event.preventDefault();
-                    this.onSubmit();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onSubmit();
+            }
+        });
     }
 
     private setupProviderIdSubscription(): void {

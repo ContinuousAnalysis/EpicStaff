@@ -56,14 +56,12 @@ export class CreateLlmModelModalComponent implements OnInit {
     getProviderIcon = getProviderIconPath;
 
     ngOnInit(): void {
-        this.dialogRef.keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(event => {
-                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-                    event.preventDefault();
-                    this.onSubmit();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onSubmit();
+            }
+        });
     }
 
     onClose(): void {
