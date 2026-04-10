@@ -253,6 +253,7 @@ function buildLLMNode(ln: GetLLMNodeRequest, idx: number): LLMNodeModel {
         seed: null,
         timeout: null,
         is_visible: true,
+        tags: [],
     };
     return {
         id: uuidv4(),
@@ -319,6 +320,7 @@ function buildSubGraphNode(sn: SubGraphNode, idx: number): SubGraphNodeModel {
     const ui = readUIMetadata(sn.metadata, NodeType.SUBGRAPH, idx, sn.node_name);
     const subgraphDetail = sn.subgraph_detail ?? {
         id: sn.subgraph,
+        uuid: '',
         name: sn.node_name,
         description: '',
         tags: [],

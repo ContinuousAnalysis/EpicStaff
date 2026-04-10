@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, In
 import { FormsModule } from '@angular/forms';
 
 import { FullAgent } from '../../../features/staff/services/full-agent.service';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { SearchDropdownComponent } from './dropdown-staff-agents/search-dropdown.component';
 
 export type GridSizeOption = 'small' | 'medium' | 'large';
@@ -10,7 +11,7 @@ export type GridSizeOption = 'small' | 'medium' | 'large';
 @Component({
     selector: 'app-grid-controls',
     standalone: true,
-    imports: [CommonModule, FormsModule, SearchDropdownComponent],
+    imports: [CommonModule, FormsModule, SearchDropdownComponent, AppSvgIconComponent],
     templateUrl: './grid-controls.component.html',
     styleUrls: ['./grid-controls.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

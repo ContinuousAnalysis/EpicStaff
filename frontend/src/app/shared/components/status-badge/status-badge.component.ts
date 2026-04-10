@@ -2,14 +2,20 @@ import { NgClass, NgIf } from '@angular/common';
 import { Component, Input } from '@angular/core';
 
 import { GraphSessionStatus } from '../../../features/flows/services/flows-sessions.service';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-status-badge',
     standalone: true,
-    imports: [NgClass, NgIf],
+    imports: [NgClass, NgIf, AppSvgIconComponent],
     template: `
         <span class="status-badge" [ngClass]="statusClass">
-            <i *ngIf="sessionStatus !== GraphSessionStatus.EXPIRED" [ngClass]="statusIcon" aria-hidden="true"></i>
+            <app-svg-icon
+                *ngIf="statusIcon"
+                [icon]="statusIcon"
+                size="14px"
+                aria-hidden="true"
+            />
             {{ statusText }}
         </span>
     `,
@@ -25,40 +31,39 @@ import { GraphSessionStatus } from '../../../features/flows/services/flows-sessi
                 font-size: 0.8rem;
                 font-weight: 500;
                 gap: 6px;
-
-                i {
-                    font-size: 14px;
-                }
             }
+
             .status-running {
                 background-color: rgba(41, 121, 255, 0.15);
                 color: #5e9eff;
                 animation: pulse 1.5s infinite ease-in-out;
             }
-            .status-error {
-                background-color: rgba(255, 76, 76, 0.15);
-                color: #ff7a7a;
-            }
+
             .status-error {
                 background-color: rgba(16, 2, 2, 0.15);
                 color: #c69999ff;
             }
+
             .status-stop {
                 background-color: rgba(16, 2, 2, 0.15);
                 color: #b7aeaeff;
             }
+
             .status-waiting {
                 background-color: rgba(255, 170, 0, 0.15);
                 color: #ffc14d;
             }
+
             .status-complete {
                 background-color: rgba(80, 205, 137, 0.15);
                 color: #6bdb9a;
             }
+
             .status-pending {
                 background-color: rgba(150, 150, 150, 0.15);
                 color: #9898a9;
             }
+
             @keyframes pulse {
                 0% {
                     opacity: 1;
@@ -103,6 +108,7 @@ export class StatusBadgeComponent {
 
     get statusClass(): string {
         if (!this.sessionStatus) return '';
+
         switch (this.sessionStatus) {
             case GraphSessionStatus.RUNNING:
                 return 'status-running';
@@ -125,17 +131,18 @@ export class StatusBadgeComponent {
 
     get statusIcon(): string {
         if (!this.sessionStatus) return '';
+
         switch (this.sessionStatus) {
             case GraphSessionStatus.RUNNING:
-                return 'ti ti-player-play';
+                return 'play';
             case GraphSessionStatus.ERROR:
-                return 'ti ti-alert-triangle';
+                return 'warning';
             case GraphSessionStatus.ENDED:
-                return 'ti ti-check';
+                return 'check';
             case GraphSessionStatus.WAITING_FOR_USER:
-                return 'ti ti-hourglass';
+                return 'hourglass';
             case GraphSessionStatus.PENDING:
-                return 'ti ti-circle-dot';
+                return 'status-pending';
             case GraphSessionStatus.EXPIRED:
                 return '';
             case GraphSessionStatus.STOP:

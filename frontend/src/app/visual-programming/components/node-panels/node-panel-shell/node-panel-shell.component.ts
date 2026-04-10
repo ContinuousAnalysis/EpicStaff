@@ -1,6 +1,7 @@
 import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, viewChild } from '@angular/core';
 
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ShortcutListenerDirective } from '../../../core/directives/shortcut-listener.directive';
 import { PANEL_COMPONENT_MAP } from '../../../core/enums/node-panel.map';
 import { NodeModel } from '../../../core/models/node.model';
@@ -10,15 +11,16 @@ import { SidePanelService } from '../../../services/side-panel.service';
 @Component({
     standalone: true,
     selector: 'app-node-panel-shell',
-    imports: [NgComponentOutlet],
+    imports: [NgComponentOutlet, AppSvgIconComponent],
     hostDirectives: [
         {
             directive: ShortcutListenerDirective,
-            outputs: ['escape: escape'],
+            outputs: ['escape: escape', 'save: saveShortcut'],
         },
     ],
     host: {
         '(escape)': 'onEscape()',
+        '(saveShortcut)': 'onShortcutSave()',
     },
     template: `
         @if (node() && panelComponent()) {
@@ -31,13 +33,16 @@ import { SidePanelService } from '../../../services/side-panel.service';
                     <div class="header-actions">
                         @if (shouldShowExpandButton()) {
                             <button class="expand-btn" aria-label="Toggle panel size" (click)="toggleExpanded()">
-                                <i [class]="isExpanded() ? 'ti ti-arrows-minimize' : 'ti ti-arrows-maximize'"></i>
+                                <app-svg-icon
+                                    [icon]="isExpanded() ? 'arrows-minimize' : 'arrows-maximize'"
+                                    size="1.25rem"
+                                ></app-svg-icon>
                             </button>
                         }
                         <div class="close-action">
                             <span class="esc-label">ESC</span>
                             <button class="close-btn" aria-label="Close dialog" (click)="onCloseClick()">
-                                <i class="ti ti-x"></i>
+                                <app-svg-icon icon="x"></app-svg-icon>
                             </button>
                         </div>
                     </div>
@@ -164,6 +169,17 @@ export class NodePanelShellComponent {
         this.isExpanded.update((expanded) => !expanded);
     }
 
+    protected onShortcutSave(): void {
+        if (!this.panelInstance || typeof this.panelInstance.onSaveSilently !== 'function') {
+            return;
+        }
+        const updatedNode = this.panelInstance.onSaveSilently();
+        if (!updatedNode) {
+            return;
+        }
+        this.save.emit(updatedNode);
+    }
+
     public expandPanel(): void {
         this.isExpanded.set(true);
     }
@@ -187,14 +203,22 @@ export class NodePanelShellComponent {
     }
 
     public captureCurrentNodeState(): NodeModel | null {
-        if (this.panelInstance && typeof this.panelInstance.onSaveSilently === 'function') {
+        if (!this.panelInstance) {
+            return null;
+        }
+        if (typeof this.panelInstance.onSaveSilently === 'function') {
             try {
                 return this.panelInstance.onSaveSilently();
             } catch (error) {
                 console.error('Failed to capture node panel state silently', error);
-                return null;
             }
         }
-        return null;
+        // Fall back to onSave() which is required by the NodePanel interface
+        try {
+            return this.panelInstance.onSave();
+        } catch (error) {
+            console.error('Failed to capture node panel state via onSave', error);
+            return null;
+        }
     }
 }

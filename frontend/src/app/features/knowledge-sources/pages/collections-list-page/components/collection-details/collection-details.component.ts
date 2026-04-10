@@ -13,7 +13,6 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    AppIconComponent,
     ConfirmationDialogService,
     DragDropAreaComponent,
     SpinnerComponent,
@@ -22,6 +21,7 @@ import {
 import { EMPTY, filter, throwError } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToastService } from '../../../../../../services/notifications';
 import { FILE_TYPES } from '../../../../constants/constants';
 import { CreateCollectionDtoResponse } from '../../../../models/collection.model';
@@ -38,7 +38,7 @@ import { CollectionRagsComponent } from './collection-rags/collection-rags.compo
     styleUrls: ['./collection-details.component.scss'],
     templateUrl: './collection-details.component.html',
     imports: [
-        AppIconComponent,
+        AppSvgIconComponent,
         FormsModule,
         ReactiveFormsModule,
         DragDropAreaComponent,

@@ -81,6 +81,15 @@
     }
 }
 
+.files__file-action {
+    border-radius: 50%;
+    cursor: pointer;
+    &:hover {
+        transition: .3s;
+        background-color: var(--color-ks-hover-row);
+    }
+}
+
 ::ng-deep .list__title > app-button {
     flex: 0 1 auto;
     min-width: 0;

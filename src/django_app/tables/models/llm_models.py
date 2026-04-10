@@ -5,7 +5,12 @@ from tables.models import (
     Provider,
     AbstractDefaultFillableModel,
 )
-from tables.models.tag_models import LLMModelTag
+from tables.models.tag_models import (
+    LLMModelTag,
+    LLMConfigTag,
+    RealtimeConfigTag,
+    RealtimeTranscriptionConfigTag,
+)
 
 
 class LLMModel(models.Model):
@@ -76,12 +81,13 @@ class LLMConfig(AbstractDefaultFillableModel):
     frequency_penalty = models.FloatField(default=0.0, null=True, blank=True)
     logit_bias = models.JSONField(null=True, blank=True)
     response_format = models.JSONField(null=True, blank=True)
-    seed = models.IntegerField(null=True, blank=True, default=42)
+    seed = models.IntegerField(null=True, blank=True)
     api_key = models.TextField(null=True, blank=True)
     headers = models.JSONField(default=dict, blank=True)
     extra_headers = models.JSONField(default=dict, blank=True)
     timeout = models.FloatField(default=120.0, null=True, blank=True)
     is_visible = models.BooleanField(default=True)
+    tags = models.ManyToManyField(LLMConfigTag, blank=True, related_name="llm_configs")
 
     def get_default_model(self):
         return DefaultLLMConfig.load()
@@ -113,6 +119,9 @@ class RealtimeConfig(models.Model):
     custom_name = models.CharField(max_length=250)
     realtime_model = models.ForeignKey("RealtimeModel", on_delete=models.CASCADE)
     api_key = models.TextField(null=True, blank=True)
+    tags = models.ManyToManyField(
+        RealtimeConfigTag, blank=True, related_name="realtime_configs"
+    )
 
 
 class RealtimeTranscriptionModel(models.Model):
@@ -129,3 +138,8 @@ class RealtimeTranscriptionConfig(models.Model):
         "RealtimeTranscriptionModel", on_delete=models.CASCADE
     )
     api_key = models.TextField(null=True, blank=True)
+    tags = models.ManyToManyField(
+        RealtimeTranscriptionConfigTag,
+        blank=True,
+        related_name="realtime_transcription_configs",
+    )

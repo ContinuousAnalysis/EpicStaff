@@ -10,13 +10,15 @@ import {
     ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AppIconComponent, SelectItem } from '@shared/components';
+import { SelectItem } from '@shared/components';
+
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-chips-input',
     templateUrl: './chips-input.component.html',
     styleUrls: ['./chips-input.component.scss'],
-    imports: [FormsModule, AppIconComponent],
+    imports: [FormsModule, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChipsInputComponent {

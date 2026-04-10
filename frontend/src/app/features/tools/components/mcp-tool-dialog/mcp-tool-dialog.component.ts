@@ -1,6 +1,7 @@
 import { DIALOG_DATA, DialogModule, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, Inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
     AbstractControl,
     AsyncValidatorFn,
@@ -12,7 +13,6 @@ import {
 } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable, of, timer } from 'rxjs';
@@ -37,7 +37,6 @@ interface DialogData {
         MatFormFieldModule,
         MatInputModule,
         MatButtonModule,
-        MatIconModule,
         MatTooltipModule,
         AppSvgIconComponent,
     ],
@@ -50,6 +49,7 @@ export class McpToolDialogComponent implements OnInit {
     public selectedTool?: GetMcpToolRequest;
     public isEditMode: boolean = false;
     public backendErrorMessage: string | null = null;
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private dialogRef: DialogRef<GetMcpToolRequest>,
@@ -66,6 +66,15 @@ export class McpToolDialogComponent implements OnInit {
 
     ngOnInit(): void {
         this.initializeForm();
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((event: KeyboardEvent) => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    if (this.form.status === 'PENDING') return;
+                    event.preventDefault();
+                    this.onSave();
+                }
+            });
     }
 
     private uniqueNameValidator(): AsyncValidatorFn {

@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+
+import { AppSvgIconComponent } from '../../shared/components/app-svg-icon/app-svg-icon.component';
 
 interface Session {
     id: string;
@@ -14,7 +15,7 @@ interface Session {
     selector: 'app-sessions-section',
     templateUrl: './sessions-section.component.html',
     styleUrls: ['./sessions-section.component.scss'],
-    imports: [CommonModule, MatIconModule, MatButtonModule],
+    imports: [CommonModule, MatButtonModule, AppSvgIconComponent],
 })
 export class SessionsSectionComponent {
     selectedFilter: 'all' | 'active' | 'finished' | 'error' = 'all';
