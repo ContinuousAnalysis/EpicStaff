@@ -47,7 +47,10 @@
             @if (usedInFlows.length) {
                 <div class="storage-details-dialog__chips">
                     @for (flow of usedInFlows; track flow) {
-                        <span class="storage-details-dialog__chip">{{ flow }}</span>
+                        <span class="storage-details-dialog__chip">
+                            {{ flow }}
+                            <app-icon icon="ui/x" size="20px" class="storage-details-dialog__chip-x"></app-icon>
+                        </span>
                     }
                 </div>
             } @else {

@@ -2,17 +2,20 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
 import { FlowsApiService } from '../../../flows/services/flows-api.service';
 import { StorageItem } from '../../models/storage.models';
+import { StorageApiService } from '../../services/storage-api.service';
 
 export interface AddToFlowDialogData {
     item: StorageItem;
 }
 
 export interface AddToFlowDialogResult {
-    graphIds: number[];
+    addGraphIds: number[];
+    removeGraphIds: number[];
 }
 
 interface FlowOption {
@@ -32,12 +35,14 @@ export class AddToFlowDialogComponent {
     private dialogRef = inject(DialogRef<AddToFlowDialogResult>);
     readonly data: AddToFlowDialogData = inject(DIALOG_DATA);
     private flowsApiService = inject(FlowsApiService);
+    private storageApiService = inject(StorageApiService);
     private destroyRef = inject(DestroyRef);
 
     readonly searchQuery = signal('');
     readonly flows = signal<FlowOption[]>([]);
     readonly isLoading = signal(true);
     readonly dropdownOpen = signal(false);
+    private initialCheckedIds = new Set<number>();
 
     readonly visibleFlows = computed(() => {
         const query = this.searchQuery().toLowerCase().trim();
@@ -54,17 +59,27 @@ export class AddToFlowDialogComponent {
         return `${selected.length} flows selected`;
     }
 
-    get isValid(): boolean {
-        return this.selectedFlows().length > 0;
+    get hasChanges(): boolean {
+        const current = this.flows();
+        return current.some((f) => f.checked !== this.initialCheckedIds.has(f.id));
     }
 
     ngOnInit(): void {
-        this.flowsApiService
-            .getGraphsLight()
+        forkJoin({
+            graphs: this.flowsApiService.getGraphsLight(),
+            info: this.storageApiService.info(this.data.item.path),
+        })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (graphs) => {
-                    this.flows.set(graphs.map((g) => ({ id: g.id, name: g.name, checked: false })));
+                next: ({ graphs, info }) => {
+                    const assignedNames = new Set(info.graphs ?? []);
+                    const options = graphs.map((g) => ({
+                        id: g.id,
+                        name: g.name,
+                        checked: assignedNames.has(g.name),
+                    }));
+                    this.initialCheckedIds = new Set(options.filter((o) => o.checked).map((o) => o.id));
+                    this.flows.set(options);
                     this.isLoading.set(false);
                 },
                 error: () => {
@@ -93,8 +108,11 @@ export class AddToFlowDialogComponent {
     }
 
     onConfirm(): void {
-        if (!this.isValid) return;
-        this.dialogRef.close({ graphIds: this.selectedFlows().map((f) => f.id) });
+        if (!this.hasChanges) return;
+        const all = this.flows();
+        const addGraphIds = all.filter((f) => f.checked && !this.initialCheckedIds.has(f.id)).map((f) => f.id);
+        const removeGraphIds = all.filter((f) => !f.checked && this.initialCheckedIds.has(f.id)).map((f) => f.id);
+        this.dialogRef.close({ addGraphIds, removeGraphIds });
     }
 
     onCancel(): void {

@@ -91,7 +91,7 @@ export class StorageApiService {
     uploadMany(path: string, files: File[]): Observable<StorageUploadResponse> {
         const formData = new FormData();
         files.forEach((file) => formData.append('files', file));
-        formData.append('path', path);
+        formData.append('path', this.normalizePath(path) || '/');
 
         return this.http.post<StorageUploadResponse>(`${this.apiUrl}upload/`, formData);
     }
@@ -142,9 +142,8 @@ export class StorageApiService {
     }
 
     removeFromGraph(path: string, graphIds: number[]): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}remove-from-graph/`, {
-            path,
-            graph_ids: graphIds,
+        return this.http.delete<void>(`${this.apiUrl}remove-from-graph/`, {
+            body: { path, graph_ids: graphIds },
         });
     }
 

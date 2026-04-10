@@ -13,6 +13,7 @@ export interface StorageItemInfo extends StorageItem {
     content_type?: string;
     created?: string;
     etag?: string;
+    graphs?: string[];
 }
 
 export interface StorageFileUploadResult {

@@ -261,12 +261,19 @@ export class StoragePageComponent {
         });
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
             if (!result) return;
-            this.storageApiService
-                .addToGraph(item.path, result.graphIds)
+            const requests = [];
+            if (result.addGraphIds.length) {
+                requests.push(this.storageApiService.addToGraph(item.path, result.addGraphIds));
+            }
+            if (result.removeGraphIds.length) {
+                requests.push(this.storageApiService.removeFromGraph(item.path, result.removeGraphIds));
+            }
+            if (!requests.length) return;
+            forkJoin(requests)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
-                    next: () => this.toastService.success(`"${item.name}" added to ${result.graphIds.length} flow(s)`),
-                    error: () => this.toastService.error(`Failed to add "${item.name}" to flow`),
+                    next: () => this.toastService.success(`"${item.name}" flow assignments updated`),
+                    error: () => this.toastService.error(`Failed to update flow assignments for "${item.name}"`),
                 });
         });
     }
@@ -373,7 +380,7 @@ export class StoragePageComponent {
                 ...details,
                 type: details.type ?? fallbackType,
                 path: details.path || fallbackPath,
-                usedIn: [],
+                usedIn: details.graphs ?? [],
             },
         });
     }
