@@ -94,7 +94,6 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                                 </div>
                             </td>
                             <td>
-                                // todo icon-btn
                                 <app-icon-button
                                     icon="x"
                                     size="1.5rem"

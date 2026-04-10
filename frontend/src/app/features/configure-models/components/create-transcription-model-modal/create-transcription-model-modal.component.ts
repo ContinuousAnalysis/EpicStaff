@@ -1,6 +1,7 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
     AppSvgIconComponent,
@@ -24,7 +25,6 @@ export interface CreateTranscriptionModelDialogData {
 
 @Component({
     selector: 'app-create-transcription-model-modal',
-    standalone: true,
     imports: [
         CommonModule,
         ReactiveFormsModule,
@@ -41,6 +41,7 @@ export interface CreateTranscriptionModelDialogData {
 export class CreateTranscriptionModelModalComponent {
     private dialogRef = inject(DialogRef);
     private dialogData = inject<CreateTranscriptionModelDialogData>(DIALOG_DATA);
+    private destroyRef = inject(DestroyRef);
     private fb = inject(FormBuilder);
     private transcriptionModelsService = inject(TranscriptionModelsStorageService);
     private toastService = inject(ToastService);
@@ -56,12 +57,21 @@ export class CreateTranscriptionModelModalComponent {
     provider = this.dialogData.provider;
     getProviderIcon = getProviderIconPath;
 
+    ngOnInit() {
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onSubmit();
+            }
+        });
+    }
+
     onClose(): void {
         this.dialogRef.close(null);
     }
 
     onSubmit(): void {
-        if (this.form.invalid) {
+        if (this.form.invalid || this.isSubmitting()) {
             this.form.markAllAsTouched();
             return;
         }

@@ -81,6 +81,13 @@ export class LlmModelConfigDialogComponent implements OnInit {
         if (this.data?.configId) {
             this.loadConfig(this.data.configId);
         }
+
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onSave();
+            }
+        });
     }
 
     private loadConfig(configId: number): void {
@@ -115,6 +122,11 @@ export class LlmModelConfigDialogComponent implements OnInit {
     }
 
     onSave(): void {
+        if (this.form.invalid || this.isSaving() || this.isLoading()) {
+            this.form.markAllAsTouched();
+            return;
+        }
+
         this.isSaving.set(true);
         const formValue = this.form.value;
 

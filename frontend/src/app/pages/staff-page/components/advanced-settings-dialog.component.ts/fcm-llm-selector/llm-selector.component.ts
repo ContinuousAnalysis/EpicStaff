@@ -1,15 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, forwardRef, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
+import { AppSvgIconComponent } from '@shared/components';
 import { ClickOutsideDirective } from '@shared/directives';
 import { FullLLMConfig } from '@shared/services';
 
-import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
-
 @Component({
     selector: 'app-llm-selector',
-    standalone: true,
-    //todo
     imports: [CommonModule, FormsModule, ReactiveFormsModule, ClickOutsideDirective, AppSvgIconComponent],
     templateUrl: './llm-selector.component.html',
     styleUrls: ['./llm-selector.component.scss'],

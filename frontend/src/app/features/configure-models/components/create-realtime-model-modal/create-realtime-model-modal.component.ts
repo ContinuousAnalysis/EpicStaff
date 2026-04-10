@@ -1,6 +1,7 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
     AppSvgIconComponent,
@@ -23,7 +24,6 @@ export interface CreateRealtimeModelDialogData {
 
 @Component({
     selector: 'app-create-realtime-model-modal',
-    standalone: true,
     imports: [
         CommonModule,
         ReactiveFormsModule,
@@ -37,9 +37,10 @@ export interface CreateRealtimeModelDialogData {
     styleUrls: ['./create-realtime-model-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateRealtimeModelModalComponent {
+export class CreateRealtimeModelModalComponent implements OnInit {
     private dialogRef = inject(DialogRef);
     private dialogData = inject<CreateRealtimeModelDialogData>(DIALOG_DATA);
+    private destroyRef = inject(DestroyRef);
     private fb = inject(FormBuilder);
     private realtimeModelsService = inject(RealtimeModelsStorageService);
     private toastService = inject(ToastService);
@@ -55,12 +56,21 @@ export class CreateRealtimeModelModalComponent {
     provider = this.dialogData.provider;
     getProviderIcon = getProviderIconPath;
 
+    ngOnInit() {
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onSubmit();
+            }
+        });
+    }
+
     onClose(): void {
         this.dialogRef.close(null);
     }
 
     onSubmit(): void {
-        if (this.form.invalid) {
+        if (this.form.invalid || this.isSubmitting()) {
             this.form.markAllAsTouched();
             return;
         }
