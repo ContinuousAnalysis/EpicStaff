@@ -13,6 +13,7 @@ import {
     ViewChild,
 } from '@angular/core';
 
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { NodeType } from '../../core/enums/node-type';
 import { FlowGraphCoreMenuComponent } from './flow-graph-core-menu/flow-graph-core-menu.component';
 import { FlowsMenuComponent } from './flows-menu/flows-menu.component';
@@ -44,6 +45,7 @@ export type MenuContext = 'flow-graph' | 'project-graph';
         ToolsMenuComponent,
         StaffMenuComponent,
         ProjectGraphCoreMenuComponent,
+        AppSvgIconComponent,
     ],
 })
 export class FlowGraphContextMenuComponent implements AfterViewInit, OnDestroy {

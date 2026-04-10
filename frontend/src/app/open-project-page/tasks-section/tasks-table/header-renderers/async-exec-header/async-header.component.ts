@@ -1,37 +1,28 @@
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, OnDestroy, TemplateRef, ViewChild } from '@angular/core';
-import { ViewContainerRef } from '@angular/core';
+import {
+    AfterViewInit,
+    Component,
+    ElementRef,
+    OnDestroy,
+    TemplateRef,
+    ViewChild,
+    ViewContainerRef,
+} from '@angular/core';
 import { IHeaderParams } from 'ag-grid-community';
 import { fromEvent, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+
 @Component({
     selector: 'app-async-header',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, AppSvgIconComponent],
     template: `
         <div class="header-container" #headerContainer>
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="icon icon-tabler icons-tabler-outline icon-tabler-arrows-cross"
-            >
-                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                <path d="M16 4h4v4" />
-                <path d="M15 9l5 -5" />
-                <path d="M4 20l5 -5" />
-                <path d="M16 20h4v-4" />
-                <path d="M4 4l16 16" />
-            </svg>
+            <app-svg-icon icon="arrows-cross" size="24px" />
         </div>
 
         <ng-template #tooltipTemplate>
@@ -51,10 +42,6 @@ import { takeUntil } from 'rxjs/operators';
                 display: flex;
                 align-items: center;
                 justify-content: center;
-            }
-            .icon {
-                height: 24px;
-                width: 24px;
             }
             .tooltip {
                 background-color: #2a2a2a;
@@ -86,14 +73,12 @@ export class AsyncHeaderComponent implements OnDestroy, AfterViewInit {
     ngAfterViewInit(): void {
         const element = this.headerContainer.nativeElement;
 
-        // Mouse enter event
         fromEvent(element, 'mouseenter')
             .pipe(takeUntil(this.destroy$))
             .subscribe(() => {
                 this.showTooltip();
             });
 
-        // Mouse leave event
         fromEvent(element, 'mouseleave')
             .pipe(takeUntil(this.destroy$))
             .subscribe(() => {

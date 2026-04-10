@@ -2,11 +2,11 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 
 import { GraphDto } from '../../../../features/flows/models/graph.model';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CrewNode } from '../../../flows-page/components/flow-visual-programming/models/crew-node.model';
 import { GetLLMNodeRequest } from '../../../flows-page/components/flow-visual-programming/models/llm-node.model';
 import { PythonNode } from '../../../flows-page/components/flow-visual-programming/models/python-node.model';
-import { GraphMessage, MessageType } from '../../models/graph-session-message.model';
-import { UpdateSessionStatusMessageData } from '../../models/graph-session-message.model';
+import { GraphMessage, MessageType, UpdateSessionStatusMessageData } from '../../models/graph-session-message.model';
 
 interface NodeStatus {
     node: CrewNode | PythonNode | GetLLMNodeRequest;
@@ -16,7 +16,7 @@ interface NodeStatus {
 @Component({
     selector: 'app-flow-representation',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, AppSvgIconComponent],
     template: `
         <div class="flow-container">
             <div class="flow-content">
@@ -28,7 +28,11 @@ interface NodeStatus {
                         >
                             <div class="node-name">{{ item.node.node_name }}</div>
                             <div class="status-badge" [ngClass]="getStatusClass(item.status)">
-                                <i [ngClass]="getStatusIcon(item.status)" aria-hidden="true"></i>
+                                <app-svg-icon
+                                    *ngIf="getStatusIcon(item.status)"
+                                    [icon]="getStatusIcon(item.status)"
+                                    size="1rem"
+                                />
                                 {{ getStatusText(item.status) }}
                             </div>
                         </li>
@@ -120,7 +124,7 @@ interface NodeStatus {
             align-items: center;
             gap: 6px;
 
-            i {
+            app-svg-icon {
                 font-size: 14px;
             }
         }
@@ -308,15 +312,15 @@ export class FlowRepresentationComponent implements OnChanges {
     getStatusIcon(status: NodeStatus['status']): string {
         switch (status) {
             case 'complete':
-                return 'ti ti-check';
+                return 'check';
             case 'in_progress':
-                return 'ti ti-player-play';
+                return 'player-play';
             case 'error':
-                return 'ti ti-alert-triangle';
+                return 'alert-triangle';
             case 'waiting':
-                return 'ti ti-hourglass';
+                return 'hourglass';
             case 'not_started':
-                return 'ti ti-circle-dot';
+                return 'circle-dot';
             default:
                 return '';
         }

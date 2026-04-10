@@ -5,22 +5,26 @@ import { MarkdownModule } from 'ngx-markdown';
 
 import { GetAgentRequest } from '../../../../../../features/staff/models/agent.model';
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-agent-finish-message',
     standalone: true,
-    imports: [CommonModule, MarkdownModule, NgxJsonViewerModule],
+    imports: [CommonModule, MarkdownModule, NgxJsonViewerModule, AppSvgIconComponent],
     animations: [expandCollapseAnimation],
     template: `
         <div class="agent-flow-container">
             <!-- Agent Message Header with Toggle -->
             <div class="agent-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon
+                        [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                        size="1.1rem"
+                    />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-robot"></i>
+                    <app-svg-icon icon="robot" size="1.25rem" />
                 </div>
                 <h3>
                     Agent <span class="agent-name">{{ getAgentName() }}</span> finished doing the assigned task.
@@ -33,10 +37,10 @@ import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../m
                     <!-- Thought Section -->
                     <div class="thought-container" *ngIf="agentFinishMessageData?.thought">
                         <div class="section-heading" (click)="toggleSection('thought')">
-                            <i
-                                class="ti"
-                                [ngClass]="isThoughtExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon
+                                [icon]="isThoughtExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Thought
                         </div>
                         <div
@@ -98,12 +102,10 @@ import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../m
                 margin-right: 16px;
                 display: flex;
                 align-items: center;
-            }
 
-            .play-arrow i {
-                color: #8e5cd9;
-                font-size: 1.1rem;
-                transition: transform 0.3s ease;
+                app-svg-icon {
+                    color: #8e5cd9;
+                }
             }
 
             .icon-container {
@@ -116,11 +118,10 @@ import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../m
                 justify-content: center;
                 margin-right: 20px;
                 flex-shrink: 0;
-            }
 
-            .icon-container i {
-                color: var(--gray-900);
-                font-size: 1.25rem;
+                app-svg-icon {
+                    color: var(--gray-900);
+                }
             }
 
             h3 {
@@ -166,12 +167,10 @@ import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../m
                 align-items: center;
             }
 
-            .section-heading i {
+            .section-heading app-svg-icon {
                 margin-right: 8px;
                 color: #8e5cd9;
-                font-size: 1.1rem;
                 margin-left: -3px;
-                transition: transform 0.3s ease;
             }
 
             .thought-bubble {

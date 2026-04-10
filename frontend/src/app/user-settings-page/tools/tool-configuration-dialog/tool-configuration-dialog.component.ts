@@ -1,21 +1,15 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { NgClass, NgFor, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { FullEmbeddingConfig, FullEmbeddingConfigService, FullLLMConfig, FullLLMConfigService } from '@shared/services';
 import { forkJoin, Observable, Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import {
-    FullEmbeddingConfig,
-    FullEmbeddingConfigService,
-} from '../../../features/settings-dialog/services/embeddings/full-embedding.service';
-import {
-    FullLLMConfig,
-    FullLLMConfigService,
-} from '../../../features/settings-dialog/services/llms/full-llm-config.service';
 import { Tool } from '../../../features/tools/models/tool.model';
 import { GetToolConfigRequest, ToolConfig } from '../../../features/tools/models/tool-config.model';
 import { ToolConfigService } from '../../../features/tools/services/tool-config.service';
 import { ToastService } from '../../../services/notifications/toast.service';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ConfirmationDialogService } from '../../../shared/components/cofirm-dialog/confimation-dialog.service';
 import { ToolConfigFormComponent } from './tool-config-form/tool-config-form.component';
 
@@ -25,7 +19,7 @@ import { ToolConfigFormComponent } from './tool-config-form/tool-config-form.com
     styleUrls: ['./tool-configuration-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: true,
-    imports: [NgIf, NgFor, NgClass, ToolConfigFormComponent],
+    imports: [NgIf, NgFor, NgClass, ToolConfigFormComponent, AppSvgIconComponent],
 })
 export class ToolConfigurationDialogComponent implements OnInit, OnDestroy {
     tool: Tool;

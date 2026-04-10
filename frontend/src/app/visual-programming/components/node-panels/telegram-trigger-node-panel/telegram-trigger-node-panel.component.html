@@ -46,28 +46,27 @@
                     <div class="webhook-section">
                         <div class="webhook-section__label-container">
                             <label>Webhook</label>
-                            <mat-icon
+                            <app-svg-icon
+                                icon="help"
                                 [matTooltip]="'Ngrok tunnel'"
                                 matTooltipPosition="right"
                                 matTooltipClass="custom-tooltip"
                                 class="help-icon"
-                            >
-                                help
-                            </mat-icon>
+                            />
                         </div>
 
                         <div class="webhook-status__container">
                             @switch (webhookStatusDisplay()) {
                                 @case (WebhookStatus.FAIL) {
                                     <div class="webhook-status__main">
-                                        <app-icon class="webhook-status__icon--failed" icon="ui/x" size="1rem" />
+                                        <app-svg-icon class="webhook-status__icon--failed" icon="x" size="1rem" />
                                         <span>Registration failed</span>
                                     </div>
                                     <span class="webhook-status__error-message"> Webhook service is not running </span>
                                 }
                                 @case (WebhookStatus.SUCCESS) {
                                     <div class="webhook-status__main">
-                                        <app-icon class="webhook-status__icon--success" icon="ui/check" size="1rem" />
+                                        <app-svg-icon class="webhook-status__icon--success" icon="check" size="1rem" />
                                         <span>Webhook registered</span>
                                     </div>
                                 }
@@ -104,7 +103,7 @@
                 <div class="code-editor-section">
                     <label> Mock Data </label>
                     <div class="code-editor-section__info">
-                        <mat-icon class="code-editor-section__info-icon"> help </mat-icon>
+                        <app-svg-icon icon="help" class="code-editor-section__info-icon" />
                         <a
                             class="code-editor-section__info-link"
                             href="https://core.telegram.org/bots/api#available-types"

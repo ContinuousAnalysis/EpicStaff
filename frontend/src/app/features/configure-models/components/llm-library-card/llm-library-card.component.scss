@@ -1,0 +1,135 @@
+:host {
+    display: flex;
+}
+
+.llm-card {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    gap: 6px;
+    background: transparent;
+    transition: border-color 0.2s ease;
+
+    &:hover {
+        border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.25rem;
+    }
+
+    &__model {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(217, 217, 222, 0.5);
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    &__action {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1px solid rgba(104, 95, 255, 0.4);
+        background: transparent;
+        color: var(--configure-models-dialog-inactive-color, #685fff);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        transition:
+            background 0.2s ease,
+            border-color 0.2s ease;
+
+        i {
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        &:hover {
+            background: rgba(104, 95, 255, 0.12);
+            border-color: rgba(104, 95, 255, 0.7);
+        }
+
+        &--delete {
+            &:hover {
+                background: rgba(255, 80, 80, 0.12);
+                border-color: rgba(255, 80, 80, 0.5);
+                color: #ff5050;
+            }
+        }
+    }
+
+    &__name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--configure-models-dialog-active-color, #d9d9de);
+        word-break: break-word;
+    }
+
+    &__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    &__tag {
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(217, 217, 222, 0.5);
+    }
+
+    &__bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: auto;
+        padding-top: 8px;
+    }
+
+    &__temp {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: rgba(217, 217, 222, 0.5);
+
+        i {
+            font-size: 14px;
+        }
+    }
+
+    &__usage {
+        font-size: 12px;
+        color: rgba(217, 217, 222, 0.5);
+
+        &--active {
+            color: var(--configure-models-dialog-inactive-color, #685fff);
+            font-weight: 500;
+            cursor: pointer;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    &__usage-arrow {
+        margin-left: 4px;
+    }
+}

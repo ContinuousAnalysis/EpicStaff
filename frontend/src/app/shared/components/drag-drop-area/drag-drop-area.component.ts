@@ -1,13 +1,13 @@
 import { UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 
-import { AppIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-drag-drop-area',
     templateUrl: './drag-drop-area.component.html',
     styleUrls: ['./drag-drop-area.component.scss'],
-    imports: [AppIconComponent, UpperCasePipe],
+    imports: [AppSvgIconComponent, UpperCasePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DragDropAreaComponent {

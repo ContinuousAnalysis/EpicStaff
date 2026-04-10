@@ -11,7 +11,7 @@
                 <app-button
                     type="primary"
                     class="btn-primary create-btn"
-                    [leftIcon]="'ui/plus'"
+                    [leftIcon]="'plus'"
                     (click)="openCreateProjectDialog()"
                 >
                     Create project
@@ -36,7 +36,7 @@
                 </app-project-tags-filter> -->
 
                 <div class="search-container">
-                    <app-icon icon="ui/search" class="search-icon" size="1.1rem"></app-icon>
+                    <app-svg-icon icon="search" class="search-icon" size="1.1rem" />
                     <input
                         type="text"
                         class="search-input"
@@ -46,7 +46,7 @@
                     />
                     @if (searchTerm) {
                         <button type="button" class="clear-btn" aria-label="Clear" (click)="clearSearch()">
-                            <app-icon icon="ui/x" size="1.1rem"></app-icon>
+                            <app-svg-icon icon="x" size="1.1rem" />
                         </button>
                     }
                 </div>

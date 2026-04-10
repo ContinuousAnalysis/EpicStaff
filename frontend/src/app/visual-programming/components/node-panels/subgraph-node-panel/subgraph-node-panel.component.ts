@@ -2,10 +2,12 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { GraphDto } from '../../../../features/flows/models/graph.model';
+import { GetGraphLightRequest } from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { GoToButtonComponent } from '../../../../shared/components/go-to-button/go-to-button.component';
+// import { flowUrl } from '../../../../shared/utils/flow-links';
 import { SubGraphNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { InputMapComponent } from '../../input-map/input-map.component';
@@ -18,7 +20,14 @@ interface InputMapPair {
 @Component({
     standalone: true,
     selector: 'app-subgraph-node-panel',
-    imports: [ReactiveFormsModule, CommonModule, CustomInputComponent, InputMapComponent, GoToButtonComponent],
+    imports: [
+        ReactiveFormsModule,
+        CommonModule,
+        CustomInputComponent,
+        InputMapComponent,
+        GoToButtonComponent,
+        AppSvgIconComponent,
+    ],
     template: `
         <div class="panel-container">
             <div class="panel-content">
@@ -47,10 +56,11 @@ interface InputMapPair {
                     <div class="field">
                         <label>
                             Selected Flow
-                            <i
-                                class="ti ti-help-circle tooltip-icon"
+                            <app-svg-icon
+                                icon="help"
+                                class="tooltip-icon"
                                 title="Select the flow that this node will execute"
-                            ></i>
+                            ></app-svg-icon>
                         </label>
                         <div class="selected-flow-row">
                             <select formControlName="selectedFlowId" class="select-field" (change)="onFlowChange()">
@@ -156,7 +166,7 @@ interface InputMapPair {
 export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel> implements OnInit {
     private flowsApiService = inject(FlowsApiService);
 
-    public availableFlows = signal<GraphDto[]>([]);
+    public availableFlows = signal<GetGraphLightRequest[]>([]);
     public readonly currentFlowId = input<number | null>(null);
     public readonly filteredFlows = computed(() => {
         const currentId = this.currentFlowId();
@@ -180,7 +190,7 @@ export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel>
 
     ngOnInit(): void {
         this.flowsApiService.getGraphsLight().subscribe({
-            next: (flows: GraphDto[]) => {
+            next: (flows: GetGraphLightRequest[]) => {
                 this.availableFlows.set(flows);
             },
             error: (err) => console.error('Error fetching flows:', err),
@@ -213,6 +223,7 @@ export class SubGraphNodePanelComponent extends BaseSidePanel<SubGraphNodeModel>
         if (selectedFlow) {
             updatedData = {
                 id: selectedFlow.id,
+                uuid: selectedFlow.uuid,
                 name: selectedFlow.name,
                 description: selectedFlow.description,
                 tags: selectedFlow.tags || [],

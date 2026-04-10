@@ -1,6 +1,7 @@
 import { NgFor } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
 import { NodeType } from '../../../core/enums/node-type';
 import { FlowService } from '../../../services/flow.service';
@@ -23,9 +24,11 @@ interface FlowGraphBlock {
                 [style.border-left-color]="block.color"
                 [class.disabled]="isDisabled(block.type)"
             >
-                <i [class]="block.icon" [style.color]="block.color"></i>
-                {{ block.label }}
-                <i class="ti ti-plus plus-icon"></i>
+                <span class="node-icon" [style.color]="block.color">
+                    <i [class]="block.icon" style="font-size: 22px"></i>
+                </span>
+                <span class="node-label">{{ block.label }}</span>
+                <app-svg-icon icon="plus" class="plus-icon" size="18px"></app-svg-icon>
             </li>
         </ul>
     `,
@@ -47,20 +50,20 @@ interface FlowGraphBlock {
                 transition: background 0.2s ease;
                 position: relative;
             }
+            .node-icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            .node-label {
+                color: #fff;
+            }
             li:hover {
                 background: #2a2a2a;
             }
-            li i {
-                font-size: 16px;
-                color: #bbb; /* Fallback color */
-                transition: color 0.2s ease;
-            }
-            li:hover i {
-                color: inher;
-            }
             .plus-icon {
                 margin-left: auto;
-                font-size: 18px;
                 color: #bbb;
                 opacity: 0;
                 transition:
@@ -79,7 +82,7 @@ interface FlowGraphBlock {
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [NgFor],
+    imports: [NgFor, AppSvgIconComponent],
 })
 export class FlowGraphCoreMenuComponent {
     @Input() public searchTerm: string = '';

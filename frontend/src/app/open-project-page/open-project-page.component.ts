@@ -31,6 +31,7 @@ import { FullAgent, FullAgentService } from '../features/staff/services/full-age
 import { AgentsService } from '../features/staff/services/staff.service';
 import { TasksService } from '../features/tasks/services/tasks.service';
 import { ToastService } from '../services/notifications/toast.service';
+import { AppSvgIconComponent } from '../shared/components/app-svg-icon/app-svg-icon.component';
 import { CreateAgentFormComponent } from '../shared/components/create-agent-form-dialog/create-agent-form-dialog.component';
 import { SpinnerComponent } from '../shared/components/spinner/spinner.component';
 import { UnsavedChangesDialogService } from '../shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
@@ -108,6 +109,7 @@ function asTaskPendingPayloadRecord(payload: unknown): Record<string, unknown> {
         SettingsSectionComponent,
         FormsModule,
         SpinnerComponent,
+        AppSvgIconComponent,
     ],
     animations: [expandCollapseAnimation],
     changeDetection: ChangeDetectionStrategy.OnPush,

@@ -6,6 +6,7 @@ import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
 import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { PythonNodeModel } from '../../../core/models/node.model';
@@ -30,6 +31,7 @@ import {
         CodeEditorComponent,
         CommonModule,
         NodeStorageSectionComponent,
+        AppSvgIconComponent,
     ],
     animations: [expandCollapseAnimation],
     template: `
@@ -93,22 +95,18 @@ import {
                             }
 
                             <div class="code-editor-wrapper">
-                                <button type="button" class="toggle-icon-button" (click)="toggleCodeEditorFullWidth()">
-                                    <svg
-                                        width="9"
-                                        height="22"
-                                        viewBox="0 0 9 22"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        [style.transform]="isCodeEditorFullWidth() ? 'scaleX(1)' : 'scaleX(-1)'"
-                                    >
-                                        <path
-                                            d="M7.16602 21.0001L1.16602 11.0001L7.16602 1.00012"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            stroke-linecap="round"
-                                        />
-                                    </svg>
+                                <button
+                                    type="button"
+                                    class="toggle-icon-button"
+                                    (click)="toggleCodeEditorFullWidth()"
+                                    [attr.aria-label]="
+                                        isCodeEditorFullWidth() ? 'Collapse code editor' : 'Expand code editor'
+                                    "
+                                >
+                                    <app-svg-icon
+                                        [icon]="isCodeEditorFullWidth() ? 'chevron-left' : 'chevron-right'"
+                                        size="1rem"
+                                    ></app-svg-icon>
                                 </button>
 
                                 <app-code-editor
@@ -295,10 +293,6 @@ import {
                     transition: all 0.2s ease;
                     padding: 0;
                     color: #d9d9d999;
-
-                    svg {
-                        transition: transform 0.3s ease;
-                    }
 
                     &:hover:not(:disabled) {
                         color: #d9d9d9;

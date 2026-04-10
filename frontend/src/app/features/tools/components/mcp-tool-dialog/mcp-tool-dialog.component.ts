@@ -21,7 +21,6 @@ import {
 } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable, of, timer } from 'rxjs';
@@ -46,7 +45,6 @@ interface DialogData {
         MatFormFieldModule,
         MatInputModule,
         MatButtonModule,
-        MatIconModule,
         MatTooltipModule,
         AppSvgIconComponent,
     ],

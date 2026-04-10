@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 
-import { AppIconComponent } from '../../../../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-category-button',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [AppIconComponent],
+    imports: [AppSvgIconComponent],
     template: `
         <button type="button" class="category-btn" [class.selected]="selected" (click)="clicked.emit()">
-            <app-icon [icon]="icon" size="1.1rem" class="cat-icon"></app-icon>
+            <app-svg-icon [icon]="icon" size="1.1rem" class="cat-icon" />
             <span class="cat-label">{{ label }}</span>
         </button>
     `,

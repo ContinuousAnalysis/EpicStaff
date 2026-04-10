@@ -2,7 +2,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-// Modern Dark Theme Variables
 $bg-dark: #121212;
 $bg-card: #1e1e1e;
 $bg-input: #2d2d2d;
@@ -17,7 +16,6 @@ $border-color: rgba(255, 255, 255, 0.1);
 $shadow-color: rgba(0, 0, 0, 0.5);
 $transition-default: all 0.2s ease;
 
-// Animations
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -30,7 +28,7 @@ $transition-default: all 0.2s ease;
 .agent-list-container {
     background-color: $bg-card;
     border-radius: 8px;
-    width: 400px; // Wider than the LLM popup (350px)
+    width: 400px;
     color: $text-primary;
     font-family: 'Inter', sans-serif;
     box-shadow: 0 10px 40px $shadow-color;
@@ -82,10 +80,7 @@ $transition-default: all 0.2s ease;
             transition: $transition-default;
             border: none;
 
-            i {
-                font-size: 14px;
-                width: 14px;
-                height: 14px;
+            app-svg-icon {
                 margin-bottom: 2px;
             }
 
@@ -96,7 +91,6 @@ $transition-default: all 0.2s ease;
         }
     }
 
-    // Wrapper for scrolling
     .agent-list-wrapper {
         flex: 1;
         overflow-y: auto;
@@ -119,8 +113,7 @@ $transition-default: all 0.2s ease;
                 justify-content: center;
                 color: $text-secondary;
 
-                i {
-                    font-size: 24px;
+                app-svg-icon {
                     margin-bottom: 8px;
                     opacity: 0.7;
                 }
@@ -175,15 +168,11 @@ $transition-default: all 0.2s ease;
                 background-color: rgba($accent-blue, 0.1);
                 color: $accent-blue;
                 border: 1px solid rgba($accent-blue, 0.2);
-
-                i {
-                    font-size: 16px;
-                }
             }
 
             .item-content {
                 flex: 1;
-                min-width: 0; // Helps with text overflow
+                min-width: 0;
 
                 .item-text {
                     display: flex;
@@ -224,7 +213,7 @@ $transition-default: all 0.2s ease;
                 border: none;
                 margin-left: 8px;
 
-                i {
+                app-svg-icon {
                     transition: transform 0.2s ease;
                 }
 

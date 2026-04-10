@@ -19,12 +19,12 @@
                         Export {{ selectedFlowIds().length }} flows
                     </app-button>
                 } @else {
-                    <app-button type="ghost" [leftIcon]="'ui/download'" (click)="onImportClick()"> Import </app-button>
-                    <app-button type="ghost" [leftIcon]="'ui/upload'" (click)="onExportClick()"> Export </app-button>
+                    <app-button type="ghost" [leftIcon]="'download'" (click)="onImportClick()"> Import </app-button>
+                    <app-button type="ghost" [leftIcon]="'upload'" (click)="onExportClick()"> Export </app-button>
                     <app-button
                         type="primary"
                         class="btn-primary create-btn"
-                        [leftIcon]="'ui/plus'"
+                        [leftIcon]="'plus'"
                         (click)="openCreateFlowDialog()"
                     >
                         Create flow
@@ -47,7 +47,7 @@
             </div>
             <div class="tabs-right">
                 <div class="search-container">
-                    <app-icon icon="ui/search" class="search-icon" size="1.1rem"></app-icon>
+                    <app-svg-icon icon="search" class="search-icon" size="1.1rem"></app-svg-icon>
                     <input
                         type="text"
                         class="search-input"
@@ -57,7 +57,7 @@
                     />
                     @if (searchTerm) {
                         <button type="button" class="clear-btn" aria-label="Clear" (click)="clearSearch()">
-                            <app-icon icon="ui/x" size="1.1rem"></app-icon>
+                            <app-svg-icon icon="x" size="1.1rem"></app-svg-icon>
                         </button>
                     }
                 </div>
@@ -76,11 +76,11 @@
                     [class.active]="showSidebar()"
                     title="Label Branches"
                 >
-                    <app-icon icon="ui/expand-sidebar" size="0.85rem"></app-icon>
+                    <app-svg-icon icon="expand-sidebar" size="0.85rem" />
                 </button>
                 <div class="breadcrumb-path">
                     <button class="breadcrumb-home" (click)="selectAllLabels()" title="All Flows">
-                        <app-icon icon="ui/home" size="1rem"></app-icon>
+                        <app-svg-icon icon="home" size="1rem" />
                     </button>
                     @if (activeLabelFilterDisplay() !== 'all') {
                         <span class="breadcrumb-sep">/</span>

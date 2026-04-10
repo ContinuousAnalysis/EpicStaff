@@ -84,12 +84,12 @@
 .dropdown-menu li:hover {
     background: rgba(94, 158, 255, 0.18);
 }
-.dropdown-menu i {
-    font-size: 1.1em;
+.dropdown-menu .status-icon {
     min-width: 18px;
     text-align: center;
     margin-right: 0.5rem;
 }
+
 .checkmark {
     color: var(--accent-color, #5e9eff);
     font-size: 0.95em;

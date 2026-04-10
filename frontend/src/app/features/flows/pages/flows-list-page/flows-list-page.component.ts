@@ -17,7 +17,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { ImportExportService } from '../../../../core/services/import-export.service';
 import { ToastService } from '../../../../services/notifications/toast.service';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { SearchFilterChange } from '../../../../shared/components/filters-list/filters-list.component';
 import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
@@ -45,7 +45,7 @@ import { FlowsLabelSidebarComponent } from './components/flows-label-sidebar/flo
         ButtonComponent,
         TabButtonComponent,
         FormsModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         FlowsLabelSidebarComponent,
         HideInlineSubtitleOnOverflowDirective,
     ],

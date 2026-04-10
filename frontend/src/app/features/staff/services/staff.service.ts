@@ -35,6 +35,13 @@ export class AgentsService {
         return this.http.get<ApiGetRequest<GetAgentRequest>>(url).pipe(map((response) => response.results));
     }
 
+    // GET agents that have a realtime config configured
+    getAgentsWithRealtimeConfig(): Observable<GetAgentRequest[]> {
+        return this.http
+            .get<ApiGetRequest<GetAgentRequest>>(`${this.apiUrl}?has_realtime_config=true`)
+            .pipe(map((response) => response.results));
+    }
+
     // GET agents by project (crew) ID
     getAgentsByProjectId(projectId: number): Observable<GetAgentRequest[]> {
         const url = `${this.apiUrl}?crew_id=${projectId}`;

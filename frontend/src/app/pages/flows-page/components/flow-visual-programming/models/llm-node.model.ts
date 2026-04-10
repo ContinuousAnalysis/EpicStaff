@@ -1,4 +1,4 @@
-import { GetLlmConfigRequest } from '../../../../../features/settings-dialog/models/llms/LLM_config.model';
+import { GetLlmConfigRequest } from '@shared/models';
 
 export interface GetLLMNodeRequest {
     id: number;

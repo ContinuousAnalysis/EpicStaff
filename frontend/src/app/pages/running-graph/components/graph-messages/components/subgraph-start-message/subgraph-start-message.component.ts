@@ -3,22 +3,26 @@ import { Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angu
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
 
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-subgraph-start-message',
     standalone: true,
-    imports: [CommonModule, NgxJsonViewerModule],
+    imports: [CommonModule, NgxJsonViewerModule, AppSvgIconComponent],
     encapsulation: ViewEncapsulation.Emulated,
     animations: [expandCollapseAnimation],
     template: `
         <div class="subgraph-start-container">
             <div class="subgraph-start-header" (click)="toggleMessage()">
                 <div class="play-arrow" *ngIf="hasContent()">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon
+                        [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                        size="1.1rem"
+                    />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-hierarchy-2"></i>
+                    <app-svg-icon icon="hierarchy-2" size="1.25rem" />
                 </div>
                 <h3>
                     <span class="node-name">{{ message.name }}</span> subgraph started {{ subgraphName }}
@@ -32,7 +36,7 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                     [class.show-nested-btn--open]="isNestedMessagesOpen"
                 >
                     <div class="play-nested-arrow" [class.play-nested-arrow--open]="isNestedMessagesOpen">
-                        <i class="ti ti-caret-right-filled nested-toggle-arrow"> </i>
+                        <app-svg-icon icon="caret-right-filled" size="1rem" />
                     </div>
                     <svg
                         class="view-nested-icon"
@@ -59,10 +63,10 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                     <!-- Input Parameters Section -->
                     <div class="input-container" *ngIf="hasInput()">
                         <div class="section-heading" (click)="toggleInputs($event)">
-                            <i
-                                class="ti"
-                                [ngClass]="isInputsExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon
+                                [icon]="isInputsExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Input Parameters
                         </div>
                         <div
@@ -78,10 +82,10 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                     <!-- Variables Section -->
                     <div class="variables-container" *ngIf="hasVariables()">
                         <div class="section-heading" (click)="toggleVariables($event)">
-                            <i
-                                class="ti"
-                                [ngClass]="isVariablesExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon
+                                [icon]="isVariablesExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Variables
                         </div>
                         <div
@@ -94,75 +98,8 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                         </div>
                     </div>
 
-                    <!-- State History Section -->
-                    <!-- <div class="state-history-container" *ngIf="hasStateHistory()">
-            <div class="section-heading" (click)="toggleStateHistory($event)">
-              <i
-                class="ti"
-                [ngClass]="
-                  isStateHistoryExpanded
-                    ? 'ti-caret-down-filled'
-                    : 'ti-caret-right-filled'
-                "
-              ></i>
-              State History ({{ getStateHistoryLength() }})
-            </div>
-            <div
-              class="collapsible-content"
-              [@expandCollapse]="isStateHistoryExpanded ? 'expanded' : 'collapsed'"
-            >
-              <div class="state-history-content">
-                <div
-                  class="state-history-item"
-                  *ngFor="let item of getStateHistory(); let i = index"
-                >
-                  <div class="state-history-item-header">
-                    <span class="item-index">#{{ i + 1 }}</span>
-                    <span class="item-name">{{ item.name }}</span>
-                    <span class="item-type">{{ item.type }}</span>
-                  </div>
-                  <div class="state-history-item-details">
-                    <div class="detail-section" *ngIf="hasItemInput(item)">
-                      <div class="detail-label">Input:</div>
-                      <div class="detail-content">
-                        <ngx-json-viewer
-                          [json]="item.input"
-                          [expanded]="false"
-                        ></ngx-json-viewer>
-                      </div>
-                    </div>
-                    <div class="detail-section" *ngIf="hasItemOutput(item)">
-                      <div class="detail-label">Output:</div>
-                      <div class="detail-content">
-                        <ngx-json-viewer
-                          [json]="item.output"
-                          [expanded]="false"
-                        ></ngx-json-viewer>
-                      </div>
-                    </div>
-                    <div class="detail-section" *ngIf="hasItemVariables(item)">
-                      <div class="detail-label">Variables:</div>
-                      <div class="detail-content">
-                        <ngx-json-viewer
-                          [json]="item.variables"
-                          [expanded]="false"
-                        ></ngx-json-viewer>
-                      </div>
-                    </div>
-                    <div class="detail-section" *ngIf="hasItemAdditionalData(item)">
-                      <div class="detail-label">Additional Data:</div>
-                      <div class="detail-content">
-                        <ngx-json-viewer
-                          [json]="item.additional_data"
-                          [expanded]="false"
-                        ></ngx-json-viewer>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div> -->
+                    <!-- State History Section (commented out) -->
+                    <!-- <div class="state-history-container" *ngIf="hasStateHistory()"> ... </div> -->
                 </div>
             </div>
         </div>
@@ -189,12 +126,10 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                 margin-right: 16px;
                 display: flex;
                 align-items: center;
-            }
 
-            .play-arrow i {
-                color: #00bfa5;
-                font-size: 1.1rem;
-                transition: transform 0.3s ease;
+                app-svg-icon {
+                    color: #00bfa5;
+                }
             }
 
             .icon-container {
@@ -207,11 +142,10 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                 justify-content: center;
                 margin-right: 20px;
                 flex-shrink: 0;
-            }
 
-            .icon-container i {
-                color: var(--gray-900);
-                font-size: 1.25rem;
+                app-svg-icon {
+                    color: var(--gray-900);
+                }
             }
 
             h3 {
@@ -255,12 +189,10 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                 align-items: center;
             }
 
-            .section-heading i {
+            .section-heading app-svg-icon {
                 margin-right: 8px;
                 color: #00bfa5;
-                font-size: 1.1rem;
                 margin-left: -3px;
-                transition: transform 0.3s ease;
             }
 
             .input-container,
@@ -387,7 +319,6 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                 transform: rotate(0deg);
                 transition: transform 0.2s ease;
                 color: white;
-                font-size: 1.1rem;
             }
 
             .play-nested-arrow--open {

@@ -23,7 +23,6 @@ import {
     Validators,
 } from '@angular/forms';
 import {
-    AppIconComponent,
     ButtonComponent,
     ConfirmationDialogData,
     ConfirmationDialogService,
@@ -39,6 +38,7 @@ import {
 } from '../../../features/tools/models/python-code-tool.model';
 import { CustomToolsService } from '../../../features/tools/services/custom-tools/custom-tools.service';
 import { ToastService } from '../../../services/notifications';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CodeEditorComponent } from './code-editor/code-editor.component';
 import { ToolLibrariesComponent } from './tool-libraries/tool-libraries.component';
 
@@ -55,7 +55,7 @@ interface DialogData {
         ToolLibrariesComponent,
         CodeEditorComponent,
         DialogModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         ButtonComponent,
         HelpTooltipComponent,
         JsonEditorComponent,

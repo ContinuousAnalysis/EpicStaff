@@ -14,6 +14,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { FFlowModule } from '@foblex/flow';
 
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { NODE_COLORS, NODE_ICONS } from '../../core/enums/node-config';
 import { NodeType } from '../../core/enums/node-type';
 import { AgentNodeModel, LLMNodeModel, NodeModel } from '../../core/models/node.model';
@@ -24,7 +25,7 @@ import { NodeItemComponent } from './node-item/node-item.component';
     templateUrl: './flow-nodes-panel.component.html',
     styleUrls: ['./flow-nodes-panel.component.scss'],
     standalone: true,
-    imports: [CommonModule, FormsModule, NodeItemComponent, FFlowModule],
+    imports: [CommonModule, FormsModule, NodeItemComponent, FFlowModule, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FlowNodePanelComponent implements OnInit {

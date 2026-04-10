@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
 
-import { AppIconComponent } from '../../../../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../../../../shared/components/buttons/button/button.component';
 import { ToggleSwitchComponent } from '../../../../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { TOOL_CATEGORIES_CONFIG } from '../../../../../../constants/built-in-tools-categories';
@@ -11,7 +11,7 @@ import { Tool } from '../../../../../../models/tool.model';
 @Component({
     selector: 'app-built-in-tool-card',
     standalone: true,
-    imports: [CommonModule, AppIconComponent, ToggleSwitchComponent, ButtonComponent],
+    imports: [CommonModule, AppSvgIconComponent, ToggleSwitchComponent, ButtonComponent],
     templateUrl: './built-in-tool-card.component.html',
     styleUrls: ['./built-in-tool-card.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,7 +55,7 @@ export class BuiltInToolCardComponent {
     }
 
     public get starIcon(): string {
-        return this.starred ? 'ui/star-filled' : 'ui/star';
+        return this.starred ? 'star-filled' : 'star';
     }
 
     public onConfigure(): void {

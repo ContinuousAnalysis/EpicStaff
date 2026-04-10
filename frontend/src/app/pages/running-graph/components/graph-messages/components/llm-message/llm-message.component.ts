@@ -3,22 +3,26 @@ import { Component, Input } from '@angular/core';
 import { MarkdownModule } from 'ngx-markdown';
 
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-llm-message',
     standalone: true,
-    imports: [CommonModule, MarkdownModule],
+    imports: [CommonModule, MarkdownModule, AppSvgIconComponent],
     animations: [expandCollapseAnimation],
     template: `
         <div class="llm-flow-container">
             <!-- LLM Message Header with Toggle -->
             <div class="llm-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon
+                        [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                        size="1.1rem"
+                    />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-message-circle"></i>
+                    <app-svg-icon icon="message-circle" size="1.25rem" />
                 </div>
                 <h3>LLM Response</h3>
             </div>
@@ -29,10 +33,10 @@ import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-m
                     <!-- Response Subsection -->
                     <div class="llm-section">
                         <div class="section-heading" (click)="toggleResponseSection()">
-                            <i
-                                class="ti"
-                                [ngClass]="isResponseExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon
+                                [icon]="isResponseExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Response
                         </div>
                         <div
@@ -76,12 +80,10 @@ import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-m
                 margin-right: 16px;
                 display: flex;
                 align-items: center;
-            }
 
-            .play-arrow i {
-                color: #36cfc9;
-                font-size: 1.1rem;
-                transition: transform 0.3s ease;
+                app-svg-icon {
+                    color: #36cfc9;
+                }
             }
 
             .icon-container {
@@ -94,11 +96,10 @@ import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-m
                 justify-content: center;
                 margin-right: 20px;
                 flex-shrink: 0;
-            }
 
-            .icon-container i {
-                color: var(--gray-900);
-                font-size: 1.25rem;
+                app-svg-icon {
+                    color: var(--gray-900);
+                }
             }
 
             h3 {
@@ -130,12 +131,10 @@ import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-m
                 align-items: center;
             }
 
-            .section-heading i {
+            .section-heading app-svg-icon {
                 margin-right: 8px;
                 color: #36cfc9;
-                font-size: 1.1rem;
                 margin-left: -3px;
-                transition: transform 0.3s ease;
             }
 
             .collapsible-content {

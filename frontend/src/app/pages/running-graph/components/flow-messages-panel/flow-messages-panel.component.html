@@ -1,20 +1,21 @@
 <div class="panel-header">
     <div class="header-naming-container">
         <div class="icon">
-            <app-icon [icon]="'ui/heartbeat'" [size]="'20px'" />
+            <app-svg-icon icon="heartbeat" size="20px" />
         </div>
         <p class="text">Session execution</p>
     </div>
+
     <button [disabled]="!hasNextSession" (click)="goToNextSession()" class="btn-switch-session">
         <div class="icon-arrow">
-            <app-icon [icon]="'ui/chevron-down'" [size]="'20px'" />
+            <app-svg-icon icon="chevron-down" size="20px" />
         </div>
     </button>
 
     <div class="session-dropdown-wrapper">
         <button class="session-dropdown-trigger" (click)="toggleDropdown()">
             <span class="session-dropdown-trigger__label">{{ selectedSessionLabel }}</span>
-            <app-icon [icon]="'ui/chevron-down'" [size]="'16px'" />
+            <app-svg-icon icon="chevron-down" size="16px" />
         </button>
 
         @if (isDropdownOpen) {
@@ -50,7 +51,7 @@
 
     <button [disabled]="!hasPreviousSession" (click)="goToPreviousSession()" class="btn-switch-session">
         <div class="icon-arrow">
-            <app-icon [icon]="'ui/chevron-up'" [size]="'20px'" />
+            <app-svg-icon icon="chevron-up" size="20px" />
         </div>
     </button>
 
@@ -61,13 +62,13 @@
         class="btn-go-to-arrow"
     >
         <div>
-            <app-icon [icon]="'ui/arrow-up'" [size]="'15px'" class="arrow-up-custom" />
+            <app-svg-icon icon="arrow-up" size="15px" class="arrow-up-custom" />
         </div>
     </button>
 
     <button (click)="close.emit()" class="btn-switch-session">
         <div>
-            <app-icon [icon]="'ui/x'" [size]="'20px'" />
+            <app-svg-icon icon="x" size="20px" />
         </div>
     </button>
 </div>
@@ -81,8 +82,12 @@
         ></app-graph-messages>
     } @else if (sessions.length === 0) {
         <div class="panel-body__empty">
-            Click <span class="panel-body__run-badge"><i class="ti ti-player-play-filled"></i>Run</span> button to see
-            session messages
+            Click
+            <span class="panel-body__run-badge">
+                <app-svg-icon icon="player-play-filled" size="0.875rem" />
+                Run
+            </span>
+            button to see session messages
         </div>
     }
 </div>

@@ -1,6 +1,7 @@
 import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, viewChild } from '@angular/core';
 
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ShortcutListenerDirective } from '../../../core/directives/shortcut-listener.directive';
 import { PANEL_COMPONENT_MAP } from '../../../core/enums/node-panel.map';
 import { NodeModel } from '../../../core/models/node.model';
@@ -10,7 +11,7 @@ import { SidePanelService } from '../../../services/side-panel.service';
 @Component({
     standalone: true,
     selector: 'app-node-panel-shell',
-    imports: [NgComponentOutlet],
+    imports: [NgComponentOutlet, AppSvgIconComponent],
     hostDirectives: [
         {
             directive: ShortcutListenerDirective,
@@ -32,13 +33,16 @@ import { SidePanelService } from '../../../services/side-panel.service';
                     <div class="header-actions">
                         @if (shouldShowExpandButton()) {
                             <button class="expand-btn" aria-label="Toggle panel size" (click)="toggleExpanded()">
-                                <i [class]="isExpanded() ? 'ti ti-arrows-minimize' : 'ti ti-arrows-maximize'"></i>
+                                <app-svg-icon
+                                    [icon]="isExpanded() ? 'arrows-minimize' : 'arrows-maximize'"
+                                    size="1.25rem"
+                                ></app-svg-icon>
                             </button>
                         }
                         <div class="close-action">
                             <span class="esc-label">ESC</span>
                             <button class="close-btn" aria-label="Close dialog" (click)="onCloseClick()">
-                                <i class="ti ti-x"></i>
+                                <app-svg-icon icon="x"></app-svg-icon>
                             </button>
                         </div>
                     </div>

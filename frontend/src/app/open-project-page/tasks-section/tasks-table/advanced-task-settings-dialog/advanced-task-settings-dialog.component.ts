@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
 import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 
@@ -21,7 +22,16 @@ export interface AdvancedTaskSettingsData {
 @Component({
     selector: 'app-advanced-task-settings-dialog',
     standalone: true,
-    imports: [NgIf, NgFor, NgClass, FormsModule, MatSlideToggleModule, JsonEditorComponent, HelpTooltipComponent],
+    imports: [
+        NgIf,
+        NgFor,
+        NgClass,
+        FormsModule,
+        MatSlideToggleModule,
+        JsonEditorComponent,
+        HelpTooltipComponent,
+        AppSvgIconComponent,
+    ],
     templateUrl: './advanced-task-settings-dialog.component.html',
     styleUrls: ['./advanced-task-settings-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

@@ -35,6 +35,7 @@ import { Subject } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ToastService } from '../../services/notifications/toast.service';
+import { AppSvgIconComponent } from '../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ClickOutsideDirective } from '../../shared/directives/click-outside.directive';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { FlowActionPanelComponent } from '../components/flow-action-panel/flow-action-panel.component';
@@ -89,6 +90,7 @@ import { UndoRedoService } from '../services/undo-redo.service';
         NodesSearchComponent,
         NodePanelShellComponent,
         FlowShortcutsButtonComponent,
+        AppSvgIconComponent,
     ],
 })
 export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
@@ -527,7 +529,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         // Generate common values
         const newNodeId = uuidv4();
         const nodeColor = NODE_COLORS[event.type] || '#ddd';
-        const nodeIcon = NODE_ICONS[event.type] || 'ti ti-help';
+        const nodeIcon = NODE_ICONS[event.type] || 'help';
         const position = this.fFlowComponent.getPositionInFlow(
             PointExtensions.initialize(this.contextMenuPostion.x, this.contextMenuPostion.y)
         );

@@ -1,11 +1,11 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AppIconComponent } from '@shared/components';
 import { throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 
 import { ToastService } from '../../../../../../../services/notifications';
+import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CreateCollectionDialogComponent } from '../../../../../components/create-collection-dialog/create-collection-dialog.component';
 import { NaiveRagConfigurationDialog } from '../../../../../components/naive-rag-configuration-dialog/naive-rag-configuration-dialog.component';
 import { CreateCollectionDtoResponse } from '../../../../../models/collection.model';
@@ -15,7 +15,7 @@ import { CollectionsStorageService } from '../../../../../services/collections-s
     selector: 'app-collection-details-rags',
     templateUrl: 'collection-rags.component.html',
     styleUrls: ['./collection-rags.component.scss'],
-    imports: [AppIconComponent],
+    imports: [AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CollectionRagsComponent {

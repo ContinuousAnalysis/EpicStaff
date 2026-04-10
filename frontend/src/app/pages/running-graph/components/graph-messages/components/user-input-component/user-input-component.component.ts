@@ -2,16 +2,18 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, OnDestroy, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+
 @Component({
     selector: 'app-wait-for-user-input',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, AppSvgIconComponent],
     template: `
         <div class="wait-for-user-container">
             <div class="options-row">
                 <div class="quick-options">
                     <button class="done-btn" (click)="markAsDone()" [disabled]="isSubmitting" title="Mark as Done">
-                        <i class="ti ti-check"></i>Mark as Done
+                        <app-svg-icon icon="check" size="1rem" />Mark as Done
                     </button>
                     <div class="feedback-message">Please provide a feedback for the agent</div>
                 </div>
@@ -22,7 +24,7 @@ import { FormsModule } from '@angular/forms';
                     [disabled]="!userMessage.trim() || isSubmitting"
                     title="Send"
                 >
-                    <ng-container *ngIf="!isSubmitting"> <i class="ti ti-send"></i>Send </ng-container>
+                    <ng-container *ngIf="!isSubmitting"> <app-svg-icon icon="send" size="1rem" />Send </ng-container>
                     <div *ngIf="isSubmitting" class="spinner"></div>
                 </button>
             </div>
@@ -121,13 +123,6 @@ import { FormsModule } from '@angular/forms';
                 transition: all 0.2s ease;
                 flex-shrink: 0;
 
-                i {
-                    font-size: 1.125rem;
-                    height: 1.125rem;
-                    width: 1.125rem;
-                    margin-top: 2px;
-                }
-
                 &:hover {
                     box-shadow: 0 2px 5px rgba(255, 167, 38, 0.3);
                 }
@@ -158,12 +153,6 @@ import { FormsModule } from '@angular/forms';
                 justify-content: center;
                 gap: 0.5rem;
                 height: 38px;
-
-                i {
-                    font-size: 1.125rem;
-                    height: 1.125rem;
-                    width: 1.125rem;
-                }
 
                 &:hover {
                     background-color: var(--gray-750);
