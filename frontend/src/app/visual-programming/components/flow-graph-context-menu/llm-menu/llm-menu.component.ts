@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -8,9 +9,9 @@ import {
     OnInit,
     Output,
 } from '@angular/core';
+import { GetLlmConfigRequest } from '@shared/models';
+import { LLMConfigService } from '@shared/services';
 
-import { GetLlmConfigRequest } from '../../../../features/settings-dialog/models/llms/LLM_config.model';
-import { LLM_Config_Service } from '../../../../features/settings-dialog/services/llms/llm-config.service';
 import { NodeType } from '../../../core/enums/node-type';
 
 @Component({
@@ -86,7 +87,7 @@ export class LlmMenuComponent implements OnInit {
     public configs: GetLlmConfigRequest[] = [];
 
     constructor(
-        private llmConfigService: LLM_Config_Service,
+        private llmConfigService: LLMConfigService,
         private cdr: ChangeDetectorRef
     ) {}
 
@@ -96,7 +97,7 @@ export class LlmMenuComponent implements OnInit {
                 this.configs = configs;
                 this.cdr.markForCheck();
             },
-            error: (err) => {
+            error: (err: HttpErrorResponse) => {
                 console.error('Error fetching LLM configs:', err);
             },
         });

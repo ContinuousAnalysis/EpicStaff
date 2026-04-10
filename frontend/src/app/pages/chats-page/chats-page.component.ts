@@ -3,7 +3,6 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@
 import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
 
 import { FullAgent, FullAgentService } from '../../features/staff/services/full-agent.service';
-import { RealtimeAgentService } from '../../features/staff/services/realtime-agent.service';
 import { PageHeaderComponent } from '../../shared/components/header/page-header.component';
 import { SpinnerComponent } from '../../shared/components/spinner/spinner.component';
 import { ChatsContentComponent } from './components/chats-content/chats-content.component';
@@ -28,7 +27,6 @@ export class ChatsPageComponent implements OnInit, OnDestroy {
     constructor(
         private readonly chatsService: ChatsService,
         private readonly fullAgentService: FullAgentService,
-        private readonly realtimeAgentService: RealtimeAgentService,
         private consoleService: ConsoleService
     ) {}
 

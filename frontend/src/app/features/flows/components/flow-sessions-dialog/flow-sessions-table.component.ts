@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, EventEmitter, Input, Output, signal } from '@angular/core';
-import { CheckboxComponent, LoadingSpinnerComponent } from '@shared/components';
-import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { CheckboxComponent, IconButtonComponent, LoadingSpinnerComponent } from '@shared/components';
+
 import { GraphDto } from '../../models/graph.model';
 import { GraphSessionLight, GraphSessionStatus } from '../../services/flows-sessions.service';
 import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.component';
@@ -13,7 +13,7 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
         CheckboxComponent,
         FlowSessionStatusBadgeComponent,
         LoadingSpinnerComponent,
-        AppSvgIconComponent,
+        IconButtonComponent,
     ],
     template: `
         <div class="table-header">
@@ -94,13 +94,12 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                                 </div>
                             </td>
                             <td>
-                                <button
-                                    class="icon-btn"
-                                    aria-label="Delete session"
-                                    (click)="deleteSelected.emit([session.id])"
-                                >
-                                    <app-svg-icon icon="x" size="1rem"></app-svg-icon>
-                                </button>
+                                <app-icon-button
+                                    icon="x"
+                                    size="1.5rem"
+                                    ariaLabel="Delete session"
+                                    (onClick)="deleteSelected.emit([session.id])"
+                                ></app-icon-button>
                             </td>
                         </tr>
                     }

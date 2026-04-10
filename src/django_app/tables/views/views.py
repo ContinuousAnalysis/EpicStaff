@@ -75,7 +75,13 @@ from tables.serializers.serializers import (
 )
 
 # from tables.serializers.knowledge_serializers import CollectionStatusSerializer
-from tables.serializers.quickstart_serializers import QuickstartSerializer
+from tables.serializers.quickstart_serializers import (
+    QuickstartSerializer,
+    QuickstartConfigSerializer,
+    QuickstartStatusSerializer,
+)
+from tables.serializers.default_config_serializers import DefaultModelsSerializer
+from tables.models.default_models import DefaultModels
 from tables.filters import SessionFilter  # CollectionFilter,
 
 from .default_config import *
@@ -748,27 +754,26 @@ class QuickstartView(APIView):
         responses={200: OpenApiResponse(description="List of supported providers")},
     )
     def get(self, request):
-        """
-        Get list of supported providers for quickstart configuration
-        """
         try:
             supported_providers = list(quickstart_service.get_supported_providers())
-
-            return Response(
-                data={
-                    "supported_providers": supported_providers,
-                    "count": len(supported_providers),
-                },
-                status=status.HTTP_200_OK,
+            last_config = quickstart_service.get_last_quickstart()
+            is_synced = (
+                quickstart_service.is_synced(last_config) if last_config else False
             )
 
+            data = QuickstartStatusSerializer(
+                {
+                    "supported_providers": supported_providers,
+                    "last_config": last_config,
+                    "is_synced": is_synced,
+                }
+            ).data
+            return Response(data, status=status.HTTP_200_OK)
+
         except Exception as e:
-            logger.error(f"Error getting supported providers: {str(e)}")
+            logger.error(f"Error getting quickstart status: {str(e)}")
             return Response(
-                data={
-                    "detail": "Failed to retrieve supported providers",
-                    "error": "An unexpected error occurred",
-                },
+                data={"detail": "Failed to retrieve quickstart status"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -782,24 +787,56 @@ class QuickstartView(APIView):
             provider = serializer.validated_data["provider"]
             api_key = serializer.validated_data["api_key"]
 
-            quickstart = quickstart_service.quickstart(provider, api_key)
+            result = quickstart_service.quickstart(provider, api_key)
 
-            if quickstart.get("success", False):
-                config_name = quickstart.get("config_name")
+            if result.get("success", False):
+                config_name = result["config_name"]
+                configs = QuickstartConfigSerializer(
+                    {
+                        "config_name": config_name,
+                        "llm_config": result["llm_config"],
+                        "embedding_config": result["embedding_config"],
+                        "realtime_config": result["realtime_config"],
+                        "realtime_transcription_config": result[
+                            "realtime_transcription_config"
+                        ],
+                    }
+                ).data
                 return Response(
                     data={
                         "detail": "Quickstart initiated successfully!",
                         "config_name": config_name,
+                        "configs": configs,
                     },
                     status=status.HTTP_200_OK,
                 )
             else:
-                error = quickstart.get("error")
                 return Response(
-                    data={"detail": "Error quickstart", "error": error},
+                    data={"detail": "Error quickstart", "error": result.get("error")},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class QuickstartApplyView(APIView):
+    """
+    Applies a quickstart config to DefaultModels.
+    If config_name is omitted, the most recently created quickstart config is used.
+    """
+
+    @extend_schema(
+        responses={200: DefaultModelsSerializer},
+    )
+    def post(self, request):
+        last = quickstart_service.get_last_quickstart()
+        if not last:
+            return Response(
+                {"detail": "No quickstart config found. Run POST /quickstart/ first."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        dm = quickstart_service.apply_to_default_models(last["config_name"])
+        return Response(DefaultModelsSerializer(dm).data, status=status.HTTP_200_OK)
 
 
 class ProcessRagIndexingView(APIView):

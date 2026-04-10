@@ -1,6 +1,6 @@
 <div class="number-stepper" [class]="'number-stepper--' + size()">
     @if (label()) {
-        <app-form-field-label [label]="label()" [tooltipText]="tooltipText()" />
+        <app-tooltip [tooltipText]="tooltipText()" [label]="label()" />
     }
 
     <div

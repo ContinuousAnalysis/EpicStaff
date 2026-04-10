@@ -3,7 +3,10 @@ import { Injectable } from '@angular/core';
 import { map, Observable, of, shareReplay, switchMap } from 'rxjs';
 
 import { ConfigService } from '../../../services/config/config.service';
-import { GetRealtimeTranscriptionModelRequest } from '../models/transcription-config.model';
+import {
+    CreateRealtimeTranscriptionModelRequest,
+    GetRealtimeTranscriptionModelRequest,
+} from '../models/transcription-config.model';
 
 export interface ApiGetResponse<T> {
     count: number;
@@ -60,6 +63,19 @@ export class RealtimeTranscriptionModelsService {
     refreshModels(): Observable<GetRealtimeTranscriptionModelRequest[]> {
         this.initializeModelsCache();
         return this.models$;
+    }
+
+    createModel(data: CreateRealtimeTranscriptionModelRequest): Observable<GetRealtimeTranscriptionModelRequest> {
+        return this.http.post<GetRealtimeTranscriptionModelRequest>(this.apiUrl, data, { headers: this.headers });
+    }
+
+    patchModel(
+        id: number,
+        data: Partial<CreateRealtimeTranscriptionModelRequest>
+    ): Observable<GetRealtimeTranscriptionModelRequest> {
+        return this.http.patch<GetRealtimeTranscriptionModelRequest>(`${this.apiUrl}${id}/`, data, {
+            headers: this.headers,
+        });
     }
 
     /**

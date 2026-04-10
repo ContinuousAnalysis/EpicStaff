@@ -3,6 +3,7 @@ from tables.models.crew_models import (
     DefaultCrewConfig,
     DefaultToolConfig,
 )
+from tables.models.default_models import DefaultModels
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.views import APIView
@@ -17,6 +18,7 @@ from tables.serializers.default_config_serializers import (
     DefaultAgentConfigSerializer,
     DefaultRealtimeAgentConfigSerializer,
     DefaultToolConfigSerializer,
+    DefaultModelsSerializer,
 )
 
 
@@ -145,6 +147,36 @@ class DefaultCrewConfigAPIView(BaseDefaultConfigAPIView):
         request=DefaultCrewConfigSerializer,
         responses={
             200: DefaultCrewConfigSerializer,
+            404: OpenApiResponse(description="Not found"),
+            400: OpenApiResponse(description="Validation Error"),
+        },
+    )
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
+
+
+class DefaultModelsAPIView(BaseDefaultConfigAPIView):
+    model = DefaultModels
+    serializer = DefaultModelsSerializer
+
+    def get_object(self):
+        return DefaultModels.load()
+
+    @extend_schema(
+        summary="Get default models",
+        responses={
+            200: DefaultModelsSerializer,
+            404: OpenApiResponse(description="Not found"),
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Set default models",
+        request=DefaultModelsSerializer,
+        responses={
+            200: DefaultModelsSerializer,
             404: OpenApiResponse(description="Not found"),
             400: OpenApiResponse(description="Validation Error"),
         },

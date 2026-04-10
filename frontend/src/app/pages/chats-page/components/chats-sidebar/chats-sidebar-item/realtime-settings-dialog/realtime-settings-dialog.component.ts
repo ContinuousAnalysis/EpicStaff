@@ -1,8 +1,9 @@
 import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, Inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, Inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RealtimeModelConfigsService } from '@shared/services';
 import { finalize } from 'rxjs';
 
 import { PartialUpdateAgentRequest, RealtimeAgentConfig } from '../../../../../../features/staff/models/agent.model';
@@ -41,7 +42,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     errorMessage: string | null = null;
     transcriptionConfigs: EnhancedTranscriptionConfig[] = [];
     loadingConfigs = false;
-    private readonly destroyRef = inject(DestroyRef);
+    isElevenLabs = false;
 
     // Language options from constants
     languages = AVAILABLE_LANGUAGES;
@@ -54,13 +55,16 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         @Inject(DIALOG_DATA) public data: { agent: FullAgent },
         private agentsService: AgentsService,
         private transcriptionConfigsService: TranscriptionConfigsService,
+        private realtimeModelConfigsService: RealtimeModelConfigsService,
         private fb: FormBuilder,
         private toastService: ToastService,
-        private dialog: Dialog
+        private dialog: Dialog,
+        private destroyRef: DestroyRef
     ) {}
 
     ngOnInit(): void {
         this.loadTranscriptionConfigs();
+        this.loadRealtimeConfig();
 
         this.settingsForm = this.fb.group({
             voice: [this.data.agent.realtime_agent.voice, Validators.required],
@@ -86,6 +90,24 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                     event.preventDefault();
                     this.onConfirm();
                 }
+            });
+    }
+
+    loadRealtimeConfig(): void {
+        const configId = this.data.agent.realtime_agent.realtime_config;
+        if (configId == null) {
+            return;
+        }
+        this.realtimeModelConfigsService
+            .getConfigById(configId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (config) => {
+                    this.isElevenLabs = config.provider_name === 'elevenlabs';
+                },
+                error: () => {
+                    // Non-critical — voice dropdown remains as default
+                },
             });
     }
 

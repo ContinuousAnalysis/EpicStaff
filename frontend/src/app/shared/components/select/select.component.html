@@ -15,7 +15,10 @@
         @if (loading()) {
             <div class="selector__spinner" [ngClass]="'selector__spinner--' + mod()"></div>
         } @else {
-            <span class="selector__value">
+            @if (selectedItem()?.icon) {
+                <app-svg-icon [icon]="selectedItem()!.icon!" [size]="'18px'"></app-svg-icon>
+            }
+            <span class="selector__text">
                 {{ selectedItem() ? selectedItem()!.name : placeholder() }}
             </span>
 
@@ -41,7 +44,10 @@
                 [ngClass]="'selector__option--' + mod()"
                 (click)="select(item)"
             >
-                {{ item.name }}
+                @if (item.icon) {
+                    <app-svg-icon [icon]="item.icon" [size]="'18px'"></app-svg-icon>
+                }
+                <span class="selector__text">{{ item.name }}</span>
             </div>
         }
 

@@ -9,6 +9,7 @@ import {
     EnhancedTranscriptionConfig,
     GetRealtimeTranscriptionModelRequest,
     GetTranscriptionConfigRequest,
+    UpdateTranscriptionConfigRequest,
 } from '../models/transcription-config.model';
 import { ApiGetResponse, RealtimeTranscriptionModelsService } from './transcription-models.service';
 
@@ -52,6 +53,12 @@ export class TranscriptionConfigsService {
     // POST create transcription config
     createTranscriptionConfig(config: CreateTranscriptionConfigRequest): Observable<GetTranscriptionConfigRequest> {
         return this.http.post<GetTranscriptionConfigRequest>(this.apiUrl, config, {
+            headers: this.headers,
+        });
+    }
+
+    updateTranscriptionConfig(config: UpdateTranscriptionConfigRequest): Observable<GetTranscriptionConfigRequest> {
+        return this.http.put<GetTranscriptionConfigRequest>(`${this.apiUrl}${config.id}/`, config, {
             headers: this.headers,
         });
     }

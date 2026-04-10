@@ -22,12 +22,23 @@
                             text="Select the voice that the AI agent will use when speaking. Different voices have different characteristics and accents."
                         ></app-help-tooltip>
                     </div>
-                    <app-voice-selector
-                        label="Voice"
-                        [voices]="voices"
-                        [selectedVoice]="settingsForm.get('voice')?.value"
-                        (voiceChange)="onVoiceChange($event)"
-                    ></app-voice-selector>
+                    @if (isElevenLabs) {
+                        <div class="input-container">
+                            <input
+                                type="text"
+                                class="input-field"
+                                formControlName="voice"
+                                placeholder="ElevenLabs Voice ID (e.g. 21m00Tcm4TlvDq8ikWAM)"
+                            />
+                        </div>
+                    } @else {
+                        <app-voice-selector
+                            label="Voice"
+                            [voices]="voices"
+                            [selectedVoice]="settingsForm.get('voice')?.value"
+                            (voiceChange)="onVoiceChange($event)"
+                        ></app-voice-selector>
+                    }
                 </div>
 
                 <!-- Transcription Config Selector -->

@@ -16,3 +16,4 @@ from .realtime_models import *
 from .mcp_models import *
 from .label_models import *
 from .auth_models import *
+from .default_models import DefaultModels

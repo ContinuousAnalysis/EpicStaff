@@ -1,9 +1,7 @@
 <div class="dialog-wrapper">
     <div class="dialog-header">
         <h2>Sessions for {{ flow.name }}</h2>
-        <button class="icon-btn" aria-label="Close dialog" (click)="dialogRef.close()">
-            <app-svg-icon icon="x" size="1.5rem"></app-svg-icon>
-        </button>
+        <app-icon-button icon="x" size="2rem" ariaLabel="Close dialog" (onClick)="dialogRef.close()"></app-icon-button>
     </div>
 
     <div class="dialog-content">
