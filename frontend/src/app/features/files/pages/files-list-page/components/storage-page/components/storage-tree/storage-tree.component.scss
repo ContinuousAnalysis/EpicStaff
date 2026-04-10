@@ -77,6 +77,12 @@
         flex: 1;
         overflow-y: auto;
         overflow-x: auto;
+
+        &--drop-target-root {
+            background-color: rgba(104, 95, 255, 0.05);
+            outline: 2px dashed var(--accent-color);
+            outline-offset: -2px;
+        }
     }
 
     &__item {
@@ -94,6 +100,27 @@
 
         &:hover {
             background-color: var(--color-ghost-btn-hover);
+        }
+
+        &--drop-target {
+            position: relative;
+            background-color: rgba(104, 95, 255, 0.08);
+
+            &::after {
+                content: '';
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 1px;
+                background-color: #685fff;
+                z-index: 1;
+                pointer-events: none;
+            }
+        }
+
+        &--dragging {
+            opacity: 0.4;
         }
 
         &--selected {

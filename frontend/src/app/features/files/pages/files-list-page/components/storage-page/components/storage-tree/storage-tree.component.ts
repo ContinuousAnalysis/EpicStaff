@@ -22,6 +22,7 @@ export class StorageTreeComponent {
         item: StorageItem;
         selectedItems?: StorageItem[];
         renameFromPath?: string;
+        targetPath?: string;
     }>();
     closeSidebar = output<void>();
     openCreateFolder = output<string>();
@@ -43,6 +44,13 @@ export class StorageTreeComponent {
 
     moreMenuOpen = signal<boolean>(false);
     moreMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    // Drag-and-drop state
+    draggedItem = signal<StorageItem | null>(null);
+    dropTarget = signal<StorageItem | null>(null);
+    dropTargetRoot = signal<boolean>(false);
+    private dragExpandTimer: ReturnType<typeof setTimeout> | null = null;
+    private readonly dragExpandDelay = 700;
 
     asStorageItems(nodes: StorageItem[] | null | undefined): StorageItem[] {
         return Array.isArray(nodes) ? nodes : [];
@@ -213,8 +221,138 @@ export class StorageTreeComponent {
         });
     }
 
+    // Drag-and-drop handlers
+    onDragStart(event: DragEvent, item: StorageItem): void {
+        if (this.renamingItem()) {
+            event.preventDefault();
+            return;
+        }
+        event.dataTransfer!.effectAllowed = 'move';
+        event.dataTransfer!.setData('text/plain', item.path);
+        this.draggedItem.set(item);
+    }
+
+    onDragOver(event: DragEvent, node: StorageItem): void {
+        event.preventDefault();
+        event.dataTransfer!.dropEffect = 'move';
+
+        const dragged = this.draggedItem();
+        if (!dragged) return;
+
+        if (node.type !== 'folder' || !this.isValidDropTarget(dragged, node)) {
+            if (this.dropTarget()?.path === node.path) {
+                this.dropTarget.set(null);
+            }
+            return;
+        }
+
+        event.stopPropagation();
+        this.dropTargetRoot.set(false);
+
+        if (this.dropTarget()?.path !== node.path) {
+            this.dropTarget.set(node);
+            this.clearDragExpandTimer();
+            if (node.type === 'folder' && !node.isExpanded) {
+                this.dragExpandTimer = setTimeout(() => {
+                    node.isExpanded = true;
+                    this.folderToggled.emit(node);
+                }, this.dragExpandDelay);
+            }
+        }
+    }
+
+    onDragLeave(_event: DragEvent, node: StorageItem): void {
+        if (this.dropTarget()?.path === node.path) {
+            this.dropTarget.set(null);
+            this.clearDragExpandTimer();
+        }
+    }
+
+    onDrop(event: DragEvent, node: StorageItem): void {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const dragged = this.draggedItem();
+        if (!dragged || node.type !== 'folder' || !this.isValidDropTarget(dragged, node)) {
+            this.resetDragState();
+            return;
+        }
+
+        this.contextAction.emit({ action: 'move', item: dragged, targetPath: node.path });
+        this.resetDragState();
+    }
+
+    onDragEnd(): void {
+        this.resetDragState();
+    }
+
+    onRootDragOver(event: DragEvent): void {
+        event.preventDefault();
+        event.dataTransfer!.dropEffect = 'move';
+
+        const dragged = this.draggedItem();
+        if (!dragged || this.getParentPath(dragged.path) === '') {
+            this.dropTargetRoot.set(false);
+            return;
+        }
+        this.dropTarget.set(null);
+        this.dropTargetRoot.set(true);
+    }
+
+    onRootDragLeave(event: DragEvent): void {
+        const related = event.relatedTarget as HTMLElement | null;
+        const target = event.currentTarget as HTMLElement;
+        if (!related || !target.contains(related)) {
+            this.dropTargetRoot.set(false);
+        }
+    }
+
+    onRootDrop(event: DragEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const dragged = this.draggedItem();
+        if (!dragged || this.getParentPath(dragged.path) === '') {
+            this.resetDragState();
+            return;
+        }
+
+        this.contextAction.emit({ action: 'move', item: dragged, targetPath: '/' });
+        this.resetDragState();
+    }
+
+    isDropTarget(node: StorageItem): boolean {
+        return this.dropTarget()?.path === node.path;
+    }
+
     trackByPath(_index: number, item: StorageItem): string {
         return item.path;
+    }
+
+    private resetDragState(): void {
+        this.draggedItem.set(null);
+        this.dropTarget.set(null);
+        this.dropTargetRoot.set(false);
+        this.clearDragExpandTimer();
+    }
+
+    private clearDragExpandTimer(): void {
+        if (this.dragExpandTimer) {
+            clearTimeout(this.dragExpandTimer);
+            this.dragExpandTimer = null;
+        }
+    }
+
+    private isValidDropTarget(dragged: StorageItem, target: StorageItem): boolean {
+        if (target.path === dragged.path) return false;
+        if (target.path.startsWith(dragged.path + '/')) return false;
+        if (target.path === this.getParentPath(dragged.path)) return false;
+        return true;
+    }
+
+    private getParentPath(path: string): string {
+        const idx = path.lastIndexOf('/');
+        return idx >= 0 ? path.substring(0, idx) : '';
     }
 
     private updateSelection(event: MouseEvent, item: StorageItem): void {
