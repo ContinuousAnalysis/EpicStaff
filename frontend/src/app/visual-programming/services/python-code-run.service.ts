@@ -1,7 +1,7 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable, timer } from 'rxjs';
-import { switchMap, takeWhile } from 'rxjs/operators';
+import { Observable, of, timer } from 'rxjs';
+import { catchError, filter, map, switchMap, take, takeWhile, timeout } from 'rxjs/operators';
 
 import { ConfigService } from '../../services/config/config.service';
 
@@ -14,10 +14,14 @@ export interface RunPythonCodeRequest {
 }
 
 export interface PythonCodeResult {
-    status: 'pending' | 'success' | 'error';
-    output?: string;
-    error?: string;
+    execution_id: string;
+    result_data: string;
+    returncode: number;
+    stderr: string;
+    stdout: string;
 }
+
+export type PollEvent = { type: 'polling'; attempt: number } | { type: 'result'; data: PythonCodeResult };
 
 @Injectable({ providedIn: 'root' })
 export class PythonCodeRunService {
@@ -40,9 +44,40 @@ export class PythonCodeRunService {
     }
 
     pollResult(executionId: string): Observable<PythonCodeResult> {
-        return timer(10000, 2000).pipe(
-            switchMap(() => this.getResult(executionId)),
-            takeWhile((result) => result.status === 'pending', true)
+        return timer(1000, 2000).pipe(
+            switchMap(() =>
+                this.getResult(executionId).pipe(
+                    catchError((error: HttpErrorResponse) => {
+                        if (error.status === 404) {
+                            return of(null);
+                        }
+                        throw error;
+                    })
+                )
+            ),
+            filter((result): result is PythonCodeResult => result !== null),
+            take(1),
+            timeout(60000)
+        );
+    }
+
+    pollResultWithEvents(executionId: string): Observable<PollEvent> {
+        let attempt = 0;
+        return timer(1000, 2000).pipe(
+            switchMap(() =>
+                this.getResult(executionId).pipe(
+                    map((result): PollEvent => ({ type: 'result', data: result })),
+                    catchError((error: HttpErrorResponse) => {
+                        if (error.status === 404) {
+                            attempt++;
+                            return of({ type: 'polling' as const, attempt });
+                        }
+                        throw error;
+                    })
+                )
+            ),
+            takeWhile((event) => event.type !== 'result', true),
+            timeout(60000)
         );
     }
 }

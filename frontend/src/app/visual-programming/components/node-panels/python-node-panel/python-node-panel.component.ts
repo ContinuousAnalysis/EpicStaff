@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, effect, input, signal }
 import { inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Subject, Subscription, switchMap } from 'rxjs';
+import { Subject, switchMap } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
 import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
@@ -12,12 +12,15 @@ import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom
 import { PythonNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import {
+    PollEvent,
     PythonCodeResult,
     PythonCodeRunService,
     RunPythonCodeRequest,
 } from '../../../services/python-code-run.service';
 import { SidePanelService } from '../../../services/side-panel.service';
 import { InputMapComponent } from '../../input-map/input-map.component';
+import { PythonTerminalComponent } from './python-terminal/python-terminal.component';
+import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-log.model';
 
 interface InputMapPair {
     key: string;
@@ -27,7 +30,14 @@ interface InputMapPair {
 @Component({
     standalone: true,
     selector: 'app-python-node-panel',
-    imports: [ReactiveFormsModule, CustomInputComponent, InputMapComponent, CodeEditorComponent, CommonModule],
+    imports: [
+        ReactiveFormsModule,
+        CustomInputComponent,
+        InputMapComponent,
+        CodeEditorComponent,
+        CommonModule,
+        PythonTerminalComponent,
+    ],
     animations: [expandCollapseAnimation],
     template: `
         <div class="panel-container">
@@ -58,24 +68,6 @@ interface InputMapPair {
                                             (runTest)="onRunTest($event)"
                                         ></app-input-map>
                                     </div>
-
-                                    <!-- Test Result Display -->
-                                    @if (testResult()) {
-                                        <div class="test-result-block" [class.error]="testResult()!.status === 'error'">
-                                            @if (testRunning()) {
-                                                <div class="test-status">Running...</div>
-                                            } @else if (testResult()!.status === 'success') {
-                                                <div class="test-output">
-                                                    <pre>{{ testResult()!.output }}</pre>
-                                                </div>
-                                            } @else if (testResult()!.status === 'error') {
-                                                <div class="test-error">
-                                                    <span>Error:</span>
-                                                    <pre>{{ testResult()!.error }}</pre>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
 
                                     <!-- Output Variable Path -->
                                     <app-custom-input
@@ -138,12 +130,24 @@ interface InputMapPair {
                                     </svg>
                                 </button>
 
-                                <app-code-editor
-                                    class="code-editor-section"
-                                    [pythonCode]="pythonCode"
-                                    (pythonCodeChange)="onPythonCodeChange($event)"
-                                    (errorChange)="onCodeErrorChange($event)"
-                                ></app-code-editor>
+                                <div class="code-editor-column">
+                                    <app-code-editor
+                                        class="code-editor-section"
+                                        [class.no-bottom-radius]="isOpenTestMode()"
+                                        [pythonCode]="pythonCode"
+                                        (pythonCodeChange)="onPythonCodeChange($event)"
+                                        (errorChange)="onCodeErrorChange($event)"
+                                    ></app-code-editor>
+
+                                    @if (isOpenTestMode()) {
+                                        <app-python-terminal
+                                            [logs]="terminalLogs()"
+                                            [terminalHeight]="terminalHeight()"
+                                            (heightChange)="onTerminalHeightChange($event)"
+                                            (clearLogs)="onClearLogs()"
+                                        />
+                                    }
+                                </div>
                             </div>
                         </div>
                     } @else {
@@ -169,24 +173,6 @@ interface InputMapPair {
                                     (runTest)="onRunTest($event)"
                                 ></app-input-map>
                             </div>
-
-                            <!-- Test Result Display -->
-                            @if (testResult()) {
-                                <div class="test-result-block" [class.error]="testResult()!.status === 'error'">
-                                    @if (testRunning()) {
-                                        <div class="test-status">Running...</div>
-                                    } @else if (testResult()!.status === 'success') {
-                                        <div class="test-output">
-                                            <pre>{{ testResult()!.output }}</pre>
-                                        </div>
-                                    } @else if (testResult()!.status === 'error') {
-                                        <div class="test-error">
-                                            <span>Error:</span>
-                                            <pre>{{ testResult()!.error }}</pre>
-                                        </div>
-                                    }
-                                </div>
-                            }
 
                             <!-- Output Variable Path -->
                             <app-custom-input
@@ -221,13 +207,22 @@ interface InputMapPair {
                             </div>
 
                             <!-- Code Editor Section -->
-                            <div class="code-editor-section">
+                            <div class="code-editor-section" [class.no-bottom-radius]="isOpenTestMode()">
                                 <app-code-editor
                                     [pythonCode]="pythonCode"
                                     (pythonCodeChange)="onPythonCodeChange($event)"
                                     (errorChange)="onCodeErrorChange($event)"
                                 ></app-code-editor>
                             </div>
+
+                            @if (isOpenTestMode()) {
+                                <app-python-terminal
+                                    [logs]="terminalLogs()"
+                                    [terminalHeight]="terminalHeight()"
+                                    (heightChange)="onTerminalHeightChange($event)"
+                                    (clearLogs)="onClearLogs()"
+                                />
+                            }
                         </div>
                     }
                 </form>
@@ -370,9 +365,23 @@ interface InputMapPair {
                 }
             }
 
+            .code-editor-column {
+                align-self: stretch;
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-height: 0;
+                min-width: 0;
+            }
+
             .code-editor-section {
                 border: 1px solid var(--color-divider-subtle, rgba(255, 255, 255, 0.1));
                 border-radius: 0 8px 8px 0;
+
+                &.no-bottom-radius {
+                    border-bottom-left-radius: 0;
+                    border-bottom-right-radius: 0;
+                }
                 overflow: visible;
                 display: flex;
                 flex-direction: column;
@@ -444,58 +453,6 @@ interface InputMapPair {
                     cursor: pointer;
                 }
             }
-
-            .test-result-block {
-                padding: 1rem;
-                border-radius: 6px;
-                background: rgba(76, 175, 80, 0.1);
-                border: 1px solid rgba(76, 175, 80, 0.3);
-                margin-top: 0.75rem;
-
-                &.error {
-                    background: rgba(244, 67, 54, 0.1);
-                    border-color: rgba(244, 67, 54, 0.3);
-                }
-            }
-
-            .test-status {
-                color: #4caf50;
-                font-weight: 500;
-            }
-
-            .test-output {
-                color: #d4d4d4;
-
-                pre {
-                    margin: 0;
-                    padding: 0.5rem;
-                    background: rgba(0, 0, 0, 0.3);
-                    border-radius: 4px;
-                    overflow-x: auto;
-                    font-size: 0.85rem;
-                    font-family: monospace;
-                }
-            }
-
-            .test-error {
-                color: #f44336;
-
-                span {
-                    font-weight: 500;
-                    display: block;
-                    margin-bottom: 0.5rem;
-                }
-
-                pre {
-                    margin: 0;
-                    padding: 0.5rem;
-                    background: rgba(0, 0, 0, 0.3);
-                    border-radius: 4px;
-                    overflow-x: auto;
-                    font-size: 0.85rem;
-                    font-family: monospace;
-                }
-            }
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -506,8 +463,10 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
     isOpenTestMode = signal(false);
     testResult = signal<PythonCodeResult | null>(null);
+    testError = signal<string | null>(null);
     testRunning = signal(false);
-    private pollSubscription?: Subscription;
+    terminalLogs = signal<TerminalLogEntry[]>([]);
+    terminalHeight = signal<number>(150);
 
     pythonCode: string = '';
     initialPythonCode: string = '';
@@ -549,6 +508,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     }
 
     initializeForm(): FormGroup {
+        this.terminalLogs.set([]);
         const sc = this.node().stream_config;
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
@@ -638,10 +598,25 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
         this.isCodeEditorFullWidth.update((value) => !value);
     }
 
+    onTerminalHeightChange(height: number): void {
+        this.terminalHeight.set(height);
+    }
+
+    onClearLogs(): void {
+        this.terminalLogs.set([]);
+    }
+
+    private addLog(type: TerminalLogType, message: string): void {
+        this.terminalLogs.update((logs) => [...logs, { timestamp: new Date(), type, message }]);
+    }
+
     onRunTest(inputs: Record<string, string>): void {
-        this.pollSubscription?.unsubscribe();
         this.testRunning.set(true);
         this.testResult.set(null);
+        this.testError.set(null);
+        this.terminalLogs.set([]);
+
+        this.addLog('info', 'Starting function main()...');
 
         const libraries = this.form.value.libraries
             ? this.form.value.libraries
@@ -658,25 +633,40 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             inputs,
         };
 
+        this.addLog('info', `Parameters: ${JSON.stringify(inputs)}`);
+
         this.pythonCodeRunService
             .runPythonCode(payload)
             .pipe(
-                switchMap(({ execution_id }) => this.pythonCodeRunService.pollResult(execution_id)),
+                switchMap(({ execution_id }) => this.pythonCodeRunService.pollResultWithEvents(execution_id)),
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe({
-                next: (result) => {
-                    this.testResult.set(result);
-                    if (result.status !== 'pending') {
+                next: (event: PollEvent) => {
+                    if (event.type === 'polling') {
+                        this.addLog('polling', 'Processing...');
+                    } else if (event.type === 'result') {
+                        const result = event.data;
+                        this.testResult.set(result);
                         this.testRunning.set(false);
+
+                        if (result.stdout) {
+                            this.addLog('stdout', result.stdout);
+                        }
+                        if (result.stderr) {
+                            this.addLog('stderr', result.stderr);
+                        }
+                        if (result.returncode === 0) {
+                            this.addLog('result', result.result_data || '(empty result)');
+                        } else {
+                            this.addLog('error', `Execution failed (return code: ${result.returncode})`);
+                        }
                     }
                 },
                 error: (err: Error) => {
-                    this.testResult.set({
-                        status: 'error',
-                        error: err.message || 'Unknown error',
-                    });
+                    this.testError.set(err.message || 'Unknown error');
                     this.testRunning.set(false);
+                    this.addLog('error', `Error: ${err.message || 'Unknown error'}`);
                 },
             });
     }
