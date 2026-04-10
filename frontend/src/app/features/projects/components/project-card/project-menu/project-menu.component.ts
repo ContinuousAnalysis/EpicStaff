@@ -12,13 +12,13 @@ import {
     signal,
 } from '@angular/core';
 
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ProjectMenuItemComponent } from './project-menu-item/project-menu-item.component';
 
 @Component({
     selector: 'app-project-menu',
     standalone: true,
-    imports: [NgIf, NgClass, ProjectMenuItemComponent, AppIconComponent],
+    imports: [NgIf, NgClass, ProjectMenuItemComponent, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './project-menu.component.html',
     styleUrls: ['./project-menu.component.scss'],

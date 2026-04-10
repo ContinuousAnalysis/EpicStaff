@@ -7,7 +7,6 @@ import { ClickOrDragDirective } from '../../../core/directives/click-or-drag.dir
 import { ConditionGroup } from '../../../core/models/decision-table.model';
 import { DecisionTableNodeModel } from '../../../core/models/node.model';
 import { FlowService } from '../../../services/flow.service';
-
 @Component({
     selector: 'app-decision-table-node',
     templateUrl: './decision-table-node.component.html',

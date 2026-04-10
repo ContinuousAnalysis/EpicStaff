@@ -82,6 +82,15 @@ export class RealtimeSettingsDialogComponent implements OnInit {
             voice_recognition_prompt: [this.data.agent.realtime_agent.voice_recognition_prompt],
             realtime_transcription_config: [this.data.agent.realtime_agent.realtime_transcription_config],
         });
+
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((event: KeyboardEvent) => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.onConfirm();
+                }
+            });
     }
 
     loadRealtimeConfig(): void {
@@ -256,6 +265,8 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                         this.toastService.error('Failed to update settings. Please try again.');
                     },
                 });
+        } else {
+            this.settingsForm.markAllAsTouched();
         }
     }
 }

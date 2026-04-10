@@ -21,7 +21,7 @@ import { MergedConfig } from '../../../../../features/staff/services/full-agent.
                     size="20px"
                     [ariaLabel]="config.provider_name || ''"
                     class="provider-icon"
-                ></app-svg-icon>
+                />
 
                 <div class="item-content">
                     <div class="item-text">

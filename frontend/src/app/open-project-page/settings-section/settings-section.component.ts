@@ -12,7 +12,7 @@ import {
     SimpleChanges,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { EmbeddingModelSelectorComponent, HelpTooltipComponent, LlmModelSelectorComponent } from '@shared/components';
+import { AppSvgIconComponent,EmbeddingModelSelectorComponent, HelpTooltipComponent, LlmModelSelectorComponent } from '@shared/components';
 import { GetEmbeddingConfigRequest, GetLlmConfigRequest } from '@shared/models';
 import {
     EmbeddingConfigsService,
@@ -36,6 +36,8 @@ import { GetProjectRequest } from '../../features/projects/models/project.model'
         HelpTooltipComponent,
         LlmModelSelectorComponent,
         EmbeddingModelSelectorComponent,
+        //todo
+        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

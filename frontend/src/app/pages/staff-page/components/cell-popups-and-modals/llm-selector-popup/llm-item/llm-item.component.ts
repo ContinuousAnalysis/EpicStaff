@@ -26,7 +26,7 @@ import { MergedConfig } from '../../../../../../features/staff/services/full-age
                     size="16px"
                     [ariaLabel]="item.provider_name || ''"
                     class="provider-icon"
-                ></app-svg-icon>
+                />
 
                 <div class="llm-name">
                     {{ getModelName(item) }}

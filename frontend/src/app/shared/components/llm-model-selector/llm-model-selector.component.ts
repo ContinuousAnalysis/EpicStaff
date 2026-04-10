@@ -42,8 +42,7 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
                         size="20px"
                         [ariaLabel]="selectedConfig.providerDetails?.name || ''"
                         class="provider-icon"
-                    >
-                    </app-svg-icon>
+                    />
                     <div class="model-text">
                         <span class="model-name">{{ selectedConfig.modelDetails?.name || 'Unknown Model' }}</span>
                         <span *ngIf="selectedConfig.custom_name" class="custom-name">
@@ -369,7 +368,7 @@ export class LlmModelSelectorComponent implements OnInit, OnDestroy, OnChanges, 
 
     getProviderIcon(config: FullLLMConfig): string {
         if (!config || !config.providerDetails?.name) {
-            return 'llm-providers-logos/default';
+            return 'provider-default';
         }
         return getProviderIconPath(config.providerDetails.name);
     }

@@ -43,8 +43,7 @@ import { EmbeddingModelItemComponent } from './embedding-model-item/embedding-mo
                         size="20px"
                         [ariaLabel]="selectedConfig.providerDetails?.name || ''"
                         class="provider-icon"
-                    >
-                    </app-svg-icon>
+                    />
                     <div class="model-text">
                         <span class="model-name">{{ selectedConfig.modelDetails?.name || 'Unknown Model' }}</span>
                         <span *ngIf="selectedConfig.custom_name" class="custom-name">
@@ -370,7 +369,7 @@ export class EmbeddingModelSelectorComponent implements OnInit, OnDestroy, OnCha
 
     getProviderIcon(config: FullEmbeddingConfig): string {
         if (!config || !config.providerDetails?.name) {
-            return 'llm-providers-logos/default';
+            return 'provider-default';
         }
         return getProviderIconPath(config.providerDetails.name);
     }

@@ -16,8 +16,7 @@ import { AppSvgIconComponent } from '../../app-svg-icon/app-svg-icon.component';
                 size="20px"
                 [ariaLabel]="config.providerDetails?.name || ''"
                 class="provider-icon"
-            >
-            </app-svg-icon>
+            />
             <div class="model-text">
                 <span class="model-name">{{ config.modelDetails?.name || 'Unknown Model' }}</span>
                 <span *ngIf="config.custom_name" class="custom-name"> ({{ config.custom_name }}) </span>

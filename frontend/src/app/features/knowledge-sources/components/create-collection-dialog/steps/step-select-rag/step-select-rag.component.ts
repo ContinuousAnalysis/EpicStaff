@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, model, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { SelectComponent, SelectItem } from '@shared/components';
+import { AppSvgIconComponent,SelectComponent, SelectItem } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 import { EmbeddingConfig } from '@shared/models';
 import { EmbeddingConfigsService } from '@shared/services';
@@ -15,7 +15,7 @@ import { RagTypeComponent } from './rag-type/rag-type.component';
     selector: 'app-step-select-rag',
     templateUrl: './step-select-rag.component.html',
     styleUrls: ['./step-select-rag.component.scss'],
-    imports: [RagTypeComponent, SelectComponent, MATERIAL_FORMS],
+    imports: [RagTypeComponent, SelectComponent, MATERIAL_FORMS, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StepSelectRagComponent implements OnInit {

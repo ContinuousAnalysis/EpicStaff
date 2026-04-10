@@ -4,6 +4,7 @@ import {
     ChangeDetectorRef,
     Component,
     EventEmitter,
+    HostListener,
     Input,
     OnDestroy,
     OnInit,
@@ -19,13 +20,13 @@ import { GetToolConfigRequest } from '../../../features/tools/models/tool-config
 import { FullToolConfig } from '../../../features/tools/services/full-tool-config.service';
 import { McpToolsService } from '../../../features/tools/services/mcp-tools/mcp-tools.service';
 import { PythonCodeToolService } from '../../../user-settings-page/tools/custom-tool-editor/services/pythonCodeToolService.service';
-import { AppIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { IconButtonComponent } from '../buttons/icon-button/icon-button.component';
 
 @Component({
     selector: 'app-tools-selector',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, IconButtonComponent, AppIconComponent],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, IconButtonComponent, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <!-- Tools Selection Button -->
@@ -55,7 +56,7 @@ import { IconButtonComponent } from '../buttons/icon-button/icon-button.componen
                 <!-- Header -->
                 <div class="tools-dialog-header">
                     <div class="header-title">
-                        <app-icon icon="ui/tools" size="0.1rem"></app-icon>
+                        <app-svg-icon icon="tools" size="0.1rem" />
                         <span>Select Tools</span>
                     </div>
                     <app-icon-button
@@ -754,6 +755,20 @@ export class ToolsSelectorComponent implements OnInit, OnDestroy {
     public closeToolsDialog(): void {
         this.showToolsDialog = false;
         this.cdr.markForCheck();
+    }
+
+    public isOpen(): boolean {
+        return this.showToolsDialog;
+    }
+
+    @HostListener('document:keydown', ['$event'])
+    public onDocumentKeydown(event: KeyboardEvent): void {
+        if (!this.showToolsDialog) return;
+        if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+            event.preventDefault();
+            event.stopPropagation();
+            this.saveToolSelection();
+        }
     }
 
     public toggleToolType(toolType: 'python' | 'mcp'): void {

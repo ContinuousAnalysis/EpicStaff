@@ -14,6 +14,7 @@ import {
     ToolNodeModel,
 } from '../../../core/models/node.model';
 import { NodePreviewComponent } from './node-preview/node-preview.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-node-item',
@@ -24,6 +25,7 @@ import { NodePreviewComponent } from './node-preview/node-preview.component';
         FExternalItemPlaceholderDirective,
         FExternalItemPreviewDirective,
         NodePreviewComponent,
+        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
@@ -50,7 +52,7 @@ import { NodePreviewComponent } from './node-preview/node-preview.component';
                 </div>
             </div>
             <div class="hover-arrow">
-                <i class="ti ti-arrow-right"></i>
+                <app-svg-icon icon="arrow-right" size="18px"></app-svg-icon>
             </div>
 
             <!-- Preview element while dragging (using separate component) -->
@@ -164,7 +166,7 @@ import { NodePreviewComponent } from './node-preview/node-preview.component';
                     opacity: 0;
                     transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-                    i {
+                    app-svg-icon {
                         font-size: 18px;
                     }
                 }

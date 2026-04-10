@@ -4,10 +4,13 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR, ReactiveFormsModu
 import { ClickOutsideDirective } from '@shared/directives';
 import { FullLLMConfig } from '@shared/services';
 
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+
 @Component({
     selector: 'app-llm-selector',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, ClickOutsideDirective],
+    //todo
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, ClickOutsideDirective, AppSvgIconComponent],
     templateUrl: './llm-selector.component.html',
     styleUrls: ['./llm-selector.component.scss'],
     providers: [

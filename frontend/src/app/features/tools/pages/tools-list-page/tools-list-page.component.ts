@@ -2,10 +2,9 @@ import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ButtonComponent, TabButtonComponent } from '@shared/components';
 
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
-import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
-import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { HideInlineSubtitleOnOverflowDirective } from '../../../../shared/directives/hide-inline-subtitle-on-overflow.directive';
 import { CustomToolDialogComponent } from '../../../../user-settings-page/tools/custom-tool-editor/custom-tool-dialog.component';
 import { McpToolDialogComponent } from '../../components/mcp-tool-dialog/mcp-tool-dialog.component';
@@ -17,6 +16,7 @@ import { ToolsSearchService } from '../../services/tools-search.service';
 
 @Component({
     selector: 'app-tools-list-page',
+    standalone: true,
     imports: [
         RouterOutlet,
         RouterLink,
@@ -24,7 +24,7 @@ import { ToolsSearchService } from '../../services/tools-search.service';
         TabButtonComponent,
         ButtonComponent,
         FormsModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         HideInlineSubtitleOnOverflowDirective,
     ],
     templateUrl: './tools-list-page.component.html',
@@ -65,7 +65,7 @@ export class ToolsListPageComponent {
     }
 
     public get createButtonIcon(): string {
-        return 'ui/plus';
+        return 'plus';
     }
 
     public onSearchTermChange(term: string): void {
@@ -87,7 +87,6 @@ export class ToolsListPageComponent {
     }
 
     public openCustomToolDialog(): void {
-        // Load tools fresh for the dialog
         this.customToolsService.getPythonCodeTools().subscribe((tools) => {
             const dialogRef = this.cdkDialog.open<GetPythonCodeToolRequest>(CustomToolDialogComponent, {
                 data: { pythonTools: tools },
@@ -98,7 +97,6 @@ export class ToolsListPageComponent {
                 if (result) {
                     // Emit event to notify custom tools component
                     this.toolsEventsService.emitCustomToolCreated(result);
-                    // Navigate to custom tools tab after creating a tool
                     this.router.navigate(['/tools/custom']);
                     this.cdr.markForCheck();
                 }
@@ -118,7 +116,6 @@ export class ToolsListPageComponent {
             if (result) {
                 // Emit event to notify MCP tools component
                 this.toolsEventsService.emitMcpToolCreated(result);
-                // Navigate to MCP tools tab after creating a tool
                 this.router.navigate(['/tools/mcp']);
                 this.cdr.markForCheck();
             }

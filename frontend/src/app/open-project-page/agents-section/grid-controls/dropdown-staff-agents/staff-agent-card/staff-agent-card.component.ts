@@ -28,6 +28,7 @@ interface SectionStates {
 @Component({
     selector: 'app-staff-agent-card',
     standalone: true,
+    // todo check app-icon
     imports: [CommonModule, AppIconComponent, AppSvgIconComponent],
     templateUrl: './staff-agent-card.component.html',
     styleUrls: ['./staff-agent-card.component.scss'],

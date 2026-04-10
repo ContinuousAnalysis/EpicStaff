@@ -7,6 +7,7 @@ import { MATERIAL_FORMS } from '@shared/material-forms';
 import { EMPTY, filter } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToastService } from '../../../../../../services/notifications';
 import { FILE_TYPES } from '../../../../constants/constants';
 import { CreateCollectionDtoResponse } from '../../../../models/collection.model';
@@ -23,6 +24,7 @@ import { FilesListComponent } from './files-list/files-list.component';
     templateUrl: './step-upload-files.component.html',
     styleUrls: ['./step-upload-files.component.scss'],
     imports: [
+        AppSvgIconComponent,
         MATERIAL_FORMS,
         ReactiveFormsModule,
         FileUploaderComponent,
