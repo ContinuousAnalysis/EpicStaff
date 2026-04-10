@@ -14,9 +14,9 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CustomInputComponent, SelectComponent, SelectItem } from '@shared/components';
+import { NgrokConfigStorageService } from '@shared/services';
 import { startWith } from 'rxjs';
 
-import { NgrokConfigStorageService } from '../../../../features/settings-dialog/services/ngrok-config/ngrok-config-storage.service';
 import { ToastService } from '../../../../services/notifications';
 import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { WebhookTriggerNodeModel } from '../../../core/models/node.model';

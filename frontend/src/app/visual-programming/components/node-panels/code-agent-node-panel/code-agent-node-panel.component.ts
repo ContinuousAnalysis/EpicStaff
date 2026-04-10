@@ -2,16 +2,12 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { expandCollapseAnimation } from '@shared/animations';
+import { CustomInputComponent, JsonEditorComponent } from '@shared/components';
+import { FullLLMConfig, FullLLMConfigService } from '@shared/services';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
-import {
-    FullLLMConfig,
-    FullLLMConfigService,
-} from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
-import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
-import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { CodeAgentNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
@@ -33,6 +29,8 @@ interface InputMapPair {
         InputMapComponent,
         CodeEditorComponent,
         CommonModule,
+        JsonEditorComponent,
+        CustomInputComponent,
         JsonEditorComponent,
     ],
     animations: [expandCollapseAnimation],
@@ -409,7 +407,7 @@ interface InputMapPair {
                             top: 50%;
                             transform: translateY(-50%);
                             z-index: 10;
-                            border-width: 1px 1px 1px 0px;
+                            border-width: 1px 1px 1px 0;
                             border-radius: 0 8px 8px 0;
                         }
                     }
@@ -564,7 +562,7 @@ interface InputMapPair {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    border-width: 1px 0px 1px 1px;
+                    border-width: 1px 0 1px 1px;
                     border-style: solid;
                     border-color: #2c2c2e;
                     background: transparent;

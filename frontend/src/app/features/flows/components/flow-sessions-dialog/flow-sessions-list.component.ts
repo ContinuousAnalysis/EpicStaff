@@ -25,10 +25,10 @@ import { FlowSessionsTableComponent } from './flow-sessions-table.component';
     standalone: true,
     imports: [
         CommonModule,
-        IconButtonComponent,
         FlowSessionsTableComponent,
         PaginationControlsComponent,
         FlowSessionStatusFilterDropdownComponent,
+        IconButtonComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

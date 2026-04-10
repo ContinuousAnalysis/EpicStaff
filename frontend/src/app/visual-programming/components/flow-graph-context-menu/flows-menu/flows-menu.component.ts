@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 
-import { GetGraphLightRequest, GraphDto } from '../../../../features/flows/models/graph.model';
+import { GetGraphLightRequest } from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { NodeType } from '../../../core/enums/node-type';
 import { CreateNodeRequest } from '../../../core/models/node-creation.types';
@@ -62,16 +62,19 @@ export class FlowsMenuComponent {
 
     private readonly flowsApiService = inject(FlowsApiService);
 
-    public readonly flows = toSignal(this.flowsApiService.getGraphsLight(), { initialValue: [] as GraphDto[] });
+    public readonly flows = toSignal(this.flowsApiService.getGraphsLight(), {
+        initialValue: [] as GetGraphLightRequest[],
+    });
     public readonly filteredFlows = computed(() =>
         this.flows()
             .filter((flow) => flow.id !== this.currentFlowId())
             .filter((flow) => flow.name.toLowerCase().includes(this.searchTerm().toLowerCase()))
     );
 
-    public onFlowClicked(flow: GraphDto): void {
+    public onFlowClicked(flow: GetGraphLightRequest): void {
         const lightData: GetGraphLightRequest = {
             id: flow.id,
+            uuid: flow.uuid,
             name: flow.name,
             description: flow.description,
             tags: flow.tags || [],

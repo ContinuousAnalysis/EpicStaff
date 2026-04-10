@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, inject, input, signal } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { NodeType } from '../../../core/enums/node-type';
 import { generatePortsForDecisionTableNode } from '../../../core/helpers/helpers';
@@ -14,7 +15,13 @@ import { DecisionTableGridComponent } from './decision-table-grid/decision-table
 @Component({
     standalone: true,
     selector: 'app-decision-table-node-panel',
-    imports: [ReactiveFormsModule, CustomInputComponent, CommonModule, DecisionTableGridComponent],
+    imports: [
+        ReactiveFormsModule,
+        CustomInputComponent,
+        CommonModule,
+        DecisionTableGridComponent,
+        AppSvgIconComponent,
+    ],
     templateUrl: './decision-table-node-panel.component.html',
     styleUrls: ['./decision-table-node-panel.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

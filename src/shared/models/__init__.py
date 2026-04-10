@@ -1,6 +1,5 @@
 from .agents import (
     AgentData,
-    RealtimeAgentData,
     RealtimeAgentChatData,
     CrewData,
     TaskData,
@@ -71,7 +70,6 @@ from .tools import (
 __all__ = [
     # agents
     "AgentData",
-    "RealtimeAgentData",
     "RealtimeAgentChatData",
     "CrewData",
     "TaskData",

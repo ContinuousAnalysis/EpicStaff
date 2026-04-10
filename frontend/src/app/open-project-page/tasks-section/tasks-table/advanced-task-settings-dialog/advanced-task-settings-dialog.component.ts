@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 
 export interface AdvancedTaskSettingsData {
@@ -15,12 +16,22 @@ export interface AdvancedTaskSettingsData {
     taskName: string;
     taskId: number | string | null;
     availableTasks?: { id: number; order: number | null; name?: string }[];
+    _saveAfterClose?: boolean;
 }
 
 @Component({
     selector: 'app-advanced-task-settings-dialog',
     standalone: true,
-    imports: [NgIf, NgFor, NgClass, FormsModule, MatSlideToggleModule, JsonEditorComponent, HelpTooltipComponent],
+    imports: [
+        NgIf,
+        NgFor,
+        NgClass,
+        FormsModule,
+        MatSlideToggleModule,
+        JsonEditorComponent,
+        HelpTooltipComponent,
+        AppSvgIconComponent,
+    ],
     templateUrl: './advanced-task-settings-dialog.component.html',
     styleUrls: ['./advanced-task-settings-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,6 +44,7 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
     public readonly availableTasks: { id: number; order: number | null; name?: string }[];
     public useOutputModel = signal<boolean>(false);
     private readonly destroyRef = inject(DestroyRef);
+    private _closeWithPageSave = false;
 
     constructor(
         public dialogRef: DialogRef<AdvancedTaskSettingsData>,
@@ -75,6 +87,12 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
         this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event: KeyboardEvent) => {
             if (event.key === 'Escape') {
                 event.preventDefault();
+                this.requestClose();
+            }
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                event.stopPropagation();
+                this._closeWithPageSave = true;
                 this.requestClose();
             }
         });
@@ -186,8 +204,9 @@ export class AdvancedTaskSettingsDialogComponent implements OnInit {
                 config: null,
                 output_model: outputModel,
                 task_context_list: this.selectedTaskIds(),
+                _saveAfterClose: this._closeWithPageSave,
             };
-
+            this._closeWithPageSave = false;
             this.dialogRef.close(result);
         } catch {
             this.isJsonValid.set(false);
