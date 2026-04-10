@@ -81,14 +81,15 @@
             @for (connection of flowService.visibleConnections(); track connection.id) {
                 <f-connection
                     [fBehavior]="connection.behavior || 'fixed'"
-                    [fType]="connection.type || 'segment'"
+                    [fType]="backwardConnectionIds().has(connection.id) ? 'backward-arc' : connection.type || 'segment'"
                     [fOffset]="30"
-                    [fStartColor]="'#555'"
-                    [fEndColor]="'#555'"
+                    [fStartColor]="connection.startColor || '#555'"
+                    [fEndColor]="connection.endColor || '#555'"
                     [fOutputId]="connection.sourcePortId"
                     [fInputId]="connection.targetPortId"
                     [fConnectionId]="connection.id"
                     [class.dashed-connection]="connection.category === 'virtual'"
+                    [class.is-backward]="backwardConnectionIds().has(connection.id)"
                 >
                     <svg
                         viewBox="0 0 10 10"

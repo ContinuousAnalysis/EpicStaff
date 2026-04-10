@@ -3,6 +3,7 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    computed,
     EventEmitter,
     Input,
     OnChanges,
@@ -20,6 +21,7 @@ import {
     EFMarkerType,
     EFResizeHandleType,
     EFZoomDirection,
+    F_CONNECTION_BUILDERS,
     FCanvasComponent,
     FCreateConnectionEvent,
     FCreateNodeEvent,
@@ -35,6 +37,7 @@ import { Subject } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ToastService } from '../../services/notifications/toast.service';
+import { AppSvgIconComponent } from '../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ClickOutsideDirective } from '../../shared/directives/click-outside.directive';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { FlowActionPanelComponent } from '../components/flow-action-panel/flow-action-panel.component';
@@ -46,17 +49,18 @@ import { NodePanelShellComponent } from '../components/node-panels/node-panel-sh
 import { NodesSearchComponent } from '../components/nodes-search/nodes-search.component';
 import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edit-dialog.component';
 import { ProjectDialogComponent } from '../components/project-dialog/project-dialog.component';
-import { AppSvgIconComponent } from '../../shared/components/app-svg-icon/app-svg-icon.component';
 import { MouseTrackerDirective } from '../core/directives/mouse-tracker.directive';
 import { ShortcutListenerDirective } from '../core/directives/shortcut-listener.directive';
 import { NODE_COLORS, NODE_ICONS } from '../core/enums/node-config';
 import { NodeType } from '../core/enums/node-type';
+import { BackwardArcPathBuilder } from '../core/helpers/backward-arc.path-builder';
 import { generateNodeDisplayName } from '../core/helpers/generate-node-display-name.util';
 import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util'; // Adjust path
 import {
     defineSourceTargetPair,
     generatePortsForDecisionTableNode,
     generatePortsForNode,
+    isBackwardConnection,
     isConnectionValid,
 } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
@@ -74,7 +78,7 @@ import { UndoRedoService } from '../services/undo-redo.service';
     styleUrls: ['../styles/_variables.scss', './flow-graph.component.scss'],
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    //   providers: [FlowService],
+    providers: [{ provide: F_CONNECTION_BUILDERS, useValue: { 'backward-arc': new BackwardArcPathBuilder() } }],
     imports: [
         FFlowModule,
         FZoomDirective,
@@ -120,6 +124,18 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
 
     public readonly eMarkerType = EFMarkerType;
     public readonly eResizeHandleType = EFResizeHandleType;
+
+    protected readonly backwardConnectionIds = computed<Set<string>>(() => {
+        const nodes = this.flowService.nodes();
+        const connections = this.flowService.visibleConnections();
+        const ids = new Set<string>();
+        for (const conn of connections) {
+            if (isBackwardConnection(conn, nodes)) {
+                ids.add(conn.id);
+            }
+        }
+        return ids;
+    });
 
     public mouseCursorPosition: { x: number; y: number } = { x: 0, y: 0 };
     public contextMenuPostion: { x: number; y: number } = {
