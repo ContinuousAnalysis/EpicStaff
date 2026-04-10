@@ -63,6 +63,7 @@ import {
     findNearestFreePosition,
     getCollisionBounds,
     GRID_CELL_SIZE,
+    resolveDraggedNodePositions,
     resolveOverlapsForNode,
     snapPointToGrid,
 } from '../core/helpers/node-placement.utils';
@@ -264,9 +265,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         // this.fCanvasComponent.fitToScreen(new Point(140, 140), false);
         this.isLoaded.set(true);
     }
-    public updateMouseTrackerPosition(event: IPoint) {
-        this.mouseCursorPosition = event;
-    }
+
     public onReassignConnection(event: FReassignConnectionEvent): void {
         // Validate that we have the necessary information
         if (!event.newTargetId && !event.newSourceId) {
@@ -585,52 +584,6 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.flowService.updateNode(updatedNode);
     }
 
-    public onDragStarted(event: FDragStartedEvent): void {
-        this.isDragging = true;
-        this.draggingElements.clear();
-
-        const data = event.data as FDragNodeStartEventData | undefined;
-        if (data?.fNodeIds) {
-            data.fNodeIds.forEach((id: string) => this.draggingElements.add(id));
-        }
-
-        this.undoRedoService.stateChanged();
-    }
-
-    public onDragEnded(): void {
-        for (const id of this.draggedNodeIds) {
-            const currentNodes = this.flowService.nodes();
-            const current = currentNodes.find((n) => n.id === id);
-            if (!current) continue;
-
-            const freePos = findNearestFreePosition(
-                current.position,
-                getCollisionBounds(current),
-                currentNodes.filter((n) => n.id !== id)
-            );
-
-            if (freePos.x !== current.position.x || freePos.y !== current.position.y) {
-                this.flowService.updateNode({ ...current, position: freePos });
-            }
-        }
-        this.draggedNodeIds.clear();
-
-        setTimeout(() => {
-            this.isDragging = false;
-            this.draggingElements.clear();
-        }, 100);
-    }
-
-    public onNodePositionChanged(newPos: IPoint, node: NodeModel): void {
-        this.draggedNodeIds.add(node.id);
-
-        if (!this.isDragging || !this.draggingElements.has(node.id)) {
-            this.undoRedoService.stateChanged();
-        }
-
-        this.flowService.updateNode({ ...node, position: snapPointToGrid(newPos) });
-    }
-
     public onZoomInNode(node: NodeModel): void {
         this.fCanvasComponent.centerGroupOrNode(node.id, true);
     }
@@ -652,7 +605,9 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     public toggleShowVariables(): void {
         this.showVariables.set(!this.showVariables());
     }
-
+    public updateMouseTrackerPosition(event: IPoint): void {
+        this.mouseCursorPosition = event;
+    }
     public onDomainClick(): void {
         const startNodeInitialState = this.flowService.startNodeInitialState();
 
@@ -726,16 +681,6 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.sidePanelService.setSelectedNodeId(nodeId);
         afterNextRender(() => this.nodePanelShell?.expandPanel(), { injector: this.injector });
     }
-
-    private resolveTableOverlaps(node: NodeModel): void {
-        if (node.type !== NodeType.TABLE) return;
-
-        const movedNodes = resolveOverlapsForNode(node.id, this.flowService.nodes());
-        if (movedNodes.length > 0) {
-            this.flowService.updateNodesInBatch(movedNodes);
-        }
-    }
-
     private toFlowPosition(point: IPoint): IPoint {
         return this.fFlowComponent.getPositionInFlow(PointExtensions.initialize(point.x, point.y));
     }
@@ -757,5 +702,83 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             fNodeIds: nodeIdsToDelete,
             fConnectionIds: selections.fConnectionIds,
         });
+    }
+    // TODO: take a look on how it worked.
+    public onDragStarted(event: FDragStartedEvent): void {
+        this.isDragging = true;
+        this.draggingElements.clear();
+
+        const data = event.data as FDragNodeStartEventData | undefined;
+        if (data?.fNodeIds) {
+            data.fNodeIds.forEach((id: string) => this.draggingElements.add(id));
+        }
+
+        this.undoRedoService.stateChanged();
+    }
+
+    public onDragEnded(): void {
+        const draggedNodeIds = new Set(this.draggedNodeIds);
+
+        this.draggedNodeIds.clear();
+        this.isDragging = false;
+        this.draggingElements.clear();
+
+        this.runAfterFlowSettles(() => {
+            this.applyDraggedNodePositions(draggedNodeIds);
+        });
+    }
+
+    public onNodePositionChanged(newPos: IPoint, node: NodeModel): void {
+        this.draggedNodeIds.add(node.id);
+
+        if (!this.isDragging || !this.draggingElements.has(node.id)) {
+            this.undoRedoService.stateChanged();
+            this.flowService.updateNode({ ...node, position: snapPointToGrid(newPos) });
+            this.runAfterFlowSettles(() => this.redrawFlow());
+        }
+    }
+
+    private applyDraggedNodePositions(draggedNodeIds: Set<string>): void {
+        const currentNodes = this.flowService.nodes();
+        const runtimeState = this.fFlowComponent.getState() as {
+            nodes?: Array<{ id: string; position: IPoint }>;
+        };
+        const runtimePositions = new Map(
+            (runtimeState.nodes ?? []).map((node) => [node.id, snapPointToGrid(node.position)] as const)
+        );
+        const updatedNodes = resolveDraggedNodePositions(currentNodes, draggedNodeIds, runtimePositions);
+
+        if (updatedNodes.length > 0) {
+            this.flowService.updateNodesInBatch(updatedNodes);
+        }
+
+        this.redrawFlow();
+    }
+
+    private runAfterFlowSettles(callback: () => void): void {
+        afterNextRender(
+            () => {
+                setTimeout(() => {
+                    requestAnimationFrame(() => {
+                        callback();
+                    });
+                }, 100);
+            },
+            { injector: this.injector }
+        );
+    }
+
+    private redrawFlow(): void {
+        this.fCanvasComponent?.redraw();
+        this.fFlowComponent?.redraw();
+    }
+
+    private resolveTableOverlaps(node: NodeModel): void {
+        if (node.type !== NodeType.TABLE) return;
+
+        const movedNodes = resolveOverlapsForNode(node.id, this.flowService.nodes());
+        if (movedNodes.length > 0) {
+            this.flowService.updateNodesInBatch(movedNodes);
+        }
     }
 }
