@@ -1,17 +1,10 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { NgClass, NgFor, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { FullEmbeddingConfig, FullEmbeddingConfigService, FullLLMConfig, FullLLMConfigService } from '@shared/services';
 import { forkJoin, Observable, Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import {
-    FullEmbeddingConfig,
-    FullEmbeddingConfigService,
-} from '../../../features/settings-dialog/services/embeddings/full-embedding.service';
-import {
-    FullLLMConfig,
-    FullLLMConfigService,
-} from '../../../features/settings-dialog/services/llms/full-llm-config.service';
 import { Tool } from '../../../features/tools/models/tool.model';
 import { GetToolConfigRequest, ToolConfig } from '../../../features/tools/models/tool-config.model';
 import { ToolConfigService } from '../../../features/tools/services/tool-config.service';

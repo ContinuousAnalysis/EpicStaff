@@ -16,7 +16,8 @@ def get_provider(config: BaseTunnelConfigData) -> AbstractTunnelProvider:
     """
     if isinstance(config, NgrokConfigData):
         return NgrokTunnel(
-            port=settings.WEBHOOK_PORT,
+            port=settings.NGROK_TARGET_PORT,
+            host=settings.NGROK_TARGET_HOST,
             auth_token=config.auth_token,
             domain=config.domain,
             region=config.region,

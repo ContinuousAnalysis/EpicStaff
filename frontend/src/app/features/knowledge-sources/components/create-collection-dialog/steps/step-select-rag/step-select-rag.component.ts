@@ -1,13 +1,12 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, model, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { SelectComponent, SelectItem } from '@shared/components';
+import { AppSvgIconComponent,SelectComponent, SelectItem } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
+import { EmbeddingConfig } from '@shared/models';
+import { EmbeddingConfigsService } from '@shared/services';
 import { map } from 'rxjs/operators';
 
 import { ToastService } from '../../../../../../services/notifications';
-import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
-import { EmbeddingConfig } from '../../../../../settings-dialog/models/embeddings/embedding-config.model';
-import { EmbeddingConfigsService } from '../../../../../settings-dialog/services/embeddings/embedding_configs.service';
 import { RAG_TYPES } from '../../../../constants/constants';
 import { RagType } from '../../../../models/naive-rag.model';
 import { RagTypeComponent } from './rag-type/rag-type.component';

@@ -19,16 +19,13 @@ import {
     ValidatorFn,
     Validators,
 } from '@angular/forms';
+import { EmbeddingModelSelectorComponent, HelpTooltipComponent, LlmModelSelectorComponent } from '@shared/components';
+import { FullEmbeddingConfig, FullLLMConfig } from '@shared/services';
 
-import { FullEmbeddingConfig } from '../../../../features/settings-dialog/services/embeddings/full-embedding.service';
-import { FullLLMConfig } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
 import { Tool } from '../../../../features/tools/models/tool.model';
 import { CreateToolConfigRequest, ToolConfig } from '../../../../features/tools/models/tool-config.model';
 import { ToolConfigService } from '../../../../features/tools/services/tool-config.service';
-import { ToastService } from '../../../../services/notifications/toast.service';
-import { EmbeddingModelSelectorComponent } from '../../../../shared/components/embedding-model-selector/embedding-model-selector.component';
-import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
-import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
+import { ToastService } from '../../../../services/notifications';
 
 @Component({
     selector: 'app-tool-config-form',

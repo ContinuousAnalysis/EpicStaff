@@ -9,10 +9,10 @@ import {
     Output,
     SimpleChanges,
 } from '@angular/core';
+import { AppSvgIconComponent } from '@shared/components';
+import { getProviderIconPath } from '@shared/utils';
 
-import { getProviderIconPath } from '../../../../../../features/settings-dialog/utils/get-provider-icon';
 import { MergedConfig } from '../../../../../../features/staff/services/full-agent.service';
-import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-llm-item',

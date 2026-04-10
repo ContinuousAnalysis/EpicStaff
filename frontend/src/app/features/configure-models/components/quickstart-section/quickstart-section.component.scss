@@ -1,0 +1,212 @@
+.quickstart-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    color: var(--color-text-primary);
+
+    &__header {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    &__title {
+        margin: 0;
+        font-size: 20px;
+        color: var(--configure-models-dialog-active-color, #d9d9de);
+    }
+
+    &__subtitle {
+        margin: 0;
+        font-size: 14px;
+        color: rgba(217, 217, 222, 0.6);
+    }
+
+    &__layout {
+        display: flex;
+        gap: 24px;
+        align-items: start;
+    }
+
+    &__left {
+        flex: 0 0 55%;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    &__form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    &__row {
+        display: grid;
+        grid-template-columns: 191px minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+        position: relative;
+    }
+
+    &__label {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        color: rgba(217, 217, 222, 0.8);
+
+        i {
+            font-size: 14px;
+            color: rgba(217, 217, 222, 0.5);
+        }
+    }
+
+    &__tooltip-icon {
+        color: var(--accent-color);
+
+        &:hover {
+            opacity: 0.7;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 6px;
+    }
+
+    &__primary {
+        height: 36px;
+        padding: 0 18px;
+        border-radius: 8px;
+        border: none;
+        background: var(--configure-models-dialog-inactive-color, #685fff);
+        color: #ffffff;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    }
+
+    &__right {
+        flex: 0 0 calc(45% - 24px);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    &__card {
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.02);
+        padding: 24px;
+    }
+
+    &__card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--configure-models-dialog-inactive-color, #685fff);
+        line-height: 1.4;
+
+        i {
+            color: var(--configure-models-dialog-inactive-color, #685fff);
+        }
+    }
+
+    &__card-title--success {
+        i {
+            font-size: 24px;
+        }
+    }
+
+    &__steps {
+        margin: 16px 0 0;
+        padding-left: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-size: 14px;
+        color: rgba(217, 217, 222, 0.8);
+        line-height: 1.6;
+        list-style: decimal;
+
+        li {
+            padding-left: 4px;
+
+            &::marker {
+                color: rgba(217, 217, 222, 0.8);
+            }
+        }
+    }
+
+    &__arrow-icon {
+        color: var(--configure-models-dialog-inactive-color, #685fff);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 6px;
+        position: relative;
+        top: 3px;
+
+        svg {
+            display: block;
+        }
+    }
+
+    &__card-text {
+        margin: 12px 0 0;
+        font-size: 13px;
+        color: rgba(217, 217, 222, 0.7);
+        line-height: 1.6;
+    }
+
+    &__card--success {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    &__card-title--success {
+        color: var(--configure-models-dialog-active-color, #d9d9de);
+
+        i {
+            color: var(--configure-models-dialog-inactive-color, #685fff);
+        }
+    }
+
+    &__card-link {
+        color: var(--configure-models-dialog-inactive-color, #685fff);
+    }
+
+    &__card-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .quickstart-section {
+        &__layout {
+            flex-direction: column;
+        }
+
+        &__left {
+            flex: 1;
+            width: 100%;
+        }
+
+        &__right {
+            flex: 1;
+            width: 100%;
+        }
+    }
+}
+
+

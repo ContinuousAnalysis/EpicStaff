@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { AppSvgIconComponent } from '@shared/components';
+import { getProviderIconPath } from '@shared/utils';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 
-import { getProviderIconPath } from '../../../../../features/settings-dialog/utils/get-provider-icon';
 import { MergedConfig } from '../../../../../features/staff/services/full-agent.service';
-import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-config-cell-renderer',

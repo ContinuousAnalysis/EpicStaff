@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { FullEmbeddingConfig } from '@shared/services';
+import { getProviderIconPath } from '@shared/utils';
 
-import { FullEmbeddingConfig } from '../../../../features/settings-dialog/services/embeddings/full-embedding.service';
-import { getProviderIconPath } from '../../../../features/settings-dialog/utils/get-provider-icon';
 import { AppSvgIconComponent } from '../../app-svg-icon/app-svg-icon.component';
 
 @Component({

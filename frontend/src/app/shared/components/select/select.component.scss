@@ -19,6 +19,7 @@
         height: 100%;
         display: flex;
         align-items: center;
+        gap: 0.5rem;
         justify-content: flex-start;
         position: relative;
         border-radius: 0.5rem;
@@ -121,9 +122,25 @@
         white-space: nowrap;
     }
 
-    &__option {
+    &__item-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        line-height: 1;
+    }
+
+    &__text {
+        text-align: left;
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
 
         &--default {
             padding: 0.5rem 1rem;

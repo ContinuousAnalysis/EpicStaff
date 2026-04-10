@@ -11,9 +11,8 @@ import {
     ViewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { PaginationControlsComponent } from '@shared/components';
+import { IconButtonComponent, PaginationControlsComponent } from '@shared/components';
 
-import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { GraphDto } from '../../models/graph.model';
 import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../../services/flows-sessions.service';
 import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-filter-dropdown.component';
@@ -26,10 +25,10 @@ import { FlowSessionsTableComponent } from './flow-sessions-table.component';
     standalone: true,
     imports: [
         CommonModule,
-        AppSvgIconComponent,
         FlowSessionsTableComponent,
         PaginationControlsComponent,
         FlowSessionStatusFilterDropdownComponent,
+        IconButtonComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

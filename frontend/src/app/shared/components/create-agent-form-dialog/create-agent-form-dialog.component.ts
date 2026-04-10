@@ -11,6 +11,8 @@ import {
 } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
+import { FullLLMConfig, FullLLMConfigService } from '@shared/services';
+import { getProviderIconPath } from '@shared/utils';
 import { of, Subscription, switchMap, takeUntil } from 'rxjs';
 import { Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -20,11 +22,6 @@ import {
     GetCollectionRequest,
 } from '../../../features/knowledge-sources/models/collection.model';
 import { CollectionsApiService } from '../../../features/knowledge-sources/services/collections-api.service';
-import {
-    FullLLMConfig,
-    FullLLMConfigService,
-} from '../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
 import { CreateAgentRequest, GetAgentRequest, ToolUniqueName } from '../../../features/staff/models/agent.model';
 import { RealtimeAgentService } from '../../../features/staff/services/realtime-agent.service';
 import { ToolsSelectorComponent } from '../../components/tools-selector/tools-selector.component';
