@@ -10,10 +10,10 @@ import {
     FormGroupDirective,
     ReactiveFormsModule,
 } from '@angular/forms';
-import { FormsModule } from '@angular/forms';
 
 import { ToggleSwitchComponent } from '../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
+import { SidePanelService } from '../../services/side-panel.service';
 
 interface TestVariable {
     key: string;
@@ -23,7 +23,7 @@ interface TestVariable {
 @Component({
     selector: 'app-input-map',
     standalone: true,
-    imports: [ReactiveFormsModule, CommonModule, HelpTooltipComponent, ToggleSwitchComponent, FormsModule],
+    imports: [ReactiveFormsModule, CommonModule, HelpTooltipComponent, ToggleSwitchComponent],
     viewProviders: [
         {
             provide: ControlContainer,
@@ -80,44 +80,41 @@ interface TestVariable {
                     <i class="ti ti-plus"></i> Add Input
                 </button>
             } @else {
-                <!-- Test mode: test variables form -->
-                @if (showTestInputs()) {
-                    <div class="input-map-list">
-                        @for (item of testValues(); let i = $index; track i) {
-                            <div class="input-map-item">
-                                <div class="input-map-fields">
-                                    <div class="input-wrapper">
-                                        <input
-                                            type="text"
-                                            [value]="item.key"
-                                            readonly
-                                            [style.--active-color]="activeColor"
-                                        />
-                                    </div>
-                                    <div class="equals-sign">=</div>
-                                    <div class="input-wrapper">
-                                        <input
-                                            type="text"
-                                            [(ngModel)]="testValues()[i].value"
-                                            placeholder="Test value"
-                                            [style.--active-color]="activeColor"
-                                            autocomplete="off"
-                                        />
-                                    </div>
+                <!-- Test mode: editable test variables -->
+                <div class="input-map-list">
+                    @for (item of testValues(); let i = $index; track i) {
+                        <div class="input-map-item">
+                            <div class="input-map-fields">
+                                <div class="input-wrapper">
+                                    <input
+                                        type="text"
+                                        [value]="item.key"
+                                        (input)="onTestKeyChange(i, $any($event.target).value)"
+                                        placeholder="Function Argument Name"
+                                        [style.--active-color]="activeColor"
+                                        autocomplete="off"
+                                    />
                                 </div>
+                                <div class="equals-sign">=</div>
+                                <div class="input-wrapper">
+                                    <input
+                                        type="text"
+                                        [value]="item.value"
+                                        (input)="onTestValueChange(i, $any($event.target).value)"
+                                        placeholder="Test value"
+                                        [style.--active-color]="activeColor"
+                                        autocomplete="off"
+                                    />
+                                </div>
+                                <i class="ti ti-trash delete-icon" (click)="removeTestVariable(i)"></i>
                             </div>
-                        }
-                    </div>
-                }
+                        </div>
+                    }
+                </div>
+                <button type="button" class="add-pair-btn" (click)="addTestVariable()">
+                    <i class="ti ti-plus"></i> Add Input
+                </button>
                 <div class="test-mode-actions">
-                    <button
-                        type="button"
-                        class="btn-secondary"
-                        (click)="onFillVariables()"
-                        [disabled]="showTestInputs()"
-                    >
-                        Fill Variables
-                    </button>
                     <button type="button" class="btn-primary" [disabled]="!canRunTest()" (click)="onRunTest()">
                         Run Test
                     </button>
@@ -324,10 +321,12 @@ export class InputMapComponent implements OnInit {
 
     showTestInputs = signal(false);
     testValues = signal<TestVariable[]>([]);
+    private normalModeSnapshot = signal<{ key: string; value: string }[]>([]);
 
     constructor(
         private controlContainer: ControlContainer,
-        private fb: FormBuilder
+        private fb: FormBuilder,
+        private sidePanelService: SidePanelService
     ) {}
 
     ngOnInit() {
@@ -386,30 +385,80 @@ export class InputMapComponent implements OnInit {
     }
 
     onTestModeToggle(value: boolean): void {
-        this.showTestInputs.set(false);
-        this.testValues.set([]);
+        if (value) {
+            const snapshot = this.pairs.controls
+                .map((c) => ({ key: c.value.key as string, value: c.value.value as string }))
+                .filter((item) => item.key?.trim() !== '');
+            this.normalModeSnapshot.set(snapshot);
+
+            const testVars = snapshot.map((item) => ({ key: item.key, value: '' }));
+            this.testValues.set(testVars);
+            this.showTestInputs.set(true);
+        } else {
+            this.syncTestKeysToNormalMode();
+            this.showTestInputs.set(false);
+            this.testValues.set([]);
+            this.normalModeSnapshot.set([]);
+        }
         this.testMode = value;
         this.testModeChange.emit(value);
     }
 
-    onFillVariables(): void {
-        const variables = this.pairs.controls
-            .map((c) => ({ key: c.value.key, value: '' }))
-            .filter((item) => item.key?.trim() !== '');
-        this.testValues.set(variables);
-        this.showTestInputs.set(true);
-    }
-
     canRunTest(): boolean {
-        if (!this.showTestInputs()) {
-            return this.pairs.controls.length === 0 || this.getValidInputPairs().length === 0;
+        const validTestVars = this.testValues().filter((item) => item.key?.trim() !== '');
+        if (validTestVars.length === 0) {
+            return true;
         }
-        return this.testValues().every((item) => item.value?.trim() !== '');
+        return validTestVars.every((item) => item.value?.trim() !== '');
     }
 
     onRunTest(): void {
         const inputs = Object.fromEntries(this.testValues().map((item) => [item.key, item.value]));
         this.runTest.emit(inputs);
+    }
+
+    addTestVariable(): void {
+        this.testValues.update((vars) => [...vars, { key: '', value: '' }]);
+    }
+
+    removeTestVariable(index: number): void {
+        this.testValues.update((vars) => vars.filter((_, i) => i !== index));
+    }
+
+    onTestKeyChange(index: number, newKey: string): void {
+        this.testValues.update((vars) => vars.map((v, i) => (i === index ? { ...v, key: newKey } : v)));
+    }
+
+    onTestValueChange(index: number, newValue: string): void {
+        this.testValues.update((vars) => vars.map((v, i) => (i === index ? { ...v, value: newValue } : v)));
+    }
+
+    private syncTestKeysToNormalMode(): void {
+        const snapshot = this.normalModeSnapshot();
+        const snapshotMap = new Map(snapshot.map((item) => [item.key, item.value]));
+        const currentTestKeys = this.testValues().filter((tv) => tv.key?.trim() !== '');
+
+        while (this.pairs.length > 0) {
+            this.pairs.removeAt(0);
+        }
+
+        for (const testItem of currentTestKeys) {
+            const trimmedKey = testItem.key.trim();
+            const restoredValue = snapshotMap.has(trimmedKey) ? snapshotMap.get(trimmedKey)! : 'variables.';
+
+            this.pairs.push(
+                this.fb.group({
+                    key: [trimmedKey],
+                    value: [restoredValue],
+                })
+            );
+        }
+
+        if (this.pairs.length === 0) {
+            this.addPair();
+        }
+
+        this.sidePanelService.triggerAutosave();
     }
 
     private getValidInputPairs(): AbstractControl[] {
