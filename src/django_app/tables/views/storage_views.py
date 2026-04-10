@@ -73,10 +73,12 @@ class StorageAPIView(ViewSet):
         params = StoragePathQuerySerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
         path = params.validated_data["path"]
+
         try:
             data = self.manager.info(user_name, org_id, path)
         except FileNotFoundError:
             raise ValidationError({"path": f"File does not exist: {path}"})
+
         response = data.to_dict()
         response["graphs"] = list(
             Graph.objects.filter(
@@ -93,10 +95,12 @@ class StorageAPIView(ViewSet):
         params = StoragePathQuerySerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
         path = params.validated_data["path"]
+
         try:
             file_bytes = self.manager.download(user_name, org_id, path)
         except FileNotFoundError:
             raise ValidationError({"path": f"File does not exist: {path}"})
+
         filename = path.rstrip("/").split("/")[-1] if path else "file"
         response = HttpResponse(file_bytes, content_type="application/octet-stream")
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
@@ -126,6 +130,7 @@ class StorageAPIView(ViewSet):
         serializer = StorageDownloadZipSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         paths = serializer.validated_data["paths"]
+
         try:
             zip_chunks = self.manager.download_zip(user_name, org_id, paths)
             response = HttpResponse(
@@ -133,6 +138,7 @@ class StorageAPIView(ViewSet):
             )
         except FileNotFoundError as e:
             raise ValidationError({"paths": str(e)})
+
         response["Content-Disposition"] = 'attachment; filename="download.zip"'
         return response
 
@@ -164,6 +170,7 @@ class StorageAPIView(ViewSet):
         serializer.is_valid(raise_exception=True)
         from_path = serializer.validated_data["from"]
         to_path = serializer.validated_data["to"]
+
         try:
             self.manager.rename(user_name, org_id, from_path, to_path)
         except FileNotFoundError:
@@ -172,6 +179,7 @@ class StorageAPIView(ViewSet):
             raise ValidationError({"to": f"Destination already exists: {to_path}"})
         except ValueError as e:
             raise ValidationError({"detail": str(e)})
+
         return Response({"from": from_path, "to": to_path, "success": True})
 
     @action(detail=False, methods=["post"], url_path="move")
@@ -184,6 +192,7 @@ class StorageAPIView(ViewSet):
         to_path = serializer.validated_data["to"]
         src_org_id = serializer.validated_data.get("source_org_id")
         dst_org_id = serializer.validated_data.get("destination_org_id")
+
         try:
             if src_org_id and dst_org_id and int(src_org_id) != int(dst_org_id):
                 self.manager.move_cross_org(
@@ -195,6 +204,7 @@ class StorageAPIView(ViewSet):
             raise ValidationError({"from": f"Source path does not exist: {from_path}"})
         except ValueError as e:
             raise ValidationError({"detail": str(e)})
+
         return Response({"from": from_path, "to": to_path, "success": True})
 
     @action(detail=False, methods=["post"], url_path="copy")
@@ -207,6 +217,7 @@ class StorageAPIView(ViewSet):
         to_path = serializer.validated_data["to"]
         src_org_id = serializer.validated_data.get("source_org_id")
         dst_org_id = serializer.validated_data.get("destination_org_id")
+
         try:
             if src_org_id and dst_org_id and int(src_org_id) != int(dst_org_id):
                 self.manager.copy_cross_org(
@@ -218,6 +229,7 @@ class StorageAPIView(ViewSet):
             raise ValidationError({"from": f"Source path does not exist: {from_path}"})
         except ValueError as e:
             raise ValidationError({"detail": str(e)})
+
         return Response({"from": from_path, "to": to_path, "success": True})
 
     @action(detail=False, methods=["post"], url_path="add-to-graph")
@@ -228,17 +240,21 @@ class StorageAPIView(ViewSet):
         serializer.is_valid(raise_exception=True)
         path = serializer.validated_data["path"]
         graph_ids = serializer.validated_data["graph_ids"]
+
         try:
             self.manager.info(user_name, org_id, path)
         except FileNotFoundError:
             raise ValidationError({"path": f"Path does not exist: {path}"})
+
         results = []
         sf, _ = StorageFile.objects.get_or_create(org_id=org_id, path=path)
+
         for graph_id in graph_ids:
             obj, _ = GraphStorageFile.objects.get_or_create(
                 graph_id=graph_id, storage_file=sf
             )
             results.append(obj)
+
         return Response(
             GraphStorageFileSerializer(results, many=True).data,
             status=status.HTTP_201_CREATED,
