@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, forwardRef, input, model } from '@angular/core';
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
-import { AppIconComponent, CustomInputComponent, TooltipComponent } from '@shared/components';
+import { CustomInputComponent, TooltipComponent } from '@shared/components';
+
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-listbox',
     templateUrl: './listbox.component.html',
     styleUrls: ['./listbox.component.scss'],
-    imports: [TooltipComponent, CustomInputComponent, AppIconComponent, ReactiveFormsModule],
+    imports: [TooltipComponent, CustomInputComponent, AppSvgIconComponent, ReactiveFormsModule],
     providers: [
         {
             provide: NG_VALUE_ACCESSOR,

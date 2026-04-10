@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output, signal } from '@angular/core';
 
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { CheckboxComponent } from '../../../../shared/components/checkbox/checkbox.component';
 import { GetGraphLightRequest, SubflowLightDto } from '../../models/graph.model';
@@ -19,7 +19,7 @@ export interface FlowCardAction {
 @Component({
     selector: 'app-flow-card',
     standalone: true,
-    imports: [CommonModule, ButtonComponent, FlowMenuComponent, CheckboxComponent, AppIconComponent],
+    imports: [CommonModule, ButtonComponent, FlowMenuComponent, CheckboxComponent, AppSvgIconComponent],
     templateUrl: './flow-card.component.html',
     styleUrls: ['./flow-card.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -132,6 +132,7 @@ export class FlowCardComponent {
     public onSubflowActionSelected(action: string, subflow: SubflowLightDto): void {
         const flowLike: GetGraphLightRequest = {
             id: subflow.id,
+            uuid: '',
             name: subflow.name,
             description: subflow.description,
             tags: subflow.tags,
@@ -145,6 +146,7 @@ export class FlowCardComponent {
     public onSubflowClick(subflow: SubflowLightDto): void {
         const flowLike: GetGraphLightRequest = {
             id: subflow.id,
+            uuid: '',
             name: subflow.name,
             description: subflow.description,
             tags: subflow.tags,

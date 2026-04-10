@@ -1,6 +1,7 @@
 import { CommonModule, NgStyle } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
+import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import {
     EntityMemoryPayload,
     LongTermMemoryPayload,
@@ -11,7 +12,7 @@ import {
 @Component({
     selector: 'app-memory-item',
     standalone: true,
-    imports: [CommonModule, NgStyle],
+    imports: [CommonModule, NgStyle, AppSvgIconComponent],
     template: `
         <div class="memory-item">
             <div class="memory-header">
@@ -19,7 +20,7 @@ import {
                 <div class="memory-header-right">
                     <span class="memory-date">{{ memory.payload.created_at | date: 'short' }}</span>
                     <button class="delete-button" (click)="onDelete()">
-                        <i class="ti ti-x"></i>
+                        <app-svg-icon icon="x" size="1rem" />
                     </button>
                 </div>
             </div>
@@ -36,7 +37,11 @@ import {
             @if (memory.payload.type !== 'user') {
                 <button class="details-toggle" (click)="toggleDetails(memory.id)">
                     <div class="toggle-left">
-                        <i class="ti ti-player-play-filled" [ngClass]="{ expanded: isExpanded(memory.id) }"></i>
+                        <app-svg-icon
+                            icon="player-play-filled"
+                            size="1rem"
+                            [ngClass]="{ expanded: isExpanded(memory.id) }"
+                        />
                         <span>Details</span>
                     </div>
                 </button>
@@ -84,55 +89,54 @@ import {
     styles: [
         `
             .memory-item {
-                background-color: var(--gray-800);
+                background: var(--gray-800);
+                border: 1px solid var(--gray-700);
                 border-radius: 8px;
                 padding: 16px;
-                margin-bottom: 16px;
+                margin-bottom: 12px;
             }
 
             .memory-header {
                 display: flex;
+                align-items: center;
                 justify-content: space-between;
                 margin-bottom: 12px;
+            }
 
-                .memory-type {
-                    background-color: var(--gray-700);
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    text-transform: uppercase;
-                    font-weight: 500;
-                }
+            .memory-header-right {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
 
-                .memory-header-right {
-                    display: flex;
-                    align-items: center;
+            .memory-type {
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: capitalize;
+                color: var(--gray-300);
+                background: var(--gray-750);
+                padding: 4px 8px;
+                border-radius: 4px;
+            }
 
-                    .memory-date {
-                        font-size: 12px;
-                        color: var(--gray-400);
-                    }
+            .memory-date {
+                font-size: 12px;
+                color: var(--gray-400);
+            }
 
-                    .delete-button {
-                        background: none;
-                        border: none;
-                        color: var(--gray-400);
-                        cursor: pointer;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        padding: 0;
-                        margin-left: 8px;
+            .delete-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: transparent;
+                border: none;
+                color: var(--gray-400);
+                cursor: pointer;
+                padding: 0;
+            }
 
-                        &:hover {
-                            color: var(--white);
-                        }
-
-                        i {
-                            font-size: 16px;
-                        }
-                    }
-                }
+            .delete-button:hover {
+                color: var(--white);
             }
 
             .memory-content {
@@ -155,25 +159,24 @@ import {
                 font-size: 13px;
                 cursor: pointer;
                 margin-top: 10px;
+            }
 
-                &:hover {
-                    background-color: var(--gray-700);
-                }
+            .details-toggle:hover {
+                background-color: var(--gray-700);
+            }
 
-                .toggle-left {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
+            .toggle-left {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
 
-                    .ti-player-play-filled {
-                        font-size: 10px;
-                        transition: transform 0.2s ease;
+            .toggle-left app-svg-icon {
+                transition: transform 0.2s ease;
+            }
 
-                        &.expanded {
-                            transform: rotate(90deg);
-                        }
-                    }
-                }
+            .toggle-left app-svg-icon.expanded {
+                transform: rotate(90deg);
             }
 
             .memory-details {
@@ -183,38 +186,38 @@ import {
                 padding-bottom: 4px;
                 margin-top: 8px;
                 font-size: 13px;
+            }
 
-                .memory-relationships,
-                .memory-observation,
-                .memory-quality {
-                    margin-bottom: 8px;
-                }
+            .memory-relationships,
+            .memory-observation,
+            .memory-quality {
+                margin-bottom: 8px;
+            }
 
-                .details-title {
-                    margin: 0 0 4px 0;
-                    font-weight: 500;
-                    color: var(--gray-300);
-                }
+            .details-title {
+                margin: 0 0 4px 0;
+                font-weight: 500;
+                color: var(--gray-300);
+            }
 
-                .details-content {
-                    margin: 0;
-                    white-space: pre-line;
-                    color: var(--gray-200);
-                }
+            .details-content {
+                margin: 0;
+                white-space: pre-line;
+                color: var(--gray-200);
+            }
 
-                .suggestions {
-                    margin-top: 8px;
-                }
+            .suggestions {
+                margin-top: 8px;
+            }
 
-                .suggestions-list {
-                    margin: 4px 0 0 0;
-                    padding-left: 20px;
-                    color: var(--gray-200);
+            .suggestions-list {
+                margin: 4px 0 0 0;
+                padding-left: 20px;
+                color: var(--gray-200);
+            }
 
-                    li {
-                        margin-bottom: 4px;
-                    }
-                }
+            .suggestions-list li {
+                margin-bottom: 4px;
             }
         `,
     ],

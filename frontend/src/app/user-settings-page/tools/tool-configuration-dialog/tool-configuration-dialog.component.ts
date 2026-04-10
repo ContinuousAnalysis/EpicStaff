@@ -17,6 +17,7 @@ import { GetToolConfigRequest, ToolConfig } from '../../../features/tools/models
 import { ToolConfigService } from '../../../features/tools/services/tool-config.service';
 import { ToastService } from '../../../services/notifications/toast.service';
 import { ConfirmationDialogService } from '../../../shared/components/cofirm-dialog/confimation-dialog.service';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToolConfigFormComponent } from './tool-config-form/tool-config-form.component';
 
 @Component({
@@ -25,7 +26,7 @@ import { ToolConfigFormComponent } from './tool-config-form/tool-config-form.com
     styleUrls: ['./tool-configuration-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: true,
-    imports: [NgIf, NgFor, NgClass, ToolConfigFormComponent],
+    imports: [NgIf, NgFor, NgClass, ToolConfigFormComponent, AppSvgIconComponent],
 })
 export class ToolConfigurationDialogComponent implements OnInit, OnDestroy {
     tool: Tool;

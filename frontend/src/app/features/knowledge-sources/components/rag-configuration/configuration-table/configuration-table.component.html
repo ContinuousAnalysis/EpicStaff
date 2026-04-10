@@ -9,7 +9,7 @@
         <!-- 2. Files (sortable dropdown) -->
         <div class="table__col">
             <app-multi-select
-                icon="ui/filter-rows"
+                icon="filter-rows"
                 label="FILES"
                 searchPlaceholder="Search headers..."
                 [items]="fileTypeSelectItems"
@@ -20,7 +20,7 @@
         <!-- 3. Chunk Strategy -->
         <div class="table__col">
             <app-multi-select
-                icon="ui/filter-rows"
+                icon="filter-rows"
                 label="CHUNK STRATEGY"
                 searchPlaceholder="Search headers..."
                 [items]="chunkStrategySelectItems"
@@ -100,7 +100,11 @@
                         <!-- filename -->
                         <div class="table__col table__col-file" (click)="selectedRagDocId.set(d.naive_rag_document_id)">
                             <span>{{ i + 1 }}</span>
-                            <app-icon class="table__file-icon" icon="ui/document" size="0.75rem" />
+                            <app-svg-icon
+                                icon="document"
+                                class="table__file-icon"
+                                size="0.75rem"
+                            />
                             <span class="table__file-name">
                                 {{ parseFullFileName(d.file_name).name }}
                             </span>

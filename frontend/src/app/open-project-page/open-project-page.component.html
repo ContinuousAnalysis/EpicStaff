@@ -33,7 +33,7 @@
                     @for (section of sections; track section.id) {
                         <div class="section-item" [class.expanded]="isSectionExpanded(section.id)">
                             <div class="section-header" (click)="toggleSection(section.id)">
-                                <i class="toggle-icon play-icon ti ti-player-play-filled"></i>
+                                <app-svg-icon icon="play" size="16px" class="toggle-icon play-icon" />
                                 <span class="section-title">
                                     {{ section.title }}
                                     @if (section.showCount) {
@@ -47,7 +47,7 @@
                                 </span>
                                 @if (section.showAddButton) {
                                     <span class="add-button" (click)="onAddAction($event, section.id)">
-                                        <i class="ti ti-plus"></i>
+                                        <app-svg-icon icon="plus" size="16px" />
                                     </span>
                                 }
                             </div>

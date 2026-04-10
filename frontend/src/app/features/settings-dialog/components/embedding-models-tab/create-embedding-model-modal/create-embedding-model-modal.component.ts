@@ -6,7 +6,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
 import { ToastService } from '../../../../../services/notifications/toast.service';
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { ToggleSwitchComponent } from '../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { CustomInputComponent } from '../../../../../shared/components/form-input/form-input.component';
@@ -25,7 +25,7 @@ export interface CreateEmbeddingModelDialogData {
     imports: [
         CommonModule,
         ReactiveFormsModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         CustomInputComponent,
         ButtonComponent,
         ToggleSwitchComponent,
