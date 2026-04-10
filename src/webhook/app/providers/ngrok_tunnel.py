@@ -14,12 +14,14 @@ class NgrokTunnel(AbstractTunnelProvider):
     def __init__(
         self,
         port: int,
+        host: str = "localhost",
         auth_token: Optional[str] = None,
         domain: Optional[str] = None,
         region: Optional[str] = None,
         reconnect_timeout: int = 10,
     ):
         super().__init__(port, auth_token, domain=domain)
+        self._host = host
         self._tunnel = None
         self._region = region
         self._reconnect_timeout = reconnect_timeout
@@ -89,8 +91,9 @@ class NgrokTunnel(AbstractTunnelProvider):
         )
 
         def _start():
+            addr = f"{self._host}:{self._port}"
             return ngrok.connect(
-                self._port, "http", domain=self._domain, pyngrok_config=self._config
+                addr, "http", domain=self._domain, pyngrok_config=self._config
             )
 
         try:

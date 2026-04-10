@@ -12,24 +12,23 @@ import {
     SimpleChanges,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
-import { GetProjectRequest } from '../../features/projects/models/project.model';
-import { GetEmbeddingConfigRequest } from '../../features/settings-dialog/models/embeddings/embedding-config.model';
-import { GetLlmConfigRequest } from '../../features/settings-dialog/models/llms/LLM_config.model';
-import { EmbeddingConfigsService } from '../../features/settings-dialog/services/embeddings/embedding_configs.service';
 import {
+    AppSvgIconComponent,
+    EmbeddingModelSelectorComponent,
+    HelpTooltipComponent,
+    LlmModelSelectorComponent,
+} from '@shared/components';
+import { GetEmbeddingConfigRequest, GetLlmConfigRequest } from '@shared/models';
+import {
+    EmbeddingConfigsService,
     FullEmbeddingConfig,
     FullEmbeddingConfigService,
-} from '../../features/settings-dialog/services/embeddings/full-embedding.service';
-import {
     FullLLMConfig,
     FullLLMConfigService,
-} from '../../features/settings-dialog/services/llms/full-llm-config.service';
-import { LLM_Config_Service } from '../../features/settings-dialog/services/llms/llm-config.service';
-import { AppSvgIconComponent } from '../../shared/components/app-svg-icon/app-svg-icon.component';
-import { EmbeddingModelSelectorComponent } from '../../shared/components/embedding-model-selector/embedding-model-selector.component';
-import { HelpTooltipComponent } from '../../shared/components/help-tooltip/help-tooltip.component';
-import { LlmModelSelectorComponent } from '../../shared/components/llm-model-selector/llm-model-selector.component';
+    LLMConfigService,
+} from '@shared/services';
+
+import { GetProjectRequest } from '../../features/projects/models/project.model';
 
 @Component({
     selector: 'app-settings-section',
@@ -85,7 +84,7 @@ export class SettingsSectionComponent implements OnInit, OnChanges {
     private rpmCurrentValue: number = 15;
 
     constructor(
-        private llmConfigService: LLM_Config_Service,
+        private llmConfigService: LLMConfigService,
         private embeddingConfigService: EmbeddingConfigsService,
         private fullLLMConfigService: FullLLMConfigService,
         private fullEmbeddingConfigService: FullEmbeddingConfigService,

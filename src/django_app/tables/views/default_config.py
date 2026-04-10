@@ -3,6 +3,7 @@ from tables.models.crew_models import (
     DefaultCrewConfig,
     DefaultToolConfig,
 )
+from tables.models.default_models import DefaultModels
 
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -18,6 +19,7 @@ from tables.serializers.default_config_serializers import (
     DefaultAgentConfigSerializer,
     DefaultRealtimeAgentConfigSerializer,
     DefaultToolConfigSerializer,
+    DefaultModelsSerializer,
 )
 
 
@@ -148,6 +150,36 @@ class DefaultCrewConfigAPIView(BaseDefaultConfigAPIView):
         request_body=DefaultCrewConfigSerializer,
         responses={
             200: DefaultCrewConfigSerializer,
+            404: openapi.Response(description="Not found"),
+            400: openapi.Response(description="Validation Error"),
+        },
+    )
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
+
+
+class DefaultModelsAPIView(BaseDefaultConfigAPIView):
+    model = DefaultModels
+    serializer = DefaultModelsSerializer
+
+    def get_object(self):
+        return DefaultModels.load()
+
+    @swagger_auto_schema(
+        operation_summary="Get default models",
+        responses={
+            200: DefaultModelsSerializer,
+            404: openapi.Response(description="Not found"),
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Set default models",
+        request_body=DefaultModelsSerializer,
+        responses={
+            200: DefaultModelsSerializer,
             404: openapi.Response(description="Not found"),
             400: openapi.Response(description="Validation Error"),
         },

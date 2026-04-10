@@ -1,0 +1,32 @@
+<article class="default-llms-card" [class.default-llms-card--active]="selectedConfigId()">
+    <div class="default-llms-card__top">
+        <div class="default-llms-card__header">
+            <app-svg-icon [icon]="card().icon" size="2rem" class="default-llms-card__icon" />
+            @if (selectedConfigId()) {
+                <app-svg-icon
+                    class="default-llms-card__close-icon"
+                    size="1.25rem"
+                    icon="close"
+                    (click)="onResetConfig()"
+                />
+            }
+        </div>
+
+        <div class="default-llms-card__title">{{ card().title }}</div>
+    </div>
+    <div class="default-llms-card__controls">
+        <div class="default-llms-card__select-wrapper">
+            <app-select
+                [placeholder]="card().selectLabel"
+                [items]="selectItems()"
+                [selectedValue]="selectedConfigId()"
+                (changed)="selectConfig($event)"
+            />
+        </div>
+        <button class="default-llms-card__add" type="button" aria-label="Add" (click)="onAddModel()">
+            <i class="ti ti-plus" aria-hidden="true"></i>
+        </button>
+    </div>
+    <div class="default-llms-card__divider" aria-hidden="true"></div>
+    <p class="default-llms-card__description">{{ card().description }}</p>
+</article>

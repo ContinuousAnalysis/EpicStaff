@@ -212,28 +212,6 @@ table {
     border-color: var(--accent-color);
 }
 
-.stop-icon-btn {
-    background: transparent;
-    border: none;
-    padding: 0px;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.18s;
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
-    margin: 0 auto;
-}
-.stop-icon-btn svg {
-    display: block;
-}
-.stop-icon-btn:hover rect {
-    fill: #d94c4a;
-}
-
 .stop-btn {
     background: #e0575b;
     color: #fff;
@@ -256,22 +234,6 @@ table {
 .stop-btn:hover {
     background: #b32b36;
     color: #fff;
-}
-
-.icon-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    color: rgba(255, 255, 255, 0.45);
-    transition: color 0.18s;
-
-    &:hover {
-        color: rgba(255, 255, 255, 0.85);
-    }
 }
 
 .no-sessions-message {

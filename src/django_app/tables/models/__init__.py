@@ -15,3 +15,4 @@ from .tag_models import *
 from .realtime_models import *
 from .mcp_models import *
 from .label_models import *
+from .default_models import DefaultModels

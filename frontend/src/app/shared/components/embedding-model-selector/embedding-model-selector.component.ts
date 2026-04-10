@@ -16,9 +16,9 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { FullEmbeddingConfig } from '@shared/services';
+import { getProviderIconPath } from '@shared/utils';
 
-import { FullEmbeddingConfig } from '../../../features/settings-dialog/services/embeddings/full-embedding.service';
-import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
 import { DropdownManagerService } from '../../services/dropdown-manager.service';
 import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { EmbeddingModelItemComponent } from './embedding-model-item/embedding-model-item.component';
