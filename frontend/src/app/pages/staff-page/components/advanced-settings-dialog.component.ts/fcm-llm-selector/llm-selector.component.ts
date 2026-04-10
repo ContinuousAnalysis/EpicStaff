@@ -3,12 +3,13 @@ import { Component, EventEmitter, forwardRef, Input, OnChanges, Output, SimpleCh
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 
 import { FullLLMConfig } from '../../../../../features/settings-dialog/services/llms/full-llm-config.service';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ClickOutsideDirective } from '../../../../../shared/directives/click-outside.directive';
 
 @Component({
     selector: 'app-llm-selector',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, ClickOutsideDirective],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, ClickOutsideDirective, AppSvgIconComponent],
     templateUrl: './llm-selector.component.html',
     styleUrls: ['./llm-selector.component.scss'],
     providers: [

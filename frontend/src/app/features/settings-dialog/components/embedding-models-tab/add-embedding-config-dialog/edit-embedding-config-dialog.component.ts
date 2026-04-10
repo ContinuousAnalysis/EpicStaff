@@ -3,15 +3,16 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AppIconComponent, ButtonComponent } from '@shared/components';
+import { ButtonComponent } from '@shared/components';
 import { finalize } from 'rxjs/operators';
 
-import { EmbeddingModel } from '../../../models/embeddings/embedding.model';
 import { EmbeddingConfig } from '../../../models/embeddings/embedding-config.model';
+import { EmbeddingModel } from '../../../models/embeddings/embedding.model';
 import { LLM_Provider } from '../../../models/llm-provider.model';
 import { EmbeddingConfigsService } from '../../../services/embeddings/embedding_configs.service';
 import { FullEmbeddingConfig } from '../../../services/embeddings/full-embedding.service';
 import { getProviderIconPath } from '../../../utils/get-provider-icon';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import {
     ModelSelectorModalComponent,
     ModelSelectorResult,
@@ -19,7 +20,8 @@ import {
 
 @Component({
     selector: 'app-edit-embedding-config-dialog',
-    imports: [CommonModule, ReactiveFormsModule, ButtonComponent, AppIconComponent],
+    standalone: true,
+    imports: [CommonModule, ReactiveFormsModule, ButtonComponent, AppSvgIconComponent],
     templateUrl: './edit-embedding-config-dialog.component.html',
     styleUrls: ['./edit-embedding-config-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,6 +50,15 @@ export class EditEmbeddingConfigDialogComponent implements OnInit {
         this.selectedProvider.set(this.dialogData.providerDetails ?? null);
         this.selectedModel.set(this.dialogData.modelDetails ?? null);
         this.selectedModelId.set(this.dialogData.model ?? null);
+
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(event => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.onSubmit();
+                }
+            });
     }
 
     private initForm(): void {
@@ -67,6 +78,7 @@ export class EditEmbeddingConfigDialogComponent implements OnInit {
     }
 
     public onSubmit(): void {
+        this.form.markAllAsTouched();
         if (!this.isFormValid()) {
             return;
         }

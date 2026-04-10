@@ -4,7 +4,7 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnIni
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { EmbeddingModel } from '../../../models/embeddings/embedding.model';
 import { LLM_Provider } from '../../../models/llm-provider.model';
 import { EmbeddingModelsService } from '../../../services/embeddings/embeddings.service';
@@ -19,7 +19,7 @@ export interface AllEmbeddingModelsDialogData {
 @Component({
     selector: 'app-all-embedding-models-modal',
     standalone: true,
-    imports: [CommonModule, FormsModule, AppIconComponent],
+    imports: [CommonModule, FormsModule, AppSvgIconComponent],
     templateUrl: './all-models-modal.component.html',
     styleUrls: ['./all-models-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +51,13 @@ export class AllModelsModalComponent implements OnInit {
 
     public ngOnInit(): void {
         this.models.set([...this.dialogData.models]);
+
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.onClose();
+            }
+        });
     }
 
     public getProviderIcon(providerName: string): string {

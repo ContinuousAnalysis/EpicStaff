@@ -1,11 +1,12 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
 import { ToastService } from '../../../../../services/notifications/toast.service';
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { ToggleSwitchComponent } from '../../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { CustomInputComponent } from '../../../../../shared/components/form-input/form-input.component';
@@ -24,7 +25,7 @@ export interface CreateEmbeddingModelDialogData {
     imports: [
         CommonModule,
         ReactiveFormsModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         CustomInputComponent,
         ButtonComponent,
         ToggleSwitchComponent,
@@ -33,12 +34,13 @@ export interface CreateEmbeddingModelDialogData {
     styleUrls: ['./create-embedding-model-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CreateEmbeddingModelModalComponent {
+export class CreateEmbeddingModelModalComponent implements OnInit {
     private dialogRef = inject(DialogRef);
     private dialogData = inject<CreateEmbeddingModelDialogData>(DIALOG_DATA);
     private fb = inject(FormBuilder);
     private modelsService = inject(EmbeddingModelsService);
     private toastService = inject(ToastService);
+    private readonly destroyRef = inject(DestroyRef);
 
     isSubmitting = signal(false);
 
@@ -51,6 +53,17 @@ export class CreateEmbeddingModelModalComponent {
 
     provider = this.dialogData.provider;
     getProviderIcon = getProviderIconPath;
+
+    ngOnInit(): void {
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(event => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.onSubmit();
+                }
+            });
+    }
 
     onClose(): void {
         this.dialogRef.close(null);

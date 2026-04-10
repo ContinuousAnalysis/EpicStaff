@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { AppIconComponent } from '../../../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../../../shared/components/buttons/button/button.component';
 import { DragDropAreaComponent } from '../../../../../../../shared/components/drag-drop-area/drag-drop-area.component';
 import { ListComponent } from '../../../../../../../shared/components/list/list.component';
@@ -28,7 +28,7 @@ import { DocumentsStorageService } from '../../../../../services/documents-stora
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         ButtonComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
         FileSizePipe,
         DragDropAreaComponent,
         ListActionsComponent,

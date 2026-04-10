@@ -2,9 +2,11 @@ import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { AppIconComponent, ButtonComponent, ConfirmationDialogService, SearchComponent } from '@shared/components';
+import { ButtonComponent, ConfirmationDialogService, SearchComponent } from '@shared/components';
 import { EMPTY, groupBy, mergeMap, of, Subject } from 'rxjs';
 import { catchError, debounceTime, switchMap } from 'rxjs/operators';
+
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 import { ToastService } from '../../../../services/notifications';
 import { CreateCollectionDtoResponse } from '../../models/collection.model';
@@ -24,7 +26,7 @@ import { DocFieldChange } from './configuration-table/configuration-table.interf
         FormsModule,
         SearchComponent,
         ConfigurationTableComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
         ButtonComponent,
         DocumentChunksSectionComponent,
     ],

@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { LLM_Provider, ModelTypes } from '../../../models/llm-provider.model';
 import { LLM_Model } from '../../../models/llms/LLM.model';
 import { LLM_Providers_Service } from '../../../services/llm-providers.service';
@@ -45,7 +45,7 @@ const TOP_PROVIDERS = [
 @Component({
     selector: 'app-model-selector-modal',
     standalone: true,
-    imports: [CommonModule, FormsModule, AppIconComponent],
+    imports: [CommonModule, FormsModule, AppSvgIconComponent],
     templateUrl: './model-selector-modal.component.html',
     styleUrls: ['./model-selector-modal.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -103,6 +103,15 @@ export class ModelSelectorModalComponent implements OnInit {
         this.dialogRef.backdropClick.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.onClose();
         });
+
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(event => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.onClose();
+                }
+            });
     }
 
     private sortProviders(providers: LLM_Provider[]): LLM_Provider[] {

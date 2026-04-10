@@ -9,11 +9,14 @@
                     <p>{{ errorMessage() }}</p>
                 </div>
             }
+
             <div class="form-field">
-                <label class="form-field__label"> Provider & Model <span class="required">*</span> </label>
+                <label class="form-field__label">
+                    Provider & Model <span class="required">*</span>
+                </label>
                 <button type="button" class="model-selector" (click)="openModelSelector()">
                     @if (selectedProvider()) {
-                        <app-icon [icon]="getProviderIcon(selectedProvider()!.name)" size="1.25rem" />
+                        <app-svg-icon [icon]="getProviderIcon(selectedProvider()!.name)" size="1.25rem" />
                     }
                     @if (selectedModel() && selectedProvider()) {
                         <span class="model-selector__text">
@@ -22,18 +25,23 @@
                             <span class="model-selector__model">{{ selectedModel()!.name }}</span>
                         </span>
                     } @else {
-                        <span class="model-selector__text model-selector__text--placeholder"> Select a model... </span>
+                        <span class="model-selector__text model-selector__text--placeholder">
+                            Select a model...
+                        </span>
                     }
-                    <app-icon icon="ui/chevron-down" size="1rem" />
+                    <app-svg-icon icon="chevron-down" size="1rem" />
                 </button>
                 @if (
                     form.get('modelId')?.invalid &&
                     (form.get('modelId')?.dirty || submitAttempted()) &&
                     !selectedModel()
                 ) {
-                    <div class="error-hint">Please select provider and model</div>
+                    <div class="error-hint">
+                        Please select provider and model
+                    </div>
                 }
             </div>
+
             <div class="form-field">
                 <label for="apiKey">API Key <span class="required">*</span></label>
                 <div class="form-input-wrapper">
@@ -45,13 +53,16 @@
                         formControlName="apiKey"
                     />
                     <button type="button" class="form-input-action" (click)="toggleApiKeyVisibility()">
-                        <app-icon [icon]="showApiKey() ? 'ui/eye-off' : 'ui/eye'" size="1.25rem" />
+                        <app-svg-icon [icon]="showApiKey() ? 'eye-off' : 'eye'" size="1.25rem" />
                     </button>
                 </div>
                 @if (form.get('apiKey')?.invalid && (form.get('apiKey')?.dirty || submitAttempted())) {
-                    <div class="error-hint">API key is required</div>
+                    <div class="error-hint">
+                        API key is required
+                    </div>
                 }
             </div>
+
             <div class="form-field">
                 <label for="customName">Configuration Name <span class="required">*</span></label>
                 <input
@@ -62,12 +73,19 @@
                     formControlName="customName"
                 />
                 @if (form.get('customName')?.invalid && (form.get('customName')?.dirty || submitAttempted())) {
-                    <div class="error-hint">Configuration name is required</div>
+                    <div class="error-hint">
+                        Configuration name is required
+                    </div>
                 }
             </div>
+
             <div class="dialog-actions">
                 <app-button type="ghost" (click)="onCancel()">Cancel</app-button>
-                <app-button type="primary" (click)="onSubmit()" [disabled]="!isFormValid() || isSubmitting()">
+                <app-button
+                    type="primary"
+                    (click)="onSubmit()"
+                    [disabled]="!isFormValid() || isSubmitting()"
+                >
                     {{ isSubmitting() ? 'Adding...' : 'Add' }}
                 </app-button>
             </div>

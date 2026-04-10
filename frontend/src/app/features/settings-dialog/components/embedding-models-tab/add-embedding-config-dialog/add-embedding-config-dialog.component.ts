@@ -5,7 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
-import { AppIconComponent } from '../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { EmbeddingModel } from '../../../models/embeddings/embedding.model';
 import { CreateEmbeddingConfigRequest } from '../../../models/embeddings/embedding-config.model';
@@ -20,7 +20,7 @@ import {
 @Component({
     selector: 'app-add-embedding-config-dialog',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, ButtonComponent, AppIconComponent],
+    imports: [CommonModule, ReactiveFormsModule, ButtonComponent, AppSvgIconComponent],
     templateUrl: './add-embedding-config-dialog.component.html',
     styleUrls: ['./add-embedding-config-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,6 +57,15 @@ export class AddEmbeddingConfigDialogComponent implements OnInit {
         this.form.statusChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.formValid.set(this.form.valid);
         });
+
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(event => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.onSubmit();
+                }
+            });
     }
 
     private initForm(): void {

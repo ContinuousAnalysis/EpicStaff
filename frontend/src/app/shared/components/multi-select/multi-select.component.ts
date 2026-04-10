@@ -18,7 +18,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { AppIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../buttons';
 import { CheckboxComponent } from '../checkbox/checkbox.component';
 import { SelectItem } from '../select/select.component';
@@ -31,7 +31,7 @@ interface GroupedItems {
 @Component({
     selector: 'app-multi-select',
     standalone: true,
-    imports: [AppIconComponent, CheckboxComponent, ButtonComponent],
+    imports: [AppSvgIconComponent, CheckboxComponent, ButtonComponent],
     templateUrl: './multi-select.component.html',
     styleUrls: ['./multi-select.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

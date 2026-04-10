@@ -4,22 +4,23 @@ import { NgxJsonViewerModule } from 'ngx-json-viewer';
 import { MarkdownModule } from 'ngx-markdown';
 
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { GraphMessage, TaskMessageData } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-task-message',
     standalone: true,
-    imports: [CommonModule, MarkdownModule, NgxJsonViewerModule],
+    imports: [CommonModule, MarkdownModule, NgxJsonViewerModule, AppSvgIconComponent],
     animations: [expandCollapseAnimation],
     template: `
         <div class="agent-flow-container">
             <!-- Task Message Header with Toggle -->
             <div class="agent-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-list-check"></i>
+                    <app-svg-icon icon="list-check" size="1rem" />
                 </div>
                 <h3>
                     Task <span class="task-name">{{ getTaskName() }}</span> is done
@@ -32,10 +33,7 @@ import { GraphMessage, TaskMessageData } from '../../../../models/graph-session-
                     <!-- Task Details Section -->
                     <div class="details-container" *ngIf="hasDetails()">
                         <div class="section-heading" (click)="toggleSection('details')">
-                            <i
-                                class="ti"
-                                [ngClass]="isDetailsExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isDetailsExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                             Task Details
                         </div>
                         <div
@@ -70,10 +68,7 @@ import { GraphMessage, TaskMessageData } from '../../../../models/graph-session-
                     <!-- Result Section -->
                     <div class="raw-container" *ngIf="hasRawData()">
                         <div class="section-heading" (click)="toggleSection('raw')">
-                            <i
-                                class="ti"
-                                [ngClass]="isRawExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isRawExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                             Result
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isRawExpanded ? 'expanded' : 'collapsed'">
@@ -127,10 +122,8 @@ import { GraphMessage, TaskMessageData } from '../../../../models/graph-session-
                 display: flex;
                 align-items: center;
 
-                i {
+                app-svg-icon {
                     color: #30a46c;
-                    font-size: 1.1rem;
-                    transition: transform 0.3s ease;
                 }
             }
 
@@ -145,9 +138,8 @@ import { GraphMessage, TaskMessageData } from '../../../../models/graph-session-
                 margin-right: 20px;
                 flex-shrink: 0;
 
-                i {
+                app-svg-icon {
                     color: var(--gray-900);
-                    font-size: 1.25rem;
                 }
             }
 
@@ -198,12 +190,10 @@ import { GraphMessage, TaskMessageData } from '../../../../models/graph-session-
             display: flex;
             align-items: center;
 
-            i {
+            app-svg-icon {
                 margin-right: 8px;
                 color: #30a46c;
-                font-size: 1.1rem;
                 margin-left: -3px;
-                transition: transform 0.3s ease;
             }
         }
 
