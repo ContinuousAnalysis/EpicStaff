@@ -11,8 +11,8 @@ import {
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { environment } from 'src/environments/environment';
 
+import { ConfigureModelsDialogService } from '../../../features/configure-models/services/configure-models-dialog.service';
 import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
-import { SettingsDialogService } from '../../../features/settings-dialog/settings-dialog.service';
 import { ConfigService } from '../../../services/config/config.service';
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { TooltipComponent } from './tooltip/tooltip.component';
@@ -104,8 +104,8 @@ export class LeftSidebarComponent implements AfterViewInit {
 
     constructor(
         public epicChatService: EpicChatService,
-        private settingsDialogService: SettingsDialogService,
-        private configService: ConfigService
+        private configService: ConfigService,
+        private configureModelsDialogService: ConfigureModelsDialogService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
         // COMMIT_COMMENTS: Derive apiBaseUrl from browser origin so the EpicChat widget's
@@ -182,7 +182,7 @@ export class LeftSidebarComponent implements AfterViewInit {
     }
 
     private onSettingsClick(): void {
-        this.settingsDialogService.openSettingsDialog();
+        this.configureModelsDialogService.open();
     }
 
     public toggleEpicChat(): void {

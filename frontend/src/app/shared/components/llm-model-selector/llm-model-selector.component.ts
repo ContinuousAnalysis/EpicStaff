@@ -16,11 +16,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { DropdownManagerService, FullLLMConfig } from '@shared/services';
+import { getProviderIconPath } from '@shared/utils';
 
-import { FullLLMConfig } from '../../../features/settings-dialog/services/llms/full-llm-config.service';
 import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
-import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
-import { DropdownManagerService } from '../../services/dropdown-manager.service';
 import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component';
 
 @Component({

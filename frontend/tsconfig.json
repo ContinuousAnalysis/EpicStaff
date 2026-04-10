@@ -31,6 +31,7 @@
       "@shared/material-forms": ["src/app/shared/material-forms/index.ts"],
       "@shared/services": ["src/app/shared/services/index.ts"],
       "@shared/utils": ["src/app/shared/utils/index.ts"],
+      "@shared/models": ["src/app/shared/models/index.ts"],
     }
   },
   "angularCompilerOptions": {

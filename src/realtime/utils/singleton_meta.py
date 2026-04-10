@@ -1,7 +1,8 @@
+from abc import ABCMeta
 from threading import Lock
 
 
-class SingletonMeta(type):
+class SingletonMeta(ABCMeta):
     """
     This is a thread-safe implementation of Singleton.
     """
