@@ -21,7 +21,7 @@ import { FlowService } from '../../../services/flow.service';
 import { NodeType } from '../../../core/enums/node-type';
 import { ConditionGroup } from '../../../core/models/decision-table.model';
 import { generatePortsForClassificationDecisionTableNode } from '../../../core/helpers/helpers';
-import { FullLLMConfig, FullLLMConfigService } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
+import { FullLLMConfig, FullLLMConfigService } from '../../../../shared/services/llms/full-llm-config.service';
 import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
 import { FormsModule } from '@angular/forms';
 import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';

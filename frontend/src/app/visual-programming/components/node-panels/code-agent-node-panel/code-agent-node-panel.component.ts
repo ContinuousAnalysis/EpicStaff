@@ -1,30 +1,18 @@
-import {
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    Component,
-    input,
-    signal,
-} from '@angular/core';
-import {
-    ReactiveFormsModule,
-    FormGroup,
-    Validators,
-    FormArray,
-    FormBuilder,
-} from '@angular/forms';
-import { CodeAgentNodeModel } from '../../../core/models/node.model';
-import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
-import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
-import { InputMapComponent } from '../../input-map/input-map.component';
-import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { CommonModule } from '@angular/common';
-import { SidePanelService } from '../../../services/side-panel.service';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, input, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { expandCollapseAnimation } from '@shared/animations';
+import { CustomInputComponent, JsonEditorComponent } from '@shared/components';
+import { FullLLMConfig, FullLLMConfigService } from '@shared/services';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
-import { FullLLMConfigService, FullLLMConfig } from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
+
+import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
+import { CodeAgentNodeModel } from '../../../core/models/node.model';
+import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
+import { SidePanelService } from '../../../services/side-panel.service';
+import { InputMapComponent } from '../../input-map/input-map.component';
 import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
 
 interface InputMapPair {
@@ -42,6 +30,8 @@ interface InputMapPair {
         CodeEditorComponent,
         CommonModule,
         JsonEditorComponent,
+        CustomInputComponent,
+        JsonEditorComponent,
     ],
     animations: [expandCollapseAnimation],
     template: `
@@ -49,12 +39,7 @@ interface InputMapPair {
             <div class="panel-content">
                 <form [formGroup]="form" class="form-container">
                     @if (isExpanded()) {
-                        <div
-                            class="form-layout expanded"
-                            [class.code-editor-fullwidth]="
-                                isCodeEditorFullWidth()
-                            "
-                        >
+                        <div class="form-layout expanded" [class.code-editor-fullwidth]="isCodeEditorFullWidth()">
                             @if (!isCodeEditorFullWidth()) {
                                 <div class="form-fields">
                                     <app-custom-input
@@ -63,15 +48,11 @@ interface InputMapPair {
                                         formControlName="node_name"
                                         placeholder="Enter node name"
                                         [activeColor]="activeColor"
-                                        [errorMessage]="
-                                            getNodeNameErrorMessage()
-                                        "
+                                        [errorMessage]="getNodeNameErrorMessage()"
                                     ></app-custom-input>
 
                                     <div class="input-map">
-                                        <app-input-map
-                                            [activeColor]="activeColor"
-                                        ></app-input-map>
+                                        <app-input-map [activeColor]="activeColor"></app-input-map>
                                     </div>
 
                                     <app-custom-input
@@ -84,7 +65,11 @@ interface InputMapPair {
 
                                     <div class="select-field">
                                         <label class="select-label">Agent Mode</label>
-                                        <select formControlName="agent_mode" class="select-input" [style.--active-color]="activeColor">
+                                        <select
+                                            formControlName="agent_mode"
+                                            class="select-input"
+                                            [style.--active-color]="activeColor"
+                                        >
                                             <option value="build">Build</option>
                                             <option value="plan">Plan</option>
                                         </select>
@@ -92,10 +77,16 @@ interface InputMapPair {
 
                                     <div class="select-field">
                                         <label class="select-label">LLM Config</label>
-                                        <select formControlName="llm_config" class="select-input" [style.--active-color]="activeColor">
+                                        <select
+                                            formControlName="llm_config"
+                                            class="select-input"
+                                            [style.--active-color]="activeColor"
+                                        >
                                             <option [ngValue]="null">— None —</option>
                                             @for (cfg of llmConfigs; track cfg.id) {
-                                                <option [ngValue]="cfg.id">{{ cfg.custom_name || ('Config #' + cfg.id) }}</option>
+                                                <option [ngValue]="cfg.id">
+                                                    {{ cfg.custom_name || 'Config #' + cfg.id }}
+                                                </option>
                                             }
                                         </select>
                                     </div>
@@ -146,19 +137,35 @@ interface InputMapPair {
                                         <span class="section-label">Streaming to EpicChat</span>
                                         <div class="checkbox-list">
                                             <label class="checkbox-item">
-                                                <input type="checkbox" formControlName="reasoning" [style.accent-color]="activeColor" />
+                                                <input
+                                                    type="checkbox"
+                                                    formControlName="reasoning"
+                                                    [style.accent-color]="activeColor"
+                                                />
                                                 <span>Reasoning</span>
                                             </label>
                                             <label class="checkbox-item">
-                                                <input type="checkbox" formControlName="tool_calls" [style.accent-color]="activeColor" />
+                                                <input
+                                                    type="checkbox"
+                                                    formControlName="tool_calls"
+                                                    [style.accent-color]="activeColor"
+                                                />
                                                 <span>Tool calls</span>
                                             </label>
                                             <label class="checkbox-item">
-                                                <input type="checkbox" formControlName="tool_results" [style.accent-color]="activeColor" />
+                                                <input
+                                                    type="checkbox"
+                                                    formControlName="tool_results"
+                                                    [style.accent-color]="activeColor"
+                                                />
                                                 <span>Tool results</span>
                                             </label>
                                             <label class="checkbox-item">
-                                                <input type="checkbox" formControlName="final_reply" [style.accent-color]="activeColor" />
+                                                <input
+                                                    type="checkbox"
+                                                    formControlName="final_reply"
+                                                    [style.accent-color]="activeColor"
+                                                />
                                                 <span>Final reply</span>
                                             </label>
                                         </div>
@@ -175,22 +182,14 @@ interface InputMapPair {
                             }
 
                             <div class="editor-panel-wrapper">
-                                <button
-                                    type="button"
-                                    class="toggle-icon-button"
-                                    (click)="toggleCodeEditorFullWidth()"
-                                >
+                                <button type="button" class="toggle-icon-button" (click)="toggleCodeEditorFullWidth()">
                                     <svg
                                         width="9"
                                         height="22"
                                         viewBox="0 0 9 22"
                                         fill="none"
                                         xmlns="http://www.w3.org/2000/svg"
-                                        [style.transform]="
-                                            isCodeEditorFullWidth()
-                                                ? 'scaleX(1)'
-                                                : 'scaleX(-1)'
-                                        "
+                                        [style.transform]="isCodeEditorFullWidth() ? 'scaleX(1)' : 'scaleX(-1)'"
                                     >
                                         <path
                                             d="M7.16602 21.0001L1.16602 11.0001L7.16602 1.00012"
@@ -209,14 +208,18 @@ interface InputMapPair {
                                             [class.active]="activeEditorTab() === 'hooks'"
                                             [style.--accent-color]="activeColor"
                                             (click)="activeEditorTab.set('hooks')"
-                                        >Event Hooks</button>
+                                        >
+                                            Event Hooks
+                                        </button>
                                         <button
                                             type="button"
                                             class="editor-tab"
                                             [class.active]="activeEditorTab() === 'schema'"
                                             [style.--accent-color]="activeColor"
                                             (click)="activeEditorTab.set('schema')"
-                                        >Output Schema</button>
+                                        >
+                                            Output Schema
+                                        </button>
                                     </div>
                                     <div class="editor-tab-content">
                                         @switch (activeEditorTab()) {
@@ -256,9 +259,7 @@ interface InputMapPair {
                             ></app-custom-input>
 
                             <div class="input-map">
-                                <app-input-map
-                                    [activeColor]="activeColor"
-                                ></app-input-map>
+                                <app-input-map [activeColor]="activeColor"></app-input-map>
                             </div>
 
                             <app-custom-input
@@ -270,7 +271,11 @@ interface InputMapPair {
 
                             <div class="select-field">
                                 <label class="select-label">Agent Mode</label>
-                                <select formControlName="agent_mode" class="select-input" [style.--active-color]="activeColor">
+                                <select
+                                    formControlName="agent_mode"
+                                    class="select-input"
+                                    [style.--active-color]="activeColor"
+                                >
                                     <option value="build">Build</option>
                                     <option value="plan">Plan</option>
                                 </select>
@@ -278,10 +283,14 @@ interface InputMapPair {
 
                             <div class="select-field">
                                 <label class="select-label">LLM Config</label>
-                                <select formControlName="llm_config" class="select-input" [style.--active-color]="activeColor">
+                                <select
+                                    formControlName="llm_config"
+                                    class="select-input"
+                                    [style.--active-color]="activeColor"
+                                >
                                     <option [ngValue]="null">— None —</option>
                                     @for (cfg of llmConfigs; track cfg.id) {
-                                        <option [ngValue]="cfg.id">{{ cfg.custom_name || ('Config #' + cfg.id) }}</option>
+                                        <option [ngValue]="cfg.id">{{ cfg.custom_name || 'Config #' + cfg.id }}</option>
                                     }
                                 </select>
                             </div>
@@ -305,19 +314,35 @@ interface InputMapPair {
                                 <span class="section-label">Streaming to EpicChat</span>
                                 <div class="checkbox-list">
                                     <label class="checkbox-item">
-                                        <input type="checkbox" formControlName="reasoning" [style.accent-color]="activeColor" />
+                                        <input
+                                            type="checkbox"
+                                            formControlName="reasoning"
+                                            [style.accent-color]="activeColor"
+                                        />
                                         <span>Reasoning</span>
                                     </label>
                                     <label class="checkbox-item">
-                                        <input type="checkbox" formControlName="tool_calls" [style.accent-color]="activeColor" />
+                                        <input
+                                            type="checkbox"
+                                            formControlName="tool_calls"
+                                            [style.accent-color]="activeColor"
+                                        />
                                         <span>Tool calls</span>
                                     </label>
                                     <label class="checkbox-item">
-                                        <input type="checkbox" formControlName="tool_results" [style.accent-color]="activeColor" />
+                                        <input
+                                            type="checkbox"
+                                            formControlName="tool_results"
+                                            [style.accent-color]="activeColor"
+                                        />
                                         <span>Tool results</span>
                                     </label>
                                     <label class="checkbox-item">
-                                        <input type="checkbox" formControlName="final_reply" [style.accent-color]="activeColor" />
+                                        <input
+                                            type="checkbox"
+                                            formControlName="final_reply"
+                                            [style.accent-color]="activeColor"
+                                        />
                                         <span>Final reply</span>
                                     </label>
                                 </div>
@@ -382,7 +407,7 @@ interface InputMapPair {
                             top: 50%;
                             transform: translateY(-50%);
                             z-index: 10;
-                            border-width: 1px 1px 1px 0px;
+                            border-width: 1px 1px 1px 0;
                             border-radius: 0 8px 8px 0;
                         }
                     }
@@ -537,7 +562,7 @@ interface InputMapPair {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    border-width: 1px 0px 1px 1px;
+                    border-width: 1px 0 1px 1px;
                     border-style: solid;
                     border-color: #2c2c2e;
                     background: transparent;
@@ -600,7 +625,9 @@ interface InputMapPair {
                 padding: 0.6rem 1.2rem;
                 cursor: pointer;
                 border-bottom: 2px solid transparent;
-                transition: color 0.2s, border-bottom 0.2s;
+                transition:
+                    color 0.2s,
+                    border-bottom 0.2s;
 
                 &:hover {
                     color: #ffffff;
@@ -661,15 +688,14 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
     constructor(
         private readonly sidePanelService: SidePanelService,
         private readonly fullLLMConfigService: FullLLMConfigService,
-        private readonly cdr: ChangeDetectorRef,
+        private readonly cdr: ChangeDetectorRef
     ) {
         super();
-        this.codeChange$
-            .pipe(debounceTime(300), takeUntilDestroyed())
-            .subscribe(() => {
-                this.sidePanelService.triggerAutosave();
-            });
-        this.fullLLMConfigService.getFullLLMConfigs()
+        this.codeChange$.pipe(debounceTime(300), takeUntilDestroyed()).subscribe(() => {
+            this.sidePanelService.triggerAutosave();
+        });
+        this.fullLLMConfigService
+            .getFullLLMConfigs()
             .pipe(takeUntilDestroyed())
             .subscribe((configs) => {
                 this.llmConfigs = configs;
@@ -729,9 +755,10 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
         this.initializeInputMap(form);
         this.streamHandlerCode = data.stream_handler_code || '';
         const schema = data.output_schema;
-        this.outputSchemaText = schema && Object.keys(schema).length > 0
-            ? JSON.stringify(schema, null, 2)
-            : JSON.stringify(DEFAULT_OUTPUT_SCHEMA, null, 2);
+        this.outputSchemaText =
+            schema && Object.keys(schema).length > 0
+                ? JSON.stringify(schema, null, 2)
+                : JSON.stringify(DEFAULT_OUTPUT_SCHEMA, null, 2);
 
         return form;
     }
@@ -775,16 +802,13 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
     private initializeInputMap(form: FormGroup): void {
         const inputMapArray = form.get('input_map') as FormArray;
 
-        if (
-            this.node().input_map &&
-            Object.keys(this.node().input_map).length > 0
-        ) {
+        if (this.node().input_map && Object.keys(this.node().input_map).length > 0) {
             Object.entries(this.node().input_map).forEach(([key, value]) => {
                 inputMapArray.push(
                     this.fb.group({
                         key: [key, Validators.required],
                         value: [value, Validators.required],
-                    }),
+                    })
                 );
             });
         } else {
@@ -792,20 +816,20 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
                 this.fb.group({
                     key: [''],
                     value: ['variables.'],
-                }),
+                })
             );
         }
     }
 
-    private getValidInputPairs(): any[] {
+    private getValidInputPairs(): AbstractControl[] {
         return this.inputMapPairs.controls.filter((control) => {
-            const value = control.value;
+            const value = control.value as InputMapPair;
             return value.key?.trim() !== '' || value.value?.trim() !== '';
         });
     }
 
-    private createInputMapFromPairs(pairs: any[]): Record<string, string> {
-        return pairs.reduce((acc: Record<string, string>, curr: any) => {
+    private createInputMapFromPairs(pairs: AbstractControl[]): Record<string, string> {
+        return pairs.reduce((acc: Record<string, string>, curr: AbstractControl) => {
             const pair = curr.value as InputMapPair;
             if (pair.key?.trim()) {
                 acc[pair.key.trim()] = pair.value;
@@ -818,7 +842,7 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
         this.isCodeEditorFullWidth.update((value) => !value);
     }
 
-    private parsedOutputSchema(): Record<string, any> {
+    private parsedOutputSchema(): Record<string, unknown> {
         if (!this.outputSchemaText.trim()) return {};
         try {
             return JSON.parse(this.outputSchemaText);

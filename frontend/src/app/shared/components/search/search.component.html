@@ -1,30 +1,22 @@
-<div
-    class="search"
-    [ngClass]="'search--mod-' + mod()"
-    [style.width]="width()"
->
-    <app-icon
-        icon="ui/search"
+<div class="search" [ngClass]="'search--mod-' + mod()" [style.width]="width()">
+    <app-svg-icon
+        icon="search"
         class="search__icon"
         size="1.1rem"
-    ></app-icon>
+    />
 
     <input
         type="text"
         class="search__input"
+        [class.search__input--with-clear]="!!searchTerm()"
         [placeholder]="placeholder()"
         [ngModel]="searchTerm()"
         (ngModelChange)="onSearchTermChange($event)"
     />
 
     @if (searchTerm()) {
-        <button
-            type="button"
-            class="search__clear-btn"
-            aria-label="Clear"
-            (click)="clearSearch()"
-        >
-            <app-icon icon="ui/x" size="1.1rem"></app-icon>
+        <button type="button" class="search__clear-btn" aria-label="Clear" (click)="clearSearch()">
+            <app-svg-icon icon="x" size="1.1rem" />
         </button>
     }
 </div>

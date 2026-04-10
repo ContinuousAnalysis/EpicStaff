@@ -40,7 +40,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 @Component({
     selector: 'app-classification-decision-table-grid',
     standalone: true,
-    imports: [AgGridModule, ButtonComponent, MonacoCellEditorComponent, MonacoCellRendererComponent, PromptTooltipRendererComponent, PromptIdCellEditorComponent, IconHeaderComponent],
+    imports: [AgGridModule, ButtonComponent, MonacoCellEditorComponent, MonacoCellRendererComponent, PromptTooltipRendererComponent, PromptIdCellEditorComponent, IconHeaderComponent],     
     templateUrl: './classification-decision-table-grid.component.html',
     styleUrls: ['./classification-decision-table-grid.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

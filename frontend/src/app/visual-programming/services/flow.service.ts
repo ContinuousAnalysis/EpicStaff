@@ -6,7 +6,7 @@ import { delay, map } from 'rxjs/operators';
 import { NodeType } from '../core/enums/node-type';
 import { generatePortsForDecisionTableNode, generatePortsForClassificationDecisionTableNode, parsePortId } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
-import { ConditionGroup, DecisionTableNode } from '../core/models/decision-table.model';
+import { ConditionGroup,  DecisionTableNode } from '../core/models/decision-table.model';
 import { FlowModel } from '../core/models/flow.model';
 import { DecisionTableNodeModel, NodeModel, StartNodeModel } from '../core/models/node.model';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
@@ -24,6 +24,8 @@ export class FlowService {
         nodes: [],
         connections: [],
     });
+
+    private _nextNodeNumber = 1;
 
     // Subject to request canvas redraw (e.g., after port reordering)
     private canvasRedrawRequest$ = new Subject<void>();
@@ -76,6 +78,19 @@ export class FlowService {
 
     public setFlow(flow: FlowModel) {
         this.flowSignal.set(flow);
+        // Re-seed the counter above the highest existing nodeNumber
+        let max = 0;
+        for (const n of flow.nodes) {
+            if (n.nodeNumber != null && n.nodeNumber > max) {
+                max = n.nodeNumber;
+            }
+        }
+        this._nextNodeNumber = max + 1;
+    }
+
+    /** Returns the next node number and increments the counter. */
+    public getNextNodeNumber(): number {
+        return this._nextNodeNumber++;
     }
 
     public addNode(node: NodeModel) {
@@ -91,8 +106,6 @@ export class FlowService {
             connections: [...flow.connections, conn],
         }));
 
-        console.log('New connection added to the flow state:', conn);
-
         this.updateDecisionTableNextNodeFromConnection(conn);
     }
     public addConnectionsInBatch(connections: ConnectionModel[]): void {
@@ -104,8 +117,6 @@ export class FlowService {
             ...flow,
             connections: [...flow.connections, ...connections],
         }));
-
-        console.log(`Batch added ${connections.length} connections`);
     }
     public removeConnectionsInBatch(connectionIds: string[]): void {
         if (!connectionIds || connectionIds.length === 0) {
@@ -116,8 +127,6 @@ export class FlowService {
             ...flow,
             connections: flow.connections.filter((conn) => !connectionIds.includes(conn.id)),
         }));
-
-        console.log(`Batch removed ${connectionIds.length} connections`);
 
         const remainingConnections = this.connections();
         connectionIds.forEach((connectionId) => {
@@ -218,9 +227,6 @@ export class FlowService {
                 // Otherwise return the existing node unchanged
                 return existingNode;
             });
-
-            // Log the batch update
-            console.log(`Batch updated ${nodes.length} nodes`);
 
             // Return updated flow state
             return {
@@ -325,9 +331,6 @@ export class FlowService {
                 }
                 return existingConn;
             });
-
-            // Log the batch update
-            console.log(`Batch updated ${connections.length} connections`);
 
             // Return updated flow state
             return {
@@ -733,8 +736,8 @@ export class FlowService {
                     : generatePortsForDecisionTableNode(
                         sourceNode.id,
                         updatedTable.condition_groups,
-                        !!updatedTable.default_next_node,
-                        !!updatedTable.next_error_node
+                        // !!updatedTable.default_next_node,
+                        // !!updatedTable.next_error_node
                     );
 
                 decisionTableUpdates.set(sourceNode.id, {

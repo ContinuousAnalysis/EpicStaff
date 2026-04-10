@@ -1,16 +1,12 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FullLLMConfig, FullLLMConfigService, LLMConfigService, LLMModelsService } from "@shared/services";
 import { forkJoin, of, Subject, takeUntil } from 'rxjs';
 
 import { GetCollectionRequest } from '../../../../features/knowledge-sources/models/collection.model';
 import { CollectionsApiService } from '../../../../features/knowledge-sources/services/collections-api.service';
-import {
-    FullLLMConfig,
-    FullLLMConfigService,
-} from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { LLM_Config_Service } from '../../../../features/settings-dialog/services/llms/llm-config.service';
-import { LLM_Models_Service } from '../../../../features/settings-dialog/services/llms/llm-models.service';
+
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
 import { KnowledgeSelectorComponent } from '../../../../shared/components/knowledge-selector/knowledge-selector.component';
@@ -20,7 +16,7 @@ import { MATERIAL_FORMS } from '../../../../shared/material-forms';
 
 export interface AdvancedSettingsData {
     id: number;
-    fullFcmLlmConfig?: FullLLMConfig;
+    fullFcmLlmConfig?: FullLLMConfig | null;
     agentRole: string;
     max_iter: number;
     max_rpm: number | null;
@@ -43,6 +39,7 @@ export interface AdvancedSettingsData {
     memory: boolean;
     cache: boolean;
     respect_context_window: boolean;
+    _saveAfterClose?: boolean;
 }
 
 @Component({
@@ -74,6 +71,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
     public knowledgeSourcesError: string | null = null;
 
     private readonly _destroyed$ = new Subject<void>();
+    private _closeWithPageSave = false;
     public search_limit = 3;
 
     // Form controls for sliders
@@ -90,8 +88,8 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
     constructor(
         public dialogRef: DialogRef<AdvancedSettingsData>,
         @Inject(DIALOG_DATA) public data: AdvancedSettingsData,
-        private llmConfigService: LLM_Config_Service,
-        private llmModelsService: LLM_Models_Service,
+        private llmConfigService: LLMConfigService,
+        private llmModelsService: LLMModelsService,
         private fullLLMConfigService: FullLLMConfigService,
         private collectionsService: CollectionsApiService,
         private cdr: ChangeDetectorRef
@@ -128,14 +126,10 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         } else {
             this.selectedLlmId = null; // "Same as LLM" option
         }
-
-        // Log the value of knowledge_collection specifically
-        console.log('Constructor - knowledge_collection value:', this.agentData.knowledge_collection);
     }
 
     // In ngOnInit
     public ngOnInit(): void {
-        console.log('ngOnInit - Starting initialization');
         // Fetch LLM configs, models, and knowledge sources
         const collectionId = this.agentData.knowledge_collection;
         this.isLoadingKnowledgeSources = true;
@@ -149,8 +143,6 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this._destroyed$))
             .subscribe({
                 next: ({ llmConfigs, knowledgeSources, rags }) => {
-                    console.log('API response - Knowledge sources:', knowledgeSources);
-
                     this.agentRagsSelectItems = rags.map((rag) => ({ name: rag.rag_type, value: rag.rag_id }));
 
                     // Process LLM configs
@@ -158,15 +150,12 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
 
                     // Make sure the selected LLM ID is set correctly
                     if (this.agentData.fullFcmLlmConfig) {
-                        console.log('Setting selected LLM ID from fullFcmLlmConfig:', this.agentData.fullFcmLlmConfig);
-
                         // Find the matching LLM config in our loaded configs
                         const matchingConfig = llmConfigs.find(
                             (config) => config.id === this.agentData.fullFcmLlmConfig?.id
                         );
 
                         if (matchingConfig) {
-                            console.log('Found matching LLM config:', matchingConfig);
                             this.selectedLlmId = matchingConfig.id;
                             // Force UI update with setTimeout
                             setTimeout(() => {
@@ -174,35 +163,28 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
                                 this.cdr.markForCheck();
                             });
                         } else {
-                            console.log('No matching LLM config found');
+                            this.selectedLlmId = null;
+                            this.agentData.fullFcmLlmConfig = null;
                         }
                     }
 
                     // Process knowledge sources
                     this.allKnowledgeSources = knowledgeSources;
-                    console.log('Loaded knowledge sources count:', this.allKnowledgeSources.length);
 
                     // Set selected knowledge source based on the ID
                     if (this.agentData.knowledge_collection) {
-                        console.log(
-                            'Attempting to find knowledge source with ID:',
-                            this.agentData.knowledge_collection
-                        );
-
                         const foundSource = this.allKnowledgeSources.find(
                             (source) => source.collection_id === this.agentData.knowledge_collection
                         );
 
-                        console.log('Found source:', foundSource);
-
                         this.agentData.selected_knowledge_source = foundSource || null;
 
-                        console.log(
-                            'Selected knowledge source after initialization:',
-                            this.agentData.selected_knowledge_source
-                                ? `${this.agentData.selected_knowledge_source.collection_name} (ID: ${this.agentData.selected_knowledge_source.collection_id})`
-                                : 'None'
-                        );
+                        // console.log(
+                        //     'Selected knowledge source after initialization:',
+                        //     this.agentData.selected_knowledge_source
+                        //         ? `${this.agentData.selected_knowledge_source.collection_name} (ID: ${this.agentData.selected_knowledge_source.collection_id})`
+                        //         : 'None'
+                        // );
                     } else {
                         console.log('No knowledge_collection ID provided in initial data');
                     }
@@ -227,36 +209,44 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
                 e.preventDefault();
                 this.closeAndApply();
             }
+            if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
+                e.preventDefault();
+                e.stopPropagation();
+                this._closeWithPageSave = true;
+                this.closeAndApply();
+            }
         });
     }
 
     public onLlmChange(llmId: number | null): void {
-        console.log('LLM changed to:', llmId);
         this.selectedLlmId = llmId;
 
         if (llmId === null) {
             // "Default to LLM" option selected
-            this.agentData.fullFcmLlmConfig = undefined;
+            this.agentData.fullFcmLlmConfig = null;
         } else {
             // Find the selected LLM config
             const selectedLlm = this.combinedLLMs.find((llm) => llm.id === llmId);
             if (selectedLlm) {
                 this.agentData.fullFcmLlmConfig = selectedLlm;
-                console.log('Selected LLM config:', this.agentData.fullFcmLlmConfig);
             }
         }
         this.cdr.markForCheck();
     }
 
-    public onAgentRagChange(value: number): void {
+    public onAgentRagChange(value: unknown): void {
+        const ragId = typeof value === 'number' ? value : Number(value);
+        if (!Number.isFinite(ragId)) {
+            this.agentData.rag = null;
+            return;
+        }
         this.agentData.rag = {
-            rag_id: value,
+            rag_id: ragId,
             rag_type: 'naive',
         };
     }
 
     public onKnowledgeSourceChange(collectionId: number | null): void {
-        console.log('Knowledge source changed to:', collectionId);
         this.agentData.knowledge_collection = collectionId;
 
         if (collectionId === null) {
@@ -337,14 +327,12 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         this.agentData.cache = this.cacheControl.value ?? true;
         this.agentData.respect_context_window = this.respectContextWindowControl.value ?? true;
 
-        console.log('save called - Final agentData:', JSON.stringify(this.agentData));
-        console.log('knowledge_collection value before dialog close:', this.agentData.knowledge_collection);
-
         // Create a deep copy to prevent any unintended references
         const result = JSON.parse(JSON.stringify(this.agentData));
 
-        console.log('Final data being returned:', JSON.stringify(result));
-        this.dialogRef.close(result);
+        const closeWithSave = this._closeWithPageSave;
+        this._closeWithPageSave = false;
+        this.dialogRef.close({ ...result, _saveAfterClose: closeWithSave } as AdvancedSettingsData);
     }
 
     public ngOnDestroy(): void {

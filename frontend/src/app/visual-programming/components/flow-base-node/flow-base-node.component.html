@@ -1,11 +1,9 @@
-<!-- Node name wrapper -->
+<!-- Node badge number -->
 <div
     class="node-name-wrapper"
-    *ngIf="!startNode && !noteNode && !endNode && node.type !== NodeType.TABLE && node.type !== NodeType.CLASSIFICATION_TABLE"
+    *ngIf="!noteNode && node.nodeNumber != null && node.type !== NodeType.CLASSIFICATION_TABLE"
 >
-    <div class="node-name-label">
-        {{ node.node_name || 'Unnamed Node' }}
-    </div>
+    <div class="node-name-label">#{{ node.nodeNumber }}</div>
 </div>
 
 <!-- Control buttons positioned above the node -->
@@ -21,7 +19,7 @@
         title="Edit Note"
         (click)="onEditClick($event)"
     >
-        <i class="ti ti-edit"></i>
+        <app-svg-icon icon="edit"></app-svg-icon>
     </div>
     <!-- Ungroup Icon -->
     <div
@@ -30,7 +28,7 @@
         title="Expand Project"
         (click)="onExpandProjectClick()"
     >
-        <i class="ti ti-edit"></i>
+        <app-svg-icon icon="edit"></app-svg-icon>
     </div>
 </div>
 
@@ -69,7 +67,7 @@
     }
 }
 <ng-template #interactiveNode>
-    <div class="interactive-node-body" clickOrDrag (actualClick)="onEditClick()">
+    <div class="interactive-node-body" appClickOrDrag (actualClick)="onEditClick()">
         <!-- Header Section -->
         <div class="header" *ngIf="node.type !== NodeType.TABLE && node.type !== NodeType.CLASSIFICATION_TABLE">
             <div class="icon-wrapper">
@@ -94,7 +92,7 @@
 </ng-template>
 @switch (node.type) {
     @case (NodeType.EDGE) {
-        <app-conditional-edge-node clickOrDrag (actualClick)="onEditClick()"></app-conditional-edge-node>
+        <app-conditional-edge-node appClickOrDrag (actualClick)="onEditClick()"></app-conditional-edge-node>
     }
     @case (NodeType.NOTE) {
         <app-graph-note [node]="noteNode!"></app-graph-note>

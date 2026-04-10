@@ -1,25 +1,13 @@
-import {
-    NgClass,
-    NgFor,
-    NgIf,
-    NgStyle,
-    NgSwitch,
-    NgSwitchCase,
-    NgSwitchDefault,
-    NgTemplateOutlet,
-} from '@angular/common';
+import { NgIf, NgStyle, NgTemplateOutlet } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
     computed,
-    effect,
-    ElementRef,
     EventEmitter,
     Input,
     Output,
     signal,
-    ViewChild,
 } from '@angular/core';
 import { EFResizeHandleType, FFlowModule } from '@foblex/flow';
 
@@ -49,8 +37,8 @@ import { ConditionalEdgeNodeComponent } from '../nodes-components/conditional-ed
 import { DecisionTableNodeComponent } from '../nodes-components/decision-table-node/decision-table-node.component';
 import { ClassificationDecisionTableNodeComponent } from '../nodes-components/classification-decision-table-node/classification-decision-table-node.component';
 import { GraphNoteComponent } from '../nodes-components/graph-note/graph-note.component';
-import { ResizeHandleComponent } from '../resize-handle/resize-handle.component';
 import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay.component';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-flow-base-node',
@@ -69,6 +57,7 @@ import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay
         GraphNoteComponent,
         FlowNodeVariablesOverlayComponent,
         GoToButtonComponent,
+        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: {
@@ -186,7 +175,9 @@ export class FlowBaseNodeComponent {
     }
 
     public get tableNode() {
-        return this.node.type === NodeType.TABLE || this.node.type === NodeType.CLASSIFICATION_TABLE ? (this.node as any) : null;
+        return this.node.type === NodeType.TABLE || this.node.type === NodeType.CLASSIFICATION_TABLE
+            ? (this.node as any)
+            : null;
     }
 
     public get startNode() {

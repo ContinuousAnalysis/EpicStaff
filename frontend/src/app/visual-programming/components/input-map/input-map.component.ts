@@ -1,19 +1,21 @@
+import { CommonModule } from '@angular/common';
 import { Component, Input, OnInit } from '@angular/core';
 import {
-    FormArray,
-    FormGroup,
-    FormBuilder,
     ControlContainer,
-    ReactiveFormsModule,
+    FormArray,
+    FormBuilder,
+    FormGroup,
     FormGroupDirective,
+    ReactiveFormsModule,
 } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
 
 @Component({
     selector: 'app-input-map',
     standalone: true,
-    imports: [ReactiveFormsModule, CommonModule, HelpTooltipComponent],
+    imports: [ReactiveFormsModule, CommonModule, HelpTooltipComponent, AppSvgIconComponent],
     viewProviders: [
         {
             provide: ControlContainer,
@@ -31,39 +33,41 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
             </div>
             <div class="input-map-list">
                 @for (pair of pairs.controls; let i = $index; track pair) {
-                <div class="input-map-item" [formGroupName]="i">
-                    <div class="input-map-fields">
-                        <div class="input-wrapper">
-                            <input
-                                type="text"
-                                formControlName="key"
-                                placeholder="Function Argument Name"
-                                [style.--active-color]="activeColor"
-                                autocomplete="off"
-                                (keydown.enter)="onEnterKey($event, i)"
-                            />
+                    <div class="input-map-item" [formGroupName]="i">
+                        <div class="input-map-fields">
+                            <div class="input-wrapper">
+                                <input
+                                    type="text"
+                                    formControlName="key"
+                                    placeholder="Function Argument Name"
+                                    [style.--active-color]="activeColor"
+                                    autocomplete="off"
+                                    (keydown.enter)="onEnterKey($event, i)"
+                                />
+                            </div>
+                            <div class="equals-sign">=</div>
+                            <div class="input-wrapper">
+                                <input
+                                    type="text"
+                                    formControlName="value"
+                                    placeholder="Domain Variable Name"
+                                    [style.--active-color]="activeColor"
+                                    autocomplete="off"
+                                    (keydown.enter)="onEnterKey($event, i)"
+                                />
+                            </div>
+                            <app-svg-icon
+                                icon="trash"
+                                size="1rem"
+                                class="delete-icon"
+                                (click)="removePair(i)"
+                            ></app-svg-icon>
                         </div>
-                        <div class="equals-sign">=</div>
-                        <div class="input-wrapper">
-                            <input
-                                type="text"
-                                formControlName="value"
-                                placeholder="Domain Variable Name"
-                                [style.--active-color]="activeColor"
-                                autocomplete="off"
-                                (keydown.enter)="onEnterKey($event, i)"
-                            />
-                        </div>
-                        <i
-                            class="ti ti-trash delete-icon"
-                            (click)="removePair(i)"
-                        ></i>
                     </div>
-                </div>
                 }
             </div>
             <button type="button" class="add-pair-btn" (click)="addPair()">
-                <i class="ti ti-plus"></i> Add Input
+                <app-svg-icon icon="plus" size="16px"></app-svg-icon> Add Input
             </button>
         </div>
     `,
@@ -189,8 +193,8 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
                     background: var(--color-action-btn-background-hover);
                 }
 
-                i {
-                    font-size: 16px;
+                app-svg-icon {
+                    flex-shrink: 0;
                 }
             }
         `,
