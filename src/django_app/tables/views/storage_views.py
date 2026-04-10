@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from tables.models import GraphStorageFile, Organization, OrganizationUser, StorageFile
+from tables.models.graph_models import Graph
 from tables.serializers.storage_serializers import (
     GraphStorageFileSerializer,
     StorageAddToGraphSerializer,
@@ -76,7 +77,14 @@ class StorageAPIView(ViewSet):
             data = self.manager.info(user_name, org_id, path)
         except FileNotFoundError:
             raise ValidationError({"path": f"File does not exist: {path}"})
-        return Response(data.to_dict())
+        response = data.to_dict()
+        response["graphs"] = list(
+            Graph.objects.filter(
+                storage_files__storage_file__path=path,
+                storage_files__storage_file__org_id=org_id,
+            ).values_list("name", flat=True)
+        )
+        return Response(response)
 
     @action(detail=False, methods=["get"], url_path="download")
     @swagger_auto_schema(**STORAGE_DOWNLOAD_SWAGGER)
@@ -220,8 +228,10 @@ class StorageAPIView(ViewSet):
         serializer.is_valid(raise_exception=True)
         path = serializer.validated_data["path"]
         graph_ids = serializer.validated_data["graph_ids"]
-        if not self.manager.exists(user_name, org_id, path):
-            raise ValidationError({"path": f"File does not exist: {path}"})
+        try:
+            self.manager.info(user_name, org_id, path)
+        except FileNotFoundError:
+            raise ValidationError({"path": f"Path does not exist: {path}"})
         results = []
         sf, _ = StorageFile.objects.get_or_create(org_id=org_id, path=path)
         for graph_id in graph_ids:

@@ -143,6 +143,10 @@ class StorageInfoResponseSerializer(serializers.Serializer):
     created = serializers.DateTimeField(required=False, help_text="Creation timestamp")
     content_type = serializers.CharField(required=False, help_text="MIME content type")
     etag = serializers.CharField(required=False, help_text="Entity tag")
+    graphs = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="List of all graph names",
+    )
 
 
 class StorageUploadResultSerializer(serializers.Serializer):
