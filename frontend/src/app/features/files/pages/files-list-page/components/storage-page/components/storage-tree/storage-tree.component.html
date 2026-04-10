@@ -16,7 +16,13 @@
         </button>
     </div>
 
-    <div class="storage-tree__list">
+    <div
+        class="storage-tree__list"
+        [class.storage-tree__list--drop-target-root]="dropTargetRoot()"
+        (dragover)="onRootDragOver($event)"
+        (dragleave)="onRootDragLeave($event)"
+        (drop)="onRootDrop($event)"
+    >
         <ng-container *ngTemplateOutlet="treeNodes; context: { $implicit: items(), level: 0 }"></ng-container>
     </div>
 </div>
@@ -27,11 +33,19 @@
             class="storage-tree__item"
             [class.storage-tree__item--selected]="isItemSelected(node)"
             [class.storage-tree__item--hovered]="hoveredItem() === node"
+            [class.storage-tree__item--drop-target]="isDropTarget(node)"
+            [class.storage-tree__item--dragging]="draggedItem()?.path === node.path"
+            [attr.draggable]="renamingItem() === null ? 'true' : 'false'"
             [style.padding-left.rem]="0.75 + level * 1.25"
             (click)="onItemClick($event, node)"
             (contextmenu)="onContextMenu($event, node)"
             (mouseenter)="hoveredItem.set(node)"
             (mouseleave)="hoveredItem.set(null)"
+            (dragstart)="onDragStart($event, node)"
+            (dragover)="onDragOver($event, node)"
+            (dragleave)="onDragLeave($event, node)"
+            (drop)="onDrop($event, node)"
+            (dragend)="onDragEnd()"
         >
             @if (node.type === 'folder' && !node.is_empty) {
                 <button

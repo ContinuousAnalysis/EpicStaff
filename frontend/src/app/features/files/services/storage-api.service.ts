@@ -121,7 +121,10 @@ export class StorageApiService {
     }
 
     move(from: string, to: string): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}move/`, { from_path: from, to_path: to });
+        return this.http.post<void>(`${this.apiUrl}move/`, {
+            from_path: from,
+            to_path: this.normalizeCopyTargetPath(to),
+        });
     }
 
     copy(from: string, to: string): Observable<void> {

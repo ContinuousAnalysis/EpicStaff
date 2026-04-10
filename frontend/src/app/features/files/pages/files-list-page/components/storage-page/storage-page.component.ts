@@ -161,6 +161,7 @@ export class StoragePageComponent {
         item: StorageItem;
         selectedItems?: StorageItem[];
         renameFromPath?: string;
+        targetPath?: string;
     }): void {
         switch (event.action) {
             case 'download':
@@ -206,6 +207,9 @@ export class StoragePageComponent {
                 break;
             case 'add-to-flow':
                 this.handleAddToFlow(event.item);
+                break;
+            case 'move':
+                this.handleMove(event);
                 break;
         }
     }
@@ -306,6 +310,25 @@ export class StoragePageComponent {
                     this.loadTree();
                 },
                 error: () => this.toastService.error('Failed to rename'),
+            });
+    }
+
+    private handleMove(event: { item: StorageItem; targetPath?: string }): void {
+        const from = event.item.path;
+        const to = event.targetPath;
+        if (!from || !to || from === to) return;
+        this.storageApiService
+            .move(from, to)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.toastService.success(`"${event.item.name}" moved`);
+                    if (this.selectedFile()?.path === from) {
+                        this.selectedFile.set({ ...event.item, path: to });
+                    }
+                    this.loadTree();
+                },
+                error: () => this.toastService.error(`Failed to move "${event.item.name}"`),
             });
     }
 
