@@ -128,22 +128,10 @@ export class FlowSessionsListComponent implements OnInit {
                 nodes: this.extractNodeNames(this.flow?.subgraph_node_list),
             },
             {
-                label: 'Decision Table',
-                icon: 'ti ti-table',
-                color: '#60a5fa',
-                nodes: this.extractNodeNames(this.flow?.decision_table_node_list),
-            },
-            {
                 label: 'Code Agent',
                 icon: 'ti ti-robot',
                 color: '#4ade80',
                 nodes: this.extractNodeNames(this.flow?.code_agent_node_list),
-            },
-            {
-                label: 'Start',
-                icon: 'ti ti-player-play-filled',
-                color: '#d3d3d3',
-                nodes: this.extractNodeNames(this.flow?.start_node_list),
             },
             {
                 label: 'End',
@@ -164,7 +152,6 @@ export class FlowSessionsListComponent implements OnInit {
         return list
             .filter((n) => n?.node_name)
             .map((n) => `${n.node_name} #${n.id}`)
-            .map((name) => name.replace(/^__|__$/g, ''))
             .filter(Boolean)
             .sort();
     }
