@@ -37,7 +37,7 @@
 
         <div *ngIf="serverError()" class="server-error">{{ serverError() }}</div>
 
-        <app-button class="btn" [disabled]="form.invalid || !termsControl.value" (click)="onSubmit()">
+        <app-button class="btn" [disabled]="form.invalid || !termsControl.value || loading" (click)="onSubmit()">
             Create account
         </app-button>
     </div>
