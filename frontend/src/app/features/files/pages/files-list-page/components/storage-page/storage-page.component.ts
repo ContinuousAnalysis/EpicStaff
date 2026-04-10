@@ -261,13 +261,11 @@ export class StoragePageComponent {
         });
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
             if (!result) return;
-            const requests = result.flowIds.map((flowId) =>
-                this.storageApiService.addToFlow(item.path, flowId, item.name)
-            );
-            forkJoin(requests)
+            this.storageApiService
+                .addToGraph(item.path, result.graphIds)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
-                    next: () => this.toastService.success(`"${item.name}" added to ${result.flowIds.length} flow(s)`),
+                    next: () => this.toastService.success(`"${item.name}" added to ${result.graphIds.length} flow(s)`),
                     error: () => this.toastService.error(`Failed to add "${item.name}" to flow`),
                 });
         });

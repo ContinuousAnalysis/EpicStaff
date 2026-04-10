@@ -12,7 +12,7 @@ export interface AddToFlowDialogData {
 }
 
 export interface AddToFlowDialogResult {
-    flowIds: number[];
+    graphIds: number[];
 }
 
 interface FlowOption {
@@ -94,7 +94,7 @@ export class AddToFlowDialogComponent {
 
     onConfirm(): void {
         if (!this.isValid) return;
-        this.dialogRef.close({ flowIds: this.selectedFlows().map((f) => f.id) });
+        this.dialogRef.close({ graphIds: this.selectedFlows().map((f) => f.id) });
     }
 
     onCancel(): void {

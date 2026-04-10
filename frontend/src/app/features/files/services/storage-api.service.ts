@@ -134,12 +134,26 @@ export class StorageApiService {
         });
     }
 
-    addToFlow(path: string, flowId: number, variableName: string): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}add-to-flow/`, {
+    addToGraph(path: string, graphIds: number[]): Observable<void> {
+        return this.http.post<void>(`${this.apiUrl}add-to-graph/`, {
             path,
-            flow_id: flowId,
-            variable_name: variableName,
+            graph_ids: graphIds,
         });
+    }
+
+    removeFromGraph(path: string, graphIds: number[]): Observable<void> {
+        return this.http.post<void>(`${this.apiUrl}remove-from-graph/`, {
+            path,
+            graph_ids: graphIds,
+        });
+    }
+
+    getGraphFiles(path: string): Observable<number[]> {
+        return this.http
+            .get<{ graph_ids: number[] }>(`${this.apiUrl}graph-files/`, {
+                params: { path },
+            })
+            .pipe(map((res) => res.graph_ids ?? []));
     }
 
     getSessionOutputs(sessionId: string): Observable<StorageSessionOutputItem[]> {
