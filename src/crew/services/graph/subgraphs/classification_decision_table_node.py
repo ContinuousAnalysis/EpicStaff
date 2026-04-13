@@ -9,12 +9,11 @@ import litellm
 from src.crew.services.graph.events import StopEvent
 from src.crew.services.graph.custom_message_writer import CustomSessionMessageWriter
 from src.crew.models.graph_models import FinishMessageData, GraphMessage, StartMessageData
-from src.crew.models.request_models import (
+from src.shared.models import LLMData, PythonCodeData
+from src.shared.models.graph_nodes import (
     ClassificationConditionGroupData,
     ClassificationDecisionTableNodeData,
-    LLMData,
     PromptConfigData,
-    PythonCodeData,
 )
 from src.crew.models.state import *
 from langgraph.types import StreamWriter
