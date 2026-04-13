@@ -79,6 +79,9 @@
             &.animate-message {
                 animation: messageAppear 0.5s forwards;
             }
+            &:empty {
+                display: none;
+            }
 
             // Subflow grouping styles - Tree-like visualization with connecting lines
             &.inside-subflow {
@@ -638,12 +641,10 @@
     .connection-status {
         max-width: 100%;
     }
-
 }
 
 .empty-list {
     font-weight: 600;
     color: #c69999;
     margin: 10px;
-
 }
