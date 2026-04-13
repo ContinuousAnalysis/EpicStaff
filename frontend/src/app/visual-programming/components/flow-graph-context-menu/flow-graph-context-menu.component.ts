@@ -16,6 +16,7 @@ import {
 import { NodeType } from '../../core/enums/node-type';
 import { FlowGraphCoreMenuComponent } from './flow-graph-core-menu/flow-graph-core-menu.component';
 import { FlowsMenuComponent } from './flows-menu/flows-menu.component';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { LlmMenuComponent } from './llm-menu/llm-menu.component';
 import { ProjectGraphCoreMenuComponent } from './project-graph-core-menu/project-graph-core-menu';
 import { FlowProjectsContextMenuComponent } from './section-projects/section-projects.component';
@@ -44,6 +45,7 @@ export type MenuContext = 'flow-graph' | 'project-graph';
         ToolsMenuComponent,
         StaffMenuComponent,
         ProjectGraphCoreMenuComponent,
+        AppSvgIconComponent,
     ],
 })
 export class FlowGraphContextMenuComponent implements AfterViewInit, OnDestroy {

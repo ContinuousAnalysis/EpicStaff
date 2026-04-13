@@ -28,11 +28,11 @@ import { FlowSessionsTableComponent } from './flow-sessions-table.component';
     standalone: true,
     imports: [
         CommonModule,
-        IconButtonComponent,
         FlowSessionsTableComponent,
         PaginationControlsComponent,
         FlowSessionStatusFilterDropdownComponent,
         FlowSessionNodeFilterDropdownComponent,
+        IconButtonComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

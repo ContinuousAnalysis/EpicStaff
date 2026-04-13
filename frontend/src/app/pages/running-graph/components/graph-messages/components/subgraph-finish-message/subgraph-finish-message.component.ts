@@ -3,6 +3,7 @@ import { Component, Input, ViewEncapsulation } from '@angular/core';
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
 
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import {
     FinishSubflowMessageData,
     GraphMessage,
@@ -13,17 +14,17 @@ import {
 @Component({
     selector: 'app-subgraph-finish-message',
     standalone: true,
-    imports: [CommonModule, NgxJsonViewerModule],
+    imports: [CommonModule, NgxJsonViewerModule, AppSvgIconComponent],
     encapsulation: ViewEncapsulation.Emulated,
     animations: [expandCollapseAnimation],
     template: `
         <div class="subgraph-finish-container">
             <div class="subgraph-finish-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-hierarchy-2"></i>
+                    <app-svg-icon icon="hierarchy-2" size="1rem" />
                 </div>
                 <h3>
                     <span class="node-name">{{ message.name }}</span> subgraph finished
@@ -36,10 +37,7 @@ import {
                     <!-- Final Output Section -->
                     <div class="output-container" *ngIf="hasOutput()">
                         <div class="section-heading" (click)="toggleOutput($event)">
-                            <i
-                                class="ti"
-                                [ngClass]="isOutputExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isOutputExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                             Final Output
                         </div>
                         <div
@@ -55,10 +53,7 @@ import {
                     <!-- Variables Section -->
                     <div class="variables-container" *ngIf="hasVariables()">
                         <div class="section-heading" (click)="toggleVariables($event)">
-                            <i
-                                class="ti"
-                                [ngClass]="isVariablesExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isVariablesExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                             Variables
                         </div>
                         <div
@@ -71,75 +66,8 @@ import {
                         </div>
                     </div>
 
-                    <!-- State History Section -->
-                    <!-- <div class="state-history-container" *ngIf="hasStateHistory()">
-            <div class="section-heading" (click)="toggleStateHistory($event)">
-              <i
-                class="ti"
-                [ngClass]="
-                  isStateHistoryExpanded
-                    ? 'ti-caret-down-filled'
-                    : 'ti-caret-right-filled'
-                "
-              ></i>
-              State History ({{ getStateHistoryLength() }})
-            </div>
-            <div
-              class="collapsible-content"
-              [@expandCollapse]="isStateHistoryExpanded ? 'expanded' : 'collapsed'"
-            >
-              <div class="state-history-content">
-                <div
-                  class="state-history-item"
-                  *ngFor="let item of getStateHistory(); let i = index"
-                >
-                  <div class="state-history-item-header">
-                    <span class="item-index">#{{ i + 1 }}</span>
-                    <span class="item-name">{{ item.name }}</span>
-                    <span class="item-type">{{ item.type }}</span>
-                  </div>
-                  <div class="state-history-item-details">
-                    <div class="detail-section" *ngIf="hasItemInput(item)">
-                      <div class="detail-label">Input:</div>
-                      <div class="detail-content">
-                        <ngx-json-viewer
-                          [json]="item.input"
-                          [expanded]="false"
-                        ></ngx-json-viewer>
-                      </div>
-                    </div>
-                    <div class="detail-section" *ngIf="hasItemOutput(item)">
-                      <div class="detail-label">Output:</div>
-                      <div class="detail-content">
-                        <ngx-json-viewer
-                          [json]="item.output"
-                          [expanded]="false"
-                        ></ngx-json-viewer>
-                      </div>
-                    </div>
-                    <div class="detail-section" *ngIf="hasItemVariables(item)">
-                      <div class="detail-label">Variables:</div>
-                      <div class="detail-content">
-                        <ngx-json-viewer
-                          [json]="item.variables"
-                          [expanded]="false"
-                        ></ngx-json-viewer>
-                      </div>
-                    </div>
-                    <div class="detail-section" *ngIf="hasItemAdditionalData(item)">
-                      <div class="detail-label">Additional Data:</div>
-                      <div class="detail-content">
-                        <ngx-json-viewer
-                          [json]="item.additional_data"
-                          [expanded]="false"
-                        ></ngx-json-viewer>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div> -->
+                    <!-- State History Section (commented out) -->
+                    <!-- <div class="state-history-container" *ngIf="hasStateHistory()"> ... </div> -->
                 </div>
             </div>
         </div>
@@ -166,12 +94,10 @@ import {
                 margin-right: 16px;
                 display: flex;
                 align-items: center;
-            }
 
-            .play-arrow i {
-                color: #00bfa5;
-                font-size: 1.1rem;
-                transition: transform 0.3s ease;
+                app-svg-icon {
+                    color: #00bfa5;
+                }
             }
 
             .icon-container {
@@ -184,11 +110,10 @@ import {
                 justify-content: center;
                 margin-right: 20px;
                 flex-shrink: 0;
-            }
 
-            .icon-container i {
-                color: var(--gray-900);
-                font-size: 1.25rem;
+                app-svg-icon {
+                    color: var(--gray-900);
+                }
             }
 
             h3 {
@@ -230,14 +155,12 @@ import {
                 user-select: none;
                 display: flex;
                 align-items: center;
-            }
 
-            .section-heading i {
-                margin-right: 8px;
-                color: #00bfa5;
-                font-size: 1.1rem;
-                margin-left: -3px;
-                transition: transform 0.3s ease;
+                app-svg-icon {
+                    margin-right: 8px;
+                    color: #00bfa5;
+                    margin-left: -3px;
+                }
             }
 
             .output-container,

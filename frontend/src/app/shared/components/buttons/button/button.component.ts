@@ -2,23 +2,23 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, input } from '@angular/core';
 
 import { CollapseOnOverflowDirective } from '../../../directives/collapse-on-overflow.directive';
-import { AppIconComponent } from '../../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-button',
     standalone: true,
-    imports: [CommonModule, AppIconComponent, CollapseOnOverflowDirective],
+    imports: [CommonModule, AppSvgIconComponent, CollapseOnOverflowDirective],
     templateUrl: './button.component.html',
     styleUrls: ['./button.component.scss'],
 })
 export class ButtonComponent {
     @Input() type: 'primary' | 'secondary' | 'ghost' | 'icon' | 'outline-primary' | 'outline-secondary' = 'primary';
     @Input() mod: 'default' | 'small' = 'default';
-    @Input() leftIcon?: string; // e.g., 'ui/x'
+    @Input() leftIcon?: string;
     @Input() leftIconColor?: string;
-    @Input() rightIcon?: string; // e.g., 'ui/chevron-down'
+    @Input() rightIcon?: string;
     @Input() rightIconColor?: string;
-    @Input() ariaLabel?: string; // For accessibility
+    @Input() ariaLabel?: string;
     disabled = input<boolean>(false);
 
     public shouldCollapseToIcon = false;
