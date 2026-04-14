@@ -2,17 +2,17 @@
     <div class="storage-tree__header">
         <span class="storage-tree__header-label">Folder Branches</span>
         <button class="storage-tree__header-close" aria-label="Close panel" (click)="closeSidebar.emit()">
-            <app-icon icon="ui/x" size="1.5rem"></app-icon>
+            <app-svg-icon icon="x" size="1.5rem"></app-svg-icon>
         </button>
     </div>
 
     <div class="storage-tree__toolbar">
         <span class="storage-tree__toolbar-label">Folders</span>
         <button class="storage-tree__toolbar-btn" aria-label="Add folder" (click)="onAddFolderClick()">
-            <app-icon icon="ui/plus" size="0.875rem"></app-icon>
+            <app-svg-icon icon="plus" size="0.875rem"></app-svg-icon>
         </button>
         <button class="storage-tree__toolbar-btn" aria-label="More options" (click)="onMoreOptionsClick($event)">
-            <app-icon icon="ui/dots-vertical" size="0.875rem"></app-icon>
+            <app-svg-icon icon="dots-vertical" size="0.875rem"></app-svg-icon>
         </button>
     </div>
 
@@ -53,13 +53,13 @@
                     [class.storage-tree__chevron-btn--expanded]="node.isExpanded"
                     (click)="onFolderChevronClick($event, node)"
                 >
-                    <app-icon icon="ui/triangle-right" size="0.5rem"></app-icon>
+                    <app-svg-icon icon="expand" size="0.5rem"></app-svg-icon>
                 </button>
             } @else {
                 <span class="storage-tree__chevron-placeholder"></span>
             }
 
-            <app-icon class="storage-tree__icon" [icon]="getFileIcon(node)" size="12px"></app-icon>
+            <app-svg-icon class="storage-tree__icon" [icon]="getFileIcon(node)" size="12px"></app-svg-icon>
 
             @if (renamingItem() === node) {
                 <div class="storage-tree__rename-controls" (click)="$event.stopPropagation()">
@@ -80,7 +80,7 @@
                         (mousedown)="$event.preventDefault()"
                         (click)="onRenameConfirm()"
                     >
-                        <app-icon icon="ui/rename-confirm" size="1.75rem"></app-icon>
+                        <app-svg-icon icon="rename-confirm" size="1.75rem"></app-svg-icon>
                     </button>
                     <button
                         class="storage-tree__rename-btn storage-tree__rename-btn--cancel"
@@ -89,7 +89,7 @@
                         (mousedown)="$event.preventDefault()"
                         (click)="onRenameCancel($event)"
                     >
-                        <app-icon icon="ui/rename-cancel" size="1.75rem"></app-icon>
+                        <app-svg-icon icon="rename-cancel" size="1.75rem"></app-svg-icon>
                     </button>
                 </div>
             } @else {
@@ -108,7 +108,7 @@
             @if (hoveredItem() === node && renamingItem() !== node) {
                 <div class="storage-tree__hover-actions">
                     <button class="storage-tree__hover-btn" aria-label="More" (click)="onKebabClick($event, node)">
-                        <app-icon icon="ui/dots-vertical" size="0.75rem"></app-icon>
+                        <app-svg-icon icon="dots-vertical" size="0.75rem"></app-svg-icon>
                     </button>
                 </div>
             }

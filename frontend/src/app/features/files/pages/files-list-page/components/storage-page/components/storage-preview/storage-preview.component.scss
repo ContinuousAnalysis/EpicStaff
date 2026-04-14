@@ -175,19 +175,12 @@
         color: var(--color-text-secondary);
         flex-shrink: 0;
 
-        ::ng-deep app-icon svg path {
-            stroke: var(--color-text-secondary);
-            transition: stroke 0.15s ease;
-        }
+        transition: color 0.15s ease;
 
         &--active {
             color: var(--accent-color);
             border-color: var(--accent-color);
             background: rgba(88, 86, 214, 0.08);
-
-            ::ng-deep app-icon svg path {
-                stroke: var(--accent-color);
-            }
         }
 
         &:hover:not(&--active) {

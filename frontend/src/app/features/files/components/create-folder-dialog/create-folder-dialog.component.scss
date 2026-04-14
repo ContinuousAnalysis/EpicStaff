@@ -265,11 +265,11 @@
         color: var(--color-text-secondary);
         border-radius: 3px;
 
-        app-icon {
+        app-svg-icon {
             transition: transform 0.15s ease;
         }
 
-        &--open app-icon {
+        &--open app-svg-icon {
             transform: rotate(90deg);
         }
 

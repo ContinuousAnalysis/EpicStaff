@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
-import { AppIconComponent } from '../../../../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../../../../../shared/components/buttons/button/button.component';
 import { StorageItem } from '../../../../../../models/storage.models';
 import { StorageApiService } from '../../../../../../services/storage-api.service';
@@ -13,7 +13,7 @@ type PreviewType = 'text' | 'json' | 'pdf' | 'image' | 'unsupported';
 
 @Component({
     selector: 'app-storage-preview',
-    imports: [DecimalPipe, JsonPipe, AppIconComponent, ButtonComponent],
+    imports: [DecimalPipe, JsonPipe, AppSvgIconComponent, ButtonComponent],
     templateUrl: './storage-preview.component.html',
     styleUrls: ['./storage-preview.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

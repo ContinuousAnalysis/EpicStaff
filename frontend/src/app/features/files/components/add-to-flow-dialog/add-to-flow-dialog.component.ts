@@ -4,7 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { FlowsApiService } from '../../../flows/services/flows-api.service';
 import { StorageItem } from '../../models/storage.models';
 import { StorageApiService } from '../../services/storage-api.service';
@@ -26,7 +26,7 @@ interface FlowOption {
 
 @Component({
     selector: 'app-add-to-flow-dialog',
-    imports: [FormsModule, AppIconComponent],
+    imports: [FormsModule, AppSvgIconComponent],
     templateUrl: './add-to-flow-dialog.component.html',
     styleUrls: ['./add-to-flow-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

@@ -11,7 +11,7 @@
                 <app-button
                     type="primary"
                     class="btn-primary create-btn"
-                    [leftIcon]="'ui/plus'"
+                    [leftIcon]="'plus'"
                     [style.visibility]="isStorageTabActive ? 'visible' : 'hidden'"
                     (click)="onCreateFolderClick()"
                 >
@@ -34,7 +34,7 @@
             </div>
             <div class="tabs-right">
                 <div class="search-container">
-                    <app-icon icon="ui/search" class="search-icon" size="1.1rem"></app-icon>
+                    <app-svg-icon icon="search" class="search-icon" size="1.1rem"></app-svg-icon>
                     <input
                         type="text"
                         class="search-input"
@@ -44,7 +44,7 @@
                     />
                     @if (searchTerm()) {
                         <button type="button" class="clear-btn" aria-label="Clear" (click)="searchTerm.set('')">
-                            <app-icon icon="ui/x" size="1.1rem"></app-icon>
+                            <app-svg-icon icon="x" size="1.1rem"></app-svg-icon>
                         </button>
                     }
                 </div>

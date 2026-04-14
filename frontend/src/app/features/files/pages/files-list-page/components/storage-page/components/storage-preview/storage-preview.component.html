@@ -1,6 +1,6 @@
 @if (!item()) {
     <div class="storage-preview storage-preview--empty">
-        <app-icon icon="ui/file" size="3rem" class="storage-preview__empty-icon"></app-icon>
+        <app-svg-icon icon="file" size="3rem" class="storage-preview__empty-icon"></app-svg-icon>
         <p class="storage-preview__empty-text">Select a file to preview</p>
     </div>
 } @else {
@@ -13,7 +13,7 @@
                     (click)="toggleSidebar.emit()"
                     title="Toggle Folder Branches"
                 >
-                    <app-icon icon="ui/expand-sidebar" size="0.85rem"></app-icon>
+                    <app-svg-icon icon="expand-sidebar" size="0.85rem"></app-svg-icon>
                 </button>
                 <div class="storage-preview__breadcrumbs">
                     @for (crumb of breadcrumbs; track crumb; let last = $last) {
@@ -28,7 +28,7 @@
                 class="storage-preview__add-to-flow"
                 type="outline-primary"
                 mod="small"
-                [leftIcon]="'ui/add-to-flow'"
+                [leftIcon]="'add-to-flow'"
                 iconSize="12px"
                 ariaLabel="Add to flow"
                 (click)="onKebabMenuAction('add-to-flow')"
@@ -36,7 +36,7 @@
                 Add to flow
             </app-button>
             <button class="storage-preview__kebab" aria-label="More actions" (click)="onKebabClick($event)">
-                <app-icon icon="ui/dots-vertical" size="1rem"></app-icon>
+                <app-svg-icon icon="dots-vertical" size="1rem"></app-svg-icon>
             </button>
         </div>
 
@@ -72,14 +72,14 @@
             <div class="storage-preview__scroll">
                 @if (!hasFileSelected) {
                     <div class="storage-preview__empty-state">
-                        <app-icon icon="ui/file" size="3rem" class="storage-preview__empty-icon"></app-icon>
+                        <app-svg-icon icon="file" size="3rem" class="storage-preview__empty-icon"></app-svg-icon>
                         <p class="storage-preview__empty-text">Select a file to preview</p>
                     </div>
                 } @else if (isLoadingPreview()) {
                     <div class="storage-preview__loading">Loading preview...</div>
                 } @else if (previewError()) {
                     <div class="storage-preview__error">
-                        <app-icon icon="ui/alert-triangle" size="1.5rem"></app-icon>
+                        <app-svg-icon icon="alert-triangle" size="1.5rem"></app-svg-icon>
                         <p>{{ previewError() }}</p>
                         <app-button type="ghost" (click)="onDownload()">Download file</app-button>
                     </div>
@@ -103,12 +103,12 @@
                         }
                         @case ('unsupported') {
                             <div class="storage-preview__unsupported">
-                                <app-icon icon="ui/file" size="3rem"></app-icon>
+                                <app-svg-icon icon="file" size="3rem"></app-svg-icon>
                                 <p class="storage-preview__unsupported-name">{{ item()!.name }}</p>
                                 @if (item()!.size) {
                                     <p class="storage-preview__unsupported-size">{{ item()!.size | number }} bytes</p>
                                 }
-                                <app-button type="ghost" [leftIcon]="'ui/download'" (click)="onDownload()">
+                                <app-button type="ghost" [leftIcon]="'download'" (click)="onDownload()">
                                     Download
                                 </app-button>
                             </div>

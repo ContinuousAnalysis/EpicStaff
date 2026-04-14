@@ -1,7 +1,7 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { StorageItemInfo } from '../../models/storage.models';
 
 interface StorageDetailsDialogData extends StorageItemInfo {
@@ -11,7 +11,7 @@ interface StorageDetailsDialogData extends StorageItemInfo {
 @Component({
     selector: 'app-storage-details-dialog',
     standalone: true,
-    imports: [AppIconComponent],
+    imports: [AppSvgIconComponent],
     templateUrl: './storage-details-dialog.component.html',
     styleUrls: ['./storage-details-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

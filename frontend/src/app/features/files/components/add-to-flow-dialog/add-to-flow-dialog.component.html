@@ -2,7 +2,7 @@
     <div class="add-to-flow-dialog__header">
         <h2 class="add-to-flow-dialog__title">Add to Flow</h2>
         <button class="add-to-flow-dialog__close" aria-label="Close" (click)="onCancel()">
-            <app-icon icon="ui/x" size="1rem"></app-icon>
+            <app-svg-icon icon="x" size="1rem"></app-svg-icon>
         </button>
     </div>
 
@@ -18,18 +18,22 @@
                 <span class="add-to-flow-dialog__selector-text">
                     {{ selectedFlows().length > 0 ? selectorLabel : 'Select flows' }}
                 </span>
-                <app-icon
-                    icon="ui/chevron-down"
+                <app-svg-icon
+                    icon="chevron-down"
                     size="0.875rem"
                     class="add-to-flow-dialog__selector-chevron"
                     [class.add-to-flow-dialog__selector-chevron--open]="dropdownOpen()"
-                ></app-icon>
+                ></app-svg-icon>
             </div>
 
             @if (dropdownOpen()) {
                 <div class="add-to-flow-dialog__dropdown" (click)="stopPropagation($event)">
                     <div class="add-to-flow-dialog__search">
-                        <app-icon icon="ui/search" size="0.875rem" class="add-to-flow-dialog__search-icon"></app-icon>
+                        <app-svg-icon
+                            icon="search"
+                            size="0.875rem"
+                            class="add-to-flow-dialog__search-icon"
+                        ></app-svg-icon>
                         <input
                             class="add-to-flow-dialog__search-input"
                             type="text"
@@ -56,7 +60,7 @@
                                         [class.add-to-flow-dialog__checkbox--checked]="flow.checked"
                                     >
                                         @if (flow.checked) {
-                                            <app-icon icon="ui/check" size="0.625rem"></app-icon>
+                                            <app-svg-icon icon="check" size="0.625rem"></app-svg-icon>
                                         }
                                     </div>
                                     <span class="add-to-flow-dialog__item-name">{{ flow.name }}</span>

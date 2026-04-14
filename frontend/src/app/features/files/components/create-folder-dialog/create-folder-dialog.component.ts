@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener,
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { StorageApiService } from '../../services/storage-api.service';
 
 export interface CreateFolderDialogData {
@@ -32,7 +32,7 @@ export interface FolderNode {
 
 @Component({
     selector: 'app-create-folder-dialog',
-    imports: [FormsModule, AppIconComponent],
+    imports: [FormsModule, AppSvgIconComponent],
     templateUrl: './create-folder-dialog.component.html',
     styleUrls: ['./create-folder-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

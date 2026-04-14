@@ -1,13 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, input, output, signal, ViewChild } from '@angular/core';
 
-import { AppIconComponent } from '../../../../../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { StorageItem } from '../../../../../../models/storage.models';
 import { getFileExtension } from '../../../../../../utils/storage-file.utils';
 
 @Component({
     selector: 'app-storage-tree',
-    imports: [NgTemplateOutlet, AppIconComponent],
+    imports: [NgTemplateOutlet, AppSvgIconComponent],
     templateUrl: './storage-tree.component.html',
     styleUrls: ['./storage-tree.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -162,15 +162,15 @@ export class StorageTreeComponent {
 
     getFileIcon(item: StorageItem): string {
         if (item.type === 'folder') {
-            return item.is_empty ? 'ui/folder-storage-empty' : 'ui/folder-storage';
+            return item.is_empty ? 'folder-storage-empty' : 'folder-storage';
         }
         const ext = getFileExtension(item.name);
-        if (ext === 'txt') return 'ui/file-txt';
-        if (ext === 'pdf') return 'ui/file-pdf';
-        if (ext === 'docx') return 'ui/file-docx';
-        if (ext === 'json') return 'ui/file-json';
-        if (ext === 'html') return 'ui/file-html';
-        return 'ui/file';
+        if (ext === 'txt') return 'file-txt';
+        if (ext === 'pdf') return 'file-pdf';
+        if (ext === 'docx') return 'file-docx';
+        if (ext === 'json') return 'file-json';
+        if (ext === 'html') return 'file-html';
+        return 'file';
     }
 
     isItemSelected(item: StorageItem): boolean {

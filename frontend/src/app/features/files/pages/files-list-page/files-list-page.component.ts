@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
 import { HideInlineSubtitleOnOverflowDirective } from '../../../../shared/directives/hide-inline-subtitle-on-overflow.directive';
@@ -24,7 +24,7 @@ import { StorageApiService } from '../../services/storage-api.service';
         TabButtonComponent,
         ButtonComponent,
         FormsModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         HideInlineSubtitleOnOverflowDirective,
     ],
     templateUrl: './files-list-page.component.html',
