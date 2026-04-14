@@ -3,8 +3,13 @@ import base64
 import json
 from typing import Optional
 
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
 from loguru import logger
+
+try:
+    from websockets.exceptions import ConnectionClosedOK as _WsClosedOK
+except ImportError:
+    _WsClosedOK = None
 
 from src.shared.models import RealtimeAgentChatData
 
@@ -72,8 +77,16 @@ class VoiceCallService:
                 await self._handle_twilio_message(self.initial_message, rt_agent_client)
             async for raw in self.twilio_ws.iter_text():
                 await self._handle_twilio_message(json.loads(raw), rt_agent_client)
+        except WebSocketDisconnect as e:
+            if e.code == 1000:
+                logger.info("Twilio WebSocket closed normally (call ended)")
+            else:
+                logger.warning(f"Twilio WebSocket disconnected: code={e.code}")
         except Exception as e:
-            logger.error(f"Twilio WebSocket Error: {e}")
+            if _WsClosedOK and isinstance(e, _WsClosedOK):
+                logger.info("Twilio WebSocket closed normally (call ended)")
+            else:
+                logger.error(f"Twilio WebSocket Error: {e}")
         finally:
             message_task.cancel()
             await rt_agent_client.close()

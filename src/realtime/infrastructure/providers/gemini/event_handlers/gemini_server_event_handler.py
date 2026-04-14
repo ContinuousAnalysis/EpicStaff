@@ -1,3 +1,4 @@
+import asyncio
 import audioop
 import base64
 import json
@@ -371,5 +372,7 @@ class GeminiServerEventHandler:
 
             self._current_output_index += 1
             logger.info(f"Gemini: Calling tool {tool_name}")
-            await self.client.call_tool(call_id, tool_name, args)
+            # Run as a background task so the receive loop stays unblocked
+            # while waiting for the tool result from Redis.
+            asyncio.ensure_future(self.client.call_tool(call_id, tool_name, args))
 

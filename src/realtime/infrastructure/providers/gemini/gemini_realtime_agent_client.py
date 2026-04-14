@@ -1,3 +1,4 @@
+import asyncio
 import audioop
 import base64
 from collections import deque
@@ -61,6 +62,8 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
         self._genai_client = genai.Client(api_key=api_key)
         self._session = None
         self._session_cm = None
+        # Incremented on every reconnect — lets call_tool() detect session replacement
+        self._session_version: int = 0
 
         # Stateful resampling state for Twilio paths
         self._resample_state_in = None   # µ-law 8kHz → PCM 16kHz
@@ -170,34 +173,59 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
                 self._session = None
 
     async def handle_messages(self) -> None:
-        """Long-running loop receiving LiveServerMessage objects from Gemini."""
+        """Long-running loop receiving LiveServerMessage objects from Gemini.
+        Automatically reconnects when the server closes the session."""
         logger.info("Gemini: Message handler started.")
-        msg_count = 0
-        try:
-            async for response in self._session.receive():
-                msg_count += 1
-                active_fields = [
-                    f for f in ("setup_complete", "server_content", "tool_call", "go_away", "session_resumption_update")
-                    if getattr(response, f, None) is not None
-                ]
-                logger.debug(f"Gemini msg #{msg_count}: {active_fields or ['(empty)']}")
-                if getattr(response, "go_away", None) is not None:
-                    logger.warning(f"Gemini: go_away — time_left={getattr(response.go_away, 'time_left', '?')}")
-                try:
-                    await self.server_event_handler.handle_event(response)
-                except Exception as e:
-                    logger.exception(f"Gemini: Error processing message: {e}")
-            logger.warning(f"Gemini: receive() loop ended after {msg_count} messages — server closed connection normally")
-        except Exception as e:
-            logger.exception(f"Gemini: handle_messages error after {msg_count} messages: {e}")
-        finally:
-            await self.close()
+        while True:
+            msg_count = 0
+            try:
+                async for response in self._session.receive():
+                    msg_count += 1
+                    active_fields = [
+                        f for f in ("setup_complete", "server_content", "tool_call", "go_away", "session_resumption_update")
+                        if getattr(response, f, None) is not None
+                    ]
+                    logger.debug(f"Gemini msg #{msg_count}: {active_fields or ['(empty)']}")
+                    if getattr(response, "go_away", None) is not None:
+                        logger.warning(f"Gemini: go_away — time_left={getattr(response.go_away, 'time_left', '?')}")
+                    try:
+                        await self.server_event_handler.handle_event(response)
+                    except Exception as e:
+                        logger.exception(f"Gemini: Error processing message: {e}")
+                # Server closed the connection normally — reconnect to keep the call alive
+                logger.warning(
+                    f"Gemini: receive() loop ended after {msg_count} messages — server closed connection, reconnecting"
+                )
+            except asyncio.CancelledError:
+                logger.info(f"Gemini: handle_messages cancelled after {msg_count} messages")
+                break
+            except Exception as e:
+                logger.exception(f"Gemini: handle_messages error after {msg_count} messages: {e}")
+                break
+
+            try:
+                await self.close()
+                self.server_event_handler.reset()
+                await self.connect()
+                self._session_version += 1
+                logger.info("Gemini: reconnected successfully")
+            except asyncio.CancelledError:
+                logger.info("Gemini: reconnect cancelled")
+                break
+            except Exception as e:
+                logger.error(f"Gemini: reconnect failed: {e}")
+                break
+
+        await self.close()
 
     async def send_audio(self, ulaw8k_b64: str) -> None:
         """
         Accept base64-encoded µ-law 8kHz audio from Twilio and forward to Gemini
         as PCM 16kHz (the format Gemini Live expects).
         """
+        if self._session is None:
+            logger.warning("Gemini: session is closed, dropping audio chunk")
+            return
         ulaw_bytes = base64.b64decode(ulaw8k_b64)
         pcm_8k = audioop.ulaw2lin(ulaw_bytes, 2)
         pcm_16k, self._resample_state_in = audioop.ratecv(
@@ -213,6 +241,9 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
 
     async def send_conversation_item_to_server(self, text: str) -> None:
         """Send a user text message to Gemini (used in LISTEN wake-word mode)."""
+        if self._session is None:
+            logger.warning("Gemini: session is closed, dropping text message")
+            return
         await self._session.send_client_content(
             turns=types.Content(
                 role="user",
@@ -232,7 +263,13 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
     async def call_tool(
         self, call_id: str, tool_name: str, tool_arguments: Dict[str, Any]
     ) -> None:
-        """Execute a tool via ToolManagerService and send the result back to Gemini."""
+        """Execute a tool via ToolManagerService and send the result back to Gemini.
+
+        Spawned as a background task by _handle_tool_call so the receive loop
+        is not blocked while the tool executes.  A session-version guard ensures
+        the response is discarded if a reconnect happened during execution.
+        """
+        session_version = self._session_version
         try:
             tool_result = await self.tool_manager_service.execute(
                 connection_key=self.connection_key,
@@ -244,12 +281,38 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
             logger.error(f"Gemini: Tool execution failed: {e}")
             result_str = f"Error: {e}"
 
-        await self._session.send_tool_response(
-            function_responses=[
-                types.FunctionResponse(
-                    id=call_id,
-                    name=tool_name,
-                    response={"result": result_str},
-                )
-            ]
-        )
+        # Save to history so context survives reconnects regardless of outcome
+        self._conversation_history.append({
+            "role": "model",
+            "text": f"[Tool {tool_name}({tool_arguments}) → {result_str[:300]}]",
+        })
+
+        if self._session is None:
+            logger.warning(
+                f"Gemini: session is closed, dropping tool response "
+                f"(tool={tool_name}, call_id={call_id})"
+            )
+            return
+
+        if self._session_version != session_version:
+            logger.warning(
+                f"Gemini: session was replaced during tool execution, dropping response "
+                f"(tool={tool_name}, call_id={call_id})"
+            )
+            return
+
+        try:
+            await self._session.send_tool_response(
+                function_responses=[
+                    types.FunctionResponse(
+                        id=call_id,
+                        name=tool_name,
+                        response={"result": result_str},
+                    )
+                ]
+            )
+        except Exception as e:
+            logger.warning(
+                f"Gemini: send_tool_response failed (session may have closed): "
+                f"tool={tool_name}, call_id={call_id}, err={e}"
+            )
