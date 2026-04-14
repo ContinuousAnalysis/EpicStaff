@@ -95,7 +95,7 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                             </td>
                             <td>
                                 <app-icon-button
-                                    icon="ui/x"
+                                    icon="x"
                                     size="1.5rem"
                                     ariaLabel="Delete session"
                                     (onClick)="deleteSelected.emit([session.id])"

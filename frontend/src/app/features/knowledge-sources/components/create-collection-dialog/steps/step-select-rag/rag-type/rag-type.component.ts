@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { AppIconComponent } from '@shared/components';
 
+import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { Rag } from '../../../../../models/naive-rag.model';
 
 @Component({
     selector: 'app-rag-type',
     templateUrl: './rag-type.component.html',
     styleUrls: ['./rag-type.component.scss'],
-    imports: [AppIconComponent],
+    imports: [AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RagTypeComponent {

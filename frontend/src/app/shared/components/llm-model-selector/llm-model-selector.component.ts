@@ -16,17 +16,16 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { DropdownManagerService, FullLLMConfig } from '@shared/services';
+import { getProviderIconPath } from '@shared/utils';
 
-import { FullLLMConfig } from '../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
-import { DropdownManagerService } from '../../services/dropdown-manager.service';
-import { AppIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component';
 
 @Component({
     selector: 'app-llm-model-selector',
     standalone: true,
-    imports: [CommonModule, FormsModule, AppIconComponent, LlmModelItemComponent],
+    imports: [CommonModule, FormsModule, AppSvgIconComponent, LlmModelItemComponent],
     providers: [
         {
             provide: NG_VALUE_ACCESSOR,
@@ -38,13 +37,12 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
         <div class="llm-selector-container">
             <div class="selected-model" [class.placeholder]="!selectedConfig" (click)="toggleDropdown($event)">
                 <div *ngIf="selectedConfig; else placeholderTemplate" class="model-info">
-                    <app-icon
+                    <app-svg-icon
                         [icon]="getProviderIcon(selectedConfig)"
                         size="20px"
                         [ariaLabel]="selectedConfig.providerDetails?.name || ''"
                         class="provider-icon"
-                    >
-                    </app-icon>
+                    />
                     <div class="model-text">
                         <span class="model-name">{{ selectedConfig.modelDetails?.name || 'Unknown Model' }}</span>
                         <span *ngIf="selectedConfig.custom_name" class="custom-name">
@@ -370,7 +368,7 @@ export class LlmModelSelectorComponent implements OnInit, OnDestroy, OnChanges, 
 
     getProviderIcon(config: FullLLMConfig): string {
         if (!config || !config.providerDetails?.name) {
-            return 'llm-providers-logos/default';
+            return 'provider-default';
         }
         return getProviderIconPath(config.providerDetails.name);
     }

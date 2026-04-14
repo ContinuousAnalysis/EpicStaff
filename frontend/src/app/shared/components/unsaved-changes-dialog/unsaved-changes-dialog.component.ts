@@ -5,6 +5,8 @@ import { Observable, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
 import { IconButtonComponent } from '../buttons/icon-button/icon-button.component';
+import { Spinner2Component } from '../spinner-type2/spinner.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 export type UnsavedChangesDialogResult = 'save' | 'dont-save' | 'cancel' | 'close';
 
@@ -21,7 +23,7 @@ export interface UnsavedChangesDialogData {
 @Component({
     selector: 'app-unsaved-changes-dialog',
     standalone: true,
-    imports: [CommonModule, DialogModule, IconButtonComponent],
+    imports: [CommonModule, DialogModule, IconButtonComponent, Spinner2Component, AppSvgIconComponent],
     templateUrl: './unsaved-changes-dialog.component.html',
     styleUrls: ['./unsaved-changes-dialog.component.scss'],
 })

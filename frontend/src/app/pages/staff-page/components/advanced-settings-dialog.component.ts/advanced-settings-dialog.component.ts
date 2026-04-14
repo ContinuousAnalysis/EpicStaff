@@ -1,16 +1,12 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FullLLMConfig, FullLLMConfigService, LLMConfigService, LLMModelsService } from "@shared/services";
 import { forkJoin, of, Subject, takeUntil } from 'rxjs';
 
 import { GetCollectionRequest } from '../../../../features/knowledge-sources/models/collection.model';
 import { CollectionsApiService } from '../../../../features/knowledge-sources/services/collections-api.service';
-import {
-    FullLLMConfig,
-    FullLLMConfigService,
-} from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { LLM_Config_Service } from '../../../../features/settings-dialog/services/llms/llm-config.service';
-import { LLM_Models_Service } from '../../../../features/settings-dialog/services/llms/llm-models.service';
+
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
 import { KnowledgeSelectorComponent } from '../../../../shared/components/knowledge-selector/knowledge-selector.component';
@@ -43,6 +39,7 @@ export interface AdvancedSettingsData {
     memory: boolean;
     cache: boolean;
     respect_context_window: boolean;
+    _saveAfterClose?: boolean;
 }
 
 @Component({
@@ -74,6 +71,7 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
     public knowledgeSourcesError: string | null = null;
 
     private readonly _destroyed$ = new Subject<void>();
+    private _closeWithPageSave = false;
     public search_limit = 3;
 
     // Form controls for sliders
@@ -90,8 +88,8 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
     constructor(
         public dialogRef: DialogRef<AdvancedSettingsData>,
         @Inject(DIALOG_DATA) public data: AdvancedSettingsData,
-        private llmConfigService: LLM_Config_Service,
-        private llmModelsService: LLM_Models_Service,
+        private llmConfigService: LLMConfigService,
+        private llmModelsService: LLMModelsService,
         private fullLLMConfigService: FullLLMConfigService,
         private collectionsService: CollectionsApiService,
         private cdr: ChangeDetectorRef
@@ -211,6 +209,12 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
                 e.preventDefault();
                 this.closeAndApply();
             }
+            if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
+                e.preventDefault();
+                e.stopPropagation();
+                this._closeWithPageSave = true;
+                this.closeAndApply();
+            }
         });
     }
 
@@ -326,7 +330,9 @@ export class AdvancedSettingsDialogComponent implements OnInit, OnDestroy {
         // Create a deep copy to prevent any unintended references
         const result = JSON.parse(JSON.stringify(this.agentData));
 
-        this.dialogRef.close(result);
+        const closeWithSave = this._closeWithPageSave;
+        this._closeWithPageSave = false;
+        this.dialogRef.close({ ...result, _saveAfterClose: closeWithSave } as AdvancedSettingsData);
     }
 
     public ngOnDestroy(): void {

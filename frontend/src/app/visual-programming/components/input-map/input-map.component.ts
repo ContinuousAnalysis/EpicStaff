@@ -11,6 +11,7 @@ import {
     ReactiveFormsModule,
 } from '@angular/forms';
 
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToggleSwitchComponent } from '../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
 import { SidePanelService } from '../../services/side-panel.service';
@@ -23,7 +24,7 @@ interface TestVariable {
 @Component({
     selector: 'app-input-map',
     standalone: true,
-    imports: [ReactiveFormsModule, CommonModule, HelpTooltipComponent, ToggleSwitchComponent],
+    imports: [ReactiveFormsModule, CommonModule, HelpTooltipComponent, ToggleSwitchComponent, AppSvgIconComponent],
     viewProviders: [
         {
             provide: ControlContainer,
@@ -71,14 +72,21 @@ interface TestVariable {
                                         (keydown.enter)="onEnterKey($event, i)"
                                     />
                                 </div>
-                                <i class="ti ti-trash delete-icon" (click)="removePair(i)"></i>
+                                <app-svg-icon
+                                icon="trash"
+                                size="1rem"
+                                class="delete-icon"
+                                (click)="removePair(i)"
+                            ></app-svg-icon>
                             </div>
                         </div>
                     }
                 </div>
                 <button type="button" class="add-pair-btn" (click)="addPair()">
-                    <i class="ti ti-plus"></i> Add Input
-                </button>
+                    
+                <app-svg-icon icon="plus" size="16px"></app-svg-icon> Add Input
+                
+            </button>
             } @else {
                 <!-- Test mode: editable test variables -->
                 <div class="input-map-list">
@@ -256,8 +264,62 @@ interface TestVariable {
                     background: var(--color-action-btn-background-hover);
                 }
 
+                app-svg-icon {
+                    flex-shrink: 0;
+                }
+
                 i {
                     font-size: 16px;
+                }
+            }
+
+            .test-mode-actions {
+                display: flex;
+                gap: 0.5rem;
+                width: 100%;
+                margin-top: 0.75rem;
+            }
+
+            .btn-secondary,
+            .btn-primary {
+                flex: 1;
+                padding: 8px 12px;
+                border: 1px solid var(--color-divider-subtle);
+                border-radius: 4px;
+                font-size: 0.875rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-align: center;
+            }
+
+            .btn-secondary {
+                background: var(--color-action-btn-background);
+                color: var(--color-text-primary);
+
+                &:hover:not(:disabled) {
+                    background: var(--color-action-btn-background-hover);
+                }
+
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+            }
+
+            .btn-primary {
+                background: #685fff;
+                color: white;
+                border-color: #685fff;
+
+                &:hover:not(:disabled) {
+                    background: #5a4ade;
+                    border-color: #5a4ade;
+                }
+
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
                 }
             }
 

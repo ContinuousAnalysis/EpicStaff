@@ -14,6 +14,7 @@
             Realtime Models
         </div>
     </div>
+
     <div class="body">
         <!-- LLM Models Tab -->
         <div class="llm-list-wrapper" *ngIf="activeTab === 'llm'">
@@ -36,10 +37,9 @@
                 >
                 </app-llm-item>
 
-                <!-- No results message -->
                 <li class="no-results" *ngIf="filteredLLMs.length === 0">
                     <div class="empty-state">
-                        <i class="ti ti-search-off"></i>
+                        <app-svg-icon icon="search-off" size="1.5rem" />
                         <p>No matching LLM configurations found</p>
                     </div>
                 </li>
@@ -67,10 +67,9 @@
                 >
                 </app-llm-item>
 
-                <!-- No results message -->
                 <li class="no-results" *ngIf="filteredRealtimeModels.length === 0">
                     <div class="empty-state">
-                        <i class="ti ti-search-off"></i>
+                        <app-svg-icon icon="search-off" size="1.5rem" />
                         <p>No matching Realtime configurations found</p>
                     </div>
                 </li>
@@ -78,7 +77,6 @@
         </div>
     </div>
 
-    <!-- Controls footer -->
     <div class="controls-footer">
         <button class="cancel-button" (click)="onCancel()">Cancel</button>
         <button class="save-button" (click)="onSave()">Save</button>
