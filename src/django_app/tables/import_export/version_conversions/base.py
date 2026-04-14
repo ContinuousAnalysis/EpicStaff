@@ -2,13 +2,13 @@ from typing import Callable
 from loguru import logger
 
 from django.core.exceptions import ValidationError
-from tables.import_export.constants import CURRENT_VERSION
+from tables.import_export.constants import IMPORT_VERSION
 
 
 class VersionConverter:
     """
     Applies a chain of conversions to bring import data
-    from any old version to CURRENT_VERSION
+    from any old version to IMPORT_VERSION
     """
 
     # Ordered registry: {from_version: migration_func}
@@ -30,12 +30,12 @@ class VersionConverter:
     def convert(cls, data: dict) -> dict:
         version = data.get("version", 1)  # old files default to v1
 
-        if version > CURRENT_VERSION:
+        if version > IMPORT_VERSION:
             raise ValidationError(
-                f"File version {version} is newer than supported {CURRENT_VERSION}"
+                f"File version {version} is newer than supported {IMPORT_VERSION}"
             )
 
-        while version < CURRENT_VERSION:
+        while version < IMPORT_VERSION:
             if version not in cls._conversions:
                 raise ValidationError(f"No migration path from version {version}")
 

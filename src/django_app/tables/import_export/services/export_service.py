@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from tables.import_export.registry import EntityRegistry
 from tables.import_export.enums import EntityType
-from tables.import_export.constants import MAIN_ENTITY_KEY, CURRENT_VERSION
+from tables.import_export.constants import MAIN_ENTITY_KEY, IMPORT_VERSION
 
 
 class ExportService:
@@ -19,7 +19,7 @@ class ExportService:
 
         data = collector.to_dict()
         data[MAIN_ENTITY_KEY] = entity_type
-        data["version"] = CURRENT_VERSION
+        data["version"] = IMPORT_VERSION
         return data
 
 
