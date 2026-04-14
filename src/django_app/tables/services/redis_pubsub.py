@@ -21,6 +21,7 @@ from django_app.settings import (
     GRAPH_MESSAGE_UPDATE_CHANNEL,
     GRAPH_MESSAGES_CHANNEL,
     SESSION_STATUS_CHANNEL,
+    STORAGE_MUTATION_CHANNEL,
     TELEGRAM_TRIGGER_PREFIX,
     WEBHOOK_MESSAGE_CHANNEL,
     REQUEST_WEBHOOK_UPDATE_CHANNEL,
@@ -34,6 +35,7 @@ from tables.models import (
 from src.shared.models import (
     CodeResultData,
     GraphSessionMessageData,
+    StorageMutationEvent,
     WebhookEventData,
 )
 from tables.services.telegram_trigger_service import TelegramTriggerService
@@ -111,6 +113,38 @@ class RedisPubSub:
             PythonCodeResult.objects.create(**data)
         except Exception as e:
             logger.error(f"Error handling code_results message: {e}")
+
+    def storage_mutations_handler(self, message: dict):
+        try:
+            logger.debug(f"Received storage mutation event: {message}")
+            data = json.loads(message["data"])
+            event = StorageMutationEvent.model_validate(data)
+
+            org_prefix = event.org_prefix
+
+            try:
+                org_id = int(org_prefix.split("_", 1)[1])
+            except (IndexError, ValueError):
+                logger.error(f"Invalid org_prefix format: {org_prefix}")
+                return
+
+            close_old_connections()
+
+            from tables.services.storage_service.db_sync import StorageFileSync
+
+            for mutation in event.mutations:
+                rel_path = mutation.path
+
+                if rel_path and rel_path.startswith(org_prefix + "/"):
+                    rel_path = rel_path[len(org_prefix) + 1 :]
+
+                if mutation.op == "write":
+                    StorageFileSync.on_upload(org_id, rel_path)
+                elif mutation.op == "delete":
+                    StorageFileSync.on_delete(org_id, rel_path)
+
+        except Exception as e:
+            logger.error(f"Error handling storage_mutations message: {e}")
 
     def webhook_events_handler(self, message: dict):
         try:
@@ -335,6 +369,7 @@ class RedisPubSub:
         self.set_handler(
             REQUEST_WEBHOOK_UPDATE_CHANNEL, self.request_webhook_update_handler
         )
+        self.set_handler(STORAGE_MUTATION_CHANNEL, self.storage_mutations_handler)
         self.subscribe_to_channels()
 
         while True:

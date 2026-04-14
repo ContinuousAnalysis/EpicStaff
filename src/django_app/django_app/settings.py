@@ -245,6 +245,9 @@ GRAPH_MESSAGE_UPDATE_CHANNEL = os.environ.get(
     "GRAPH_MESSAGE_UPDATE_CHANNEL", "graph:message:update"
 )
 WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
+STORAGE_MUTATION_CHANNEL = os.environ.get(
+    "STORAGE_MUTATION_CHANNEL", "storage_mutations"
+)
 TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
 
 

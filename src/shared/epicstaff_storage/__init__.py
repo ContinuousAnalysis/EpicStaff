@@ -1,5 +1,10 @@
-from .storage import EpicStaffStorage
+from .storage import (
+    EpicStaffStorage,
+    StoragePermissionError,
+    get_mutations,
+    clear_mutations,
+)
 
 storage = EpicStaffStorage()
 
-__all__ = ["storage"]
+__all__ = ["storage", "StoragePermissionError", "get_mutations", "clear_mutations"]

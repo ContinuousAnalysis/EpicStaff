@@ -1,19 +1,74 @@
 from __future__ import annotations
 
+import json
 import os
+import posixpath
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
 
 
-def check_storage_permission(operation: str, path: str) -> None:
-    """Stub — always allows in v1. Replace with real enforcement later."""
-    import logging
+class StoragePermissionError(PermissionError):
+    """Raised when a storage operation is denied by the path allowlist."""
 
-    logging.getLogger("epicstaff_storage").debug(
-        "storage permission check: op=%s path=%s [stub/allowed]", operation, path
-    )
+    pass
+
+
+__cache: dict[str, list[str] | None] = {}
+
+_mutations: list[dict] = []
+
+
+def __get_allowed_paths() -> list[str] | None:
+    if "allowed" not in __cache:
+        raw = os.environ.get("STORAGE_ALLOWED_PATHS")
+        __cache["allowed"] = json.loads(raw) if raw is not None else None
+    return __cache["allowed"]
+
+
+def __normalize_path(path: str) -> str:
+    p = path.lstrip("/")
+    p = posixpath.normpath(p)
+    if p == ".":
+        p = ""
+    if p.startswith(".."):
+        raise StoragePermissionError(f"Path traversal detected: '{path}'")
+    return p
+
+
+def __is_path_allowed(normalized_path: str, allowed_paths: list[str]) -> bool:
+    for allowed in allowed_paths:
+        allowed_norm = __normalize_path(allowed)
+        if allowed.endswith("/"):
+            folder_prefix = allowed_norm + "/"
+            if normalized_path == allowed_norm or normalized_path.startswith(
+                folder_prefix
+            ):
+                return True
+        else:
+            if normalized_path == allowed_norm:
+                return True
+    return False
+
+
+def check_storage_permission(operation: str, path: str) -> None:
+    allowed = __get_allowed_paths()
+    if allowed is None:
+        return
+    normalized = __normalize_path(path)
+    if not __is_path_allowed(normalized, allowed):
+        raise StoragePermissionError(
+            f"Access denied: {operation} on '{path}' — not in this flow's allowed files."
+        )
+
+
+def get_mutations() -> list[dict]:
+    return list(_mutations)
+
+
+def clear_mutations() -> None:
+    _mutations.clear()
 
 
 class EpicStaffStorage:
@@ -49,7 +104,11 @@ class EpicStaffStorage:
         return self._client
 
     def _normalize_key(self, path: str) -> str:
-        return path.lstrip("/")
+        relative = path.lstrip("/")
+        prefix = os.environ.get("STORAGE_ORG_PREFIX") or None
+        if prefix:
+            return f"{prefix}/{relative}"
+        return relative
 
     def _bucket_name(self) -> str:
         self._get_client()
@@ -95,6 +154,8 @@ class EpicStaffStorage:
             client.put_object(Bucket=self._bucket_name(), Key=key, Body=content)  # type: ignore[attr-defined]
         except Exception as error:
             self._handle_client_error(error, path)
+
+        _mutations.append({"op": "write", "path": key})
 
     def list(self, path: str) -> list[dict]:
         check_storage_permission("list", path)
@@ -174,6 +235,8 @@ class EpicStaffStorage:
         except Exception as error:
             self._handle_client_error(error, path)
 
+        _mutations.append({"op": "delete", "path": key})
+
     def mkdir(self, path: str) -> None:
         check_storage_permission("mkdir", path)
         client = self._get_client()
@@ -186,11 +249,13 @@ class EpicStaffStorage:
 
     def move(self, src: str, dst: str) -> None:
         check_storage_permission("move", src)
+        check_storage_permission("move_dst", dst)
         self.copy(src, dst)
         self.delete(src)
 
     def copy(self, src: str, dst: str) -> None:
         check_storage_permission("copy", src)
+        check_storage_permission("copy_dst", dst)
         client = self._get_client()
         src_key = self._normalize_key(src)
         dst_key = self._normalize_key(dst)
@@ -203,6 +268,8 @@ class EpicStaffStorage:
             )
         except Exception as error:
             self._handle_client_error(error, src)
+
+        _mutations.append({"op": "write", "path": dst_key})
 
     def info(self, path: str) -> dict:
         check_storage_permission("info", path)

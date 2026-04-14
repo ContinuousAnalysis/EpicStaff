@@ -24,6 +24,7 @@ from tables.serializers.storage_serializers import (
     StorageUploadSerializer,
 )
 from tables.services.storage_service import get_storage_manager
+from tables.services.storage_service.dataclasses import FolderInfo
 from tables.storage_permissions import StoragePermission
 from tables.swagger_schemas.storage_schema import (
     STORAGE_ADD_TO_GRAPH_SWAGGER,
@@ -242,9 +243,12 @@ class StorageAPIView(ViewSet):
         graph_ids = serializer.validated_data["graph_ids"]
 
         try:
-            self.manager.info(user_name, org_id, path)
+            path_info = self.manager.info(user_name, org_id, path)
         except FileNotFoundError:
             raise ValidationError({"path": f"Path does not exist: {path}"})
+
+        if isinstance(path_info, FolderInfo) and not path.endswith("/"):
+            path = path + "/"
 
         results = []
         sf, _ = StorageFile.objects.get_or_create(org_id=org_id, path=path)

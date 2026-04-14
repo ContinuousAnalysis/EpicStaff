@@ -51,6 +51,8 @@ class PythonCodeData(BaseModel):
     libraries: list[str]
     global_kwargs: dict[str, Any] | None = None
     use_storage: bool = False
+    storage_allowed_paths: list[str] | None = None
+    storage_org_prefix: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -149,5 +151,7 @@ class CodeTaskData(BaseModel):
     func_kwargs: dict | None = None
     global_kwargs: dict[str, Any] | None = None
     use_storage: bool = False
+    storage_allowed_paths: list[str] | None = None
+    storage_org_prefix: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
