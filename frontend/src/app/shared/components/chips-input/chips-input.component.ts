@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, forwardRef, input, model } from '@angular/core';
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { AppSvgIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { ValidationErrorsComponent } from '../app-validation-errors/validation-errors.component';
 import { CustomInputComponent } from '../form-input/form-input.component';
 import { TooltipComponent } from '../tooltip/tooltip.component';
@@ -10,9 +10,14 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
     selector: 'app-chips-input',
     templateUrl: './chips-input.component.html',
     styleUrls: ['./chips-input.component.scss'],
-    imports: [FormsModule, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [TooltipComponent, CustomInputComponent, AppIconComponent, ReactiveFormsModule, ValidationErrorsComponent],
+    imports: [
+        TooltipComponent,
+        CustomInputComponent,
+        ReactiveFormsModule,
+        ValidationErrorsComponent,
+        AppSvgIconComponent,
+    ],
     providers: [
         {
             provide: NG_VALUE_ACCESSOR,

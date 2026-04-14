@@ -1,13 +1,12 @@
-import { ChangeDetectionStrategy, Component, input } from "@angular/core";
-import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
     LlmModelSelectorComponent,
     ToggleSwitchComponent,
     ToolsSelectorComponent,
-    TooltipComponent
-} from "@shared/components";
-import { FullLLMConfig } from "../../../../../features/settings-dialog/services/llms/full-llm-config.service";
-
+    TooltipComponent,
+} from '@shared/components';
+import { FullLLMConfig } from '@shared/services';
 @Component({
     selector: 'app-general-tab',
     templateUrl: './general-tab-component.html',
@@ -18,14 +17,13 @@ import { FullLLMConfig } from "../../../../../features/settings-dialog/services/
         FormsModule,
         TooltipComponent,
         ToolsSelectorComponent,
-        ToggleSwitchComponent
+        ToggleSwitchComponent,
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GeneralTabComponent {
     form = input.required<FormGroup>();
     combinedLLMs = input.required<FullLLMConfig[]>();
-
 
     public onConfiguredToolsChange(toolConfigIds: number[]): void {
         this.form().patchValue({ configured_tools: toolConfigIds });

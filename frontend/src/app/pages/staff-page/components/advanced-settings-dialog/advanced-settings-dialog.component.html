@@ -5,8 +5,7 @@
             <app-svg-icon icon="settings" size="1.5rem" />
             <h2 class="dialog-title">Advanced Settings for {{ data.role }}</h2>
         </div>
-        <app-icon-button icon="x" ariaLabel="Close dialog" size="2rem" (onClick)="dialogRef.close()">
-        </app-icon-button>
+        <app-icon-button icon="x" ariaLabel="Close dialog" size="2rem" (onClick)="dialogRef.close()"> </app-icon-button>
     </div>
     <div class="tabs">
         @for (tab of tabs; track tab.id) {

@@ -13,18 +13,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
 import { ButtonComponent, CustomInputComponent, TabButtonComponent, TextareaComponent } from '@shared/components';
-import { buildToolIdsArray } from '@shared/utils';
+import { FullLLMConfig, FullLLMConfigService } from '@shared/services';
+import { buildToolIdsArray, getProviderIconPath } from '@shared/utils';
 
 import {
     GetCollectionRagsResponse,
     GetCollectionRequest,
 } from '../../../features/knowledge-sources/models/collection.model';
 import { CollectionsApiService } from '../../../features/knowledge-sources/services/collections-api.service';
-import {
-    FullLLMConfig,
-    FullLLMConfigService,
-} from '../../../features/settings-dialog/services/llms/full-llm-config.service';
-import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
 import { CreateAgentRequest, GetAgentRequest, ToolUniqueName } from '../../../features/staff/models/agent.model';
 import { CustomErrorStateMatcher } from '../../error-state-matcher';
 import { MATERIAL_FORMS } from '../../material-forms';

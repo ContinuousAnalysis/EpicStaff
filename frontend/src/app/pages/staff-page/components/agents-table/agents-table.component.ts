@@ -50,7 +50,7 @@ import { buildToolIdsArray } from '../../../../shared/utils/tool-ids-builder.uti
 import {
     AdvancedSettingsData,
     AdvancedSettingsDialogComponent,
-} from '../advanced-settings-dialog.component.ts/advanced-settings-dialog.component';
+} from '../advanced-settings-dialog/advanced-settings-dialog.component';
 import { LLMPopupComponent } from '../cell-popups-and-modals/llm-selector-popup/llm-popup.component';
 import { TagsPopupComponent } from '../cell-popups-and-modals/tags-popup/tags-popup.component';
 import { ToolsPopupComponent } from '../cell-popups-and-modals/tools-selector-popup/tools-popup.component';
@@ -1575,57 +1575,55 @@ export class AgentsTableComponent {
 
             popupRef.instance.mergedTools = event.data?.mergedTools || [];
 
-            popupRef.instance.mergedToolsUpdated.subscribe((updatedMergedTools: { id: number; configName: string; toolName: string; type: string }[]) => {
-                if (this.currentPopupCell) {
-                    const rowIndex = this.currentPopupCell.rowIndex;
-                    const rowNode = this.gridApi.getDisplayedRowAtIndex(rowIndex);
+            popupRef.instance.mergedToolsUpdated.subscribe(
+                (updatedMergedTools: { id: number; configName: string; toolName: string; type: string }[]) => {
+                    if (this.currentPopupCell) {
+                        const rowIndex = this.currentPopupCell.rowIndex;
+                        const rowNode = this.gridApi.getDisplayedRowAtIndex(rowIndex);
 
-                    if (rowNode) {
-                        const mergedToolsClone = (updatedMergedTools ?? []).map((t) => ({ ...t }));
+                        if (rowNode) {
+                            const mergedToolsClone = (updatedMergedTools ?? []).map((t) => ({ ...t }));
 
-                        rowNode.setDataValue('mergedTools', mergedToolsClone);
-                        const rowData = rowNode.data;
-                        const rowId = String(rowData?.id ?? '');
+                            rowNode.setDataValue('mergedTools', mergedToolsClone);
+                            const rowData = rowNode.data;
+                            const rowId = String(rowData?.id ?? '');
 
-                        if (this.isTempRowId(rowId)) {
-                            if (this.isTempRowTouched(rowData)) {
-                                this.draftTempRows.add(rowId);
+                            if (this.isTempRowId(rowId)) {
+                                if (this.isTempRowTouched(rowData)) {
+                                    this.draftTempRows.add(rowId);
+                                } else {
+                                    this.draftTempRows.delete(rowId);
+                                }
+
+                                this.emitDirty();
+                                this.updateRequiredErrorsForTempRow(rowId, rowData);
+
+                                this.cdr.markForCheck();
                             } else {
-                                this.draftTempRows.delete(rowId);
+                                const parsedData = this.parseAgentData(rowData);
+                                const configuredToolIds = parsedData.configured_tools || [];
+                                const pythonToolIds = parsedData.python_code_tools || [];
+                                const mcpToolIds = parsedData.mcp_tools || [];
+                                const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds, mcpToolIds);
+
+                                const updateAgentData: UpdateAgentRequest = {
+                                    ...parsedData,
+                                    id: Number(rowData.id),
+                                    configured_tools: configuredToolIds,
+                                    python_code_tools: pythonToolIds,
+                                    mcp_tools: mcpToolIds,
+                                    tool_ids: toolIds,
+                                };
+                                this.reconcilePendingUpdate(rowId, updateAgentData);
                             }
 
-                            this.emitDirty();
-                            this.updateRequiredErrorsForTempRow(rowId, rowData);
-
                             this.cdr.markForCheck();
-                        } else {
-                            const parsedData = this.parseAgentData(rowData);
-                            const configuredToolIds = parsedData.configured_tools || [];
-                            const pythonToolIds = parsedData.python_code_tools || [];
-                            const mcpToolIds = parsedData.mcp_tools || [];
-                            const toolIds = buildToolIdsArray(
-                                configuredToolIds,
-                                pythonToolIds,
-                                mcpToolIds
-                            );
-
-                            const updateAgentData: UpdateAgentRequest = {
-                                ...parsedData,
-                                id: Number(rowData.id),
-                                configured_tools: configuredToolIds,
-                                python_code_tools: pythonToolIds,
-                                mcp_tools: mcpToolIds,
-                                tool_ids: toolIds,
-                            };
-                            this.reconcilePendingUpdate(rowId, updateAgentData);
                         }
-
-                        this.cdr.markForCheck();
                     }
-                }
 
-                this.closePopup();
-            });
+                    this.closePopup();
+                }
+            );
 
             popupRef.instance.cancel.subscribe(() => {
                 this.closePopup();

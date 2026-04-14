@@ -11,7 +11,8 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { IconButtonComponent, TabButtonComponent } from '@shared/components';
+import { AppSvgIconComponent, IconButtonComponent, TabButtonComponent } from '@shared/components';
+import { FullLLMConfig, FullLLMConfigService } from '@shared/services';
 import { forkJoin, of } from 'rxjs';
 
 import {
@@ -19,10 +20,6 @@ import {
     GetCollectionRequest,
 } from '../../../../features/knowledge-sources/models/collection.model';
 import { CollectionsApiService } from '../../../../features/knowledge-sources/services/collections-api.service';
-import {
-    FullLLMConfig,
-    FullLLMConfigService,
-} from '../../../../features/settings-dialog/services/llms/full-llm-config.service';
 import { AgentRag } from '../../../../features/staff/models/agent.model';
 import {
     AdvancedTabComponent,
@@ -63,6 +60,7 @@ export interface AdvancedSettingsData {
         RagTabComponent,
         GeneralTabComponent,
         TabButtonComponent,
+        AppSvgIconComponent,
     ],
     templateUrl: './advanced-settings-dialog.component.html',
     styleUrls: ['./advanced-settings-dialog.component.scss'],
@@ -93,8 +91,7 @@ export class AdvancedSettingsDialogComponent implements OnInit {
         private fullLLMConfigService: FullLLMConfigService,
         private collectionsService: CollectionsApiService,
         private cdr: ChangeDetectorRef
-    ) {
-    }
+    ) {}
 
     // In ngOnInit
     public ngOnInit(): void {

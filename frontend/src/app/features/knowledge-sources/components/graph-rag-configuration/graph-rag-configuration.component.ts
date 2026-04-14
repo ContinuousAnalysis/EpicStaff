@@ -1,24 +1,28 @@
 import {
     AfterViewInit,
     ChangeDetectionStrategy,
-    Component, DestroyRef,
+    Component,
+    computed,
+    DestroyRef,
     inject,
     input,
     OnInit,
     signal,
-    ViewChild
-} from "@angular/core";
-import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
-import { RadioButtonComponent, SelectItem } from "@shared/components";
-import { MATERIAL_FORMS } from "@shared/material-forms";
-import { EMPTY, merge, Observable, skip } from "rxjs";
-import { catchError, debounceTime, distinctUntilChanged, switchMap, tap } from "rxjs/operators";
-import { ToastService } from "../../../../services/notifications";
-import { CollectionGraphRag, CreateGraphRagIndexConfigRequest, GraphRagFileType } from "../../models/graph-rag.model";
-import { RagConfiguration } from "../../models/rag-configuration";
-import { GraphRagService } from "../../services/graph-rag.service";
-import { GraphRagFilesListComponent } from "./files-list/files-list.component";
-import { AppGraphRagParametersComponent } from "./index-parameters/index-parameters.component";
+    ViewChild,
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { RadioButtonComponent, SelectItem } from '@shared/components';
+import { MATERIAL_FORMS } from '@shared/material-forms';
+import { EMPTY, merge, Observable, skip } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, switchMap, tap } from 'rxjs/operators';
+
+import { ToastService } from '../../../../services/notifications';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { CollectionGraphRag, CreateGraphRagIndexConfigRequest, GraphRagFileType } from '../../models/graph-rag.model';
+import { RagConfiguration } from '../../models/rag-configuration';
+import { GraphRagService } from '../../services/graph-rag.service';
+import { GraphRagFilesListComponent } from './files-list/files-list.component';
+import { AppGraphRagParametersComponent } from './index-parameters/index-parameters.component';
 
 @Component({
     selector: 'app-graph-rag-configuration',
@@ -29,8 +33,9 @@ import { AppGraphRagParametersComponent } from "./index-parameters/index-paramet
         RadioButtonComponent,
         GraphRagFilesListComponent,
         MATERIAL_FORMS,
-        AppGraphRagParametersComponent
-    ]
+        AppGraphRagParametersComponent,
+        AppSvgIconComponent,
+    ],
 })
 export class GraphRagConfigurationComponent implements OnInit, AfterViewInit, RagConfiguration {
     private toastService = inject(ToastService);
@@ -42,18 +47,22 @@ export class GraphRagConfigurationComponent implements OnInit, AfterViewInit, Ra
     selectedFormat = signal<GraphRagFileType>('text');
     format$ = toObservable(this.selectedFormat);
 
+    hasNonTxtFiles = computed(() =>
+        this.graphRag().documents.some((doc) => !doc.file_name.toLowerCase().endsWith('.txt'))
+    );
+
     formatOptions: SelectItem[] = [
         {
             name: 'TXT',
-            value: 'text'
+            value: 'text',
         },
         {
             name: 'CSV',
-            value: 'csv'
+            value: 'csv',
         },
         {
             name: 'JSON',
-            value: 'json'
+            value: 'json',
         },
     ];
 
@@ -65,27 +74,26 @@ export class GraphRagConfigurationComponent implements OnInit, AfterViewInit, Ra
     }
 
     ngAfterViewInit(): void {
-        merge(
-            this.indexParameters.form.valueChanges,
-            this.format$
-        ).pipe(
-            skip(1),
-            distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
-            debounceTime(300),
-            switchMap(() => {
-                const data = this.getConfigurationData();
-                if (!data) return EMPTY;
+        merge(this.indexParameters.form.valueChanges, this.format$)
+            .pipe(
+                skip(1),
+                distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+                debounceTime(300),
+                switchMap(() => {
+                    const data = this.getConfigurationData();
+                    if (!data) return EMPTY;
 
-                return this.updateConfigurationData(data).pipe(
-                    tap(() => this.toastService.success('Parameters updated')),
-                    catchError(() => {
-                        this.toastService.error('Parameters updating failed');
-                        return EMPTY;
-                    })
-                );
-            }),
-            takeUntilDestroyed(this.destroyRef)
-        ).subscribe();
+                    return this.updateConfigurationData(data).pipe(
+                        tap(() => this.toastService.success('Parameters updated')),
+                        catchError(() => {
+                            this.toastService.error('Parameters updating failed');
+                            return EMPTY;
+                        })
+                    );
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
     }
 
     getConfigurationData(): CreateGraphRagIndexConfigRequest | false {
@@ -100,7 +108,9 @@ export class GraphRagConfigurationComponent implements OnInit, AfterViewInit, Ra
         return { ...formValue, file_type };
     }
 
-    private updateConfigurationData(data: CreateGraphRagIndexConfigRequest): Observable<CreateGraphRagIndexConfigRequest> {
+    private updateConfigurationData(
+        data: CreateGraphRagIndexConfigRequest
+    ): Observable<CreateGraphRagIndexConfigRequest> {
         const id = this.graphRag().graph_rag_id;
         return this.graphRagService.updateRagIndexConfigs(id, data);
     }

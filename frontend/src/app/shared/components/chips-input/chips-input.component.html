@@ -1,41 +1,26 @@
 @if (label()) {
-    <app-tooltip
-        [required]="required()"
-        [tooltipText]="tooltipText()"
-        [label]="label()"
-        [icon]="icon()"
-    />
+    <app-tooltip [required]="required()" [tooltipText]="tooltipText()" [label]="label()" [icon]="icon()" />
 }
 
 <div class="wrapper">
     <div class="input">
-        <app-custom-input
-            [placeholder]="inputPlaceholder()"
-            [formControl]="inputControl"
-        />
+        <app-custom-input [placeholder]="inputPlaceholder()" [formControl]="inputControl" />
 
         <app-svg-icon
             class="input-icon"
             [class.disabled]="inputControl.invalid"
-            [icon]="'ui/plus'"
-            [size]="'1.5rem'"
+            icon="plus"
+            size="1.5rem"
             (click)="onAdd()"
         />
     </div>
-    <app-validation-errors
-        [control]="inputControl"
-    />
+    <app-validation-errors [control]="inputControl" />
 
     <div class="chips">
         @for (item of value(); track $index; let i = $index) {
             <div class="chip">
                 {{ item }}
-                <app-icon
-                    [isAction]="true"
-                    [icon]="'ui/close'"
-                    [size]="'1.25rem'"
-                    (click)="onRemove(i)"
-                />
+                <app-svg-icon class="action" icon="close" size="1.25rem" (click)="onRemove(i)" />
             </div>
         }
     </div>

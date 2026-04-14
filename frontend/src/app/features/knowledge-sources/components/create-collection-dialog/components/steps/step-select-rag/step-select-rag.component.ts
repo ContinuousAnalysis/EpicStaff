@@ -1,24 +1,21 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, model, OnInit, signal } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { SelectComponent, SelectItem } from "@shared/components";
-import { MATERIAL_FORMS } from "@shared/material-forms";
-import { map } from "rxjs/operators";
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, model, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AppSvgIconComponent, SelectComponent, SelectItem } from '@shared/components';
+import { MATERIAL_FORMS } from '@shared/material-forms';
+import { EmbeddingConfig } from '@shared/models';
+import { EmbeddingConfigsService, LLMConfigService } from '@shared/services';
+import { map } from 'rxjs/operators';
 
-import { ToastService } from "../../../../../../../services/notifications";
-import { EmbeddingConfig } from "../../../../../../settings-dialog/models/embeddings/embedding-config.model";
-import {
-    EmbeddingConfigsService
-} from "../../../../../../settings-dialog/services/embeddings/embedding_configs.service";
-import { LLM_Config_Service } from "../../../../../../settings-dialog/services/llms/llm-config.service";
-import { RAG_TYPES } from "../../../../../constants/constants";
-import { Rag, RagType } from "../../../../../models/base-rag.model";
-import { RagTypeComponent } from "./rag-type/rag-type.component";
+import { ToastService } from '../../../../../../../services/notifications';
+import { RAG_TYPES } from '../../../../../constants/constants';
+import { Rag, RagType } from '../../../../../models/base-rag.model';
+import { RagTypeComponent } from './rag-type/rag-type.component';
 
 @Component({
     selector: 'app-step-select-rag',
     templateUrl: './step-select-rag.component.html',
     styleUrls: ['./step-select-rag.component.scss'],
-    imports: [RagTypeComponent, SelectComponent, MATERIAL_FORMS],
+    imports: [RagTypeComponent, SelectComponent, MATERIAL_FORMS, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StepSelectRagComponent implements OnInit {
@@ -34,7 +31,7 @@ export class StepSelectRagComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private embeddingConfigService = inject(EmbeddingConfigsService);
     private toastService = inject(ToastService);
-    private llmConfigService = inject(LLM_Config_Service);
+    private llmConfigService = inject(LLMConfigService);
 
     ngOnInit() {
         this.getEmbeddingConfigs();
@@ -48,7 +45,8 @@ export class StepSelectRagComponent implements OnInit {
     }
 
     private getEmbeddingConfigs() {
-        this.embeddingConfigService.getEmbeddingConfigs()
+        this.embeddingConfigService
+            .getEmbeddingConfigs()
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 map((configs) => {
@@ -70,14 +68,15 @@ export class StepSelectRagComponent implements OnInit {
     }
 
     private getLLMConfigs() {
-        this.llmConfigService.getAllConfigsLLM()
+        this.llmConfigService
+            .getAllConfigsLLM()
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 map((configs) => {
-                    return configs.map(config => ({
+                    return configs.map((config) => ({
                         name: config.custom_name,
                         value: config.id,
-                    }))
+                    }));
                 })
             )
             .subscribe({
@@ -87,8 +86,8 @@ export class StepSelectRagComponent implements OnInit {
                 error: (error) => {
                     this.toastService.error('Failed to load LLM Models.');
                     console.error('Error loading LLM Models:', error);
-                }
-            })
+                },
+            });
     }
 
     public onSelectRag(rag: Rag): void {

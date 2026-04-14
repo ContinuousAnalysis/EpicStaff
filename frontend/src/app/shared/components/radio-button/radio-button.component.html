@@ -8,6 +8,7 @@
             class="item"
             [style.width]="`calc(100% / ${count})`"
             [class.active]="option.value === value()"
+            [class.disabled]="disabled()"
             (click)="select(option)"
         >
             {{ option.name }}
