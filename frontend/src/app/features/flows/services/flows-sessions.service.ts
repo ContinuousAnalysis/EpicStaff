@@ -116,46 +116,56 @@ export class GraphSessionService {
         return this.http.get<SessionUpdates>(`${this.apiUrl}${sessionId}/get-updates/`);
     }
 
-    getSessionsByGraphId(
-        graphId: number,
-        detailed: true,
-        limit?: number,
-        offset?: number,
-        status?: string[]
+  getSessionsByGraphId(
+    graphId: number,
+    detailed: true,
+    limit?: number,
+    offset?: number,
+    status?: string[],
+    nodeName?: string | null,
     ): Observable<ApiGetRequest<GraphSession>>;
 
-    getSessionsByGraphId(
-        graphId: number,
-        detailed: false,
-        limit?: number,
-        offset?: number,
-        status?: string[]
-    ): Observable<ApiGetRequest<GraphSessionLight>>;
+  getSessionsByGraphId(
+    graphId: number,
+    detailed: false,
+    limit?: number,
+    offset?: number,
+    status?: string[],
+    nodeName?: string | null,
+    isErrorCause?: boolean
+  ): Observable<ApiGetRequest<GraphSessionLight>>;
 
-    getSessionsByGraphId(
-        graphId: number,
-        detailed?: boolean,
-        limit?: number,
-        offset?: number,
-        status?: string[]
+  getSessionsByGraphId(
+    graphId: number,
+    detailed?: boolean,
+    limit?: number,
+    offset?: number,
+    status?: string[],
+    nodeName?: string | null,
+    isErrorCause?: boolean
     ): Observable<ApiGetRequest<GraphSession | GraphSessionLight>> {
-        let params = new HttpParams().set('graph_id', graphId.toString());
+    let params = new HttpParams().set('graph_id', graphId.toString());
 
-        if (detailed !== undefined) params = params.set('detailed', detailed.toString());
-        if (limit !== undefined) params = params.set('limit', limit.toString());
-        if (offset !== undefined) params = params.set('offset', offset.toString());
-        if (status !== undefined && !status.includes('all')) params = params.set('status', status.join(','));
-
-        if (detailed === false) {
-            return this.http.get<ApiGetRequest<GraphSessionLight>>(this.apiUrl, {
-                params,
-            });
-        } else {
-            return this.http.get<ApiGetRequest<GraphSession>>(this.apiUrl, {
-                params,
-            });
-        }
+    if (detailed !== undefined)
+      params = params.set('detailed', detailed.toString());
+    if (limit !== undefined) params = params.set('limit', limit.toString());
+    if (offset !== undefined) params = params.set('offset', offset.toString());
+    if (status !== undefined && !status.includes('all'))
+      params = params.set('status', status.join(','));
+    if (nodeName)
+      params = params.set('node_name', nodeName)
+    if (isErrorCause) 
+      params = params.set('is_error_cause', 'true');
+    if (detailed === false) {
+      return this.http.get<ApiGetRequest<GraphSessionLight>>(this.apiUrl, {
+        params,
+      });
+    } else {
+      return this.http.get<ApiGetRequest<GraphSession>>(this.apiUrl, {
+        params,
+      });
     }
+  }
 
     deleteSessionById(sessionId: number): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}${sessionId}/`).pipe(

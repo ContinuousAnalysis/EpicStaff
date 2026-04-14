@@ -23,13 +23,16 @@ import {
     EFZoomDirection,
     F_CONNECTION_BUILDERS,
     FCanvasComponent,
+    FConnectionContent,
+    FConnectionGradient,
     FCreateConnectionEvent,
     FCreateNodeEvent,
+    FDragNodeStartEventData,
     FDragStartedEvent,
     FFlowComponent,
     FFlowModule,
+    FMagneticLines,
     FReassignConnectionEvent,
-    FSelectionChangeEvent,
     FZoomDirective,
     ICurrentSelection,
 } from '@foblex/flow';
@@ -39,7 +42,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { ToastService } from '../../services/notifications/toast.service';
 import { AppSvgIconComponent } from '../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToggleSwitchComponent } from '../../shared/components/form-controls/toggle-switch/toggle-switch.component';
-import { ClickOutsideDirective } from '../../shared/directives/click-outside.directive';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { FlowActionPanelComponent } from '../components/flow-action-panel/flow-action-panel.component';
 import { FlowBaseNodeComponent } from '../components/flow-base-node/flow-base-node.component';
@@ -79,7 +81,9 @@ import { UndoRedoService } from '../services/undo-redo.service';
     styleUrls: ['../styles/_variables.scss', './flow-graph.component.scss'],
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [{ provide: F_CONNECTION_BUILDERS, useValue: { 'backward-arc': new BackwardArcPathBuilder() } }],
+    providers: [
+        { provide: F_CONNECTION_BUILDERS, useValue: { 'backward-arc': new BackwardArcPathBuilder() } },
+    ],
     imports: [
         FFlowModule,
         FZoomDirective,
@@ -88,7 +92,6 @@ import { UndoRedoService } from '../services/undo-redo.service';
         ShortcutListenerDirective,
         MouseTrackerDirective,
         FlowGraphContextMenuComponent,
-        ClickOutsideDirective,
 
         FlowActionPanelComponent,
         FlowNodePanelComponent,
@@ -97,6 +100,9 @@ import { UndoRedoService } from '../services/undo-redo.service';
         FlowShortcutsButtonComponent,
         AppSvgIconComponent,
         ToggleSwitchComponent,
+        FMagneticLines,
+        FConnectionGradient,
+        FConnectionContent,
     ],
 })
 export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
@@ -127,14 +133,6 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     public readonly eMarkerType = EFMarkerType;
     public readonly eResizeHandleType = EFResizeHandleType;
 
-    protected readonly nodeColorMap = computed<Map<string, string>>(() => {
-        const map = new Map<string, string>();
-        for (const node of this.flowService.nodes()) {
-            map.set(node.id, node.color);
-        }
-        return map;
-    });
-
     protected readonly backwardConnectionIds = computed<Set<string>>(() => {
         const nodes = this.flowService.nodes();
         const connections = this.flowService.visibleConnections();
@@ -147,11 +145,21 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         return ids;
     });
 
+    protected readonly sortedConnections = computed<ConnectionModel[]>(() => {
+        const backward = this.backwardConnectionIds();
+        const all = this.flowService.visibleConnections();
+        return [...all].sort((a, b) => (backward.has(a.id) ? 0 : 1) - (backward.has(b.id) ? 0 : 1));
+    });
+
+    protected readonly nodeColorMap = computed<Map<string, string>>(() => {
+        const map = new Map<string, string>();
+        for (const node of this.flowService.nodes()) {
+            map.set(node.id, node.color);
+        }
+        return map;
+    });
+
     public mouseCursorPosition: { x: number; y: number } = { x: 0, y: 0 };
-    public contextMenuPostion: { x: number; y: number } = {
-        x: 0,
-        y: 0,
-    };
 
     public isLoaded = signal<boolean>(false);
     public showContextMenu = signal(false);
@@ -159,6 +167,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     private readonly destroy$ = new Subject<void>();
     public showVariables = signal<boolean>(false);
     public smartRoutingEnabled = signal<boolean>(false);
+    protected contextMenuPosition = signal<IPoint>({ x: 0, y: 0 });
 
     public NodeType = NodeType;
 
@@ -409,9 +418,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             return;
         }
 
-        // Assume fFlowComponent.getSelection() returns a FSelectionChangeEvent
-
-        const selections: FSelectionChangeEvent = this.fFlowComponent.getSelection();
+        const selections = this.fFlowComponent.getSelection();
         this.clipboardService.copy(selections);
     }
     // Triggered on paste
@@ -512,7 +519,20 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         });
     }
 
-    public onCreateNode(event: FCreateNodeEvent): void {
+    public onDeleteConnection(event: MouseEvent, connectionId: string): void {
+        event.preventDefault();
+        event.stopPropagation();
+        if (this.isDialogOpen()) {
+            return;
+        }
+        this.undoRedoService.stateChanged();
+        this.flowService.deleteSelections({
+            fNodeIds: [],
+            fConnectionIds: [connectionId],
+        });
+    }
+
+    public onNodeDroppedFromPanel(event: FCreateNodeEvent): void {
         if (!event.data || typeof event.data !== 'object') {
             return;
         }
@@ -536,9 +556,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
 
     public onContextMenu(event: MouseEvent): void {
         event.preventDefault();
-
-        this.contextMenuPostion = event;
-
+        this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
         this.showContextMenu.set(true);
     }
     public onCloseContextMenu(): void {
@@ -558,7 +576,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         const nodeColor = NODE_COLORS[event.type] || '#ddd';
         const nodeIcon = NODE_ICONS[event.type] || 'help';
         const position = this.fFlowComponent.getPositionInFlow(
-            PointExtensions.initialize(this.contextMenuPostion.x, this.contextMenuPostion.y)
+            PointExtensions.initialize(this.contextMenuPosition().x, this.contextMenuPosition().y)
         );
 
         let nodeSize: { width: number; height: number };
@@ -790,11 +808,9 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         // Clear previous tracking
         this.draggingElements.clear();
 
-        // Add all dragged elements to our tracking set
-        if (event.fData && event.fData.fNodeIds) {
-            event.fData.fNodeIds.forEach((id: string) => {
-                this.draggingElements.add(id);
-            });
+        const dragData = event.data as FDragNodeStartEventData | undefined;
+        if (dragData?.fNodeIds) {
+            dragData.fNodeIds.forEach((id: string) => this.draggingElements.add(id));
         }
 
         // Save state for undo

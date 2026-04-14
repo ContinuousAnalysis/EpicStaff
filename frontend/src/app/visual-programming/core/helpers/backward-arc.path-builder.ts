@@ -24,9 +24,10 @@ export class BackwardArcPathBuilder implements IFConnectionBuilder {
 
         return {
             path: this.buildPath(points, request.radius),
-            connectionCenter: { x: (sx2 + tx2) / 2, y: routeY },
             penultimatePoint: { x: tx2, y: target.y },
             secondPoint: { x: sx2, y: source.y },
+            points,
+            candidates: [],
         };
     }
 
