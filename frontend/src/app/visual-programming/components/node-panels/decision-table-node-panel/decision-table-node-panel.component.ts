@@ -27,7 +27,7 @@ import { DecisionTableGridComponent } from './decision-table-grid/decision-table
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DecisionTableNodePanelComponent extends BaseSidePanel<DecisionTableNodeModel> {
-    public readonly isExpanded = input<boolean>(true);
+    public override readonly isExpanded = input<boolean>(true);
 
     private flowService = inject(FlowService);
     private cdr = inject(ChangeDetectorRef);

@@ -24,6 +24,7 @@ import { RunGraphService } from '../../../../features/flows/services/run-graph-s
 import { FlowMessagesPanelComponent } from '../../../../pages/running-graph/components/flow-messages-panel/flow-messages-panel.component';
 import { ConfigService } from '../../../../services/config/config.service';
 import { ToastService } from '../../../../services/notifications/toast.service';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
 import { UnsavedChangesDialogService } from '../../../../shared/components/unsaved-changes-dialog';
 import { NodeType } from '../../../../visual-programming/core/enums/node-type';
@@ -39,12 +40,12 @@ import {
 } from '../../../../visual-programming/services/graph/save-graph.types';
 import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
 import { FlowUnsavedStateService } from '../../services/flow-unsaved-state.service';
-import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { FlowHeaderComponent } from './components/header/flow-header.component';
 import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-modal.component';
 import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 import { StartNodeService } from './services/start-node.service';
 
+//.
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
