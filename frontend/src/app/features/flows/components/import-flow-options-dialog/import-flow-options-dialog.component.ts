@@ -2,8 +2,7 @@ import { DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
-
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 
 export interface ImportFlowOptions {
@@ -12,7 +11,7 @@ export interface ImportFlowOptions {
 
 @Component({
     selector: 'app-import-flow-options-dialog',
-    imports: [CommonModule, ButtonComponent, AppIconComponent, MatTooltipModule],
+    imports: [CommonModule, ButtonComponent, AppSvgIconComponent, MatTooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './import-flow-options-dialog.html',
     styleUrl: 'import-flow-options-dialog.scss',

@@ -53,6 +53,9 @@ from tables.views.model_view_sets import (
     OrganizationUserViewSet,
     GraphOrganizationViewSet,
     GraphOrganizationUserViewSet,
+    VoiceSettingsView,
+    TwilioPhoneNumbersView,
+    TwilioConfigureWebhookView,
     WebhookTriggerNodeViewSet,
     WebhookTriggerViewSet,
     LabelViewSet,
@@ -79,6 +82,7 @@ from tables.views.views import (
     DefaultCrewConfigAPIView,
     # CollectionStatusAPIView,
     QuickstartView,
+    QuickstartApplyView,
     delete_environment_config,
 )
 
@@ -86,6 +90,7 @@ from tables.views.default_config import (
     DefaultConfigAPIView,
     DefaultRealtimeAgentConfigAPIView,
     DefaultToolConfigAPIView,
+    DefaultModelsAPIView,
 )
 
 from tables.views.knowledge_views.collection_management_views import (
@@ -259,6 +264,8 @@ urlpatterns = [
         DefaultToolConfigAPIView.as_view(),
         name="default_tool_config",
     ),
+    path("default-models/", DefaultModelsAPIView.as_view(), name="default_models"),
+    path("quickstart/apply/", QuickstartApplyView.as_view(), name="quickstart_apply"),
     path("quickstart/", QuickstartView.as_view(), name="quickstart"),
     path(
         "run-session/subscribe/<int:session_id>/",
@@ -393,5 +400,20 @@ urlpatterns = [
         "register-webhooks/",
         RegisterWebhooksApiView.as_view(),
         name="register-webhooks",
+    ),
+    path(
+        "voice-settings/",
+        VoiceSettingsView.as_view(),
+        name="voice-settings",
+    ),
+    path(
+        "twilio/phone-numbers/",
+        TwilioPhoneNumbersView.as_view(),
+        name="twilio-phone-numbers",
+    ),
+    path(
+        "twilio/configure-webhook/",
+        TwilioConfigureWebhookView.as_view(),
+        name="twilio-configure-webhook",
     ),
 ]

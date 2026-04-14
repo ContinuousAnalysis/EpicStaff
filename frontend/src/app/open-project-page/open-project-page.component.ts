@@ -20,6 +20,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { AppSvgIconComponent } from '../shared/components/app-svg-icon/app-svg-icon.component';
 import { EMPTY, filter, forkJoin, from, Observable, of, Subscription } from 'rxjs';
 import { catchError, concatMap, finalize, map, switchMap, tap, toArray } from 'rxjs/operators';
 
@@ -108,6 +109,7 @@ function asTaskPendingPayloadRecord(payload: unknown): Record<string, unknown> {
         SettingsSectionComponent,
         FormsModule,
         SpinnerComponent,
+        AppSvgIconComponent,
     ],
     animations: [expandCollapseAnimation],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -982,6 +984,24 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         if (!this.hasUnsavedChanges) return;
         event.preventDefault();
         event.returnValue = '';
+    }
+
+    @HostListener('document:keydown', ['$event'])
+    public handleCtrlS(event: KeyboardEvent): void {
+        if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+            event.preventDefault();
+
+            if (this.isSaving) {
+                return;
+            }
+
+            this.tasksSection?.commitPopupIfOpen();
+            this.tasksSection?.stopEditing();
+
+            if (this.hasUnsavedChanges) {
+                this.onSaveAll();
+            }
+        }
     }
 
     private sanitizePendingTaskContexts(): void {

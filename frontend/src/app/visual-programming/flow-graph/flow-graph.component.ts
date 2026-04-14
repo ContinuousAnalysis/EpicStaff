@@ -1,9 +1,12 @@
 import { Dialog } from '@angular/cdk/dialog';
 import {
+    afterNextRender,
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
     EventEmitter,
+    inject,
+    Injector,
     Input,
     OnChanges,
     OnDestroy,
@@ -15,7 +18,7 @@ import {
     ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IPoint, IRect, PointExtensions } from '@foblex/2d';
+import { IPoint, PointExtensions } from '@foblex/2d';
 import {
     EFMarkerType,
     EFResizeHandleType,
@@ -23,11 +26,11 @@ import {
     FCanvasComponent,
     FCreateConnectionEvent,
     FCreateNodeEvent,
+    FDragNodeStartEventData,
     FDragStartedEvent,
     FFlowComponent,
     FFlowModule,
     FReassignConnectionEvent,
-    FSelectionChangeEvent,
     FZoomDirective,
     ICurrentSelection,
 } from '@foblex/flow';
@@ -35,7 +38,6 @@ import { Subject } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ToastService } from '../../services/notifications/toast.service';
-import { ClickOutsideDirective } from '../../shared/directives/click-outside.directive';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { FlowActionPanelComponent } from '../components/flow-action-panel/flow-action-panel.component';
 import { FlowBaseNodeComponent } from '../components/flow-base-node/flow-base-node.component';
@@ -50,20 +52,30 @@ import { MouseTrackerDirective } from '../core/directives/mouse-tracker.directiv
 import { ShortcutListenerDirective } from '../core/directives/shortcut-listener.directive';
 import { NODE_COLORS, NODE_ICONS } from '../core/enums/node-config';
 import { NodeType } from '../core/enums/node-type';
-import { generateNodeDisplayName } from '../core/helpers/generate-node-display-name.util';
-import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util'; // Adjust path
+import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util';
 import {
     defineSourceTargetPair,
     generatePortsForDecisionTableNode,
     generatePortsForNode,
     isConnectionValid,
 } from '../core/helpers/helpers';
+import {
+    findNearestFreePosition,
+    getCollisionBounds,
+    GRID_CELL_SIZE,
+    resolveDraggedNodePositions,
+    resolveOverlapsForNode,
+    snapPointToGrid,
+} from '../core/helpers/node-placement.utils';
+import { ensureNodeSize, normalizeTableNodeSize } from '../core/helpers/node-size.util';
 import { ConnectionModel } from '../core/models/connection.model';
 import { FlowModel } from '../core/models/flow.model';
 import { GraphNoteModel, NodeModel, ProjectNodeModel, StartNodeModel } from '../core/models/node.model';
-import { CustomPortId, ViewPort } from '../core/models/port.model';
+import { CreateNodeRequest } from '../core/models/node-creation.types';
+import { CustomPortId } from '../core/models/port.model';
 import { ClipboardService } from '../services/clipboard.service';
 import { FlowService } from '../services/flow.service';
+import { NodeFactoryService } from '../services/node-factory.service';
 import { SidePanelService } from '../services/side-panel.service';
 import { UndoRedoService } from '../services/undo-redo.service';
 
@@ -73,7 +85,6 @@ import { UndoRedoService } from '../services/undo-redo.service';
     styleUrls: ['../styles/_variables.scss', './flow-graph.component.scss'],
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    //   providers: [FlowService],
     imports: [
         FFlowModule,
         FZoomDirective,
@@ -82,8 +93,6 @@ import { UndoRedoService } from '../services/undo-redo.service';
         ShortcutListenerDirective,
         MouseTrackerDirective,
         FlowGraphContextMenuComponent,
-        ClickOutsideDirective,
-
         FlowActionPanelComponent,
         FlowNodePanelComponent,
         NodesSearchComponent,
@@ -92,64 +101,56 @@ import { UndoRedoService } from '../services/undo-redo.service';
     ],
 })
 export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
-    public readonly GRID_CELL_SIZE = 20;
-    private readonly draggedNodeIds = new Set<string>();
-
     @Input() flowState!: FlowModel;
-    @Input() nodesMode!: 'project-graph' | 'flow-graph';
     @Input() currentFlowId: number | null = null;
     @Input() initialNodeId: string | null = null;
 
     @Output() save = new EventEmitter<void>();
+    readonly openShortcuts = output<DOMRect>();
 
     @ViewChild(FFlowComponent, { static: false })
-    public fFlowComponent!: FFlowComponent;
+    private fFlowComponent!: FFlowComponent;
 
     @ViewChild(FCanvasComponent, { static: true })
-    public fCanvasComponent!: FCanvasComponent;
+    private fCanvasComponent!: FCanvasComponent;
 
     @ViewChild(FZoomDirective, { static: true })
-    public fZoomDirective!: FZoomDirective;
+    private fZoomDirective!: FZoomDirective;
 
     @ViewChild('nodePanelShell', { static: false })
-    public nodePanelShell?: NodePanelShellComponent;
+    private nodePanelShell?: NodePanelShellComponent;
 
-    public getMinimapClassForNode = getMinimapClassForNode;
+    readonly GRID_CELL_SIZE = GRID_CELL_SIZE;
+    protected readonly getMinimapClassForNode = getMinimapClassForNode;
+    protected readonly eMarkerType = EFMarkerType;
+    protected readonly eResizeHandleType = EFResizeHandleType;
+    protected readonly NodeType = NodeType;
 
-    public readonly eMarkerType = EFMarkerType;
-    public readonly eResizeHandleType = EFResizeHandleType;
-
-    public mouseCursorPosition: { x: number; y: number } = { x: 0, y: 0 };
-    public contextMenuPostion: { x: number; y: number } = {
-        x: 0,
-        y: 0,
-    };
-
-    public isLoaded = signal<boolean>(false);
-    public showContextMenu = signal(false);
+    protected mouseCursorPosition: IPoint = { x: 0, y: 0 };
+    protected contextMenuPosition = signal<IPoint>({ x: 0, y: 0 });
+    protected isLoaded = signal(false);
+    protected showContextMenu = signal(false);
+    protected showVariables = signal(false);
 
     private readonly destroy$ = new Subject<void>();
-    public showVariables = signal<boolean>(false);
+    private draggedNodeIds = new Set<string>();
+    private draggingElements = new Set<string>();
+    private isDragging = false;
 
-    public NodeType = NodeType;
-
-    constructor(
-        public readonly flowService: FlowService,
-        private readonly undoRedoService: UndoRedoService,
-        private readonly clipboardService: ClipboardService,
-        public readonly sidePanelService: SidePanelService,
-        private readonly cd: ChangeDetectorRef,
-        private readonly dialog: Dialog,
-        private readonly toastService: ToastService
-    ) {}
+    protected readonly flowService = inject(FlowService);
+    protected readonly sidePanelService = inject(SidePanelService);
+    private readonly undoRedoService = inject(UndoRedoService);
+    private readonly clipboardService = inject(ClipboardService);
+    private readonly nodeFactory = inject(NodeFactoryService);
+    private readonly cd = inject(ChangeDetectorRef);
+    private readonly dialog = inject(Dialog);
+    private readonly toastService = inject(ToastService);
+    private readonly injector = inject(Injector);
 
     public ngOnInit(): void {
         this.applyIncomingFlowState();
         if (this.initialNodeId) {
-            setTimeout(() => {
-                this.sidePanelService.setSelectedNodeId(this.initialNodeId);
-                this.nodePanelShell?.expandPanel();
-            }, 0);
+            this.openNodePanel(this.initialNodeId);
         }
     }
 
@@ -158,8 +159,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             this.applyIncomingFlowState();
         }
         if (changes['initialNodeId'] && changes['initialNodeId'].currentValue) {
-            this.sidePanelService.setSelectedNodeId(changes['initialNodeId'].currentValue);
-            setTimeout(() => this.nodePanelShell?.expandPanel(), 0);
+            this.openNodePanel(changes['initialNodeId'].currentValue);
         }
     }
 
@@ -261,15 +261,11 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         });
     }
 
-    public onSave(): void {}
-
     public onInitialized(): void {
         // this.fCanvasComponent.fitToScreen(new Point(140, 140), false);
         this.isLoaded.set(true);
     }
-    public updateMouseTrackerPosition(event: { x: number; y: number }) {
-        this.mouseCursorPosition = event;
-    }
+
     public onReassignConnection(event: FReassignConnectionEvent): void {
         // Validate that we have the necessary information
         if (!event.newTargetId && !event.newSourceId) {
@@ -382,29 +378,17 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
 
         // Assume fFlowComponent.getSelection() returns a FSelectionChangeEvent
 
-        const selections: FSelectionChangeEvent = this.fFlowComponent.getSelection();
+        const selections: ICurrentSelection = this.fFlowComponent.getSelection();
         this.clipboardService.copy(selections);
     }
-    // Triggered on paste
     public onPaste(): void {
         if (this.isDialogOpen()) {
             return;
         }
 
-        let pastePosition: IRect;
-
-        if (this.mouseCursorPosition) {
-            const rawPastePos = this.fFlowComponent.getPositionInFlow(
-                PointExtensions.initialize(this.mouseCursorPosition.x, this.mouseCursorPosition.y)
-            );
-            pastePosition = {
-                ...rawPastePos,
-                x: this.snapToGrid(rawPastePos.x),
-                y: this.snapToGrid(rawPastePos.y),
-            };
-        } else {
-            pastePosition = { x: 0, y: 0 } as IRect;
-        }
+        const pastePosition = this.mouseCursorPosition
+            ? snapPointToGrid(this.toFlowPosition(this.mouseCursorPosition))
+            : { x: 0, y: 0 };
 
         this.undoRedoService.stateChanged();
         const { newNodes, newConnections } = this.clipboardService.paste(pastePosition);
@@ -412,21 +396,13 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         const existingBeforePaste = this.flowService.nodes().filter((n) => !newNodes.some((p) => p.id === n.id));
 
         for (const rawNode of newNodes) {
-            const node = this.ensureNodeSize(rawNode as NodeModel);
-            const safePosition = this.findNearestFreePosition(
-                {
-                    x: this.snapToGrid(node.position.x),
-                    y: this.snapToGrid(node.position.y),
-                },
-                this.getCollisionBounds(node),
-                [...existingBeforePaste, ...placedNodes]
-            );
+            const node = ensureNodeSize(rawNode as NodeModel);
+            const safePosition = findNearestFreePosition(snapPointToGrid(node.position), getCollisionBounds(node), [
+                ...existingBeforePaste,
+                ...placedNodes,
+            ]);
 
-            const updatedNode = {
-                ...node,
-                position: safePosition,
-            };
-
+            const updatedNode = { ...node, position: safePosition };
             this.flowService.updateNode(updatedNode);
             placedNodes.push(updatedNode);
         }
@@ -460,62 +436,43 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         }
 
         const selections: ICurrentSelection = this.fFlowComponent.getSelection();
+        this.deleteSelections(selections);
+    }
 
-        // Check if there's anything to delete
-        if (!selections || (selections.fNodeIds.length === 0 && selections.fConnectionIds.length === 0)) {
-            console.warn('No items selected to delete.');
+    public onDeleteConnection(event: MouseEvent, connectionId: string): void {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (this.isDialogOpen()) {
             return;
         }
 
-        // Save state for undo
-        this.undoRedoService.stateChanged();
-
-        // Filter out START nodes from deletion
-        const nodeIdsToDelete = selections.fNodeIds.filter((nodeId) => {
-            const node = this.flowService.nodes().find((n) => n.id === nodeId);
-            return node && node.type !== NodeType.START;
-        });
-
-        // Perform deletion with filtered node IDs
-        this.flowService.deleteSelections({
-            fNodeIds: nodeIdsToDelete,
-            fConnectionIds: selections.fConnectionIds,
+        this.deleteSelections({
+            fNodeIds: [],
+            fGroupIds: [],
+            fConnectionIds: [connectionId],
         });
     }
 
-    public onCreateNode(event: FCreateNodeEvent): void {
-        if (!event.data || typeof event.data !== 'object') {
-            return;
-        }
-
-        const normalizedNode = this.ensureNodeSize(event.data as NodeModel);
-
-        const updatedNode: NodeModel = {
-            ...normalizedNode,
-            position: this.findNearestFreePosition(
-                {
-                    x: this.snapToGrid(event.rect.x),
-                    y: this.snapToGrid(event.rect.y),
-                },
-                this.getCollisionBounds(normalizedNode),
-                this.flowService.nodes()
-            ),
-            category: 'web',
-        };
-        this.flowService.updateNode(updatedNode);
+    public onNodeDroppedFromPanel(event: FCreateNodeEvent<NodeModel>): void {
+        const node = event.data;
+        const position = findNearestFreePosition(
+            snapPointToGrid(event.dropPosition ?? event.externalItemRect),
+            getCollisionBounds(node),
+            this.flowService.nodes()
+        );
+        this.flowService.updateNode({ ...node, position });
     }
 
     public onContextMenu(event: MouseEvent): void {
         event.preventDefault();
-
-        this.contextMenuPostion = event;
-
+        this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
         this.showContextMenu.set(true);
     }
     public onCloseContextMenu(): void {
         this.showContextMenu.set(false);
     }
-    public onAddNodeFromContextMenu(event: { type: NodeType; data?: unknown }): void {
+    public onAddNodeFromContextMenu(event: CreateNodeRequest): void {
         this.undoRedoService.stateChanged();
         this.showContextMenu.set(false);
 
@@ -524,127 +481,10 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             return;
         }
 
-        // Generate common values
-        const newNodeId = uuidv4();
-        const nodeColor = NODE_COLORS[event.type] || '#ddd';
-        const nodeIcon = NODE_ICONS[event.type] || 'ti ti-help';
-        const position = this.fFlowComponent.getPositionInFlow(
-            PointExtensions.initialize(this.contextMenuPostion.x, this.contextMenuPostion.y)
-        );
+        const positionInFlow = this.toFlowPosition(this.contextMenuPosition());
 
-        let nodeSize: { width: number; height: number };
-        if (event.type === NodeType.NOTE) {
-            nodeSize = {
-                width: 200,
-                height: 150,
-            };
-        } else if (event.type === NodeType.TABLE) {
-            nodeSize = {
-                width: 330,
-                height: this.getDecisionTableVisualHeight({
-                    id: newNodeId,
-                    backendId: null,
-                    category: 'web',
-                    position: { x: 0, y: 0 },
-                    ports: [],
-                    type: NodeType.TABLE as NodeModel['type'],
-                    node_name: '',
-                    data: event.data as never,
-                    color: nodeColor,
-                    icon: nodeIcon,
-                    input_map: {},
-                    output_variable_path: null,
-                    size: { width: 330, height: 152 },
-                }),
-            };
-        } else if (event.type === NodeType.EDGE) {
-            nodeSize = { width: 300, height: 180 };
-        } else {
-            nodeSize = {
-                width: 330,
-                height: 60,
-            };
-        }
-
-        // Generate ports for non-note nodes
-        const ports: ViewPort[] =
-            event.type === NodeType.NOTE ? [] : generatePortsForNode(newNodeId, event.type, event.data);
-
-        // Assign sequential badge number first so the name and badge always match
-        const nodeNumber = this.flowService.getNextNodeNumber();
-
-        // Build the display name using the same nodeNumber as the badge
-        const newNodeName = generateNodeDisplayName(event.type, event.data, nodeNumber);
-
-        // Create and add a regular node
-        let nodeData = event.data as NodeModel['data'];
-
-        // Add default output_map for end nodes
-        if (event.type === NodeType.END) {
-            const baseData = event.data && typeof event.data === 'object' ? event.data : {};
-            nodeData = {
-                ...baseData,
-                output_map: {
-                    context: 'variables',
-                },
-            } as NodeModel['data'];
-        }
-
-        const nodePreview = {
-            id: newNodeId,
-            backendId: null,
-            category: 'web',
-            position: {
-                x: this.snapToGrid(position.x),
-                y: this.snapToGrid(position.y),
-            },
-            ports: [],
-            type: event.type as NodeModel['type'],
-            node_name: newNodeName,
-            data: nodeData,
-            color: nodeColor,
-            icon: nodeIcon,
-            input_map: {},
-            output_variable_path: null,
-            size: nodeSize,
-        } as NodeModel;
-
-        const nodeBounds = this.getCollisionBounds(nodePreview);
-
-        const newNode = {
-            id: newNodeId,
-            backendId: null,
-            category: 'web',
-            position: this.findNearestFreePosition(
-                {
-                    x: this.snapToGrid(position.x),
-                    y: this.snapToGrid(position.y),
-                },
-                nodeBounds,
-                this.flowService.nodes()
-            ),
-            ports,
-            type: event.type as NodeModel['type'],
-            node_name: newNodeName,
-            nodeNumber,
-            data: nodeData,
-            color: nodeColor,
-            icon: nodeIcon,
-            input_map: {},
-            output_variable_path: null,
-            size: nodeSize,
-        } as NodeModel;
+        const newNode = this.nodeFactory.createNode(event.type, { ...event.overrides, position: positionInFlow });
         this.flowService.addNode(newNode);
-
-        const freePos = this.findNearestFreePosition(
-            newNode.position,
-            this.getCollisionBounds(newNode),
-            this.flowService.nodes().filter((n) => n.id !== newNode.id)
-        );
-
-        if (freePos.x !== newNode.position.x || freePos.y !== newNode.position.y) {
-            this.flowService.updateNode({ ...newNode, position: freePos });
-        }
     }
 
     // side panel logic
@@ -711,22 +551,16 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     public onNodePanelSaved(updatedNode: NodeModel): void {
-        const normalizedNode = this.normalizeTableNode(updatedNode);
+        const normalizedNode = normalizeTableNodeSize(updatedNode);
         this.flowService.updateNode(normalizedNode);
-
-        if (normalizedNode.type === NodeType.TABLE) {
-            this.resolveOverlapsForNode(normalizedNode.id);
-        }
+        this.resolveTableOverlaps(normalizedNode);
         this.sidePanelService.clearSelection();
     }
 
     public onNodePanelAutosaved(updatedNode: NodeModel): void {
-        const normalizedNode = this.normalizeTableNode(updatedNode);
+        const normalizedNode = normalizeTableNodeSize(updatedNode);
         this.flowService.updateNode(normalizedNode);
-
-        if (normalizedNode.type === NodeType.TABLE) {
-            this.resolveOverlapsForNode(normalizedNode.id);
-        }
+        this.resolveTableOverlaps(normalizedNode);
     }
 
     public flushOpenSidePanelState(): void {
@@ -747,76 +581,6 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             },
         };
 
-        this.flowService.updateNode(updatedNode);
-    }
-
-    //NODE POSITION CHANGED LOGIC
-    private draggingElements = new Set<string>();
-    private isDragging = false;
-
-    public onDragStarted(event: FDragStartedEvent): void {
-        // Set the drag flag
-        this.isDragging = true;
-
-        // Clear previous tracking
-        this.draggingElements.clear();
-
-        // Add all dragged elements to our tracking set
-        if (event.fData && event.fData.fNodeIds) {
-            event.fData.fNodeIds.forEach((id: string) => {
-                this.draggingElements.add(id);
-            });
-        }
-
-        // Save state for undo
-        this.undoRedoService.stateChanged();
-    }
-
-    /**
-     * Handles the end of a drag operation
-     */
-    public onDragEnded(): void {
-        for (const id of this.draggedNodeIds) {
-            const currentNodes = this.flowService.nodes();
-            const current = currentNodes.find((n) => n.id === id);
-            if (!current) continue;
-            const otherNodes = currentNodes.filter((n) => n.id !== id);
-            const freePos = this.findNearestFreePosition(
-                current.position,
-                this.getCollisionBounds(current),
-                otherNodes
-            );
-            if (freePos.x !== current.position.x || freePos.y !== current.position.y) {
-                this.flowService.updateNode({ ...current, position: freePos });
-            }
-        }
-        this.draggedNodeIds.clear();
-
-        // Reset all tracking
-        setTimeout(() => {
-            this.isDragging = false;
-            this.draggingElements.clear();
-        }, 100);
-    }
-
-    public onNodePositionChanged(newPos: IPoint, node: NodeModel): void {
-        this.draggedNodeIds.add(node.id);
-
-        // If we're not in a tracked drag operation, save state
-        if (!this.isDragging || !this.draggingElements.has(node.id)) {
-            this.undoRedoService.stateChanged();
-        }
-
-        // Create an updated node with the new position
-        const updatedNode = {
-            ...node,
-            position: {
-                x: this.snapToGrid(newPos.x),
-                y: this.snapToGrid(newPos.y),
-            },
-        };
-
-        // Update the node
         this.flowService.updateNode(updatedNode);
     }
 
@@ -841,7 +605,9 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     public toggleShowVariables(): void {
         this.showVariables.set(!this.showVariables());
     }
-
+    public updateMouseTrackerPosition(event: IPoint): void {
+        this.mouseCursorPosition = event;
+    }
     public onDomainClick(): void {
         const startNodeInitialState = this.flowService.startNodeInitialState();
 
@@ -883,129 +649,12 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.destroy$.complete();
     }
 
-    openShortcuts = output<DOMRect>();
-
     public onOpenShortcuts(anchorEl: HTMLElement): void {
         this.openShortcuts.emit(anchorEl.getBoundingClientRect());
     }
 
     private isDialogOpen(): boolean {
         return this.dialog.openDialogs.length > 0;
-    }
-
-    private snapToGrid(value: number): number {
-        return Math.round(value / this.GRID_CELL_SIZE) * this.GRID_CELL_SIZE;
-    }
-
-    private rectOverlaps(
-        aPos: { x: number; y: number },
-        aBounds: { width: number; height: number; offsetX: number; offsetY: number },
-        bPos: { x: number; y: number },
-        bBounds: { width: number; height: number; offsetX: number; offsetY: number }
-    ): boolean {
-        const aLeft = aPos.x + aBounds.offsetX;
-        const aTop = aPos.y + aBounds.offsetY;
-        const aRight = aLeft + aBounds.width;
-        const aBottom = aTop + aBounds.height;
-        const bLeft = bPos.x + bBounds.offsetX;
-        const bTop = bPos.y + bBounds.offsetY;
-        const bRight = bLeft + bBounds.width;
-        const bBottom = bTop + bBounds.height;
-
-        return aLeft < bRight && aRight > bLeft && aTop < bBottom && aBottom > bTop;
-    }
-
-    private getCollisionBounds(node: NodeModel): {
-        width: number;
-        height: number;
-        offsetX: number;
-        offsetY: number;
-    } {
-        switch (node.type) {
-            case NodeType.EDGE:
-                // SVG diamond bounding box is exactly 300x180.
-                // 4px padding on all sides, same convention as regular nodes.
-                return {
-                    width: 308,
-                    height: 196,
-                    offsetX: 5,
-                    offsetY: -12,
-                };
-
-            case NodeType.TABLE: {
-                const visualHeight = this.getDecisionTableVisualHeight(node);
-
-                return {
-                    width: node.size.width + 8,
-                    height: visualHeight + 68,
-                    offsetX: -4,
-                    offsetY: -4,
-                };
-            }
-
-            default:
-                return {
-                    width: node.size.width + 10,
-                    height: node.size.height + 10,
-                    offsetX: -5,
-                    offsetY: -5,
-                };
-        }
-    }
-
-    private findFreePosition(
-        proposed: { x: number; y: number },
-        bounds: { width: number; height: number; offsetX: number; offsetY: number },
-        existingNodes: NodeModel[]
-    ): { x: number; y: number } {
-        const overlaps = (pos: { x: number; y: number }) =>
-            existingNodes.some((n) => this.rectOverlaps(pos, bounds, n.position, this.getCollisionBounds(n)));
-
-        if (!overlaps(proposed)) return proposed;
-
-        const MAX_STEPS = 10;
-        for (let row = 0; row <= MAX_STEPS; row++) {
-            for (let col = row === 0 ? 1 : 0; col <= MAX_STEPS; col++) {
-                const candidate = {
-                    x: proposed.x + col * this.GRID_CELL_SIZE,
-                    y: proposed.y + row * this.GRID_CELL_SIZE,
-                };
-                if (!overlaps(candidate)) return candidate;
-            }
-        }
-
-        return proposed; // fallback: never block creation
-    }
-
-    private findNearestFreePosition(
-        proposed: { x: number; y: number },
-        bounds: { width: number; height: number; offsetX: number; offsetY: number },
-        otherNodes: NodeModel[]
-    ): { x: number; y: number } {
-        const overlaps = (pos: { x: number; y: number }) =>
-            otherNodes.some((n) => this.rectOverlaps(pos, bounds, n.position, this.getCollisionBounds(n)));
-
-        if (!overlaps(proposed)) return proposed;
-
-        const MAX_R = 40;
-        const candidates: Array<[number, number]> = [];
-        for (let dx = -MAX_R; dx <= MAX_R; dx++) {
-            for (let dy = -MAX_R; dy <= MAX_R; dy++) {
-                if (dx === 0 && dy === 0) continue;
-                candidates.push([dx, dy]);
-            }
-        }
-        candidates.sort((a, b) => a[0] * a[0] + a[1] * a[1] - (b[0] * b[0] + b[1] * b[1]));
-
-        for (const [dx, dy] of candidates) {
-            const candidate = {
-                x: proposed.x + dx * this.GRID_CELL_SIZE,
-                y: proposed.y + dy * this.GRID_CELL_SIZE,
-            };
-            if (!overlaps(candidate)) return candidate;
-        }
-
-        return proposed; // fallback: never block movement
     }
 
     private updateStartNodeInitialState(newState: Record<string, unknown>): void {
@@ -1028,104 +677,108 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         }
     }
 
-    private getDecisionTableVisualHeight(node: NodeModel): number {
-        if (node.type !== NodeType.TABLE) return 0;
-        const tableData = node.data.table;
-        const conditionGroups = tableData?.condition_groups ?? [];
-        const validGroupsCount = conditionGroups.filter((g) => g.valid !== false).length;
-
-        const HEADER_HEIGHT = 62;
-        const ROW_HEIGHT = 46;
-        const BASE_ROWS = 2;
-
-        const totalRows = Math.max(validGroupsCount + BASE_ROWS, BASE_ROWS);
-        return Math.max(HEADER_HEIGHT + ROW_HEIGHT * totalRows, 170);
+    private openNodePanel(nodeId: string): void {
+        this.sidePanelService.setSelectedNodeId(nodeId);
+        afterNextRender(() => this.nodePanelShell?.expandPanel(), { injector: this.injector });
+    }
+    private toFlowPosition(point: IPoint): IPoint {
+        return this.fFlowComponent.getPositionInFlow(PointExtensions.initialize(point.x, point.y));
     }
 
-    private getDefaultNodeSize(type: NodeType, data?: unknown): { width: number; height: number } {
-        if (type === NodeType.NOTE) {
-            return { width: 200, height: 150 };
+    private deleteSelections(selections: ICurrentSelection): void {
+        if (!selections || (selections.fNodeIds.length === 0 && selections.fConnectionIds.length === 0)) {
+            console.warn('No items selected to delete.');
+            return;
         }
 
-        if (type === NodeType.TABLE) {
-            return {
-                width: 330,
-                height: this.getDecisionTableVisualHeight({
-                    id: '',
-                    backendId: null,
-                    category: 'web',
-                    position: { x: 0, y: 0 },
-                    ports: [],
-                    type: NodeType.TABLE as NodeModel['type'],
-                    node_name: '',
-                    data,
-                    color: '',
-                    icon: '',
-                    input_map: {},
-                    output_variable_path: null,
-                    size: { width: 330, height: 152 },
-                } as NodeModel),
-            };
+        this.undoRedoService.stateChanged();
+
+        const nodeIdsToDelete = selections.fNodeIds.filter((nodeId) => {
+            const node = this.flowService.nodes().find((n) => n.id === nodeId);
+            return node && node.type !== NodeType.START;
+        });
+
+        this.flowService.deleteSelections({
+            fNodeIds: nodeIdsToDelete,
+            fConnectionIds: selections.fConnectionIds,
+        });
+    }
+    // TODO: take a look on how it worked.
+    public onDragStarted(event: FDragStartedEvent): void {
+        this.isDragging = true;
+        this.draggingElements.clear();
+
+        const data = event.data as FDragNodeStartEventData | undefined;
+        if (data?.fNodeIds) {
+            data.fNodeIds.forEach((id: string) => this.draggingElements.add(id));
         }
 
-        if (type === NodeType.EDGE) {
-            return { width: 300, height: 180 };
-        }
-
-        return { width: 330, height: 60 };
+        this.undoRedoService.stateChanged();
     }
 
-    private ensureNodeSize(node: NodeModel): NodeModel {
-        if (node.size?.width && node.size?.height) {
-            return node;
-        }
+    public onDragEnded(): void {
+        const draggedNodeIds = new Set(this.draggedNodeIds);
 
-        return {
-            ...node,
-            size: this.getDefaultNodeSize(node.type as NodeType, node.data),
+        this.draggedNodeIds.clear();
+        this.isDragging = false;
+        this.draggingElements.clear();
+
+        this.runAfterFlowSettles(() => {
+            this.applyDraggedNodePositions(draggedNodeIds);
+        });
+    }
+
+    public onNodePositionChanged(newPos: IPoint, node: NodeModel): void {
+        this.draggedNodeIds.add(node.id);
+
+        if (!this.isDragging || !this.draggingElements.has(node.id)) {
+            this.undoRedoService.stateChanged();
+            this.flowService.updateNode({ ...node, position: snapPointToGrid(newPos) });
+            this.runAfterFlowSettles(() => this.redrawFlow());
+        }
+    }
+
+    private applyDraggedNodePositions(draggedNodeIds: Set<string>): void {
+        const currentNodes = this.flowService.nodes();
+        const runtimeState = this.fFlowComponent.getState() as {
+            nodes?: Array<{ id: string; position: IPoint }>;
         };
-    }
+        const runtimePositions = new Map(
+            (runtimeState.nodes ?? []).map((node) => [node.id, snapPointToGrid(node.position)] as const)
+        );
+        const updatedNodes = resolveDraggedNodePositions(currentNodes, draggedNodeIds, runtimePositions);
 
-    private resolveOverlapsForNode(anchorId: string): void {
-        const allNodes = this.flowService.nodes();
-        const anchor = allNodes.find((n) => n.id === anchorId);
-        if (!anchor) return;
-        const anchorBounds = this.getCollisionBounds(anchor);
-
-        const otherNodes = allNodes.filter((n) => n.id !== anchorId).sort((a, b) => a.position.y - b.position.y);
-
-        for (const node of otherNodes) {
-            const overlaps = this.rectOverlaps(
-                node.position,
-                this.getCollisionBounds(node),
-                anchor.position,
-                anchorBounds
-            );
-
-            if (!overlaps) continue;
-
-            const freePos = this.findNearestFreePosition(
-                node.position,
-                this.getCollisionBounds(node),
-                this.flowService.nodes().filter((n) => n.id !== node.id)
-            );
-
-            if (freePos.x !== node.position.x || freePos.y !== node.position.y) {
-                this.flowService.updateNode({ ...node, position: freePos });
-            }
+        if (updatedNodes.length > 0) {
+            this.flowService.updateNodesInBatch(updatedNodes);
         }
+
+        this.redrawFlow();
     }
 
-    private normalizeTableNode(node: NodeModel): NodeModel {
-        if (node.type !== NodeType.TABLE) return node;
-        const visualHeight = this.getDecisionTableVisualHeight(node);
-        return {
-            ...node,
-            size: {
-                ...node.size,
-                width: node.size?.width ?? 330,
-                height: visualHeight,
+    private runAfterFlowSettles(callback: () => void): void {
+        afterNextRender(
+            () => {
+                setTimeout(() => {
+                    requestAnimationFrame(() => {
+                        callback();
+                    });
+                }, 100);
             },
-        };
+            { injector: this.injector }
+        );
+    }
+
+    private redrawFlow(): void {
+        this.fCanvasComponent?.redraw();
+        this.fFlowComponent?.redraw();
+    }
+
+    private resolveTableOverlaps(node: NodeModel): void {
+        if (node.type !== NodeType.TABLE) return;
+
+        const movedNodes = resolveOverlapsForNode(node.id, this.flowService.nodes());
+        if (movedNodes.length > 0) {
+            this.flowService.updateNodesInBatch(movedNodes);
+        }
     }
 }

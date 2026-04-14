@@ -13,7 +13,6 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    AppIconComponent,
     ButtonComponent,
     CustomInputComponent,
     JsonEditorComponent,
@@ -21,16 +20,17 @@ import {
     SelectItem,
 } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
+import { NgrokConfigStorageService } from '@shared/services';
 import { startWith } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
-import { NgrokConfigStorageService } from '../../../../features/settings-dialog/services/ngrok-config/ngrok-config-storage.service';
 import {
     DisplayedTelegramField,
     TelegramTriggerNodeField,
 } from '../../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
 import { WebhookStatus } from '../../../../pages/flows-page/components/flow-visual-programming/models/webhook.model';
 import { ToastService } from '../../../../services/notifications';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { TELEGRAM_TRIGGER_FIELDS } from '../../../core/constants/telegram-trigger-fields';
 import { TelegramTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
@@ -45,7 +45,7 @@ import { WEBHOOK_NAME_PATTERN } from '../webhook-trigger-node-panel/webhook-trig
         CustomInputComponent,
         ReactiveFormsModule,
         ButtonComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
         MATERIAL_FORMS,
         JsonEditorComponent,
         SelectComponent,
@@ -56,7 +56,7 @@ export class TelegramTriggerNodePanelComponent
     extends BaseSidePanel<TelegramTriggerNodeModel>
     implements OnInit, OnChanges
 {
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
 
     private dialog = inject(Dialog);
     private destroyRef = inject(DestroyRef);

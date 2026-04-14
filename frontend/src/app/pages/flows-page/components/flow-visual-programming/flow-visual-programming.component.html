@@ -18,7 +18,6 @@
     <div class="body">
         <app-flow-graph
             [flowState]="loadedFlowState"
-            [nodesMode]="'flow-graph'"
             [currentFlowId]="graph.id"
             [initialNodeId]="initialNodeId"
             [initialNodeId]="initialNodeId"
@@ -29,7 +28,7 @@
             [open]="isShortcutsOpen()"
             [pos]="shortcutsPos()"
             title="Command & Shortcuts"
-            iconSrc="assets/icons/ui/shortcut.svg"
+            icon="shortcut"
             [sections]="shortcutSections"
             (closed)="closeShortcutsModal()"
         ></app-shortcuts-modal>
@@ -42,7 +41,7 @@
             >
                 <button class="collapse-toggle" (mousedown)="$event.stopPropagation()" (click)="togglePanelCollapsed()">
                     <span class="collapse-toggle__icon">
-                        {{ isPanelCollapsed ? '◀' : '▶' }}
+                        <app-svg-icon [icon]="isPanelCollapsed ? 'chevron-left' : 'chevron-right'" size="1rem"></app-svg-icon>
                     </span>
                 </button>
             </div>

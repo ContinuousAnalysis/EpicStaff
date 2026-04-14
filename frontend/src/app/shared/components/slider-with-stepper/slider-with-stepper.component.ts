@@ -13,7 +13,6 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
 
 import { TooltipComponent } from "../tooltip/tooltip.component";
 
-//todo check tooltip component
 @Component({
     selector: 'app-slider-with-stepper',
     imports: [CommonModule, FormsModule, TooltipComponent],

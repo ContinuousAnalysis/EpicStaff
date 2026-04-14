@@ -31,12 +31,12 @@ import { DocFieldChange, TableDocument } from './configuration-table.interface';
     styleUrls: ['./configuration-table.component.scss'],
     imports: [
         SelectComponent,
+        AppSvgIconComponent,
         ButtonComponent,
         InputNumberComponent,
         CheckboxComponent,
         MultiSelectComponent,
         KeyValuePipe,
-        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

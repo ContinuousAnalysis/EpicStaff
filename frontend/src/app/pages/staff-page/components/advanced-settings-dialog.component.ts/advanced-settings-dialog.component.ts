@@ -49,6 +49,7 @@ export interface AdvancedSettingsData {
     memory: boolean;
     cache: boolean;
     respect_context_window: boolean;
+    _saveAfterClose?: boolean;
 }
 
 @Component({
@@ -76,6 +77,7 @@ export class AdvancedSettingsDialogComponent implements OnInit {
     public combinedLLMs: FullLLMConfig[] = [];
     public form!: FormGroup;
     public allKnowledgeSources: GetCollectionRequest[] = [];
+    private _closeWithPageSave = false;
     public agentRags: GetCollectionRagsResponse[] = [];
     public tabs: Tab[] = [
         { id: TabId.GENERAL, label: 'General' },
@@ -91,7 +93,8 @@ export class AdvancedSettingsDialogComponent implements OnInit {
         private fullLLMConfigService: FullLLMConfigService,
         private collectionsService: CollectionsApiService,
         private cdr: ChangeDetectorRef
-    ) {}
+    ) {
+    }
 
     // In ngOnInit
     public ngOnInit(): void {
@@ -175,7 +178,9 @@ export class AdvancedSettingsDialogComponent implements OnInit {
         };
 
         // Update agentData with current form control values
-        this.dialogRef.close(result);
+        const closeWithSave = this._closeWithPageSave;
+        this._closeWithPageSave = false;
+        this.dialogRef.close({ ...result, _saveAfterClose: closeWithSave } as AdvancedSettingsData);
     }
 
     protected readonly TabId = TabId;

@@ -34,7 +34,7 @@ export class CollectionComponent {
         },
         failed: {
             text: 'Failed',
-            icon: 'close',
+            icon: 'x',
         },
     } as const;
 

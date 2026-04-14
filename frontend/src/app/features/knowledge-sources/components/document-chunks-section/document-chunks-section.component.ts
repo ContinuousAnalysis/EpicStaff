@@ -12,7 +12,7 @@ import { ChunkPreviewComponent } from './chunk-preview/chunk-preview.component';
     templateUrl: './document-chunks-section.component.html',
     styleUrls: ['./document-chunks-section.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ButtonComponent, ChunkPreviewComponent, SpinnerComponent, NgTemplateOutlet, AppSvgIconComponent],
+    imports: [AppSvgIconComponent, ButtonComponent, ChunkPreviewComponent, SpinnerComponent, NgTemplateOutlet],
 })
 export class DocumentChunksSectionComponent {
     private chunksStorageService = inject(NaiveRagDocumentsStorageService);

@@ -7,7 +7,7 @@
             @if (hasInvalidFiles()) {
                 <div class="list__file-error list__file-error--medium">File validation errors</div>
             }
-            <app-button type="outline-primary" [leftIcon]="'ui/plus'" (click)="fileInput.click()">
+            <app-button type="outline-primary" [leftIcon]="'plus'" (click)="fileInput.click()">
                 Add More Files
             </app-button>
 
@@ -37,7 +37,7 @@
                             <span class="list__file-size">{{ item.file_size | fileSize }}</span>
                             <app-list-actions>
                                 <app-svg-icon
-                                    icon="close"
+                                    icon="x"
                                     class="files__file-action"
                                     size="1rem"
                                     (click)="onDelete(item)"

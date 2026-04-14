@@ -13,7 +13,7 @@ import { DocumentsStorageService } from '../../../../../services/documents-stora
     selector: 'app-collection-details-files',
     templateUrl: './collection-files.component.html',
     styleUrls: ['./collection-files.component.scss'],
-    imports: [FileSizePipe, ListActionsComponent, ListComponent, ListRowComponent, AppSvgIconComponent],
+    imports: [AppSvgIconComponent, FileSizePipe, ListActionsComponent, ListComponent, ListRowComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CollectionFilesComponent {

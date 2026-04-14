@@ -20,6 +20,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { isEqual } from 'lodash';
 
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { TooltipComponent } from '../tooltip/tooltip.component';
 
 export interface SelectItem<T = unknown> {
@@ -27,11 +28,12 @@ export interface SelectItem<T = unknown> {
     tip?: string;
     value: T;
     group?: string;
+    icon?: string;
 }
 
 @Component({
     selector: 'app-select',
-    imports: [NgClass, OverlayModule, TooltipComponent],
+    imports: [NgClass, OverlayModule, TooltipComponent, AppSvgIconComponent],
     templateUrl: './select.component.html',
     styleUrls: ['./select.component.scss'],
     providers: [

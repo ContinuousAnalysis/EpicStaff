@@ -2,14 +2,14 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, forwardRef, input, model, output, signal } from '@angular/core';
 import { ControlValueAccessor, FormControl, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-import { FormFieldLabelComponent } from '../form-field-label/form-field-label.component';
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 export type StepperSize = 'sm' | 'md' | 'lg';
 
 @Component({
     selector: 'app-number-stepper',
     standalone: true,
-    imports: [CommonModule, FormsModule, FormFieldLabelComponent],
+    imports: [CommonModule, FormsModule, TooltipComponent],
     templateUrl: './number-stepper.component.html',
     styleUrls: ['./number-stepper.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

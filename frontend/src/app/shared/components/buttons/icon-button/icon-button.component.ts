@@ -16,7 +16,7 @@ import { AppSvgIconComponent } from '../../app-svg-icon/app-svg-icon.component';
             [disabled]="disabled"
             [attr.aria-label]="ariaLabel"
         >
-            <app-svg-icon [icon]="icon" [size]="iconSize" [ariaLabel]="ariaLabel"></app-svg-icon>
+            <app-svg-icon [icon]="icon" [size]="iconSize" />
         </button>
     `,
     styles: [

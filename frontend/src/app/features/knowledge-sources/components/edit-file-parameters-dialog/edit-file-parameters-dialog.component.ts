@@ -15,7 +15,7 @@ import { DocumentConfigComponent } from './document-config/document-config.compo
     selector: 'app-edit-file-parameters-dialog',
     templateUrl: './edit-file-parameters-dialog.component.html',
     styleUrls: ['./edit-file-parameters-dialog.component.scss'],
-    imports: [DocumentConfigComponent, DocumentChunksSectionComponent, ButtonComponent, AppSvgIconComponent],
+    imports: [AppSvgIconComponent, DocumentConfigComponent, DocumentChunksSectionComponent, ButtonComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EditFileParametersDialogComponent {

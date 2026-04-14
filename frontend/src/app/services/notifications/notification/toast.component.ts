@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
 
 @Component({
     selector: 'app-toast',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="toast-container" [ngClass]="position">
@@ -20,13 +21,13 @@ import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
                 (click)="closeToast(toast.id)"
             >
                 <div class="toast-content">
-                    <div>
-                        <i [class]="getIconClass(toast.type)"></i>
+                    <div class="toast-icon-wrapper">
+                        <app-svg-icon [icon]="getIconId(toast.type)" size="20px"></app-svg-icon>
                     </div>
                     <span class="toast-message">{{ toast.message }}</span>
                 </div>
                 <button class="toast-close-btn" (click)="closeToast(toast.id); $event.stopPropagation()">
-                    <i class="ti ti-x"></i>
+                    <app-svg-icon icon="x" size="16px"></app-svg-icon>
                 </button>
             </div>
         </div>
@@ -110,7 +111,10 @@ import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
                     display: flex;
                     align-items: center;
 
-                    i {
+                    .toast-icon-wrapper {
+                        display: inline-flex;
+                        align-items: center;
+                        flex-shrink: 0;
                         margin-right: 16px;
                     }
                 }
@@ -121,25 +125,25 @@ import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
                 }
 
                 &.success {
-                    i {
+                    app-svg-icon {
                         color: #4caf50;
                     }
                 }
 
                 &.error {
-                    i {
+                    app-svg-icon {
                         color: #f44336;
                     }
                 }
 
                 &.warning {
-                    i {
+                    app-svg-icon {
                         color: #ff9800;
                     }
                 }
 
                 &.info {
-                    i {
+                    app-svg-icon {
                         color: #2196f3;
                     }
                 }
@@ -163,7 +167,6 @@ import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
                 background: transparent;
                 border: none;
                 color: #a0a0a0;
-                font-size: 14px;
                 cursor: pointer;
                 padding: 4px;
                 margin-left: 10px;
@@ -177,7 +180,6 @@ import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
     ],
     animations: [
         trigger('toastAnimation', [
-            // Top positions - slide from top
             state(
                 'top-center',
                 style({
@@ -199,8 +201,6 @@ import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
                     transform: 'translateY(0)',
                 })
             ),
-
-            // Bottom positions - slide from right
             state(
                 'bottom-right',
                 style({
@@ -222,8 +222,6 @@ import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
                     transform: 'translateX(0)',
                 })
             ),
-
-            // Top positions animations (from top)
             transition('void => top-center, void => top-right, void => top-left', [
                 style({
                     opacity: 0,
@@ -240,8 +238,6 @@ import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
                     })
                 ),
             ]),
-
-            // Bottom positions animations (from right)
             transition('void => bottom-right, void => bottom-center, void => bottom-left', [
                 style({
                     opacity: 0,
@@ -282,7 +278,6 @@ export class ToastComponent implements OnInit, OnDestroy {
             })
         );
 
-        // Get position from service if not explicitly provided via input
         if (!this.position) {
             this.position = this.toastService.defaultPosition;
         }
@@ -292,18 +287,18 @@ export class ToastComponent implements OnInit, OnDestroy {
         this.toastService.remove(id);
     }
 
-    public getIconClass(type: string): string {
+    public getIconId(type: string): string {
         switch (type) {
             case 'success':
-                return 'ti ti-check';
+                return 'check';
             case 'error':
-                return 'ti ti-alert-circle';
+                return 'alert-circle';
             case 'warning':
-                return 'ti ti-alert-triangle';
+                return 'warning';
             case 'info':
-                return 'ti ti-info-circle';
+                return 'info-circle';
             default:
-                return 'ti ti-bell';
+                return 'info-circle';
         }
     }
 

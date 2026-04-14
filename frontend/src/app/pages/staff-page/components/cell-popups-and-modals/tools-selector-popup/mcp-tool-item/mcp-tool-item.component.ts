@@ -1,16 +1,16 @@
 import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 
 import { GetMcpToolRequest } from '../../../../../../features/tools/models/mcp-tool.model';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-mcp-tool-item',
     standalone: true,
-    imports: [NgClass, MatIconModule],
+    imports: [NgClass, AppSvgIconComponent],
     template: `
         <div class="mcp-tool-item" [ngClass]="{ 'selected-tool': isSelected }" (click)="onToolToggle()">
-            <mat-icon>hub</mat-icon>
+            <app-svg-icon icon="hub" />
             <span class="tool-name">
                 {{ tool.name }}
             </span>

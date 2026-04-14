@@ -30,12 +30,12 @@ import { DocumentsStorageService } from '../../../../../../services/documents-st
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         ButtonComponent,
+        AppSvgIconComponent,
         FileSizePipe,
         DragDropAreaComponent,
         ListActionsComponent,
         ListComponent,
         ListRowComponent,
-        AppSvgIconComponent,
     ],
 })
 export class FilesListComponent {

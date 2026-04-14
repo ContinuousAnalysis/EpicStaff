@@ -4,13 +4,13 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Input, NgZone, OnDestroy, ViewChild } from '@angular/core';
 import { fromEvent, take } from 'rxjs';
 
-import { AppIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { TooltipContentComponent } from './tooltip-content.component';
 
 @Component({
     selector: 'app-help-tooltip',
     standalone: true,
-    imports: [CommonModule, AppIconComponent, OverlayModule],
+    imports: [CommonModule, AppSvgIconComponent, OverlayModule],
     template: `
         <div class="help-tooltip-container">
             <span
@@ -22,7 +22,7 @@ import { TooltipContentComponent } from './tooltip-content.component';
                 (focus)="showTooltip()"
                 (blur)="hideTooltip()"
             >
-                <app-icon icon="ui/help" [size]="'20px'"></app-icon>
+                <app-svg-icon icon="help" size="1.2rem" />
             </span>
         </div>
     `,
@@ -40,14 +40,16 @@ import { TooltipContentComponent } from './tooltip-content.component';
                 justify-content: center;
                 outline: none;
                 position: relative;
-                color: var(--accent-color);
+                color: rgba(255, 255, 255, 0.8);
                 transition: color 0.2s ease;
                 width: 20px;
                 height: 20px;
                 border-radius: 50%;
+                background: rgba(255, 255, 255, 0.1);
 
                 &:hover {
-                    opacity: 0.8;
+                    color: rgba(255, 255, 255, 1);
+                    background: rgba(255, 255, 255, 0.2);
                 }
             }
 

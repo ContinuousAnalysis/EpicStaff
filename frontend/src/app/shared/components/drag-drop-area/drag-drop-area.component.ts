@@ -7,7 +7,7 @@ import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
     selector: 'app-drag-drop-area',
     templateUrl: './drag-drop-area.component.html',
     styleUrls: ['./drag-drop-area.component.scss'],
-    imports: [UpperCasePipe, AppSvgIconComponent],
+    imports: [AppSvgIconComponent, UpperCasePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DragDropAreaComponent {
