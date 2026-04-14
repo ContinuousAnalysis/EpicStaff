@@ -25,12 +25,7 @@ interface StatusOption {
     standalone: true,
     imports: [CommonModule, ClickOutsideDirective, AppSvgIconComponent],
     template: `
-        <div
-            class="status-filter-dropdown-custom"
-            [class.open]="open"
-            appClickOutside
-            (appClickOutside)="closeDropdown()"
-        >
+        <div class="status-filter-dropdown-custom" [class.open]="open" (appClickOutside)="closeDropdown()">
             <button class="dropdown-toggle" (click)="toggleDropdown($event)">
                 <span class="selected-icons">
                     @if (selectedValues().length === 0) {

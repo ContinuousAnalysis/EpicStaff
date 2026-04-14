@@ -11,6 +11,18 @@
                 (valueChange)="onStatusFilterChange($event)"
             >
             </app-flow-session-status-filter-dropdown>
+            <app-flow-session-node-filter-dropdown
+                [nodeGroups]="availableNodeGroups()"
+                [value]="nodeFilter()"
+                (valueChange)="onNodeFilterChange($event)"
+            ></app-flow-session-node-filter-dropdown>
+
+            <label class="error-cause-filter">
+                <span>Show first failed</span>
+                <div class="toggle-switch" [class.active]="isErrorCauseFilter()" (click)="onIsErrorCauseChange()">
+                    <div class="toggle-thumb"></div>
+                </div>
+            </label>
         </div>
 
         <div class="table-container">

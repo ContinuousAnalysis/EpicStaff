@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { FSelectionChangeEvent } from '@foblex/flow';
+import { ICurrentSelection } from '@foblex/flow';
 import { v4 as uuidv4 } from 'uuid';
 
 import { NodeType } from '../core/enums/node-type';
@@ -32,7 +32,7 @@ export class ClipboardService {
         return this.clipboard;
     }
 
-    public copy(selection: FSelectionChangeEvent): void {
+    public copy(selection: ICurrentSelection): void {
         if (!selection || selection.fNodeIds.length === 0) {
             return;
         }

@@ -393,7 +393,7 @@ import {
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
     public readonly useStorage = signal<boolean>(false);
 

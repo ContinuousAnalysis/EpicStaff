@@ -23,7 +23,8 @@ export class RunSessionSSEService {
     private connectionStatusSignal = signal<
         'connected' | 'connecting' | 'disconnected' | 'reconnecting' | 'manually_disconnected'
     >('disconnected');
-
+    private nodeNameFilterSignal = signal<string | null>(null);
+    public readonly nodeNameFilter = this.nodeNameFilterSignal.asReadonly();
     public readonly isStreaming = this.streamOpen.asReadonly();
     public readonly messages = this.messagesSignal.asReadonly();
     public readonly status = this.statusSignal.asReadonly();
@@ -43,8 +44,14 @@ export class RunSessionSSEService {
 
     private get apiUrl(): string {
         const baseUrl = this.configService.apiUrl;
+
         const url = `${baseUrl}run-session/subscribe/${this.currentSessionId}/`;
+
         return url;
+    }
+
+    public setNodeNameFilter(nodeName: string | null): void {
+        this.nodeNameFilterSignal.set(nodeName);
     }
 
     public startStream(sessionId: string): void {
@@ -91,6 +98,11 @@ export class RunSessionSSEService {
 
         this.eventSource.addEventListener('messages', (event: MessageEvent) => {
             const raw = JSON.parse(event.data);
+
+            const activeFilter = this.nodeNameFilterSignal();
+            if (activeFilter && raw.name !== activeFilter) {
+                return;
+            }
 
             const msg: GraphMessage = {
                 id: raw.id,

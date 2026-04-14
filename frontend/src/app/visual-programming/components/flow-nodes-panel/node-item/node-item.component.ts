@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { FExternalItemDirective, FExternalItemPlaceholderDirective, FExternalItemPreviewDirective } from '@foblex/flow';
+import { FExternalItem, FExternalItemPlaceholder, FExternalItemPreview } from '@foblex/flow';
 
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
@@ -21,9 +21,9 @@ import { NodePreviewComponent } from './node-preview/node-preview.component';
     standalone: true,
     imports: [
         CommonModule,
-        FExternalItemDirective,
-        FExternalItemPlaceholderDirective,
-        FExternalItemPreviewDirective,
+        FExternalItem,
+        FExternalItemPlaceholder,
+        FExternalItemPreview,
         NodePreviewComponent,
         AppSvgIconComponent,
     ],

@@ -45,6 +45,7 @@ import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-
 import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 import { StartNodeService } from './services/start-node.service';
 
+//.
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,

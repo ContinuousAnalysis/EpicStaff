@@ -2,13 +2,12 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { expandCollapseAnimation } from '@shared/animations';
+import { CustomInputComponent, JsonEditorComponent } from '@shared/components';
+import { FullLLMConfig, FullLLMConfigService } from '@shared/services';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
-import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
-import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
-import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
-import { FullLLMConfig, FullLLMConfigService } from '../../../../shared/services/llms/full-llm-config.service';
 import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { CodeAgentNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
@@ -30,10 +29,12 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
         ReactiveFormsModule,
         CustomInputComponent,
         InputMapComponent,
+        NodeStorageSectionComponent,
         CodeEditorComponent,
         CommonModule,
         JsonEditorComponent,
-        NodeStorageSectionComponent,
+        CustomInputComponent,
+        JsonEditorComponent,
     ],
     animations: [expandCollapseAnimation],
     template: `
@@ -690,7 +691,7 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeModel> {
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
     public readonly activeEditorTab = signal<'hooks' | 'schema'>('hooks');
     public readonly useStorage = signal<boolean>(false);
