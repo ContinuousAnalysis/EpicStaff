@@ -10,7 +10,6 @@
     "eleven_flash_v2"
   ],
   "gemini": [
-    "gemini-3.1-flash-live-preview",
-    "gemini-2.5-flash-live-preview"
+    "gemini-3.1-flash-live-preview"
   ]
 }
