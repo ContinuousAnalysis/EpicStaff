@@ -354,10 +354,21 @@ class S3StorageBackend(AbstractStorageBackend):
         buffer.seek(0)
         yield buffer.read()
 
-    def upload_archive(self, prefix: str, archive_file) -> list[str]:
+    def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
+        stem = archive_name
+        for ext in (".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".tar"):
+            if stem.lower().endswith(ext):
+                stem = stem[: -len(ext)]
+                break
+
+        folder_key = prefix.rstrip("/") + "/" + stem
+        full_folder_key = self._full_path(folder_key)
+        unique_full_key = self._unique_key(full_folder_key, is_folder=True)
+        unique_folder_path = self._strip_prefix(unique_full_key)
+
         extracted_paths = []
         for relative_path, file_bytes in self._iter_archive_entries(archive_file):
-            destination_path = prefix.rstrip("/") + "/" + relative_path
+            destination_path = unique_folder_path.rstrip("/") + "/" + relative_path
             self.upload(destination_path, io.BytesIO(file_bytes))
             extracted_paths.append(destination_path)
         return extracted_paths

@@ -194,13 +194,25 @@ class LocalStorageBackend(AbstractStorageBackend):
         buffer.seek(0)
         yield buffer.read()
 
-    def upload_archive(self, prefix: str, archive_file) -> list[str]:
+    def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
+        stem = archive_name
+        for ext in (".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".tar"):
+            if stem.lower().endswith(ext):
+                stem = stem[: -len(ext)]
+                break
+
         target_directory = self._resolve(prefix)
         target_directory.mkdir(parents=True, exist_ok=True)
+        archive_folder = self._unique_path(target_directory / stem)
+        archive_folder.mkdir(parents=True, exist_ok=True)
+
         extracted_paths = []
         for relative_path, file_bytes in self._iter_archive_entries(archive_file):
-            destination = target_directory / relative_path
+            destination = archive_folder / relative_path
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(file_bytes)
-            extracted_paths.append(prefix.rstrip("/") + "/" + relative_path)
+            rel = str(
+                archive_folder.relative_to(self.base_path) / relative_path
+            ).replace("\\", "/")
+            extracted_paths.append(rel)
         return extracted_paths

@@ -125,5 +125,5 @@ class AbstractStorageBackend(ABC):
         """Yield a streaming zip archive containing the given paths."""
 
     @abstractmethod
-    def upload_archive(self, prefix: str, archive_file) -> list[str]:
-        """Extract archive (ZIP or TAR) into prefix. Returns list of extracted relative paths."""
+    def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
+        """Extract archive (ZIP or TAR) into a subfolder of prefix named after the archive. Returns list of extracted relative paths."""

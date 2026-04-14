@@ -210,7 +210,7 @@ class StorageManager:
     def _upload_archive(self, org_id: int, prefix: str, archive_file) -> list[str]:
         """Extract archive into prefix. Returns relative paths (no org prefix)."""
         full_paths = self._backend.upload_archive(
-            self._build_storage_key(org_id, prefix), archive_file
+            self._build_storage_key(org_id, prefix), archive_file, archive_file.name
         )
         return [self._strip_org_prefix(org_id, p) for p in full_paths]
 
