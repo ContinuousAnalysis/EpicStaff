@@ -2,21 +2,22 @@ import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { GraphMessage } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-error-message',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, AppSvgIconComponent],
     animations: [expandCollapseAnimation],
     template: `
         <div class="error-container">
             <div class="error-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-alert-circle"></i>
+                    <app-svg-icon icon="alert-circle" size="1rem" />
                 </div>
                 <h3>Error</h3>
             </div>
@@ -27,10 +28,7 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                     <!-- Error Details Section -->
                     <div class="error-section">
                         <div class="section-heading" (click)="toggleErrorSection($event)">
-                            <i
-                                class="ti"
-                                [ngClass]="isErrorExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isErrorExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                             Error Details
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isErrorExpanded ? 'expanded' : 'collapsed'">
@@ -50,10 +48,7 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                     <!-- Optional Data Subsection -->
                     <div class="error-data-container" *ngIf="hasErrorData()">
                         <div class="section-heading" (click)="toggleDataSection($event)">
-                            <i
-                                class="ti"
-                                [ngClass]="isDataExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isDataExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                             Data
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isDataExpanded ? 'expanded' : 'collapsed'">
@@ -89,10 +84,8 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                 display: flex;
                 align-items: center;
 
-                i {
+                app-svg-icon {
                     color: #ff6b6b;
-                    font-size: 1.1rem;
-                    transition: transform 0.3s ease;
                 }
             }
 
@@ -107,9 +100,8 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                 margin-right: 20px;
                 flex-shrink: 0;
 
-                i {
+                app-svg-icon {
                     color: var(--gray-900);
-                    font-size: 1.25rem;
                 }
             }
 
@@ -148,12 +140,10 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                 display: flex;
                 align-items: center;
 
-                i {
+                app-svg-icon {
                     margin-right: 8px;
                     color: #ff6b6b;
-                    font-size: 1.1rem;
                     margin-left: -3px;
-                    transition: transform 0.3s ease;
                 }
             }
 

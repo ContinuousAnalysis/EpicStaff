@@ -20,14 +20,6 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
         FlowSessionStatusFilterDropdownComponent,
     ],
     template: `
-        <div class="table-header">
-            <div class="search-section"></div>
-            <div class="bulk-actions-section">
-                <div *ngIf="selectedIds().size > 0 && !isLoading && sessions.length > 0" class="bulk-actions">
-                    <button class="delete-btn" (click)="bulkDelete()">Delete Selected</button>
-                </div>
-            </div>
-        </div>
         <div class="sessions-table-wrapper">
             <table>
                 <thead>
@@ -154,6 +146,7 @@ export class FlowSessionsTableComponent {
     @Output() viewSession = new EventEmitter<number>();
     @Output() stopSession = new EventEmitter<number>();
     @Output() statusFilterChange = new EventEmitter<string[]>();
+    @Output() selectedIdsChange = new EventEmitter<Set<number>>();
 
     public selectedIds = signal<Set<number>>(new Set());
     public expandedSessionId = signal<number | null>(null);
@@ -177,6 +170,7 @@ export class FlowSessionsTableComponent {
             checked ? s.add(id) : s.delete(id);
             return s;
         });
+        this.selectedIdsChange.emit(this.selectedIds());
         this.cdr.markForCheck();
     }
 
@@ -192,6 +186,7 @@ export class FlowSessionsTableComponent {
     bulkDelete() {
         this.deleteSelected.emit(Array.from(this.selectedIds()));
         this.selectedIds.set(new Set());
+        this.selectedIdsChange.emit(this.selectedIds());
         this.cdr.markForCheck();
     }
 

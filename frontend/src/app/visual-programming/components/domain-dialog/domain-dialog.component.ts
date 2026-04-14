@@ -16,6 +16,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { findNodeAtOffset, Node as JsonNode, parse as parseJsonc, parseTree } from 'jsonc-parser';
 
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
+
 import { JsonEditorComponent } from '../../../shared/components/json-editor/json-editor.component';
 import {
     EMPTY_VALIDATION_RESULT,
@@ -49,14 +51,14 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
 @Component({
     standalone: true,
     selector: 'app-domain-dialog',
-    imports: [CommonModule, JsonEditorComponent, OverlayModule],
+    imports: [CommonModule, JsonEditorComponent, OverlayModule, AppSvgIconComponent],
     encapsulation: ViewEncapsulation.None,
     template: `
         <div class="dialog-container">
             <div class="dialog-header">
                 <h2 class="dialog-title">Domain Variables</h2>
                 <button class="close-button" (click)="close()">
-                    <i class="ti ti-x"></i>
+                    <app-svg-icon icon="x"></app-svg-icon>
                 </button>
             </div>
 
@@ -66,7 +68,7 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                 </div>
 
                 <div class="autocomplete-hint">
-                    <i class="ti ti-bulb"></i>
+                    <app-svg-icon icon="bulb" size="1rem"></app-svg-icon>
                     <span>
                         Place your cursor inside <code>user</code> or <code>organization</code> arrays and press
                         <kbd>Ctrl+Space</kbd> to pick variables from <code>context</code>.
@@ -77,7 +79,7 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                     <ul class="path-validation-errors">
                         @for (message of pathErrorMessages(); track message) {
                             <li class="path-error">
-                                <i class="ti ti-alert-circle"></i>
+                                <app-svg-icon icon="alert-circle"></app-svg-icon>
                                 <span>{{ message }}</span>
                             </li>
                         }
@@ -145,13 +147,6 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                     color: var(--color-text-primary, #fff);
                 }
 
-                i {
-                    font-size: 1.25rem;
-
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
             }
 
             .dialog-content {
@@ -182,9 +177,8 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                 line-height: 1.45;
                 color: #b0b0c0;
 
-                i {
+                app-svg-icon {
                     color: #685fff;
-                    font-size: 1rem;
                     flex-shrink: 0;
                     margin-top: 1px;
                 }
@@ -224,10 +218,9 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                 color: #f87171;
                 line-height: 1.4;
 
-                i {
+                app-svg-icon {
                     flex-shrink: 0;
                     margin-top: 2px;
-                    font-size: 1rem;
                 }
 
                 span {
@@ -300,6 +293,12 @@ export class DomainDialogComponent implements OnDestroy {
         this.dialogRef.backdropClick.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.close());
 
         this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
+                if (this.overlayRef?.hasAttached()) return;
+                e.preventDefault();
+                this.close();
+                return;
+            }
             if (e.key === 'Escape') {
                 if (this.overlayRef?.hasAttached()) return;
                 e.preventDefault();

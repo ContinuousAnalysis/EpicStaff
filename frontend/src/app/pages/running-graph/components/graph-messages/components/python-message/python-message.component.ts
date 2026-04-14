@@ -3,23 +3,24 @@ import { Component, Input, OnInit } from '@angular/core';
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
 
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { FormatExecutionDataPipe } from '../../../../../../shared/pipes/format-execution-data.pipe';
 import { GraphMessage, MessageType, PythonMessageData } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-python-message',
     standalone: true,
-    imports: [CommonModule, NgxJsonViewerModule, FormatExecutionDataPipe],
+    imports: [CommonModule, NgxJsonViewerModule, FormatExecutionDataPipe, AppSvgIconComponent],
     animations: [expandCollapseAnimation],
     template: `
         <div class="python-flow-container">
             <!-- Python Message Header with Toggle -->
             <div class="python-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-brand-python"></i>
+                    <app-svg-icon icon="brand-python" size="1.25rem" />
                 </div>
                 <h3>Python Code Execution</h3>
             </div>
@@ -30,10 +31,7 @@ import { GraphMessage, MessageType, PythonMessageData } from '../../../../models
                     <!-- Code Section -->
                     <div class="code-container" *ngIf="hasCode()">
                         <div class="section-heading" (click)="toggleSection('code')">
-                            <i
-                                class="ti"
-                                [ngClass]="isCodeExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isCodeExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                             Python Code
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isCodeExpanded ? 'expanded' : 'collapsed'">
@@ -48,10 +46,7 @@ import { GraphMessage, MessageType, PythonMessageData } from '../../../../models
                     <!-- Input Section -->
                     <div class="input-container" *ngIf="hasInput()">
                         <div class="section-heading" (click)="toggleSection('input')">
-                            <i
-                                class="ti"
-                                [ngClass]="isInputExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isInputExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                             Input
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isInputExpanded ? 'expanded' : 'collapsed'">
@@ -71,10 +66,7 @@ import { GraphMessage, MessageType, PythonMessageData } from '../../../../models
                     <!-- Output Section -->
                     <div class="output-container" *ngIf="hasOutput()">
                         <div class="section-heading" (click)="toggleSection('output')">
-                            <i
-                                class="ti"
-                                [ngClass]="isOutputExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isOutputExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                             Output
                         </div>
                         <div
@@ -104,10 +96,7 @@ import { GraphMessage, MessageType, PythonMessageData } from '../../../../models
                     <!-- Error Section -->
                     <div class="error-container" *ngIf="hasError()">
                         <div class="section-heading" (click)="toggleSection('error')">
-                            <i
-                                class="ti"
-                                [ngClass]="isErrorExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isErrorExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                             Error
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isErrorExpanded ? 'expanded' : 'collapsed'">
@@ -122,10 +111,7 @@ import { GraphMessage, MessageType, PythonMessageData } from '../../../../models
                     <!-- Raw Data Section -->
                     <div class="raw-data-container">
                         <div class="section-heading" (click)="toggleSection('rawData')">
-                            <i
-                                class="ti"
-                                [ngClass]="isRawDataExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isRawDataExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                             Raw Execution Data
                         </div>
                         <div
@@ -167,12 +153,10 @@ import { GraphMessage, MessageType, PythonMessageData } from '../../../../models
                 margin-right: 16px;
                 display: flex;
                 align-items: center;
-            }
 
-            .play-arrow i {
-                color: #ffcf3f;
-                font-size: 1.1rem;
-                transition: transform 0.3s ease;
+                app-svg-icon {
+                    color: #ffcf3f;
+                }
             }
 
             .icon-container {
@@ -185,11 +169,10 @@ import { GraphMessage, MessageType, PythonMessageData } from '../../../../models
                 justify-content: center;
                 margin-right: 20px;
                 flex-shrink: 0;
-            }
 
-            .icon-container i {
-                color: var(--gray-900);
-                font-size: 1.25rem;
+                app-svg-icon {
+                    color: var(--gray-900);
+                }
             }
 
             h3 {
@@ -229,12 +212,10 @@ import { GraphMessage, MessageType, PythonMessageData } from '../../../../models
                 align-items: center;
             }
 
-            .section-heading i {
+            .section-heading app-svg-icon {
                 margin-right: 8px;
                 color: #ffcf3f;
-                font-size: 1.1rem;
                 margin-left: -3px;
-                transition: transform 0.3s ease;
             }
 
             .code-wrapper,

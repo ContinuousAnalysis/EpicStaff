@@ -13,7 +13,8 @@ endif
 .PHONY: help \
         backup apply-backup stash-tags apply-tags switch \
         dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
-        prod start-prod prod-down prod-logs \
+        dev-voice dev-ngrok \
+        prod-setup prod-init prod prod-build prod-up start-prod prod-down prod-logs prod-voice prod-ngrok \
         clean docker-generate-certs
 
 # --- Help ---
@@ -98,22 +99,59 @@ rebuild-dev:
 	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env build --no-cache
 	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env up -d
 
+dev-voice:
+	@echo "--- Starting development services with voice (ngrok) ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env --profile voice up -d
+
+dev-ngrok:
+	@echo "--- Starting ngrok tunnel ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.dev.yaml --env-file ./.env --env-file ../dev/dev.env --profile voice up ngrok
+
 # ==========================================
 # PRODUCTION Environment
 # ==========================================
 
-prod: start-prod
+prod-setup:
+	@echo "--- Setting up production environment ---"
+	@python3 make_scripts/setup_prod.py
 
-start-prod:
+prod-init:
+	@echo "--- Creating external volumes and networks ---"
+	@docker volume create sandbox_venvs      || true
+	@docker volume create sandbox_executions || true
+	@docker volume create crew_pgdata        || true
+	@docker volume create media_data         || true
+	@docker network create mcp-network       || true
+	@echo "--- Done ---"
+
+PROD_ENV_ARG = $(shell test -f prod/prod.env && echo "--env-file ../prod/prod.env")
+
+prod: prod-build prod-up
+
+prod-build: prod-init
+	@echo "--- Building production images ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) build
+
+prod-up: prod-init
 	@echo "--- Starting production services ---"
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env up --build -d
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) up -d
+
+start-prod: prod
 
 prod-down:
 	@echo "--- Stopping production services ---"
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env down
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) down
 
 prod-logs:
-	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env logs -f
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) logs -f
+
+prod-voice:
+	@echo "--- Starting production services with voice (ngrok) ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) --profile voice up -d
+
+prod-ngrok:
+	@echo "--- Starting ngrok tunnel (production) ---"
+	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env $(PROD_ENV_ARG) --profile voice up ngrok
 
 # ==========================================
 # UTILITIES
@@ -125,15 +163,16 @@ clean:
 	@cd src && docker compose -f docker-compose.yaml -f docker-compose.override.yaml --env-file ./.env down -v --remove-orphans
 
 docker-generate-certs:
+	@test -n "$(domain)" || (echo "ERROR: domain is required. Usage: make docker-generate-certs domain=example.com" && exit 1)
 	docker run --rm -v "$(CURDIR)/src/nginx/certs:/certs" -w /certs alpine \
-		sh -c "apk add openssl && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout privkey.pem -out fullchain.pem -subj '/CN=localhost'"
-	@echo "SSL certificates generated!"
+		sh -c "apk add openssl && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout privkey.pem -out fullchain.pem -subj '/CN=$(domain)'"
+	@echo "SSL certificates generated for domain: $(domain)"
 
 # ==========================================
 # LOCAL DJANGO DEVELOPMENT
 # ==========================================
 
-django-makemigrations django-migrate django-manage: export PYTHONPATH = $(CURDIR)
+django-makemigrations django-migrate django-manage django-tests: export PYTHONPATH = $(CURDIR)
 
 django-makemigrations:
 	@cd src/django_app && python manage.py makemigrations $(ARGS)
@@ -143,3 +182,6 @@ django-migrate:
 
 django-manage:
 	@cd src/django_app && python manage.py $(CMD)
+
+django-tests:
+	@cd src/django_app && python -m pytest $(ARGS)

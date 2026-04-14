@@ -18,6 +18,7 @@ import { FormsModule } from '@angular/forms';
 import { ICellEditorAngularComp } from 'ag-grid-angular';
 import { ICellEditorParams } from 'ag-grid-community';
 
+import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { FlowService } from '../../../../../../services/flow.service';
 import { AutocompleteItem, AutocompleteOverlayComponent } from './autocomplete-overlay/autocomplete-overlay.component';
 import { EditorToolbarComponent } from './editor-toolbar/editor-toolbar.component';
@@ -27,7 +28,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => typeof va
 @Component({
     selector: 'app-expression-editor',
     standalone: true,
-    imports: [CommonModule, FormsModule, EditorToolbarComponent, OverlayModule],
+    imports: [CommonModule, FormsModule, EditorToolbarComponent, OverlayModule, AppSvgIconComponent],
     templateUrl: './expression-editor.component.html',
     styleUrls: ['./expression-editor.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

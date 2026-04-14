@@ -3,22 +3,23 @@ import { Component, Input, ViewEncapsulation } from '@angular/core';
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
 
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { GraphMessage } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-start-message',
     standalone: true,
-    imports: [CommonModule, NgxJsonViewerModule],
+    imports: [CommonModule, NgxJsonViewerModule, AppSvgIconComponent],
     encapsulation: ViewEncapsulation.Emulated,
     animations: [expandCollapseAnimation],
     template: `
         <div class="start-container">
             <div class="start-header" (click)="toggleMessage()">
                 <div class="play-arrow" *ngIf="hasInputs()">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-flag"></i>
+                    <app-svg-icon icon="flag" size="1.25rem" />
                 </div>
                 <h3>
                     <span class="node-name">{{ message.name }}</span> started
@@ -31,10 +32,7 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                     <!-- Input Parameters Section -->
                     <div class="input-container" *ngIf="hasInputs()">
                         <div class="section-heading" (click)="toggleInputs($event)">
-                            <i
-                                class="ti"
-                                [ngClass]="isInputsExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isInputsExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                             Input Parameters
                         </div>
                         <div
@@ -72,12 +70,10 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                 margin-right: 16px;
                 display: flex;
                 align-items: center;
-            }
 
-            .play-arrow i {
-                color: #d29922;
-                font-size: 1.1rem;
-                transition: transform 0.3s ease;
+                app-svg-icon {
+                    color: #d29922;
+                }
             }
 
             .icon-container {
@@ -90,11 +86,10 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                 justify-content: center;
                 margin-right: 20px;
                 flex-shrink: 0;
-            }
 
-            .icon-container i {
-                color: var(--gray-900);
-                font-size: 1.25rem;
+                app-svg-icon {
+                    color: var(--gray-900);
+                }
             }
 
             h3 {
@@ -138,12 +133,10 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                 align-items: center;
             }
 
-            .section-heading i {
+            .section-heading app-svg-icon {
                 margin-right: 8px;
                 color: #d29922;
-                font-size: 1.1rem;
                 margin-left: -3px;
-                transition: transform 0.3s ease;
             }
 
             .input-container {

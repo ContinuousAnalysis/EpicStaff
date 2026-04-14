@@ -4,22 +4,23 @@ import { NgxJsonViewerModule } from 'ngx-json-viewer';
 
 import { GetAgentRequest } from '../../../../../../features/staff/models/agent.model';
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { AgentMessageData, GraphMessage } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-agent-message',
     standalone: true,
-    imports: [CommonModule, NgxJsonViewerModule],
+    imports: [CommonModule, NgxJsonViewerModule, AppSvgIconComponent],
     animations: [expandCollapseAnimation],
     template: `
         <div class="agent-flow-container">
             <!-- Agent Message Header with Toggle -->
             <div class="agent-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-robot"></i>
+                    <app-svg-icon icon="robot" size="1.25rem" />
                 </div>
                 <div class="header-text">
                     Agent <span class="agent-name">{{ getAgentName() }}</span> used tool
@@ -33,10 +34,7 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
                     <!-- Thought Section -->
                     <div class="thought-container" *ngIf="hasThought()">
                         <div class="section-heading" (click)="toggleSection('thought')">
-                            <i
-                                class="ti"
-                                [ngClass]="isThoughtExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isThoughtExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                             Thought
                         </div>
                         <div
@@ -53,10 +51,7 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
                     <!-- Tool Section -->
                     <div class="tool-container" *ngIf="hasTool()">
                         <div class="section-heading" (click)="toggleSection('tool')">
-                            <i
-                                class="ti"
-                                [ngClass]="isToolExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isToolExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                             Tool
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isToolExpanded ? 'expanded' : 'collapsed'">
@@ -79,10 +74,7 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
                     <!-- Tool Output Section at same level as Thought and Tool -->
                     <div class="result-container" *ngIf="getResult()">
                         <div class="section-heading" (click)="toggleSection('result')">
-                            <i
-                                class="ti"
-                                [ngClass]="isResultExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isResultExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
                             Tool Output
                         </div>
                         <div
@@ -132,10 +124,8 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
             display: flex;
             align-items: center;
 
-            i {
+            app-svg-icon {
                 color: #8e5cd9;
-                font-size: 1.1rem;
-                transition: transform 0.3s ease;
             }
         }
 
@@ -150,9 +140,8 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
             margin-right: 20px;
             flex-shrink: 0;
 
-            i {
+            app-svg-icon {
                 color: var(--gray-900);
-                font-size: 1.25rem;
             }
         }
 
@@ -204,12 +193,10 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
             display: flex;
             align-items: center;
 
-            i {
+            app-svg-icon {
                 margin-right: 8px;
                 color: #8e5cd9;
-                font-size: 1.1rem;
                 margin-left: -3px;
-                transition: transform 0.3s ease;
             }
         }
 

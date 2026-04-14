@@ -213,28 +213,6 @@ table {
     border-color: var(--accent-color);
 }
 
-.stop-icon-btn {
-    background: transparent;
-    border: none;
-    padding: 0px;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.18s;
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
-    margin: 0 auto;
-}
-.stop-icon-btn svg {
-    display: block;
-}
-.stop-icon-btn:hover rect {
-    fill: #d94c4a;
-}
-
 .stop-btn {
     background: #e0575b;
     color: #fff;

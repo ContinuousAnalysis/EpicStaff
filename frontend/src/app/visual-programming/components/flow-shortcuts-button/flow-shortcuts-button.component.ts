@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, input, output } from '@angular/core';
-import { AppIconComponent } from 'src/app/shared/components/app-icon/app-icon.component';
+
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 function isMacPlatform(): boolean {
     if (typeof navigator === 'undefined') return false;
@@ -15,14 +16,14 @@ function isMacPlatform(): boolean {
 @Component({
     selector: 'app-flow-shortcuts-button',
     standalone: true,
-    imports: [CommonModule, AppIconComponent],
+    imports: [CommonModule, AppSvgIconComponent],
     templateUrl: './flow-shortcuts-button.component.html',
     styleUrls: ['./flow-shortcuts-button.component.scss'],
 })
 export class FlowShortcutsButtonComponent {
     label = input<string>(`${isMacPlatform() ? 'Cmd' : 'Ctrl'} + /`);
-    icon = input<string>('ui/shortcut');
-    iconSize = input<string>('12');
+    icon = input<string>('shortcut');
+    iconSize = input<string>('12px');
 
     clicked = output<void>();
 }

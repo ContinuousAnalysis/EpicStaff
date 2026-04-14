@@ -9,6 +9,7 @@ import {
     signal,
 } from '@angular/core';
 
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
 import { GraphSessionStatus } from '../../services/flows-sessions.service';
 
@@ -22,9 +23,13 @@ interface StatusOption {
 @Component({
     selector: 'app-flow-session-status-filter-dropdown',
     standalone: true,
-    imports: [CommonModule, ClickOutsideDirective],
+    imports: [CommonModule, ClickOutsideDirective, AppSvgIconComponent],
     template: `
-        <div class="status-filter-dropdown-custom" [class.open]="open" (appClickOutside)="closeDropdown()">
+        <div 
+            class="status-filter-dropdown-custom" 
+            [class.open]="open" 
+            (appClickOutside)="closeDropdown()"
+        >
             <button class="dropdown-toggle" (click)="toggleDropdown($event)">
                 Status
                 <img
@@ -40,7 +45,7 @@ interface StatusOption {
                             [class.selected]="selectedValues().includes(option.value)"
                         >
                             <span [style.color]="option.color">
-                                <i [class]="option.icon"></i>
+                                <app-svg-icon class="status-icon" [icon]="option.icon" size="16px"></app-svg-icon>
                                 {{ option.label }}
                             </span>
                             @if (selectedValues().includes(option.value)) {
@@ -61,48 +66,48 @@ export class FlowSessionStatusFilterDropdownComponent {
     public open = false;
 
     public options: StatusOption[] = [
-        { value: 'all', label: 'All', color: '#b0b8c1', icon: 'ti ti-list' },
+        { value: 'all', label: 'All', color: '#b0b8c1', icon: 'list-numbers' },
         {
             value: GraphSessionStatus.RUNNING,
             label: 'Running',
             color: '#5e9eff',
-            icon: 'ti ti-player-play',
+            icon: 'play',
         },
         {
             value: GraphSessionStatus.ERROR,
             label: 'Error',
             color: '#e0575b',
-            icon: 'ti ti-alert-triangle',
+            icon: 'warning',
         },
         {
             value: GraphSessionStatus.ENDED,
             label: 'Completed',
             color: '#3bb77e',
-            icon: 'ti ti-check',
+            icon: 'check',
         },
         {
             value: GraphSessionStatus.WAITING_FOR_USER,
             label: 'Waiting',
             color: '#ffc14d',
-            icon: 'ti ti-hourglass',
+            icon: 'clock',
         },
         {
             value: GraphSessionStatus.PENDING,
             label: 'Pending',
             color: '#b0b8c1',
-            icon: 'ti ti-clock',
+            icon: 'clock',
         },
         {
             value: GraphSessionStatus.EXPIRED,
             label: 'Expired',
             color: '#888888',
-            icon: 'ti ti-clock-pause',
+            icon: 'clock',
         },
         {
             value: GraphSessionStatus.STOP,
             label: 'Stopped',
             color: '#5a5454ff',
-            icon: 'ti ti-clock-pause',
+            icon: 'x',
         },
     ];
 
@@ -119,7 +124,6 @@ export class FlowSessionStatusFilterDropdownComponent {
     }
 
     updateSelected() {
-        // If 'all' is selected or nothing, treat as no filter
         const vals = !this.value || this.value.length === 0 || this.value.includes('all') ? [] : this.value;
         this.selectedValues.set(vals);
         this.selectedOptions.set(this.options.filter((opt) => vals.includes(opt.value)));
@@ -142,7 +146,6 @@ export class FlowSessionStatusFilterDropdownComponent {
         let newValues = [...this.selectedValues()];
         if (value === 'all') {
             newValues = [];
-            // Close dropdown when selecting "All"
             this.closeDropdown();
         } else {
             if (newValues.includes(value)) {
@@ -150,7 +153,6 @@ export class FlowSessionStatusFilterDropdownComponent {
             } else {
                 newValues.push(value);
             }
-            // Don't close dropdown when selecting individual options
         }
         this.valueChange.emit(newValues.length === 0 ? ['all'] : newValues);
     }

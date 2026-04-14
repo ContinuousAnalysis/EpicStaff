@@ -185,11 +185,13 @@
                         [ngModel]="memory_llm_config()"
                         (ngModelChange)="memory_llm_config.set($event); onMemoryLLMConfigChange()"
                     ></app-llm-model-selector>
-                    <i
+                    <app-svg-icon
                         *ngIf="memory_llm_config() === null"
-                        class="ti ti-alert-triangle warning-icon"
+                        icon="warning"
+                        size="16px"
+                        class="warning-icon"
                         title="No memory LLM configuration specified"
-                    ></i>
+                    />
                 </div>
             </div>
 
@@ -211,11 +213,13 @@
                         [ngModel]="embedding_config()"
                         (ngModelChange)="embedding_config.set($event); onEmbeddingConfigChange()"
                     ></app-embedding-model-selector>
-                    <i
+                    <app-svg-icon
                         *ngIf="embedding_config() === null"
-                        class="ti ti-alert-triangle warning-icon"
+                        icon="warning"
+                        size="16px"
+                        class="warning-icon"
                         title="No memory embedding configuration specified"
-                    ></i>
+                    />
                 </div>
             </div>
         </div>
@@ -247,11 +251,13 @@
                         [ngModel]="manager_llm_config()"
                         (ngModelChange)="manager_llm_config.set($event); onLLMConfigChange()"
                     ></app-llm-model-selector>
-                    <i
+                    <app-svg-icon
                         *ngIf="manager_llm_config() === null"
-                        class="ti ti-alert-triangle warning-icon"
+                        icon="warning"
+                        size="16px"
+                        class="warning-icon"
                         title="No LLM configuration specified"
-                    ></i>
+                    />
                 </div>
             </div>
 
