@@ -7,15 +7,19 @@
                 aria-label="Cancel"
                 (click)="onCancel()"
             >
-                <app-svg-icon icon="x" size="1.1rem"></app-svg-icon>
+                <app-svg-icon icon="x-fill" size="16px"></app-svg-icon>
             </button>
             <button
                 class="create-folder-dialog__icon-btn create-folder-dialog__icon-btn--confirm"
                 aria-label="Add files"
-                [disabled]="!isValid()"
+                [disabled]="!isValid() || isUploading()"
                 (click)="onConfirm()"
             >
-                <app-svg-icon icon="check" size="1.1rem"></app-svg-icon>
+                @if (isUploading()) {
+                    <app-spinner2 [size]="20" />
+                } @else {
+                    <app-svg-icon icon="check-fill" size="16px"></app-svg-icon>
+                }
             </button>
         </div>
     </div>
@@ -119,47 +123,72 @@
         <!-- /.settings -->
 
         <!-- Drop zone + file list -->
-        <div class="create-folder-dialog__field create-folder-dialog__field--files">
-            <label class="create-folder-dialog__label">
-                Selected Files: <span class="create-folder-dialog__count">({{ files().length }})</span>
-            </label>
-            <div
-                class="create-folder-dialog__drop-zone"
-                [class.create-folder-dialog__drop-zone--dragging]="isDragging()"
-                (dragover)="onDragOver($event)"
-                (dragleave)="onDragLeave($event)"
-                (drop)="onDrop($event)"
-            >
-                <app-svg-icon icon="upload" size="2rem" class="create-folder-dialog__drop-icon"></app-svg-icon>
-                <span class="create-folder-dialog__drop-text">Drag and drop files here or click to upload</span>
-                <label class="create-folder-dialog__browse-btn">
-                    Browse files
-                    <input type="file" multiple hidden (change)="onFileInputChange($event)" />
-                </label>
-            </div>
-
-            @if (files().length > 0) {
+        <div
+            class="create-folder-dialog__field create-folder-dialog__field--files"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            [class.create-folder-dialog__field--dragging]="isDragging()"
+        >
+            @if (files().length === 0) {
+                <div class="create-folder-dialog__empty-state">
+                    <span class="create-folder-dialog__drop-text">Drag and drop files here or click to upload</span>
+                    <label class="create-folder-dialog__upload-box">
+                        <app-svg-icon icon="upload" size="32px" class="create-folder-dialog__drop-icon"></app-svg-icon>
+                        <input type="file" multiple hidden (change)="onFileInputChange($event)" />
+                    </label>
+                </div>
+            } @else {
+                <div class="create-folder-dialog__file-list-header">
+                    <label class="create-folder-dialog__label">
+                        Selected Files: <span class="create-folder-dialog__count">({{ totalSize() }})</span>
+                    </label>
+                    @if (hasBlockedFiles()) {
+                        <span class="create-folder-dialog__file-validation-error">File validation errors</span>
+                    }
+                    <label class="create-folder-dialog__add-more-btn">
+                        + Add More Files
+                        <input type="file" multiple hidden (change)="onFileInputChange($event)" />
+                    </label>
+                </div>
                 <ul class="create-folder-dialog__file-list">
                     @for (file of files(); track file.name; let i = $index) {
                         <li class="create-folder-dialog__file-item">
+                            <span class="create-folder-dialog__file-index">{{ i + 1 }}</span>
                             <app-svg-icon
-                                icon="file"
-                                size="0.875rem"
+                                icon="file-flat"
+                                size="12px"
                                 class="create-folder-dialog__file-icon"
                             ></app-svg-icon>
-                            <span class="create-folder-dialog__file-name" [title]="file.name">{{ file.name }}</span>
+                            <div class="create-folder-dialog__file-info">
+                                <span class="create-folder-dialog__file-name" [title]="file.name">{{ file.name }}</span>
+                                @if (isArchive(file)) {
+                                    <span
+                                        class="create-folder-dialog__file-badge create-folder-dialog__file-badge--unpack"
+                                        >Will be unpacked</span
+                                    >
+                                } @else if (isBlocked(file)) {
+                                    <span
+                                        class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
+                                        >Invalid file type</span
+                                    >
+                                }
+                            </div>
                             <span class="create-folder-dialog__file-size">{{ formatSize(file.size) }}</span>
                             <button
                                 class="create-folder-dialog__file-remove"
                                 aria-label="Remove file"
                                 (click)="removeFile(i)"
                             >
-                                <app-svg-icon icon="x" size="0.75rem"></app-svg-icon>
+                                <app-svg-icon icon="x" size="16px"></app-svg-icon>
                             </button>
                         </li>
                     }
                 </ul>
             }
         </div>
+    </div>
+    <div class="create-folder-dialog__footer">
+        Archives are extracted after saving, structure is preserved; unsupported ones are not extracted.
     </div>
 </div>

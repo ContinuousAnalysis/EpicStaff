@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { Spinner2Component } from '../../../../shared/components/spinner-type2/spinner.component';
 import { StorageApiService } from '../../services/storage-api.service';
 
 export interface CreateFolderDialogData {
@@ -11,12 +12,18 @@ export interface CreateFolderDialogData {
     folderPath?: string;
 }
 
-export interface CreateFolderDialogResult {
+export interface AddFilesPayload {
     /** Full destination path: destinationPath + optional subfolder name */
     targetPath: string;
     files: File[];
     /** True when no files selected — only mkdir should be called */
     mkdirOnly: boolean;
+}
+
+export interface CreateFolderDialogResult {
+    type: 'mkdir' | 'upload';
+    path?: string;
+    count?: number;
 }
 
 export interface FolderNode {
@@ -32,16 +39,60 @@ export interface FolderNode {
 
 @Component({
     selector: 'app-create-folder-dialog',
-    imports: [FormsModule, AppSvgIconComponent],
+    imports: [FormsModule, AppSvgIconComponent, Spinner2Component],
     templateUrl: './create-folder-dialog.component.html',
     styleUrls: ['./create-folder-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateFolderDialogComponent {
-    private dialogRef = inject(DialogRef<CreateFolderDialogResult>);
+    private dialogRef = inject(DialogRef<CreateFolderDialogResult | undefined>);
     private data: CreateFolderDialogData = inject(DIALOG_DATA, { optional: true }) ?? {};
     private storageApiService = inject(StorageApiService);
     private destroyRef = inject(DestroyRef);
+
+    private static readonly ARCHIVE_EXTENSIONS = new Set([
+        'zip',
+        'tar',
+        'gz',
+        'tgz',
+        'bz2',
+        'xz',
+        'tar.gz',
+        'tar.bz2',
+        'tar.xz',
+    ]);
+    private static readonly BLOCKED_EXTENSIONS = new Set([
+        'exe',
+        'msi',
+        'com',
+        'scr',
+        'pif',
+        'bat',
+        'cmd',
+        'vbs',
+        'vbe',
+        'wsh',
+        'wsf',
+        'ps1',
+        'psm1',
+        'psd1',
+        'sh',
+        'bash',
+        'csh',
+        'ksh',
+        'zsh',
+        'app',
+        'command',
+        'elf',
+        'jar',
+        'war',
+        'ear',
+        'dll',
+        'so',
+        'dylib',
+        'rar',
+        '7z',
+    ]);
 
     readonly folderName = signal('');
     readonly isDragging = signal(false);
@@ -70,7 +121,12 @@ export class CreateFolderDialogComponent {
         return path ? `/${path}` : '/';
     }
 
-    readonly isValid = computed(() => this.files().length > 0 || this.folderName().trim().length > 0);
+    readonly isUploading = signal(false);
+    readonly hasBlockedFiles = computed(() => this.files().some((f) => this.isBlocked(f)));
+    readonly isValid = computed(
+        () => !this.hasBlockedFiles() && (this.files().length > 0 || this.folderName().trim().length > 0)
+    );
+    readonly totalSize = computed(() => this.formatSize(this.files().reduce((sum, f) => sum + f.size, 0)));
 
     ngOnInit(): void {
         if (this.data.folderPath) {
@@ -156,6 +212,17 @@ export class CreateFolderDialogComponent {
         this.files.update((list) => list.filter((_, i) => i !== index));
     }
 
+    isArchive(file: File): boolean {
+        const name = file.name.toLowerCase();
+        if (name.match(/\.tar\.(gz|bz2|xz)$/)) return true;
+        return CreateFolderDialogComponent.ARCHIVE_EXTENSIONS.has(name.split('.').pop() ?? '');
+    }
+
+    isBlocked(file: File): boolean {
+        const ext = file.name.toLowerCase().split('.').pop() ?? '';
+        return CreateFolderDialogComponent.BLOCKED_EXTENSIONS.has(ext);
+    }
+
     formatSize(bytes: number): string {
         if (bytes < 1024) return `${bytes} B`;
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -163,12 +230,22 @@ export class CreateFolderDialogComponent {
     }
 
     onConfirm(): void {
-        if (!this.isValid()) return;
+        if (!this.isValid() || this.isUploading()) return;
         const destination = this.selectedPath();
         const subfolder = this.folderName().trim();
         const targetPath = subfolder ? (destination ? `${destination}/${subfolder}` : subfolder) : destination;
         const files = this.files();
-        this.dialogRef.close({ targetPath, files, mkdirOnly: files.length === 0 });
+
+        this.isUploading.set(true);
+        this.storageApiService
+            .handleAddFilesResult({ targetPath, files, mkdirOnly: files.length === 0 })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res) => this.dialogRef.close(res),
+                error: () => {
+                    this.isUploading.set(false);
+                },
+            });
     }
 
     onCancel(): void {

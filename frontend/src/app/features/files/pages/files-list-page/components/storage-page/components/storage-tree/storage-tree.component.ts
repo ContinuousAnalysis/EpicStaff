@@ -85,19 +85,30 @@ export class StorageTreeComponent {
             this.selectedItem.set(item);
             this.selectionAnchorPath = item.path;
         }
-        this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
+        this.contextMenuPosition.set(this.clampMenuPosition(event.clientX, event.clientY));
         this.contextMenuItem.set(item);
         this.contextMenuOpen.set(true);
     }
 
     onKebabClick(event: MouseEvent, item: StorageItem): void {
         event.stopPropagation();
-        this.setSelectedPaths(new Set([item.path]));
-        this.selectedItem.set(item);
-        this.selectionAnchorPath = item.path;
-        this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
+        if (!this.isItemSelected(item)) {
+            this.setSelectedPaths(new Set([item.path]));
+            this.selectedItem.set(item);
+            this.selectionAnchorPath = item.path;
+        }
+        this.contextMenuPosition.set(this.clampMenuPosition(event.clientX, event.clientY));
         this.contextMenuItem.set(item);
         this.contextMenuOpen.set(true);
+    }
+
+    private clampMenuPosition(x: number, y: number): { x: number; y: number } {
+        const menuWidth = 170;
+        const menuHeight = 200;
+        return {
+            x: Math.min(x, window.innerWidth - menuWidth - 8),
+            y: Math.min(y, window.innerHeight - menuHeight - 8),
+        };
     }
 
     closeContextMenu(): void {
@@ -121,6 +132,14 @@ export class StorageTreeComponent {
 
         if (action === 'rename') {
             this.startRename(item);
+        } else if (action === 'delete') {
+            const selectedSet = this.selectedPaths();
+            const selectedItems = this.collectVisibleNodes(this.items()).filter((node) => selectedSet.has(node.path));
+            if (selectedItems.length > 1) {
+                this.contextAction.emit({ action: 'delete-selected', item, selectedItems });
+            } else {
+                this.contextAction.emit({ action, item });
+            }
         } else {
             this.contextAction.emit({ action, item });
         }

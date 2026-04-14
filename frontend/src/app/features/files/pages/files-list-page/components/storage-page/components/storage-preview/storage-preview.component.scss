@@ -7,18 +7,22 @@
     &--empty {
         justify-content: center;
         align-items: center;
-        gap: 0.75rem;
+        gap: 1rem;
     }
 
     &__empty-icon {
-        color: var(--color-text-secondary);
-        opacity: 0.4;
+        flex-shrink: 0;
+        color: rgba(217, 217, 222, 0.6);
     }
 
     &__empty-text {
         margin: 0;
-        font-size: 0.9rem;
-        color: var(--color-text-secondary);
+        font-family: Inter, sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+        line-height: 1;
+        text-align: center;
+        color: rgba(217, 217, 222, 0.6);
     }
 
     &__header {

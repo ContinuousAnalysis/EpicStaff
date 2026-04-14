@@ -17,7 +17,6 @@ import {
 } from '@angular/core';
 import { IPoint } from '@foblex/2d';
 
-import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import {
     CONTEXT_MENU_TAB,
     ContextMenuTab,
@@ -37,7 +36,7 @@ export type { ContextMenuTab };
     templateUrl: './flow-graph-context-menu.component.html',
     styleUrls: ['./flow-graph-context-menu.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FlowGraphCoreMenuComponent, FlowProjectsContextMenuComponent, FlowsMenuComponent, AppSvgIconComponent],
+    imports: [FlowGraphCoreMenuComponent, FlowProjectsContextMenuComponent, FlowsMenuComponent],
 })
 export class FlowGraphContextMenuComponent implements AfterViewInit {
     public readonly position = input.required<IPoint>();

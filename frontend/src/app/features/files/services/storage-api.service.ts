@@ -4,7 +4,7 @@ import { EMPTY, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { ConfigService } from '../../../services/config/config.service';
-import { CreateFolderDialogResult } from '../components/create-folder-dialog/create-folder-dialog.component';
+import { AddFilesPayload } from '../components/create-folder-dialog/create-folder-dialog.component';
 import {
     StorageItem,
     StorageItemInfo,
@@ -38,7 +38,7 @@ export class StorageApiService {
     }
 
     handleAddFilesResult(
-        result: CreateFolderDialogResult,
+        result: AddFilesPayload,
         filterFiles: (files: File[]) => File[] = (f) => f
     ): Observable<{ type: 'mkdir'; path: string } | { type: 'upload'; count: number }> {
         const targetPath = result.targetPath;

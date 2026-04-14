@@ -35,7 +35,7 @@
             [class.storage-tree__item--hovered]="hoveredItem() === node"
             [class.storage-tree__item--drop-target]="isDropTarget(node)"
             [class.storage-tree__item--dragging]="draggedItem()?.path === node.path"
-            [attr.draggable]="renamingItem() === null ? 'true' : 'false'"
+            [attr.draggable]="renamingItem() === null || renamingItem()?.path !== node.path ? 'true' : 'false'"
             [style.padding-left.rem]="0.75 + level * 1.25"
             (click)="onItemClick($event, node)"
             (contextmenu)="onContextMenu($event, node)"
@@ -61,7 +61,7 @@
 
             <app-svg-icon class="storage-tree__icon" [icon]="getFileIcon(node)" size="12px"></app-svg-icon>
 
-            @if (renamingItem() === node) {
+            @if (renamingItem()?.path === node.path) {
                 <div class="storage-tree__rename-controls" (click)="$event.stopPropagation()">
                     <input
                         #renameInput
@@ -105,7 +105,7 @@
                 }
             }
 
-            @if (hoveredItem() === node && renamingItem() !== node) {
+            @if (hoveredItem() === node && renamingItem()?.path !== node.path) {
                 <div class="storage-tree__hover-actions">
                     <button class="storage-tree__hover-btn" aria-label="More" (click)="onKebabClick($event, node)">
                         <app-svg-icon icon="dots-vertical" size="0.75rem"></app-svg-icon>
@@ -132,8 +132,8 @@
     >
         <button
             class="storage-tree__context-menu-item"
-            [class.storage-tree__context-menu-item--disabled]="!selectedItem()"
-            [disabled]="!selectedItem()"
+            [class.storage-tree__context-menu-item--disabled]="selectedPaths().size === 0"
+            [disabled]="selectedPaths().size === 0"
             (click)="onMoreMenuAction('download-selected')"
         >
             Download Selected
@@ -142,8 +142,8 @@
         <div class="storage-tree__context-menu-divider"></div>
         <button
             class="storage-tree__context-menu-item"
-            [class.storage-tree__context-menu-item--disabled]="!selectedItem()"
-            [disabled]="!selectedItem()"
+            [class.storage-tree__context-menu-item--disabled]="selectedPaths().size === 0"
+            [disabled]="selectedPaths().size === 0"
             (click)="onMoreMenuAction('delete-selected')"
         >
             Delete Selected

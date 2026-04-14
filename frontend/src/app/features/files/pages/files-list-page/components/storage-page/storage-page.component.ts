@@ -222,18 +222,9 @@ export class StoragePageComponent {
         );
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
             if (!result) return;
-            this.storageApiService
-                .handleAddFilesResult(result, (f) => this.filterAllowedFiles(f))
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe({
-                    next: (res) => {
-                        if (res.type === 'mkdir') this.toastService.success(`Folder "${res.path}" created`);
-                        if (res.type === 'upload' && res.count > 0)
-                            this.toastService.success(`${res.count} file(s) uploaded`);
-                        this.loadTree();
-                    },
-                    error: () => this.toastService.error('Failed'),
-                });
+            if (result.type === 'mkdir') this.toastService.success(`Folder "${result.path}" created`);
+            if (result.type === 'upload' && result.count) this.toastService.success(`${result.count} file(s) uploaded`);
+            this.loadTree();
         });
     }
 
