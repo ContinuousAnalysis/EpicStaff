@@ -5,6 +5,7 @@
     justify-content: space-between;
     gap: 12px;
     flex-shrink: 0;
+    min-height: 40px;
 
     .search-section {
         flex: 1;
@@ -289,7 +290,6 @@ app-icon-button {
     margin-left: 10px;
 }
 
-
 tr.row-expanded td {
     border-bottom: none;
 }
@@ -303,18 +303,15 @@ tr.preview-row td.preview-cell {
     app-graph-messages {
         --message-padding: 0.5rem 1rem;
     }
-    
+
     max-height: 500px;
     overflow-y: auto;
     border-top: 1px solid var(--border-color, #2a2a3a);
-    background: rgba(0,0,0,.32);
+    background: rgba(0, 0, 0, 0.32);
     padding: 0;
 }
 
 .view-btn--active {
     background-color: transparent;
     border: 1px solid rgba(104, 95, 255, 1);
-
 }
-
-
