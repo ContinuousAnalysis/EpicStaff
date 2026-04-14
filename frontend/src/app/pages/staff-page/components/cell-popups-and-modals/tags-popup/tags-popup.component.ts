@@ -2,10 +2,12 @@ import { NgClass, NgFor } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+
 @Component({
     selector: 'app-tags-popup',
     standalone: true,
-    imports: [NgFor, FormsModule, NgClass],
+    imports: [NgFor, FormsModule, NgClass, AppSvgIconComponent],
     template: `
         <div class="tags-popup" (click)="$event.stopPropagation()">
             <div class="header">
@@ -27,7 +29,7 @@ import { FormsModule } from '@angular/forms';
                     <div class="tag-input-item">
                         <input type="text" placeholder="Add tag" [(ngModel)]="newTag" (keyup.enter)="addTag()" />
                         <button type="button" class="add-btn" (click)="addTag()" aria-label="Add tag">
-                            <i class="ti ti-plus"></i>
+                            <app-svg-icon icon="plus" size="1rem" />
                         </button>
                     </div>
                 </div>

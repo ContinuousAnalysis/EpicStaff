@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from tables.utils.helpers import generate_file_name
 from tables.import_export.services.export_service import ExportService
 from tables.import_export.services.import_service import ImportService
+from tables.import_export.version_conversions.base import VersionConverter
 from tables.import_export.registry import entity_registry
 from tables.import_export.constants import MAIN_ENTITY_KEY
 
@@ -52,6 +53,9 @@ class ViewSetImportExportService:
             raise ValidationError(
                 f"Provided wrong entity. Got: {main_entity}. Expected: {self.entity_type}"
             )
+
+        # convert data to newer version
+        data = VersionConverter.convert(data)
 
         id_mapper, registry = self.import_service.import_data(
             data, self.entity_type, preserve_uuids=preserve_uuids

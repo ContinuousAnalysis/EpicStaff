@@ -5,22 +5,23 @@ import { MarkdownModule } from 'ngx-markdown';
 
 import { GetProjectRequest } from '../../../../../../features/projects/models/project.model';
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { FinishMessageData, GraphMessage } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-finish-message',
     standalone: true,
-    imports: [CommonModule, NgxJsonViewerModule, MarkdownModule],
+    imports: [CommonModule, NgxJsonViewerModule, MarkdownModule, AppSvgIconComponent],
     animations: [expandCollapseAnimation],
     template: `
         <div class="finish-container">
             <!-- Finish Message Header with Toggle -->
             <div class="finish-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <i class="ti" [ngClass]="isMessageExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"></i>
+                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                 </div>
                 <div class="icon-container">
-                    <i class="ti ti-flag-filled"></i>
+                    <app-svg-icon icon="flag-filled" size="1rem" />
                 </div>
                 <h3>
                     <span class="project-name" *ngIf="project && project.name">{{ project.name }}</span>
@@ -35,10 +36,7 @@ import { FinishMessageData, GraphMessage } from '../../../../models/graph-sessio
                     <!-- Variables Section -->
                     <div class="variables-container" *ngIf="hasVariables()">
                         <div class="section-heading" (click)="toggleSection('variables')">
-                            <i
-                                class="ti"
-                                [ngClass]="isVariablesExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isVariablesExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                             Variables
                         </div>
                         <div
@@ -54,10 +52,7 @@ import { FinishMessageData, GraphMessage } from '../../../../models/graph-sessio
                     <!-- Final Output Section -->
                     <div class="output-container">
                         <div class="section-heading" (click)="toggleSection('output')">
-                            <i
-                                class="ti"
-                                [ngClass]="isOutputExpanded ? 'ti-caret-down-filled' : 'ti-caret-right-filled'"
-                            ></i>
+                            <app-svg-icon [icon]="isOutputExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
                             Final Output
                         </div>
 
@@ -80,7 +75,7 @@ import { FinishMessageData, GraphMessage } from '../../../../models/graph-sessio
             position: relative;
             background-color: var(--color-nodes-background);
             border-radius: 8px;
-            padding: 1.25rem;
+            padding: var(--message-padding, 1.25rem);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             border-left: 4px solid #5672cd;
 
@@ -95,10 +90,8 @@ import { FinishMessageData, GraphMessage } from '../../../../models/graph-sessio
                     display: flex;
                     align-items: center;
 
-                    i {
+                    app-svg-icon {
                         color: #5672cd;
-                        font-size: 1.1rem;
-                        transition: transform 0.3s ease;
                     }
                 }
 
@@ -113,9 +106,8 @@ import { FinishMessageData, GraphMessage } from '../../../../models/graph-sessio
                     margin-right: 20px;
                     flex-shrink: 0;
 
-                    i {
+                    app-svg-icon {
                         color: var(--gray-900);
-                        font-size: 1.25rem;
                     }
                 }
 
@@ -156,12 +148,10 @@ import { FinishMessageData, GraphMessage } from '../../../../models/graph-sessio
                 display: flex;
                 align-items: center;
 
-                i {
+                app-svg-icon {
                     margin-right: 8px;
                     color: #5672cd;
-                    font-size: 1.1rem;
                     margin-left: -3px;
-                    transition: transform 0.3s ease;
                 }
             }
 

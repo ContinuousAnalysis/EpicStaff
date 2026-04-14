@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     WEBHOOK_TUNNEL_RECONNECT_TIMEOUT: int = 10
     LOG_LEVEL: str = "INFO"
     TUNNEL_URLS_HASH_KEY: str = "tunnel_urls"
+    REALTIME_URL: str = "http://realtime:8050"
+    NGROK_TARGET_HOST: str = "epicstaff-nginx"
+    NGROK_TARGET_PORT: int = 80
 
     model_config = SettingsConfigDict(**config_dict)
 

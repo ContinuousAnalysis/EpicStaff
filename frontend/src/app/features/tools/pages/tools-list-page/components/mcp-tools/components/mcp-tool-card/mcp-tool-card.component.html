@@ -1,13 +1,14 @@
 <div class="tool-card">
     <div class="tool-header">
         <div class="tool-icon">
-            <mat-icon>hub</mat-icon>
+            <app-svg-icon icon="hub" size="24px" />
         </div>
         <div class="tool-info">
             <div class="tool-name">{{ tool.name }}</div>
             <div class="tool-type">MCP • {{ tool.tool_name }}</div>
         </div>
     </div>
+
     <div class="tool-description">
         <div class="transport-info">
             <span class="label">Transport:</span>
@@ -20,15 +21,16 @@
             </div>
         }
     </div>
+
     <div class="tool-footer">
         <app-button type="ghost" (click)="onConfigure()">Configure</app-button>
         <div class="footer-actions">
             <app-toggle-switch [checked]="enabled" (checkedChange)="onToggle($event)"></app-toggle-switch>
             <button class="star-btn" aria-label="Favorite" (click)="onStar()" [class.active]="starred">
-                <app-icon [icon]="starIcon" size="1.2rem"></app-icon>
+                <app-svg-icon [icon]="starIcon" size="1.2rem" />
             </button>
             <button class="delete-btn" aria-label="Delete tool" (click)="onDelete()">
-                <app-icon icon="ui/x" size="1.2rem"></app-icon>
+                <app-svg-icon icon="x" size="1.2rem" />
             </button>
         </div>
     </div>

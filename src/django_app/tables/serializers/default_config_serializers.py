@@ -4,6 +4,7 @@ from tables.models import (
     DefaultAgentConfig,
     DefaultCrewConfig,
     DefaultToolConfig,
+    DefaultModels,
 )
 from tables.models.realtime_models import DefaultRealtimeAgentConfig
 
@@ -29,6 +30,12 @@ class DefaultCrewConfigSerializer(serializers.ModelSerializer):
 class DefaultToolConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = DefaultToolConfig
+        fields = "__all__"
+
+
+class DefaultModelsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DefaultModels
         fields = "__all__"
 
 

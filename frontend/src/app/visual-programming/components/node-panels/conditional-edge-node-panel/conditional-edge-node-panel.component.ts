@@ -201,7 +201,7 @@ interface InputMapPair {
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConditionalEdgeNodePanelComponent extends BaseSidePanel<EdgeNodeModel> {
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
     public readonly isFormFieldsVisible = signal<boolean>(true);
 
     public pythonCode: string = '';
