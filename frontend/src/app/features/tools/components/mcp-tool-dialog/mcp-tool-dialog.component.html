@@ -3,9 +3,8 @@
         <h2 class="mcp-tool-dialog__title">
             {{ isEditMode ? 'Edit MCP Tool' : 'Add MCP Tool' }}
         </h2>
-        <button mat-icon-button class="mcp-tool-dialog__close-button" (click)="onCancel()">
-            <app-svg-icon icon="close" size="24px" />
-        </button>
+
+        <app-icon-button icon="x" ariaLabel="Close dialog" size="2rem" (onClick)="onCancel()"></app-icon-button>
     </div>
 
     <form [formGroup]="form" class="mcp-tool-dialog__form">
@@ -16,120 +15,75 @@
                     <span>{{ backendErrorMessage }}</span>
                 </div>
             }
-            <mat-form-field appearance="outline" class="mcp-tool-dialog__field mcp-tool-dialog__field--full-width">
-                <mat-label>
-                    Name
-                    <app-svg-icon
-                        icon="help"
-                        size="18px"
-                        class="mcp-tool-dialog__help-icon"
-                        matTooltip="Unique identifier for this MCP tool configuration"
-                        matTooltipPosition="above"
-                    />
-                </mat-label>
-                <input matInput formControlName="name" placeholder="Enter unique name for MCP configuration" required />
-                @if (form.get('name')?.pending) {
-                    <mat-hint>Checking name availability...</mat-hint>
-                }
-                @if (getFieldError('name')) {
-                    <mat-error>{{ getFieldError('name') }}</mat-error>
-                }
-            </mat-form-field>
+            <div>
+                <app-custom-input
+                    label="Name"
+                    placeholder="Enter unique name for MCP configuration"
+                    tooltipText="Unique identifier for this MCP tool configuration"
+                    [required]="true"
+                    formControlName="name"
+                />
+                <app-validation-errors [control]="form.get('name')!" />
+            </div>
 
-            <mat-form-field appearance="outline" class="mcp-tool-dialog__field mcp-tool-dialog__field--full-width">
-                <mat-label>
-                    Transport
-                    <app-svg-icon
-                        icon="help"
-                        size="18px"
-                        class="mcp-tool-dialog__help-icon"
-                        matTooltip="URL of the remote MCP server using Server-Sent Events (SSE) protocol"
-                        matTooltipPosition="above"
-                    />
-                </mat-label>
-                <input matInput formControlName="transport" placeholder="https://mcp-server.example.com/sse" required />
-                @if (getFieldError('transport')) {
-                    <mat-error>{{ getFieldError('transport') }}</mat-error>
-                }
-            </mat-form-field>
+            <div>
+                <app-custom-input
+                    label="Transport"
+                    placeholder="https://mcp-server.example.com/sse"
+                    tooltipText="URL of the remote MCP server using Server-Sent Events (SSE) protocol"
+                    [required]="true"
+                    formControlName="transport"
+                />
+                <app-validation-errors [control]="form.get('transport')!" />
+            </div>
 
-            <mat-form-field appearance="outline" class="mcp-tool-dialog__field mcp-tool-dialog__field--full-width">
-                <mat-label>
-                    Tool Name
-                    <app-svg-icon
-                        icon="help"
-                        size="18px"
-                        class="mcp-tool-dialog__help-icon"
-                        matTooltip="The specific tool name as registered on the MCP server"
-                        matTooltipPosition="above"
-                    />
-                </mat-label>
-                <input matInput formControlName="tool_name" placeholder="Name of the MCP tool" required />
-                @if (getFieldError('tool_name')) {
-                    <mat-error>{{ getFieldError('tool_name') }}</mat-error>
-                }
-            </mat-form-field>
+            <div>
+                <app-custom-input
+                    label="Tool Name"
+                    placeholder="Name of the MCP tool"
+                    tooltipText="The specific tool name as registered on the MCP server"
+                    [required]="true"
+                    formControlName="tool_name"
+                />
+                <app-validation-errors [control]="form.get('tool_name')!" />
+            </div>
 
-            <mat-form-field appearance="outline" class="mcp-tool-dialog__field mcp-tool-dialog__field--full-width">
-                <mat-label>
-                    Timeout (seconds)
-                    <app-svg-icon
-                        icon="help"
-                        size="18px"
-                        class="mcp-tool-dialog__help-icon"
-                        matTooltip="Maximum time in seconds to wait for a request response. Leave empty for default timeout."
-                        matTooltipPosition="above"
-                    />
-                </mat-label>
-                <input matInput type="number" formControlName="timeout" placeholder="30" />
-            </mat-form-field>
+            <div>
+                <app-input-number
+                    label="Timeout (seconds)"
+                    placeholder="30"
+                    tooltipText="Maximum time in seconds to wait for a request response. Leave empty for default timeout."
+                    formControlName="timeout"
+                />
+                <app-validation-errors [control]="form.get('timeout')!" />
+            </div>
 
-            <mat-form-field appearance="outline" class="mcp-tool-dialog__field mcp-tool-dialog__field--full-width">
-                <mat-label>
-                    Auth
-                    <app-svg-icon
-                        icon="help"
-                        size="18px"
-                        class="mcp-tool-dialog__help-icon"
-                        matTooltip="Authorization token, API key, or OAuth string for authenticating with the MCP server"
-                        matTooltipPosition="above"
-                    />
-                </mat-label>
-                <input matInput formControlName="auth" placeholder="Bearer token or OAuth string (optional)" />
-            </mat-form-field>
+            <div>
+                <app-custom-input
+                    label="Auth"
+                    placeholder="Bearer token or OAuth string (optional)"
+                    tooltipText="Authorization token, API key, or OAuth string for authenticating with the MCP server"
+                    formControlName="auth"
+                />
+                <app-validation-errors [control]="form.get('auth')!" />
+            </div>
 
-            <mat-form-field appearance="outline" class="mcp-tool-dialog__field mcp-tool-dialog__field--full-width">
-                <mat-label>
-                    Init Timeout (seconds)
-                    <app-svg-icon
-                        icon="help"
-                        size="18px"
-                        class="mcp-tool-dialog__help-icon"
-                        matTooltip="Maximum time in seconds to wait for session initialization. Default is 10 seconds."
-                        matTooltipPosition="above"
-                    />
-                </mat-label>
-                <input matInput type="number" formControlName="init_timeout" placeholder="10" />
-            </mat-form-field>
+            <div>
+                <app-input-number
+                    label="Init Timeout (seconds)"
+                    placeholder="30"
+                    tooltipText="Maximum time in seconds to wait for session initialization. Default is 10 seconds."
+                    formControlName="init_timeout"
+                />
+                <app-validation-errors [control]="form.get('init_timeout')!" />
+            </div>
         </div>
     </form>
 
     <div class="mcp-tool-dialog__footer">
-        <button
-            mat-button
-            type="button"
-            class="mcp-tool-dialog__button mcp-tool-dialog__button--cancel"
-            (click)="onCancel()"
-        >
-            Cancel
-        </button>
-        <button
-            mat-flat-button
-            class="mcp-tool-dialog__button mcp-tool-dialog__button--submit"
-            [disabled]="form.invalid || form.pending"
-            (click)="onSave()"
-        >
+        <app-button type="outline-primary" (click)="onCancel()">Cancel</app-button>
+        <app-button type="primary" [disabled]="form.invalid || form.pending" (click)="onSave()">
             {{ isEditMode ? 'Update' : 'Create' }}
-        </button>
+        </app-button>
     </div>
 </div>
