@@ -155,6 +155,33 @@ class ConversationService(IChatModeController):
                 else:
                     client = rt_agent_client
 
+                if rt_agent_client_task is not None and rt_agent_client_task.done():
+                    logger.info(f"RT agent session closed — reconnecting ({self.realtime_agent_chat_data.rt_provider})...")
+                    try:
+                        rt_agent_client.server_event_handler.reset()
+                        await rt_agent_client.connect()
+                        rt_agent_client_task = asyncio.create_task(
+                            rt_agent_client.handle_messages()
+                        )
+                        from google.genai import types as _gtypes
+                        # Replay rolling buffer so new session hears user speech
+                        # from before + during the interruption window.
+                        # History context is already baked into system_instruction by connect().
+                        rolling = getattr(rt_agent_client, "_audio_rolling_buffer", None)
+                        if rolling:
+                            chunks = [chunk for _, chunk in rolling]
+                            logger.info(f"Replaying {len(chunks)} buffered audio chunks to new session")
+                            for chunk in chunks:
+                                await rt_agent_client._session.send_realtime_input(
+                                    audio=_gtypes.Blob(data=chunk, mime_type="audio/pcm;rate=16000")
+                                )
+                            # No audio_stream_end — live audio continues after the buffer,
+                            # Gemini's VAD will detect end of speech naturally.
+                            rolling.clear()
+                    except Exception as e:
+                        logger.error(f"RT agent reconnect failed: {e}")
+                        break
+
                 try:
                     message: dict = await self.client_websocket.receive_json()
                     logger.debug(f"Received message: {shorten_dict(message)}")

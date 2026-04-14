@@ -10,6 +10,12 @@ class GeminiClientEventHandler:
     """
     Translates frontend OpenAI-format events into Gemini Live API SDK calls.
     Includes real-time 24kHz to 16kHz audio resampling (browser path).
+
+    VAD strategy: Gemini's automatic VAD is disabled; we drive activity signals
+    manually using the browser's own VAD events:
+      response.cancel            → activity_start (user started speaking / barge-in)
+      input_audio_buffer.commit  → activity_end   (user finished speaking)
+    This prevents Gemini from closing the session on interruption.
     """
 
     def __init__(self, client):
@@ -20,10 +26,11 @@ class GeminiClientEventHandler:
         self.client: GeminiRealtimeAgentClient = client
         self.event_map = {
             "input_audio_buffer.append": self._handle_audio_append,
-            "input_audio_buffer.commit": self._handle_noop,
+            "input_audio_buffer.commit": self._handle_audio_commit,
             "response.create": self._handle_noop,
-            "response.cancel": self._handle_noop,
+            "response.cancel": self._handle_response_cancel,
             "conversation.item.create": self._handle_noop,
+            "conversation.item.truncate": self._handle_noop,  # OpenAI-specific; we use activity signals
             "session.update": self._handle_noop,
         }
 
@@ -38,20 +45,39 @@ class GeminiClientEventHandler:
             return
 
         try:
+            import time
+
             # Decode incoming PCM 16-bit Mono 24kHz from browser
             pcm_data_24k = base64.b64decode(audio_b64)
             audio_array_24k = np.frombuffer(pcm_data_24k, dtype=np.int16)
 
-            # Downsample 24kHz → 16kHz (factor 2/3), same approach as ElevenLabs
+            # Downsample 24kHz → 16kHz (factor 2/3)
             indices = np.arange(0, len(audio_array_24k), 1.5).astype(np.int32)
-            audio_array_16k = audio_array_24k[indices]
-            pcm16k_bytes = audio_array_16k.tobytes()
+            pcm16k_bytes = audio_array_24k[indices].tobytes()
 
-            await self.client._session.send_realtime_input(
-                audio=types.Blob(data=pcm16k_bytes, mime_type="audio/pcm;rate=16000")
-            )
+            # Always maintain a rolling buffer of the last N seconds.
+            # This ensures we capture user speech from before the interruption signal
+            # arrives (VAD detection latency can be 300-500 ms).
+            now = time.monotonic()
+            buf = self.client._audio_rolling_buffer
+            buf.append((now, pcm16k_bytes))
+            cutoff = now - self.client._rolling_buffer_secs
+            while buf and buf[0][0] < cutoff:
+                buf.popleft()
+
+            if self.client._session is not None:
+                await self.client._session.send_realtime_input(
+                    audio=types.Blob(data=pcm16k_bytes, mime_type="audio/pcm;rate=16000")
+                )
         except Exception as e:
             logger.error(f"Gemini client handler: failed to process audio chunk: {e}")
+
+    async def _handle_audio_commit(self, data: Dict[str, Any]) -> None:
+        pass  # Server VAD mode: Gemini detects speech end automatically
+
+    async def _handle_response_cancel(self, data: Dict[str, Any]) -> None:
+        """Browser signals user interrupted — reset state and stop browser audio playback."""
+        await self.client.server_event_handler.handle_client_cancel()
 
     async def _handle_noop(self, data: Dict[str, Any]) -> None:
         pass

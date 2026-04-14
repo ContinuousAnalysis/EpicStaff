@@ -27,6 +27,17 @@ class GeminiServerEventHandler:
         self._current_user_item_id: Optional[str] = None
         self._current_output_index = 0
         self._assistant_output_index = 0
+        self._current_transcript = ""
+        self._discarding_audio = False  # True after client cancel, until Gemini confirms
+
+    def reset(self) -> None:
+        self._current_response_id = None
+        self._current_item_id = None
+        self._current_user_item_id = None
+        self._current_output_index = 0
+        self._assistant_output_index = 0
+        self._current_transcript = ""
+        self._discarding_audio = False
 
     async def _send_to_client(self, payload: dict) -> None:
         if "event_id" not in payload:
@@ -137,6 +148,11 @@ class GeminiServerEventHandler:
                 elif part.text:
                     await self._handle_text_part(part.text)
 
+        if server_content.output_transcription:
+            text = getattr(server_content.output_transcription, "text", "") or ""
+            if text:
+                await self._handle_output_transcription(text)
+
         if server_content.input_transcription:
             text = getattr(server_content.input_transcription, "text", "") or ""
             if text:
@@ -147,6 +163,8 @@ class GeminiServerEventHandler:
 
     async def _handle_audio_part(self, audio_bytes: bytes) -> None:
         """audio_bytes is raw 16-bit PCM at 24kHz from Gemini."""
+        if self._discarding_audio:
+            return
         await self._ensure_assistant_item()
 
         if self.client.is_twilio:
@@ -173,8 +191,10 @@ class GeminiServerEventHandler:
         )
         return base64.b64encode(audioop.lin2ulaw(pcm8k, 2)).decode()
 
-    async def _handle_text_part(self, text: str) -> None:
+    async def _handle_output_transcription(self, text: str) -> None:
+        """Handle output_transcription from Gemini (requires output_audio_transcription config)."""
         await self._ensure_assistant_item()
+        self._current_transcript += text
 
         await self._send_to_client(
             {
@@ -186,6 +206,10 @@ class GeminiServerEventHandler:
                 "delta": text,
             }
         )
+
+    async def _handle_text_part(self, text: str) -> None:
+        """Handle text parts in model_turn (fallback for non-audio response modes)."""
+        await self._ensure_assistant_item()
 
     async def _handle_turn_complete(self) -> None:
         rid = self._current_response_id
@@ -200,7 +224,7 @@ class GeminiServerEventHandler:
                     "item_id": iid,
                     "output_index": idx,
                     "content_index": 0,
-                    "transcript": "",
+                    "transcript": self._current_transcript,
                 }
             )
             await self._send_to_client(
@@ -223,13 +247,24 @@ class GeminiServerEventHandler:
                 {"type": "response.done", "response": {"id": rid, "status": "completed"}}
             )
 
+        # Save completed model turn to history for context injection on reconnect.
+        if self._current_transcript:
+            self.client._conversation_history.append(
+                {"role": "model", "text": self._current_transcript}
+            )
+
         self._current_response_id = None
         self._current_item_id = None
         self._current_user_item_id = None
         self._current_output_index = 0
         self._assistant_output_index = 0
+        self._current_transcript = ""
+        self._discarding_audio = False  # Clean turn end — ready for next response
 
     async def _handle_input_transcription(self, text: str) -> None:
+        # Save user turn to history for context injection on reconnect.
+        self.client._conversation_history.append({"role": "user", "text": text})
+
         if not self._current_user_item_id:
             self._current_user_item_id = f"msg_user_{uuid.uuid4().hex[:10]}"
             await self._send_to_client(
@@ -254,11 +289,36 @@ class GeminiServerEventHandler:
         )
 
     async def _handle_interrupted(self) -> None:
+        rid = self._current_response_id
         self._current_response_id = None
         self._current_item_id = None
         self._current_output_index = 0
         self._assistant_output_index = 0
+        self._current_transcript = ""
+        self._discarding_audio = False  # Gemini confirmed interruption — next audio is fresh
+        # Rolling buffer in the client event handler already captures this speech.
+        # Tell the browser VAD fired — stops audio playback
         await self._send_to_client({"type": "input_audio_buffer.speech_started"})
+        if rid:
+            await self._send_to_client(
+                {"type": "response.cancelled", "response": {"id": rid, "status": "cancelled"}}
+            )
+
+    async def handle_client_cancel(self) -> None:
+        """Called when the browser sends response.cancel (client-side interruption)."""
+        rid = self._current_response_id
+        self._current_response_id = None
+        self._current_item_id = None
+        self._current_output_index = 0
+        self._assistant_output_index = 0
+        self._current_transcript = ""
+        self._discarding_audio = True  # Discard Gemini's remaining audio until it confirms
+        # Rolling buffer in the client event handler already captures this speech.
+        await self._send_to_client({"type": "input_audio_buffer.speech_started"})
+        if rid:
+            await self._send_to_client(
+                {"type": "response.cancelled", "response": {"id": rid, "status": "cancelled"}}
+            )
 
     async def _handle_tool_call(self, tool_call) -> None:
         await self._ensure_response_exists()
@@ -312,3 +372,4 @@ class GeminiServerEventHandler:
             self._current_output_index += 1
             logger.info(f"Gemini: Calling tool {tool_name}")
             await self.client.call_tool(call_id, tool_name, args)
+

@@ -1,5 +1,6 @@
 import audioop
 import base64
+from collections import deque
 from typing import Any, Callable, Awaitable, Dict, List, Optional
 
 from google import genai
@@ -48,9 +49,12 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
             on_server_event=on_server_event,
         )
 
+        _VALID_GEMINI_VOICES = {"Puck", "Charon", "Kore", "Fenrir", "Aoede", "Leda", "Orus", "Zephyr"}
         self.tool_manager_service = tool_manager_service
         self.model = model
-        self.voice = voice
+        self.voice = voice if voice in _VALID_GEMINI_VOICES else "Puck"
+        if self.voice != voice:
+            logger.warning(f"Gemini: invalid voice '{voice}', falling back to 'Puck'")
         self.instructions = instructions
         self.temperature = temperature
 
@@ -61,6 +65,18 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
         # Stateful resampling state for Twilio paths
         self._resample_state_in = None   # µ-law 8kHz → PCM 16kHz
         self._resample_state_out = None  # PCM 24kHz → µ-law 8kHz
+
+        # Rolling buffer: always keeps the last _ROLLING_BUFFER_SECS seconds of user audio.
+        # On reconnect after session close, the buffer is replayed to the new session so
+        # Gemini hears the user's speech that happened during the interruption window.
+        # 16kHz 16-bit mono = 32 000 B/s → 5 s ≈ 160 KB, negligible overhead.
+        _ROLLING_BUFFER_SECS = 5.0
+        self._audio_rolling_buffer: deque[tuple[float, bytes]] = deque()
+        self._rolling_buffer_secs: float = _ROLLING_BUFFER_SECS
+
+        # Conversation history for context injection on reconnect.
+        # Each entry: {"role": "user" | "model", "text": str}
+        self._conversation_history: list[dict] = []
 
         self.server_event_handler = GeminiServerEventHandler(self)
         self.client_event_handler = GeminiClientEventHandler(self)
@@ -87,26 +103,59 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
             )
         return [{"function_declarations": declarations}]
 
+    def _build_system_instruction(self) -> str:
+        """Return system instruction with conversation history appended when reconnecting."""
+        if not self._conversation_history:
+            return self.instructions
+        history_lines = []
+        for entry in self._conversation_history:
+            role = "User" if entry["role"] == "user" else "Assistant"
+            history_lines.append(f"{role}: {entry['text']}")
+        return (
+            self.instructions
+            + "\n\n---\nConversation so far (continue naturally from here):\n"
+            + "\n".join(history_lines)
+        )
+
     async def connect(self) -> None:
         """Establish session with the Gemini Live API."""
-        config: Dict[str, Any] = {
-            "response_modalities": ["AUDIO"],
-            "speech_config": {
-                "voice_config": {
-                    "prebuilt_voice_config": {"voice_name": self.voice}
-                }
-            },
-            "system_instruction": types.Content(
-                parts=[types.Part(text=self.instructions)]
+        config = types.LiveConnectConfig(
+            response_modalities=[types.Modality.AUDIO],
+            speech_config=types.SpeechConfig(
+                voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                        voice_name=self.voice
+                    )
+                )
             ),
-        }
+            system_instruction=types.Content(
+                parts=[types.Part(text=self._build_system_instruction())]
+            ),
+            input_audio_transcription=types.AudioTranscriptionConfig(),
+            output_audio_transcription=types.AudioTranscriptionConfig(),
+            realtime_input_config=types.RealtimeInputConfig(
+                turn_coverage=types.TurnCoverage.TURN_INCLUDES_ONLY_ACTIVITY,
+            ),
+        )
         if self.tools:
-            config["tools"] = self.tools
+            config.tools = self.tools
 
+        logger.info(
+            f"Gemini: connecting model={self.model}, voice={self.voice}, "
+            f"tools={[d['name'] for t in self.tools for d in t.get('function_declarations', [])]}"
+        )
         self._session_cm = self._genai_client.aio.live.connect(
             model=self.model, config=config
         )
-        self._session = await self._session_cm.__aenter__()
+        try:
+            self._session = await self._session_cm.__aenter__()
+        except Exception as e:
+            reason = getattr(getattr(e, "rcvd", None), "reason", None)
+            code = getattr(getattr(e, "rcvd", None), "code", None)
+            logger.error(
+                f"Gemini: connection failed — code={code}, reason={reason}, exc={e}"
+            )
+            raise
         logger.info(f"Gemini Live connected: model={self.model}, voice={self.voice}")
 
     async def close(self) -> None:
@@ -123,14 +172,24 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
     async def handle_messages(self) -> None:
         """Long-running loop receiving LiveServerMessage objects from Gemini."""
         logger.info("Gemini: Message handler started.")
+        msg_count = 0
         try:
             async for response in self._session.receive():
+                msg_count += 1
+                active_fields = [
+                    f for f in ("setup_complete", "server_content", "tool_call", "go_away", "session_resumption_update")
+                    if getattr(response, f, None) is not None
+                ]
+                logger.debug(f"Gemini msg #{msg_count}: {active_fields or ['(empty)']}")
+                if getattr(response, "go_away", None) is not None:
+                    logger.warning(f"Gemini: go_away — time_left={getattr(response.go_away, 'time_left', '?')}")
                 try:
                     await self.server_event_handler.handle_event(response)
                 except Exception as e:
                     logger.exception(f"Gemini: Error processing message: {e}")
+            logger.warning(f"Gemini: receive() loop ended after {msg_count} messages — server closed connection normally")
         except Exception as e:
-            logger.exception(f"Gemini: handle_messages error: {e}")
+            logger.exception(f"Gemini: handle_messages error after {msg_count} messages: {e}")
         finally:
             await self.close()
 
@@ -189,6 +248,7 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
             function_responses=[
                 types.FunctionResponse(
                     id=call_id,
+                    name=tool_name,
                     response={"result": result_str},
                 )
             ]
