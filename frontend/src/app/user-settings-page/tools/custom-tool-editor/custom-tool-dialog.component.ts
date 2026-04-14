@@ -22,7 +22,6 @@ import {
     ValidationErrors,
     Validators,
 } from '@angular/forms';
-
 import {
     ButtonComponent,
     ConfirmationDialogData,
@@ -33,7 +32,6 @@ import {
     TableColumnDef,
 } from '@shared/components';
 
-import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import {
     ArgsSchema,
     CreatePythonCodeToolRequest,
@@ -42,6 +40,7 @@ import {
 } from '../../../features/tools/models/python-code-tool.model';
 import { CustomToolsService } from '../../../features/tools/services/custom-tools/custom-tools.service';
 import { ToastService } from '../../../services/notifications';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CodeEditorComponent } from './code-editor/code-editor.component';
 import { ToolLibrariesComponent } from './tool-libraries/tool-libraries.component';
 
@@ -75,6 +74,14 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
     toolEditorComponent!: CodeEditorComponent;
     @ViewChild('toolNameInput')
     toolNameInput!: ElementRef<HTMLInputElement>;
+    @ViewChild('contentSplit')
+    contentSplit!: ElementRef<HTMLDivElement>;
+    @ViewChild('formFields')
+    formFieldsRef!: ElementRef<HTMLDivElement>;
+
+    public formFieldsWidth = 640;
+    private dragStartX = 0;
+    private dragStartWidth = 0;
 
     columnDefs: TableColumnDef[] = [
         {
@@ -101,7 +108,7 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
         },
         {
             key: 'description',
-            header: 'Description',
+            header: 'Description description description description',
             placeholder: 'Enter description',
             type: 'input',
             validators: [Validators.required, Validators.minLength(3)],
@@ -192,14 +199,12 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
             this.inputsJsonConfig.set(this.getDefaultInputsSchema());
         }
 
-        this.dialogRef.keydownEvents
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((event: KeyboardEvent) => {
-                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
-                    event.preventDefault();
-                    this.createTool();
-                }
-            });
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                this.createTool();
+            }
+        });
 
         this.cdr.markForCheck();
     }
@@ -346,5 +351,30 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
     public onEditorErrorChange(hasError: boolean): void {
         this.editorHasError = hasError;
         this.cdr.markForCheck();
+    }
+
+    public onResizerMouseDown(event: MouseEvent): void {
+        this.dragStartX = event.clientX;
+        this.dragStartWidth = this.formFieldsWidth;
+        event.preventDefault();
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+
+        const onMouseMove = (e: MouseEvent) => {
+            const delta = e.clientX - this.dragStartX;
+            const containerWidth = this.contentSplit.nativeElement.offsetWidth;
+            this.formFieldsWidth = Math.max(280, Math.min(this.dragStartWidth + delta, containerWidth - 280));
+            this.cdr.markForCheck();
+        };
+
+        const onMouseUp = () => {
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
     }
 }

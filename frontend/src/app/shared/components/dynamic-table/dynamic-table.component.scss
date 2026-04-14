@@ -9,6 +9,7 @@
     border: 1px solid var(--color-divider-subtle);
     border-radius: 8px;
     overflow: hidden;
+    background: rgba(30, 30, 30, 0.6);
 
     &__header {
         display: flex;
@@ -50,7 +51,6 @@
         }
     }
 
-    // Table wrapper handles scrolling
     &__table-wrapper {
         overflow-x: auto;
         overflow-y: auto;
@@ -64,40 +64,59 @@
     &__table {
         width: 100%;
         border-collapse: collapse;
-        table-layout: auto;
-        min-width: 100%;
+        table-layout: fixed;
     }
 
     &__th {
+        position: relative;
         padding: 8px;
         text-align: left;
         font-size: 12px;
         color: var(--color-ks-text);
         border-bottom: 1px solid var(--color-divider-subtle);
-        border-right: 1px solid var(--color-divider-subtle);
         white-space: nowrap;
         user-select: none;
-
-        &:last-child {
-            border-right: none;
-        }
+        overflow: hidden;
 
         &--drag-spacer,
         &--action-spacer {
             width: 36px;
             min-width: 36px;
             padding: 0;
+            border-right: 1px solid var(--color-divider-subtle);
         }
+    }
 
-        &--draggable {
-            cursor: grab;
+    &__col-resize-handle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 1px;
+        height: 100%;
+        cursor: col-resize;
+        z-index: 2;
+        background-color: var(--color-divider-subtle);
+
+        &::after {
+            content: '';
+            position: absolute;
+            right: -1px;
+            width: 3px;
+            height: 100%;
         }
     }
 
     &__th-content {
         display: flex;
         align-items: center;
+        overflow: hidden;
         gap: 4px;
+    }
+
+    &__th-header {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     &__col-drag-handle {
@@ -105,9 +124,10 @@
         color: var(--color-text-secondary);
         display: flex;
         align-items: center;
+        flex-shrink: 0;
 
         i {
-            font-size: 0.9rem;
+            font-size: 1rem;
         }
 
         &:hover {
@@ -140,27 +160,17 @@
         }
     }
 
-    &__row-drag-placeholder {
-        height: 40px;
-        background-color: rgba(104, 95, 255, 0.07);
-        border: 1px dashed var(--accent-color, #685fff);
-        display: table-row;
-    }
-
     &__td {
-        padding: 8px;
-        border-right: 1px solid var(--color-divider-subtle);
+        position: relative;
+        padding: 0;
         vertical-align: middle;
-
-        &:last-child {
-            border-right: none;
-        }
 
         &--drag {
             width: 36px;
             min-width: 36px;
             padding: 0 6px;
             text-align: center;
+            border-right: 1px solid var(--color-divider-subtle);
         }
 
         &--action {
@@ -175,9 +185,16 @@
         }
     }
 
+    &__td-inner {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        padding: 0 8px;
+    }
+
     &__row-drag-handle {
         cursor: grab;
-        color: var(--color-ks-text);
+        color: var(--color-text-secondary);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -195,7 +212,6 @@
     &__cell-input,
     &__cell-select {
         width: 100%;
-        min-width: 80px;
         height: 32px;
         background: transparent;
         border: none;
@@ -208,16 +224,6 @@
 
         &::placeholder {
             color: var(--color-input-text-placeholder);
-        }
-
-        &:hover {
-            border-color: var(--color-input-border);
-            background-color: var(--color-input-background);
-        }
-
-        &:focus {
-            border-color: var(--accent-color);
-            background-color: var(--color-input-background);
         }
 
         &--invalid {
@@ -270,36 +276,30 @@
     }
 
     // Validation error bar (bottom of component, as shown in screenshot)
-    &__validation-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 14px;
-        background-color: rgba(220, 38, 38, 0.12);
-        border-top: 1px solid rgba(220, 38, 38, 0.3);
-        gap: 12px;
-    }
+}
 
-    &__validation-msg {
-        font-size: 0.8125rem;
-        color: var(--color-ks-status-failed, #dc2626);
+.validation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--color-flow-card-bg);
+    padding: 8px 8px 8px 16px;
+    margin-top: 8px;
+    border-radius: 8px;
+    border-left: 2px solid var(--color-ks-status-failed);
+
+    &__msg {
+        font-size: 12px;
+        color: var(--color-text-primary);
         flex: 1;
     }
 
-    &__validation-action {
+    &__chip {
         flex-shrink: 0;
-        padding: 4px 10px;
-        background: none;
-        border: 1px solid var(--color-ks-status-failed, #dc2626);
+        padding: 4px 8px;
+        background-color: var(--color-ks-transparent-red);
         border-radius: 4px;
-        color: var(--color-ks-status-failed, #dc2626);
-        font-size: 0.75rem;
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-
-        &:hover {
-            background-color: rgba(220, 38, 38, 0.15);
-        }
+        color: var(--color-ks-status-failed);
     }
 }
 
@@ -316,4 +316,13 @@
 
 .cdk-drop-list-dragging .dt__row:not(.cdk-drag-placeholder) {
     transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.dt__row.cdk-drag-placeholder {
+    background-color: rgba(104, 95, 255, 0.07);
+    opacity: 1;
+
+    td {
+        visibility: hidden;
+    }
 }

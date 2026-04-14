@@ -12,9 +12,9 @@
 
         <!-- Body -->
         <div class="dialog-content">
-            <div class="content-split">
+            <div class="content-split" #contentSplit>
                 <!-- Left side - Form fields -->
-                <div class="form-fields">
+                <div class="form-fields" #formFields [style.width.px]="formFieldsWidth">
                     <!-- Name Section -->
                     <div class="form-section name-section">
                         <div class="section-header">
@@ -81,28 +81,35 @@
                     />
 
                     <!-- Inputs Description Section -->
-                    <!--                    <div class="form-section inputs-section">-->
-                    <!--                        <div class="section-header">-->
-                    <!--                            <h3>Inputs Description</h3>-->
-                    <!--                            <app-help-tooltip-->
-                    <!--                                text="Define the input parameters your tool accepts as JSON. Specify 'properties' for each parameter and 'required' for mandatory fields."-->
-                    <!--                            ></app-help-tooltip>-->
-                    <!--                        </div>-->
-                    <!--                        <div class="json-editor-wrapper">-->
-                    <!--                            <app-json-editor-->
-                    <!--                                [jsonData]="inputsJsonConfig()"-->
-                    <!--                                (jsonChange)="inputsJsonConfig.set($event)"-->
-                    <!--                                (validationChange)="onInputsJsonValidChange($event)"-->
-                    <!--                                [fullHeight]="false"-->
-                    <!--                                [editorHeight]="200"-->
-                    <!--                            ></app-json-editor>-->
-                    <!--                        </div>-->
-                    <!--                    </div>-->
+                    <div class="form-section inputs-section">
+                        <div class="section-header">
+                            <h3>Inputs Description</h3>
+                            <app-help-tooltip
+                                text="Define the input parameters your tool accepts as JSON. Specify 'properties' for each parameter and 'required' for mandatory fields."
+                            ></app-help-tooltip>
+                        </div>
+                        <div class="json-editor-wrapper">
+                            <app-json-editor
+                                [jsonData]="inputsJsonConfig()"
+                                (jsonChange)="inputsJsonConfig.set($event)"
+                                (validationChange)="onInputsJsonValidChange($event)"
+                                [collapsible]="true"
+                                [allowCopy]="true"
+                                [fullHeight]="false"
+                                [editorHeight]="200"
+                            ></app-json-editor>
+                        </div>
+                    </div>
 
                     <!-- Libraries Section -->
                     <div class="form-section">
                         <app-tool-libraries [libraries]="selectedTool?.python_code?.libraries"></app-tool-libraries>
                     </div>
+                </div>
+
+                <!-- Resizer -->
+                <div class="resizer" (mousedown)="onResizerMouseDown($event)">
+                    <div class="resizer-handle"></div>
                 </div>
 
                 <!-- Right side - Code Editor -->

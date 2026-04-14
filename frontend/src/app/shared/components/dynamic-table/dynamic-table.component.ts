@@ -1,6 +1,16 @@
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input, OnInit, output, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    inject,
+    input,
+    OnInit,
+    output,
+    signal,
+} from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
@@ -15,6 +25,8 @@ import { TableColumnDef, TableRow } from './dynamic-table.models';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DynamicTableComponent implements OnInit {
+    private destroyRef = inject(DestroyRef);
+
     // Header
     title = input.required<string>();
     icon = input<string | null>(null); // svg icon name, null means no icon
@@ -52,8 +64,23 @@ export class DynamicTableComponent implements OnInit {
         return max === null || this.rows().length < max;
     });
 
+    // Column resize
+    colWidths = signal<Record<string, number>>({});
+    tableMinWidth = computed(() => {
+        const spacers = (this.allowRowDrag() ? 36 : 0) + 36; // drag handle + action
+        return this.columns().reduce((sum, col) => sum + this.getColWidth(col.key), spacers);
+    });
+    private resizeMoveHandler: ((e: MouseEvent) => void) | null = null;
+    private resizeUpHandler: (() => void) | null = null;
+
     ngOnInit(): void {
         this.columns.set([...this.columnDefs()]);
+        this.initColWidths();
+
+        this.destroyRef.onDestroy(() => {
+            if (this.resizeMoveHandler) document.removeEventListener('mousemove', this.resizeMoveHandler);
+            if (this.resizeUpHandler) document.removeEventListener('mouseup', this.resizeUpHandler);
+        });
 
         const initial = this.initialRows();
         if (initial.length > 0) {
@@ -219,6 +246,44 @@ export class DynamicTableComponent implements OnInit {
 
     private generateId(): string {
         return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    }
+
+    // --- Column Resize ---
+
+    getColWidth(colKey: string): number {
+        return this.colWidths()[colKey] ?? 120;
+    }
+
+    onResizeStart(event: MouseEvent, colKey: string): void {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const startX = event.clientX;
+        const startWidth = this.getColWidth(colKey);
+
+        this.resizeMoveHandler = (e: MouseEvent) => {
+            const newWidth = Math.max(40, startWidth + e.clientX - startX);
+            this.colWidths.update((w) => ({ ...w, [colKey]: newWidth }));
+        };
+
+        this.resizeUpHandler = () => {
+            document.removeEventListener('mousemove', this.resizeMoveHandler!);
+            document.removeEventListener('mouseup', this.resizeUpHandler!);
+            this.resizeMoveHandler = null;
+            this.resizeUpHandler = null;
+        };
+
+        document.addEventListener('mousemove', this.resizeMoveHandler);
+        document.addEventListener('mouseup', this.resizeUpHandler);
+    }
+
+    private initColWidths(): void {
+        const widths: Record<string, number> = {};
+        for (const col of this.columnDefs()) {
+            const parsed = col.width ? parseInt(col.width, 10) : 120;
+            widths[col.key] = isNaN(parsed) ? 120 : parsed;
+        }
+        this.colWidths.set(widths);
     }
 
     trackByRowId(_: number, row: TableRow): string {
