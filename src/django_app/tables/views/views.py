@@ -3,7 +3,11 @@ from collections import defaultdict
 import uuid
 import base64
 from tables.services.webhook_trigger_service import WebhookTriggerService
-from tables.models.graph_models import TelegramTriggerNode
+from tables.models.graph_models import (
+    TelegramTriggerNode,
+    PythonNode,
+    GraphSessionMessage,
+)
 from tables.services.telegram_trigger_service import TelegramTriggerService
 from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeDataFieldsSerializer,
@@ -1020,3 +1024,97 @@ class RegisterWebhooksApiView(APIView):
         webhook_trigger_service = WebhookTriggerService()
         webhook_trigger_service.register_webhooks()
         return Response(status=status.HTTP_200_OK)
+
+
+class PythonNodeLastTestInputView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Get Last Test Input for Python Node",
+        responses={
+            200: openapi.Response(
+                description="Result of the lookup — always 200, check 'input' for data.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "detail": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description="Human-readable status message.",
+                        ),
+                        "input": openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            nullable=True,
+                            description=(
+                                "The input dict from the last successful test run, "
+                                "or null when no matching data is found."
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(description="PythonNode not found"),
+        },
+    )
+    def get(self, request, pk):
+        try:
+            python_node = PythonNode.objects.get(pk=pk)
+        except PythonNode.DoesNotExist:
+            raise NotFound(detail="PythonNode not found.")
+
+        successful_sessions_exist = Session.objects.filter(
+            graph_id=python_node.graph_id,
+            status=Session.SessionStatus.END,
+        ).exists()
+
+        if not successful_sessions_exist:
+            return Response(
+                {
+                    "detail": "No successful sessions found for this flow.",
+                    "input": None,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        python_node_name = f"{python_node.node_name} #{python_node.pk}"
+        message = (
+            GraphSessionMessage.objects.filter(
+                session__graph_id=python_node.graph_id,
+                session__status=Session.SessionStatus.END,
+                name=python_node_name,
+                message_data__message_type="start",
+            )
+            .order_by("-session__created_at", "-created_at")
+            .first()
+        )
+
+        if message is None:
+            return Response(
+                {
+                    "detail": "No matching test input found for this node.",
+                    "input": None,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        found_input = message.message_data.get("input", {})
+        current_keys = set(python_node.input_map.keys())
+        found_keys = set(found_input.keys())
+
+        if current_keys != found_keys:
+            logger.info(
+                f"Python node {pk} input_map keys changed (current={current_keys}, found={found_keys}); "
+                "treating as no data found.",
+            )
+            return Response(
+                {
+                    "detail": "No matching test input found for this node.",
+                    "input": None,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {
+                "detail": "Last test input retrieved successfully.",
+                "input": found_input,
+            },
+            status=status.HTTP_200_OK,
+        )

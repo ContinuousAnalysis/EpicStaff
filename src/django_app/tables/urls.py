@@ -84,6 +84,7 @@ from tables.views.views import (
     QuickstartView,
     QuickstartApplyView,
     delete_environment_config,
+    PythonNodeLastTestInputView,
 )
 
 from tables.views.default_config import (
@@ -110,7 +111,11 @@ from tables.views.knowledge_views.naive_rag_views import (
 )
 
 
-from tables.views.sse_views import RunSessionSSEView, RunSessionSSEViewSwagger, FilteredRunSessionSSEView
+from tables.views.sse_views import (
+    RunSessionSSEView,
+    RunSessionSSEViewSwagger,
+    FilteredRunSessionSSEView,
+)
 
 router = DefaultRouter()
 router.register(r"template-agents", TemplateAgentReadWriteViewSet)
@@ -215,6 +220,11 @@ urlpatterns = [
         "run-python-code/",
         RunPythonCodeAPIView.as_view(),
         name="run-python-code",
+    ),
+    path(
+        "pythonnodes/<int:pk>/last-test-input/",
+        PythonNodeLastTestInputView.as_view(),
+        name="python-node-last-test-input",
     ),
     path(
         "init-realtime/",
