@@ -1,5 +1,6 @@
 .context-menu {
-    position: absolute;
+    width: auto;
+    min-width: 300px;
     background: #181818;
 
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
