@@ -1,45 +1,25 @@
-import { Component, Inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {
-    FormBuilder,
-    FormGroup,
-    FormsModule,
-    ReactiveFormsModule,
-    Validators,
-} from '@angular/forms';
 import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ChatsService } from '../../../../services/chats.service';
-import { LanguageSelectorComponent } from './language-selector/language-selector.component';
-import { VoiceSelectorComponent } from './voice-selector/voice-selector.component';
+import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, Inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RealtimeModelConfigsService } from '@shared/services';
+import { finalize } from 'rxjs';
+
+import { PartialUpdateAgentRequest, RealtimeAgentConfig } from '../../../../../../features/staff/models/agent.model';
+import { FullAgent, PartialAgent } from '../../../../../../features/staff/services/full-agent.service';
+import { AgentsService } from '../../../../../../features/staff/services/staff.service';
+import { EnhancedTranscriptionConfig } from '../../../../../../features/transcription/models/transcription-config.model';
+import { TranscriptionConfigsService } from '../../../../../../features/transcription/services/transcription-config.service';
+import { ToastService } from '../../../../../../services/notifications/toast.service';
+import { HelpTooltipComponent } from '../../../../../../shared/components/help-tooltip/help-tooltip.component';
 import { AVAILABLE_LANGUAGES } from '../../../../../../shared/constants/languages-selector.constants';
 import { AVAILABLE_VOICES } from '../../../../../../shared/constants/realtime-voice.constants';
-import { RealtimeAgentService } from '../../../../../../features/staff/services/realtime-agent.service';
-import { finalize } from 'rxjs';
-import { HelpTooltipComponent } from '../../../../../../shared/components/help-tooltip/help-tooltip.component';
-
-import {
-    RealtimeAgent,
-    UpdateRealtimeAgentRequest,
-} from '../../../../../../features/staff/models/realtime-agent.model';
-import { ToastService } from '../../../../../../services/notifications/toast.service';
-import {
-    FullAgent,
-    PartialAgent,
-} from '../../../../../../features/staff/services/full-agent.service';
-import {
-    Agent,
-    PartialUpdateAgentRequest,
-    RealtimeAgentConfig,
-} from '../../../../../../features/staff/models/agent.model';
-import { AgentsService } from '../../../../../../features/staff/services/staff.service';
-import { TranscriptionConfigsService } from '../../../../../../features/transcription/services/transcription-config.service';
-import {
-    EnhancedTranscriptionConfig,
-    GetTranscriptionConfigRequest,
-} from '../../../../../../features/transcription/models/transcription-config.model';
-import { TranscriptionConfigSelectorComponent } from './transcription-model-selector/transcription-config-selector.component';
-import { AddTranscriptionConfigDialogComponent } from './add-transcription-dialog/add-transcription-dialog.component';
 import { buildToolIdsArray } from '../../../../../../shared/utils/tool-ids-builder.util';
+import { AddTranscriptionConfigDialogComponent } from './add-transcription-dialog/add-transcription-dialog.component';
+import { LanguageSelectorComponent } from './language-selector/language-selector.component';
+import { TranscriptionConfigSelectorComponent } from './transcription-model-selector/transcription-config-selector.component';
+import { VoiceSelectorComponent } from './voice-selector/voice-selector.component';
 
 @Component({
     selector: 'app-realtime-settings-dialog',
@@ -62,6 +42,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     errorMessage: string | null = null;
     transcriptionConfigs: EnhancedTranscriptionConfig[] = [];
     loadingConfigs = false;
+    isElevenLabs = false;
 
     // Language options from constants
     languages = AVAILABLE_LANGUAGES;
@@ -74,13 +55,16 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         @Inject(DIALOG_DATA) public data: { agent: FullAgent },
         private agentsService: AgentsService,
         private transcriptionConfigsService: TranscriptionConfigsService,
+        private realtimeModelConfigsService: RealtimeModelConfigsService,
         private fb: FormBuilder,
         private toastService: ToastService,
-        private dialog: Dialog
+        private dialog: Dialog,
+        private destroyRef: DestroyRef
     ) {}
 
     ngOnInit(): void {
         this.loadTranscriptionConfigs();
+        this.loadRealtimeConfig();
 
         this.settingsForm = this.fb.group({
             voice: [this.data.agent.realtime_agent.voice, Validators.required],
@@ -95,13 +79,36 @@ export class RealtimeSettingsDialogComponent implements OnInit {
             wakeword: [this.data.agent.realtime_agent.wake_word],
             stopword: [this.data.agent.realtime_agent.stop_prompt],
             preferredLanguage: [this.data.agent.realtime_agent.language],
-            voice_recognition_prompt: [
-                this.data.agent.realtime_agent.voice_recognition_prompt,
-            ],
-            realtime_transcription_config: [
-                this.data.agent.realtime_agent.realtime_transcription_config,
-            ],
+            voice_recognition_prompt: [this.data.agent.realtime_agent.voice_recognition_prompt],
+            realtime_transcription_config: [this.data.agent.realtime_agent.realtime_transcription_config],
         });
+
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((event: KeyboardEvent) => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.onConfirm();
+                }
+            });
+    }
+
+    loadRealtimeConfig(): void {
+        const configId = this.data.agent.realtime_agent.realtime_config;
+        if (configId == null) {
+            return;
+        }
+        this.realtimeModelConfigsService
+            .getConfigById(configId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (config) => {
+                    this.isElevenLabs = config.provider_name === 'elevenlabs';
+                },
+                error: () => {
+                    // Non-critical — voice dropdown remains as default
+                },
+            });
     }
 
     loadTranscriptionConfigs(): void {
@@ -118,13 +125,8 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                     this.transcriptionConfigs = configs;
                 },
                 error: (error) => {
-                    console.error(
-                        'Error loading transcription configs:',
-                        error
-                    );
-                    this.toastService.error(
-                        'Failed to load transcription configurations.'
-                    );
+                    console.error('Error loading transcription configs:', error);
+                    this.toastService.error('Failed to load transcription configurations.');
                 },
             });
     }
@@ -136,22 +138,19 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     }
 
     openCreateTranscriptionConfigDialog(): void {
-        const dialogRef = this.dialog.open(
-            AddTranscriptionConfigDialogComponent,
-            {
-                data: {},
-                width: '500px',
-            }
-        );
+        const dialogRef = this.dialog.open(AddTranscriptionConfigDialogComponent, {
+            data: {},
+            width: '500px',
+        });
 
-        dialogRef.closed.subscribe((result: any) => {
+        dialogRef.closed.subscribe((result: unknown) => {
             if (result) {
                 // Reload the configs to include the newly created one
                 this.loadTranscriptionConfigs();
 
                 // After a short delay to ensure the configs are loaded, select the new config
                 setTimeout(() => {
-                    this.onTranscriptionConfigChange(result.id);
+                    this.onTranscriptionConfigChange((result as { id: number }).id);
                 }, 300);
             }
         });
@@ -160,29 +159,17 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     deleteTranscriptionConfig(configId: number): void {
         this.settingsForm.patchValue({ realtime_transcription_config: null });
 
-        this.transcriptionConfigsService
-            .deleteTranscriptionConfig(configId)
-            .subscribe({
-                next: () => {
-                    this.toastService.success(
-                        'Transcription config deleted successfully'
-                    );
+        this.transcriptionConfigsService.deleteTranscriptionConfig(configId).subscribe({
+            next: () => {
+                this.toastService.success('Transcription config deleted successfully');
 
-                    this.transcriptionConfigs =
-                        this.transcriptionConfigs.filter(
-                            (c) => c.id !== configId
-                        );
-                },
-                error: (error) => {
-                    console.error(
-                        'Error deleting transcription config:',
-                        error
-                    );
-                    this.toastService.error(
-                        'Failed to delete transcription config'
-                    );
-                },
-            });
+                this.transcriptionConfigs = this.transcriptionConfigs.filter((c) => c.id !== configId);
+            },
+            error: (error) => {
+                console.error('Error deleting transcription config:', error);
+                this.toastService.error('Failed to delete transcription config');
+            },
+        });
     }
 
     onLanguageChange(langId: string | null): void {
@@ -212,8 +199,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                 language: formValues.preferredLanguage,
                 voice: formValues.voice,
                 voice_recognition_prompt: formValues.voice_recognition_prompt,
-                realtime_transcription_config:
-                    formValues.realtime_transcription_config,
+                realtime_transcription_config: formValues.realtime_transcription_config,
                 realtime_config: this.data.agent.realtime_agent.realtime_config,
             };
 
@@ -221,10 +207,10 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                 naive: {
                     similarity_threshold: formValues.threshold.toString(),
                     search_limit: formValues.searchLimit,
-                }
-            }
+                },
+            };
 
-            const getToolIds = (tools: any[]) => {
+            const getToolIds = (tools: { data: { id: number }; unique_name: string }[]) => {
                 const configured_tool: number[] = [];
                 const python_code_tool: number[] = [];
 
@@ -240,15 +226,10 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                 return { configured_tool, python_code_tool };
             };
 
-            const { configured_tool, python_code_tool } = getToolIds(
-                this.data.agent.tools
-            );
+            const { configured_tool, python_code_tool } = getToolIds(this.data.agent.tools);
 
             // Build tool_ids array for settings update
-            const settingsToolIds = buildToolIdsArray(
-                configured_tool,
-                python_code_tool
-            );
+            const settingsToolIds = buildToolIdsArray(configured_tool, python_code_tool);
 
             const updatedAgent: PartialUpdateAgentRequest = {
                 id: this.data.agent.id,
@@ -271,28 +252,21 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                     })
                 )
                 .subscribe({
-                    next: (response) => {
-                        console.log(
-                            'Realtime agent updated successfully:',
-                            response
-                        );
-                        this.toastService.success(
-                            'Realtime agent settings updated successfully'
-                        );
+                    next: () => {
+                        this.toastService.success('Realtime agent settings updated successfully');
 
                         // Pass the updated agent back to the parent component
                         this.dialogRef.close(updatedAgent);
                     },
                     error: (error) => {
                         console.error('Error updating realtime agent:', error);
-                        this.errorMessage =
-                            'Failed to update settings. Please try again.';
+                        this.errorMessage = 'Failed to update settings. Please try again.';
 
-                        this.toastService.error(
-                            'Failed to update settings. Please try again.'
-                        );
+                        this.toastService.error('Failed to update settings. Please try again.');
                     },
                 });
+        } else {
+            this.settingsForm.markAllAsTouched();
         }
     }
 }

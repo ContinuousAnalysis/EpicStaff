@@ -2,6 +2,8 @@
   "compileOnSave": false,
   "compilerOptions": {
     "outDir": "./dist/out-tsc",
+    "rootDir": "./src",
+    "ignoreDeprecations": "5.0",
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -29,6 +31,7 @@
       "@shared/material-forms": ["src/app/shared/material-forms/index.ts"],
       "@shared/services": ["src/app/shared/services/index.ts"],
       "@shared/utils": ["src/app/shared/utils/index.ts"],
+      "@shared/models": ["src/app/shared/models/index.ts"],
     }
   },
   "angularCompilerOptions": {
@@ -36,5 +39,6 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
-  }
+  },
+  "exclude": ["node_modules", "**/node_modules/*"]
 }

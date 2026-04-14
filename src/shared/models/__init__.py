@@ -1,6 +1,5 @@
 from .agents import (
     AgentData,
-    RealtimeAgentData,
     RealtimeAgentChatData,
     CrewData,
     TaskData,
@@ -33,6 +32,7 @@ from .graph_nodes import (
     SubGraphNodeData,
     GraphData,
     SubGraphData,
+    CodeAgentNodeData,
 )
 from .knowledge import (
     BaseRagSearchConfig,
@@ -70,7 +70,6 @@ from .tools import (
 __all__ = [
     # agents
     "AgentData",
-    "RealtimeAgentData",
     "RealtimeAgentChatData",
     "CrewData",
     "TaskData",
@@ -101,6 +100,7 @@ __all__ = [
     "SubGraphNodeData",
     "GraphData",
     "SubGraphData",
+    "CodeAgentNodeData",
     # knowledge
     "BaseRagSearchConfig",
     "NaiveRagSearchConfig",

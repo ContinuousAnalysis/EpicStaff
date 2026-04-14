@@ -1,78 +1,85 @@
 <nav class="sidenav">
     <div class="logo-container">
         <div class="app-logo">
-            <img
-                src="assets/icons/llm-providers-logos/logo.svg"
-                alt="AI"
-                class="logo-svg static-logo"
-            />
-            <img
-                src="assets/gifs/logo.gif"
-                alt="AI"
-                class="logo-svg gif-logo"
-            />
+            <img src="assets/icons/llm-providers-logos/logo.svg" alt="AI" class="logo-svg static-logo" />
+            <img src="assets/gifs/logo.gif" alt="AI" class="logo-svg gif-logo" />
             <div class="logo-text">EpicStaff.ai</div>
         </div>
     </div>
 
     <ul class="sidenav-nav main-nav">
         @for (item of topNavItems; track item.id) {
-        <li
-            class="sidenav-nav-item"
-            (mouseenter)="item.showTooltip = true"
-            (mouseleave)="item.showTooltip = false"
-        >
-            <div class="tooltip-wrapper">
-                <a
-                    class="sidenav-nav-link"
-                    [routerLink]="item.routeLink || null"
-                    routerLinkActive="active"
-                    [routerLinkActiveOptions]="{ exact: false }"
-                    (click)="item.action ? handleItemClick(item, $event) : null"
-                    [attr.href]="item.routeLink || (item.action ? '#' : null)"
-                >
-                    <div
-                        class="sidenav-link-icon"
-                        [innerHTML]="item.svgIcon"
-                    ></div>
-                </a>
-                <app-tooltip
-                    [text]="item.label"
-                    [visible]="item.showTooltip"
-                ></app-tooltip>
-            </div>
-        </li>
+            <li class="sidenav-nav-item" (mouseenter)="item.showTooltip = true" (mouseleave)="item.showTooltip = false">
+                <div class="tooltip-wrapper">
+                    <a
+                        class="sidenav-nav-link"
+                        [routerLink]="item.routeLink || null"
+                        routerLinkActive="active"
+                        [routerLinkActiveOptions]="{ exact: false }"
+                        (click)="item.action ? handleItemClick(item, $event) : null"
+                        [attr.href]="item.routeLink || (item.action ? '#' : null)"
+                    >
+                        <div class="sidenav-link-icon">
+                            @if (item.icon) {
+                                <app-svg-icon [icon]="item.icon" size="1.4rem" />
+                            }
+                        </div>
+                    </a>
+                    <app-tooltip [text]="item.label" [visible]="item.showTooltip"></app-tooltip>
+                </div>
+            </li>
         }
     </ul>
 
     <ul class="sidenav-nav bottom-nav">
         @for (item of bottomNavItems; track item.id) {
-        <li
-            class="sidenav-nav-item"
-            (mouseenter)="item.showTooltip = true"
-            (mouseleave)="item.showTooltip = false"
-        >
-            <div class="tooltip-wrapper">
-                <a
-                    class="sidenav-nav-link"
-                    [routerLink]="item.routeLink || null"
-                    routerLinkActive="active"
-                    [routerLinkActiveOptions]="{ exact: false }"
-                    (click)="handleItemClick(item, $event)"
-                    [attr.href]="item.routeLink || (item.action ? '#' : null)"
-                >
-                    <div
-                        class="sidenav-link-icon"
-                        [innerHTML]="item.svgIcon"
-                    ></div>
-                </a>
-                <app-tooltip
-                    [text]="item.label"
-                    [visible]="item.showTooltip"
-                    [class]="item.customClass || ''"
-                ></app-tooltip>
-            </div>
-        </li>
+            <li class="sidenav-nav-item" (mouseenter)="item.showTooltip = true" (mouseleave)="item.showTooltip = false">
+                <div class="tooltip-wrapper">
+                    <a
+                        class="sidenav-nav-link"
+                        [routerLink]="item.routeLink || null"
+                        routerLinkActive="active"
+                        [routerLinkActiveOptions]="{ exact: false }"
+                        (click)="handleItemClick(item, $event)"
+                        [attr.href]="item.routeLink || (item.action ? '#' : null)"
+                    >
+                        <div class="sidenav-link-icon">
+                            @if (item.icon) {
+                                <app-svg-icon [icon]="item.icon" size="1.4rem" />
+                            }
+                        </div>
+                    </a>
+                    <app-tooltip
+                        [text]="item.label"
+                        [visible]="item.showTooltip"
+                        [class]="item.customClass || ''"
+                    ></app-tooltip>
+                </div>
+            </li>
         }
     </ul>
+
+    @if (isEpicChatEnabled) {
+        <epic-chat
+            #epicChat
+            class="epic-chat-host"
+            theme-preset="epicstaff"
+            [themeConfig]="epicChatThemeConfig"
+            base-path="/epicchat-widget/"
+            chat-icon-path=""
+            message-timeout="180000"
+            [apiBaseUrl]="apiBaseUrl"
+            [attr.chat-left]="epicChatService.isDocked() ? epicChatService.dockLeftPx() + 'px' : '68px'"
+            [attr.chat-bottom]="epicChatService.isDocked() ? '0px' : '10px'"
+            [attr.chat-top]="epicChatService.isDocked() ? '0px' : null"
+            [attr.chat-width]="epicChatService.isDocked() ? epicChatService.dockWidth() + 'px' : null"
+            [attr.chat-height]="epicChatService.isDocked() ? '100vh' : null"
+            [dockEnabled]="true"
+            [fileAttachmentDisabled]="false"
+            [isDockMode]="epicChatService.isDocked()"
+            [epChatCommand]="epicChatService.epChatCommand()"
+            (epChatCommandResult)="onEpChatCommandResult($event)"
+            (epChatEvent)="onEpChatEvent($event)"
+        ></epic-chat>
+    }
 </nav>

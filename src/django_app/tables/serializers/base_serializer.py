@@ -10,10 +10,26 @@ class TimestampMixin(serializers.Serializer):
 
 
 class ContentHashMixin(serializers.Serializer):
-    content_hash = serializers.CharField(read_only=True)
+    content_hash = serializers.CharField(required=False, allow_null=True)
 
     class Meta:
         common_fields = ["content_hash"]
+
+
+class ContentHashWritableMixin:
+    """Adds content_hash as an optional writable field.
+
+    content_hash is a computed property on the model (not a DB column), so
+    ModelSerializer won't include it automatically. get_fields() injects it
+    so Swagger shows it and clients can pass it. validate() removes it from
+    validated_data — the view-level ContentHashPreconditionMixin is
+    responsible for setting instance._expected_hash before save().
+    """
+
+    def get_fields(self):
+        fields = super().get_fields()
+        fields["content_hash"] = serializers.CharField(required=False, allow_null=True)
+        return fields
 
 
 class MetadataMixin(serializers.Serializer):

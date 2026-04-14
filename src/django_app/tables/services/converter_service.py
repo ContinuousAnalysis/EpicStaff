@@ -456,8 +456,12 @@ class ConverterService(metaclass=SingletonMeta):
             tools=self._get_agent_base_tools(agent=agent),
             rt_model_name=rt_config.realtime_model.name,
             rt_api_key=rt_config.api_key,
-            transcript_model_name=rt_transcription_config.realtime_transcription_model.name,
-            transcript_api_key=rt_transcription_config.api_key,
+            transcript_model_name=rt_transcription_config.realtime_transcription_model.name
+            if rt_transcription_config
+            else None,
+            transcript_api_key=rt_transcription_config.api_key
+            if rt_transcription_config
+            else None,
             temperature=agent.default_temperature,
             connection_key=rt_agent_chat.connection_key,
             wake_word=rt_agent_chat.wake_word,
@@ -467,6 +471,9 @@ class ConverterService(metaclass=SingletonMeta):
             voice=rt_agent_chat.voice,
             input_audio_format=rt_agent_chat.input_audio_format.value,
             output_audio_format=rt_agent_chat.output_audio_format.value,
+            rt_provider=rt_config.realtime_model.provider.name
+            if rt_config.realtime_model.provider
+            else "openai",
         )
 
         return rt_agent_chat_data
@@ -625,6 +632,7 @@ class ConverterService(metaclass=SingletonMeta):
             python_code=python_code_data,
             input_map=python_node.input_map,
             output_variable_path=python_node.output_variable_path,
+            stream_config=python_node.stream_config or {},
         )
 
     def convert_conditional_edge_to_pydantic(
@@ -699,6 +707,7 @@ class ConverterService(metaclass=SingletonMeta):
             crew=crew_data,
             input_map=crew_node.input_map,
             output_variable_path=crew_node.output_variable_path,
+            stream_config=crew_node.stream_config or {},
         )
 
     def convert_end_node_to_pydantic(

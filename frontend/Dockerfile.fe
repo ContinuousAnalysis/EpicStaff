@@ -1,23 +1,31 @@
-FROM node:20.17.0 AS build-stage
+ARG TARGET=production
 
-WORKDIR /home/user/root/app
+# ─── Stage: deps ─────────────────────────────────────────────────────────────
+FROM node:20.17.0 AS deps
 
-# Copy package files first for better layer caching
+WORKDIR /app
 
 COPY package*.json ./
+RUN npm install --force || npm install --force && npm cache clean --force
 
-# Install dependencies (this layer will be cached if package files don't change)
-RUN npm install --force && npm cache clean --force
+# ─── Stage: development ───────────────────────────────────────────────────────
+FROM deps AS development
 
-# Copy the rest of the application code
+EXPOSE 4200
+
+CMD ["npm", "run", "start", "--", "--host", "0.0.0.0", "--poll=1000"]
+
+# ─── Stage: build ─────────────────────────────────────────────────────────────
+FROM deps AS build
+
 COPY . .
 
-# Build the application
 RUN npm run build -- --configuration production
 
-FROM docker.io/library/nginx:alpine AS production-stage
+# ─── Stage: production ────────────────────────────────────────────────────────
+FROM docker.io/library/nginx:alpine AS production
 
-COPY --from=build-stage /home/user/root/app/dist/frontend-crewai/browser/ /usr/share/nginx/html/
+COPY --from=build /app/dist/frontend-crewai/browser/ /usr/share/nginx/html/
 
 COPY 50x.html /usr/share/nginx/html/
 COPY nginx.conf /etc/nginx/conf.d/default.conf

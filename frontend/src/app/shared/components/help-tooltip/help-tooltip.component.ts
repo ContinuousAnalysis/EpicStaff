@@ -1,28 +1,16 @@
-import {
-    Component,
-    Input,
-    ChangeDetectionStrategy,
-    ElementRef,
-    ViewChild,
-    OnDestroy,
-    NgZone,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { AppIconComponent } from '../app-icon/app-icon.component';
-import {
-    Overlay,
-    OverlayModule,
-    OverlayRef,
-    ConnectedPosition,
-} from '@angular/cdk/overlay';
+import { ConnectedPosition, Overlay, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
+import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, ElementRef, Input, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { fromEvent, take } from 'rxjs';
+
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { TooltipContentComponent } from './tooltip-content.component';
-import { take, fromEvent, filter } from 'rxjs';
 
 @Component({
     selector: 'app-help-tooltip',
     standalone: true,
-    imports: [CommonModule, AppIconComponent, OverlayModule],
+    imports: [CommonModule, AppSvgIconComponent, OverlayModule],
     template: `
         <div class="help-tooltip-container">
             <span
@@ -34,7 +22,7 @@ import { take, fromEvent, filter } from 'rxjs';
                 (focus)="showTooltip()"
                 (blur)="hideTooltip()"
             >
-                <app-icon icon="ui/help" [size]="'1.2rem'"></app-icon>
+                <app-svg-icon icon="help" size="1.2rem" />
             </span>
         </div>
     `,
@@ -81,7 +69,10 @@ export class HelpTooltipComponent implements OnDestroy {
     private tooltipInstance: TooltipContentComponent | null = null;
     private tooltipHover = false;
 
-    constructor(private overlay: Overlay, private ngZone: NgZone) {}
+    constructor(
+        private overlay: Overlay,
+        private ngZone: NgZone
+    ) {}
 
     showTooltip() {
         if (this.overlayRef) {

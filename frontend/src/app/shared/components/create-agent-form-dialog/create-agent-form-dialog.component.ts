@@ -1,3 +1,5 @@
+import { DialogRef } from '@angular/cdk/dialog';
+import { CommonModule } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -5,46 +7,29 @@ import {
     OnDestroy,
     OnInit,
     signal,
+    ViewChild,
 } from '@angular/core';
-import { Dialog, DialogRef } from '@angular/cdk/dialog';
-import {
-    FormBuilder,
-    FormGroup,
-    FormControl,
-    Validators,
-    FormsModule,
-    ReactiveFormsModule,
-} from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import {Subscription, switchMap, takeUntil, of} from 'rxjs';
-import { Subject } from 'rxjs';
-import { MATERIAL_FORMS } from '../../material-forms';
-
-import { RealtimeAgentService } from '../../../features/staff/services/realtime-agent.service';
-import { AgentsService } from '../../../features/staff/services/staff.service';
-import { ToastService } from '../../../services/notifications/toast.service';
-import { ToolsSelectorComponent } from '../../components/tools-selector/tools-selector.component';
-import {
-    FullLLMConfigService,
-    FullLLMConfig,
-} from '../../../features/settings-dialog/services/llms/full-llm-config.service';
-import {
-    CreateAgentRequest,
-    GetAgentRequest,
-    ToolUniqueName,
-} from '../../../features/staff/models/agent.model';
-import { buildToolIdsArray } from '../../utils/tool-ids-builder.util';
-import { CustomErrorStateMatcher } from '../../error-state-matcher/custom-error-state-matcher';
+import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
-import { getProviderIconPath } from '../../../features/settings-dialog/utils/get-provider-icon';
-import { AppIconComponent } from '../app-icon/app-icon.component';
-import {CollectionsApiService} from "../../../features/knowledge-sources/services/collections-api.service";
+import { FullLLMConfig, FullLLMConfigService } from '@shared/services';
+import { getProviderIconPath } from '@shared/utils';
+import { of, Subscription, switchMap, takeUntil } from 'rxjs';
+import { Subject } from 'rxjs';
+import { tap } from 'rxjs/operators';
+
 import {
     GetCollectionRagsResponse,
-    GetCollectionRequest
-} from "../../../features/knowledge-sources/models/collection.model";
-import {tap} from "rxjs/operators";
-import {ValidationErrorsComponent} from "../app-validation-errors/validation-errors.component";
+    GetCollectionRequest,
+} from '../../../features/knowledge-sources/models/collection.model';
+import { CollectionsApiService } from '../../../features/knowledge-sources/services/collections-api.service';
+import { CreateAgentRequest, GetAgentRequest, ToolUniqueName } from '../../../features/staff/models/agent.model';
+import { RealtimeAgentService } from '../../../features/staff/services/realtime-agent.service';
+import { ToolsSelectorComponent } from '../../components/tools-selector/tools-selector.component';
+import { CustomErrorStateMatcher } from '../../error-state-matcher/custom-error-state-matcher';
+import { MATERIAL_FORMS } from '../../material-forms';
+import { buildToolIdsArray } from '../../utils/tool-ids-builder.util';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
+import { ValidationErrorsComponent } from '../app-validation-errors/validation-errors.component';
 
 interface AgentFormData {
     role: string;
@@ -78,14 +63,13 @@ export type AgentDialogResult =
     selector: 'app-create-agent-form',
     templateUrl: './create-agent-form-dialog.component.html',
     styleUrls: ['./create-agent-form-dialog.component.scss'],
-    standalone: true,
     imports: [
         CommonModule,
         FormsModule,
         ReactiveFormsModule,
         ...MATERIAL_FORMS,
         ToolsSelectorComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
         ValidationErrorsComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -123,6 +107,9 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
 
     public isSubmitting = signal(false);
 
+    @ViewChild(ToolsSelectorComponent)
+    private toolsSelector?: ToolsSelectorComponent;
+
     // Edit mode properties
     public isEditMode: boolean = false;
     public agentToEdit?: GetAgentRequest;
@@ -154,12 +141,10 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         private realtimeAgentService: RealtimeAgentService,
         private fullLLMConfigService: FullLLMConfigService,
         private collectionsService: CollectionsApiService,
-        public dialogRef: DialogRef<AgentDialogResult | undefined>,
+        public dialogRef: DialogRef<AgentDialogResult | undefined>
     ) {
         // Check edit mode
-        const data = this.dialogRef.config?.data as
-            | { agent: GetAgentRequest; isEditMode: boolean }
-            | undefined;
+        const data = this.dialogRef.config?.data as { agent: GetAgentRequest; isEditMode: boolean } | undefined;
         if (data?.isEditMode && data?.agent) {
             this.isEditMode = true;
             this.agentToEdit = data.agent;
@@ -173,30 +158,43 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         this.loadKnowledgeSources();
 
         this.trackKnowledgeSourceChange();
+
+        this.subscriptions.add(
+            this.dialogRef.keydownEvents.subscribe((event: KeyboardEvent) => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    if (this.toolsSelector?.isOpen()) {
+                        return;
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.onSubmitForm();
+                }
+            })
+        );
     }
 
     private trackKnowledgeSourceChange(): void {
         const ragCtrl = this.agentForm.get('rag_id');
 
-        this.agentForm.controls['knowledge_collection'].valueChanges.pipe(
-            tap((value) => {
-                if (value !== null) {
-                    ragCtrl?.setValidators(Validators.required);
-                } else {
-                    ragCtrl?.clearValidators();
-                }
+        this.agentForm.controls['knowledge_collection'].valueChanges
+            .pipe(
+                tap((value) => {
+                    if (value !== null) {
+                        ragCtrl?.setValidators(Validators.required);
+                    } else {
+                        ragCtrl?.clearValidators();
+                    }
 
-                ragCtrl?.setValue(null);
-                ragCtrl?.markAsTouched();
-                ragCtrl?.updateValueAndValidity();
-            }),
-            takeUntil(this.destroy$),
-            switchMap(id =>
-                id ? this.collectionsService.getRagsByCollectionId(id) : of([])
+                    ragCtrl?.setValue(null);
+                    ragCtrl?.markAsTouched();
+                    ragCtrl?.updateValueAndValidity();
+                }),
+                takeUntil(this.destroy$),
+                switchMap((id) => (id ? this.collectionsService.getRagsByCollectionId(id) : of([])))
             )
-        ).subscribe(rags => {
-            this.collectionRags.set(rags);
-        });
+            .subscribe((rags) => {
+                this.collectionRags.set(rags);
+            });
     }
 
     private initializeForm(): void {
@@ -206,62 +204,37 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
             this.agentForm = new FormGroup({
                 role: new FormControl<string>(agent.role, Validators.required),
                 goal: new FormControl<string>(agent.goal, Validators.required),
-                backstory: new FormControl<string>(
-                    agent.backstory,
-                    Validators.required
-                ),
-                allow_delegation: new FormControl<boolean>(
-                    agent.allow_delegation
-                ),
+                backstory: new FormControl<string>(agent.backstory, Validators.required),
+                allow_delegation: new FormControl<boolean>(agent.allow_delegation),
                 memory: new FormControl<boolean>(agent.memory ?? false),
-                max_iter: new FormControl<number>(agent.max_iter, [
+                max_iter: new FormControl<number>(agent.max_iter, [Validators.min(1), Validators.max(30)]),
+                max_rpm: new FormControl<number>(agent.max_rpm || 10, [Validators.min(1), Validators.max(30)]),
+                max_execution_time: new FormControl<number>(agent.max_execution_time || 60, [
                     Validators.min(1),
-                    Validators.max(30),
+                    Validators.max(300),
                 ]),
-                max_rpm: new FormControl<number>(agent.max_rpm || 10, [
-                    Validators.min(1),
-                    Validators.max(30),
+                max_retry_limit: new FormControl<number>(agent.max_retry_limit ?? 3, [
+                    Validators.min(0),
+                    Validators.max(10),
                 ]),
-                max_execution_time: new FormControl<number>(
-                    agent.max_execution_time || 60,
-                    [Validators.min(1), Validators.max(300)]
-                ),
-                max_retry_limit: new FormControl<number>(
-                    agent.max_retry_limit ?? 3,
-                    [Validators.min(0), Validators.max(10)]
-                ),
                 default_temperature: new FormControl<number | null>(null), // Set to null as requested
                 llm_config: new FormControl<number | null>(agent.llm_config),
-                fcm_llm_config: new FormControl<number | null>(
-                    agent.fcm_llm_config
-                ),
-                knowledge_collection: new FormControl<number | null>(
-                    agent.knowledge_collection
-                ),
-                rag_id: new FormControl<number | null>(
-                    agent.rag?.rag_id || null
-                ),
-                configured_tools: new FormControl<number[]>(
-                    agent.configured_tools || []
-                ),
-                python_code_tools: new FormControl<number[]>(
-                    agent.python_code_tools || []
-                ),
-                mcp_tools: new FormControl<number[]>(
-                    agent.mcp_tools || []
-                ),
-                search_limit: new FormControl<number>(
-                    agent.search_configs.naive.search_limit ?? 3,
-                    [Validators.min(1), Validators.max(1000)]
-                ),
+                fcm_llm_config: new FormControl<number | null>(agent.fcm_llm_config),
+                knowledge_collection: new FormControl<number | null>(agent.knowledge_collection),
+                rag_id: new FormControl<number | null>(agent.rag?.rag_id || null),
+                configured_tools: new FormControl<number[]>(agent.configured_tools || []),
+                python_code_tools: new FormControl<number[]>(agent.python_code_tools || []),
+                mcp_tools: new FormControl<number[]>(agent.mcp_tools || []),
+                search_limit: new FormControl<number>(agent.search_configs.naive.search_limit ?? 3, [
+                    Validators.min(1),
+                    Validators.max(1000),
+                ]),
                 similarity_threshold: new FormControl<number>(
                     Number(agent.search_configs.naive.similarity_threshold ?? 0.2),
                     [Validators.min(0), Validators.max(1.0)]
                 ),
                 cache: new FormControl<boolean>(agent.cache ?? true),
-                respect_context_window: new FormControl<boolean>(
-                    agent.respect_context_window ?? true
-                ),
+                respect_context_window: new FormControl<boolean>(agent.respect_context_window ?? true),
             }) as FormGroup<{
                 role: FormControl<string>;
                 goal: FormControl<string>;
@@ -295,22 +268,10 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 backstory: new FormControl<string>('', Validators.required),
                 allow_delegation: new FormControl<boolean>(true),
                 memory: new FormControl<boolean>(false),
-                max_iter: new FormControl<number>(10, [
-                    Validators.min(1),
-                    Validators.max(30),
-                ]),
-                max_rpm: new FormControl<number>(10, [
-                    Validators.min(1),
-                    Validators.max(30),
-                ]),
-                max_execution_time: new FormControl<number>(60, [
-                    Validators.min(1),
-                    Validators.max(300),
-                ]),
-                max_retry_limit: new FormControl<number>(3, [
-                    Validators.min(0),
-                    Validators.max(10),
-                ]),
+                max_iter: new FormControl<number>(10, [Validators.min(1), Validators.max(30)]),
+                max_rpm: new FormControl<number>(10, [Validators.min(1), Validators.max(30)]),
+                max_execution_time: new FormControl<number>(60, [Validators.min(1), Validators.max(300)]),
+                max_retry_limit: new FormControl<number>(3, [Validators.min(0), Validators.max(10)]),
                 default_temperature: new FormControl<number | null>(null),
                 llm_config: new FormControl<number | null>(null),
                 fcm_llm_config: new FormControl<number | null>(null),
@@ -319,14 +280,8 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 configured_tools: new FormControl<number[]>([]),
                 python_code_tools: new FormControl<number[]>([]),
                 mcp_tools: new FormControl<number[]>([]),
-                search_limit: new FormControl<number>(3, [
-                    Validators.min(1),
-                    Validators.max(1000),
-                ]),
-                similarity_threshold: new FormControl<number>(0.2, [
-                    Validators.min(0),
-                    Validators.max(1.0),
-                ]),
+                search_limit: new FormControl<number>(3, [Validators.min(1), Validators.max(1000)]),
+                similarity_threshold: new FormControl<number>(0.2, [Validators.min(0), Validators.max(1.0)]),
                 cache: new FormControl<boolean>(true),
                 respect_context_window: new FormControl<boolean>(true),
             }) as FormGroup<{
@@ -356,13 +311,11 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
     }
 
     private loadLLMConfigs(): void {
-        this.fullLLMConfigService
-            .getFullLLMConfigs()
-            .subscribe((configs: FullLLMConfig[]) => {
-                this.availableLLMConfigs = configs;
-                this.llmConfigs = configs;
-                this.cdr.markForCheck();
-            });
+        this.fullLLMConfigService.getFullLLMConfigs().subscribe((configs: FullLLMConfig[]) => {
+            this.availableLLMConfigs = configs;
+            this.llmConfigs = configs;
+            this.cdr.markForCheck();
+        });
     }
 
     private loadKnowledgeSources(): void {
@@ -488,11 +441,6 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
         const mcpToolIds = formData.mcp_tools || [];
         const toolIds = buildToolIdsArray(configuredToolIds, pythonToolIds, mcpToolIds);
 
-        console.log('=== Agent Form Submission ===');
-        console.log('Form data:', formData);
-        console.log('Built tool_ids array:', toolIds);
-        console.log('=== End Agent Form Data ===');
-
         if (this.isEditMode && this.agentToEdit) {
             // Edit mode - update existing agent
             const updateRequest = {
@@ -510,10 +458,12 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 llm_config: formData.llm_config,
                 fcm_llm_config: formData.fcm_llm_config,
                 knowledge_collection: formData.knowledge_collection,
-                rag: formData.rag_id ? {
-                    rag_type: 'naive',
-                    rag_id: formData.rag_id,
-                } : null,
+                rag: formData.rag_id
+                    ? {
+                          rag_type: 'naive',
+                          rag_id: formData.rag_id,
+                      }
+                    : null,
                 configured_tools: configuredToolIds,
                 python_code_tools: pythonToolIds,
                 mcp_tools: mcpToolIds,
@@ -526,11 +476,9 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     naive: {
                         search_limit: formData.search_limit,
                         similarity_threshold: formData.similarity_threshold,
-                    }
-                }
+                    },
+                },
             };
-
-            console.log('Update request:', updateRequest);
 
             this.isSubmitting.set(false);
             this.dialogRef.close({ kind: 'update', payload: updateRequest });
@@ -550,10 +498,12 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                 llm_config: formData.llm_config,
                 fcm_llm_config: formData.fcm_llm_config,
                 knowledge_collection: formData.knowledge_collection,
-                rag: formData.rag_id ? {
-                    rag_type: 'naive',
-                    rag_id: formData.rag_id,
-                } : null,
+                rag: formData.rag_id
+                    ? {
+                          rag_type: 'naive',
+                          rag_id: formData.rag_id,
+                      }
+                    : null,
                 configured_tools: configuredToolIds,
                 python_code_tools: pythonToolIds,
                 mcp_tools: mcpToolIds,
@@ -566,11 +516,9 @@ export class CreateAgentFormComponent implements OnInit, OnDestroy {
                     naive: {
                         search_limit: Number(formData.search_limit ?? 3),
                         similarity_threshold: Number(formData.similarity_threshold ?? 0.2),
-                    }
-                }
+                    },
+                },
             };
-
-            console.log('Create request:', agentRequest);
 
             this.isSubmitting.set(false);
             this.dialogRef.close({ kind: 'create', payload: agentRequest });

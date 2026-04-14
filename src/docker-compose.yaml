@@ -41,7 +41,6 @@ services:
       LOAD_DEBUG_ENV: ${LOAD_DEBUG_ENV}
     volumes:
       - media_data:/app/src/django_app/media
-
     networks:
       - backend-network
     depends_on:
@@ -50,8 +49,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: >
-        sh -c 'curl -f http://${DJANGO_HOST:-localhost}:${DJANGO_PORT:-8000}/ht/ || exit 1'
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://${DJANGO_HOST:-localhost}:${DJANGO_PORT:-8000}/ht/')\""]
       interval: 30s
       timeout: 10s
       retries: 12
@@ -62,7 +60,6 @@ services:
     build:
       context: .
       dockerfile: ./realtime/Dockerfile.realtime
-
     environment:
       <<: *common_env
       KNOWLEDGE_SEARCH_GET_CHANNEL: knowledge:search:get
@@ -73,6 +70,12 @@ services:
       MANAGER_PORT: ${MANAGER_PORT:-8001}
       DB_REALTIME_USER: ${DB_REALTIME_USER}
       DB_REALTIME_PASSWORD: ${DB_REALTIME_PASSWORD}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      VOICE_AGENT_ID: ${VOICE_AGENT_ID:-2}
+      VOICE_STREAM_URL: ${VOICE_STREAM_URL:-}
+      DJANGO_HOST: ${DJANGO_HOST:-django_app}
+      DJANGO_PORT: ${DJANGO_PORT:-8000}
     networks:
       - backend-network
     depends_on:
@@ -204,6 +207,7 @@ services:
       <<: *common_env
       MANAGER_HOST: ${MANAGER_HOST}
       MANAGER_PORT: ${MANAGER_PORT:-8001}
+      CODE_CONTAINER_URL: http://code:${CODE_MANAGER_PORT:-4080}
       HAYSTACK_TELEMETRY_ENABLED: ${HAYSTACK_TELEMETRY_ENABLED}
       ANONYMIZED_TELEMETRY: ${ANONYMIZED_TELEMETRY}
       EC_TELEMETRY: ${EC_TELEMETRY}
@@ -234,6 +238,7 @@ services:
       context: .
       dockerfile: ./sandbox/Dockerfile.sandbox
     container_name: sandbox
+    init: true
     environment:
       <<: *common_env
       BASE_VENV_PATH: ${BASE_VENV_PATH}
@@ -242,6 +247,36 @@ services:
       - sandbox_venvs:${BASE_VENV_PATH}
       - sandbox_executions:${OUTPUT_PATH}
       - ${CREW_SAVEFILES_PATH}:${CONTAINER_SAVEFILES_PATH}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - backend-network
+    tty: true
+    stdin_open: true
+    depends_on:
+      - redis
+
+  code:
+    image: code
+    build:
+      context: .
+      dockerfile: ./code/Dockerfile.code
+    container_name: code
+    init: true
+    environment:
+      - DJANGO_API_URL=http://django_app:${DJANGO_PORT:-8000}/api
+      - CODE_MANAGER_PORT=${CODE_MANAGER_PORT}
+      - CODE_BASE_PORT=${CODE_BASE_PORT}
+      - CODE_MAX_INSTANCES=${CODE_MAX_INSTANCES}
+      - CODE_IDLE_TIMEOUT=${CODE_IDLE_TIMEOUT}
+      - CODE_REAP_INTERVAL=${CODE_REAP_INTERVAL}
+      - CODE_INSTANCES_DIR=${CODE_INSTANCES_DIR}
+      - CONTAINER_SAVEFILES_PATH=${CONTAINER_SAVEFILES_PATH}
+    ports:
+      - "${CODE_MANAGER_PORT:-4080}:${CODE_MANAGER_PORT:-4080}"
+    volumes:
+      - ${CREW_SAVEFILES_PATH}:${CONTAINER_SAVEFILES_PATH}
+      - code_instances:${CODE_INSTANCES_DIR}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -277,6 +312,7 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile.fe
+      target: production
     container_name: epicstaff-frontend
     environment:
       - API_URL=${API_URL}
@@ -308,7 +344,7 @@ services:
     networks:
       - backend-network
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://localhost:${WEBHOOK_PORT:-8051}/ || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:${WEBHOOK_PORT:-8051}/')\""]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -323,6 +359,7 @@ services:
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME}
       - SSL_ENABLE=${SSL_ENABLE}
+      - FRONTEND_INTERNAL_PORT=80
     volumes:
       - ./nginx/templates/default.conf.template:/etc/nginx/templates/default.conf.template
       - ./nginx/certs:/etc/nginx/certs:ro
@@ -339,6 +376,23 @@ services:
         condition: service_started
     restart: always
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    entrypoint: ["/bin/sh", "-c", "ngrok http --url=$$NGROK_DOMAIN realtime:${REALTIME_PORT:-8050}"]
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+      - NGROK_DOMAIN=${NGROK_DOMAIN}
+    ports:
+      - "4040:4040"
+    networks:
+      - backend-network
+    depends_on:
+      - realtime
+    restart: always
+    profiles:
+      - voice
+
 volumes:
   sandbox_venvs:
     external: true
@@ -349,6 +403,7 @@ volumes:
   media_data:
     external: true
   redis_data: {}
+  code_instances: {}
 
 networks:
   backend-network:

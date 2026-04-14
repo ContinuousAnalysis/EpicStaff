@@ -22,6 +22,7 @@ from tables.models.graph_models import (
 )
 from src.shared.models import (
     AudioTranscriptionNodeData,
+    CodeAgentNodeData,
     ConditionalEdgeData,
     CrewNodeData,
     DecisionTableNodeData,
@@ -37,6 +38,7 @@ from src.shared.models import (
     TelegramTriggerNodeData,
 )
 from tables.models import (
+    CodeAgentNode,
     CrewNode,
     Session,
     Edge,
@@ -312,6 +314,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             graph=graph.pk
         ).select_related("python_code")
         telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
+        code_agent_node_list = CodeAgentNode.objects.filter(graph=graph.pk)
 
         if file_extractor_node_list:
             self.file_node_validator.validate_file_nodes(file_extractor_node_list)
@@ -337,6 +340,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             subgraph_node_list,
             webhook_trigger_node_list,
             telegram_trigger_node_list,
+            code_agent_node_list,
         ):
             for n in node_list:
                 name_cache[n.id] = f"{n.node_name} #{n.id}"
@@ -399,6 +403,30 @@ class SessionManagerService(metaclass=SingletonMeta):
             cv.convert_llm_node_to_pydantic(llm_node=item, resolver=resolver)
             for item in llm_node_list
         ]
+
+        code_agent_node_data_list: list[CodeAgentNodeData] = []
+        for item in code_agent_node_list:
+            code_agent_node_data_list.append(
+                CodeAgentNodeData(
+                    node_name=resolver(item.id),
+                    llm_config_id=item.llm_config_id,
+                    agent_mode=item.agent_mode,
+                    session_id=item.session_id,
+                    system_prompt=item.system_prompt,
+                    stream_handler_code=item.stream_handler_code,
+                    libraries=item.libraries or [],
+                    polling_interval_ms=item.polling_interval_ms,
+                    silence_indicator_s=item.silence_indicator_s,
+                    indicator_repeat_s=item.indicator_repeat_s,
+                    chunk_timeout_s=item.chunk_timeout_s,
+                    inactivity_timeout_s=item.inactivity_timeout_s,
+                    max_wait_s=item.max_wait_s,
+                    input_map=item.input_map,
+                    output_variable_path=item.output_variable_path,
+                    stream_config=item.stream_config or {},
+                    output_schema=item.output_schema or {},
+                )
+            )
 
         entrypoint = session.entrypoint if session else None
         start_node_obj = StartNode.objects.filter(graph=graph.pk).first()
@@ -469,6 +497,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         )
 
         return GraphData(
+            graph_id=graph.pk,
             name=graph.name,
             crew_node_list=crew_node_data_list,
             webhook_trigger_node_data_list=webhook_trigger_node_data_list,
@@ -476,6 +505,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             file_extractor_node_list=file_extractor_node_data_list,
             audio_transcription_node_list=audio_transcription_node_data_list,
             llm_node_list=llm_node_data_list,
+            code_agent_node_list=code_agent_node_data_list,
             edge_list=edge_data_list,
             conditional_edge_list=conditional_edge_data_list,
             decision_table_node_list=decision_table_node_data_list,

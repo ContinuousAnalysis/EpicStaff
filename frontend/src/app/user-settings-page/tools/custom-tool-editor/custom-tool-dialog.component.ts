@@ -1,44 +1,47 @@
+import { DIALOG_DATA, DialogModule, DialogRef } from '@angular/cdk/dialog';
+import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
     AfterViewInit,
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    DestroyRef,
     ElementRef,
     Inject,
     OnInit,
-    ViewChild,
     signal,
+    ViewChild,
 } from '@angular/core';
-import { DialogRef, DIALOG_DATA, DialogModule } from '@angular/cdk/dialog';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-    ReactiveFormsModule,
-    FormGroup,
-    FormControl,
-    Validators,
     AbstractControl,
+    FormControl,
+    FormGroup,
+    ReactiveFormsModule,
     ValidationErrors,
+    Validators,
 } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 
-// Child components and services
-import { ToolLibrariesComponent } from './tool-libraries/tool-libraries.component';
-import { CodeEditorComponent } from './code-editor/code-editor.component';
-import { CustomToolsService } from '../../../features/tools/services/custom-tools/custom-tools.service';
-import { ToastService } from '../../../services/notifications/toast.service';
-import { AppIconComponent } from '../../../shared/components/app-icon/app-icon.component';
-import { ButtonComponent } from '../../../shared/components/buttons/button/button.component';
-import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
-import { JsonEditorComponent } from '../../../shared/components/json-editor/json-editor.component';
+import {
+    ButtonComponent,
+    ConfirmationDialogData,
+    ConfirmationDialogService,
+    HelpTooltipComponent,
+    JsonEditorComponent,
+} from '@shared/components';
 
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import {
     ArgsSchema,
     CreatePythonCodeToolRequest,
     GetPythonCodeToolRequest,
     UpdatePythonCodeToolRequest,
 } from '../../../features/tools/models/python-code-tool.model';
-import { PythonCodeToolCard } from '../models/pythonTool-card.model';
-
-import { buildArgsSchema } from './arg-shema-builder/build-args-schema.util';
+import { CustomToolsService } from '../../../features/tools/services/custom-tools/custom-tools.service';
+import { ToastService } from '../../../services/notifications';
+import { CodeEditorComponent } from './code-editor/code-editor.component';
+import { ToolLibrariesComponent } from './tool-libraries/tool-libraries.component';
 
 interface DialogData {
     pythonTools: GetPythonCodeToolRequest[];
@@ -47,14 +50,13 @@ interface DialogData {
 
 @Component({
     selector: 'app-custom-tool-dialog',
-    standalone: true,
     imports: [
         ReactiveFormsModule,
         CommonModule,
         ToolLibrariesComponent,
         CodeEditorComponent,
         DialogModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         ButtonComponent,
         HelpTooltipComponent,
         JsonEditorComponent,
@@ -85,12 +87,15 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
 
     public inputsJsonConfig = signal<string>('{}');
     public isInputsJsonValid = signal<boolean>(true);
+    public isSaving = false;
 
     constructor(
-        private dialogRef: DialogRef<any>,
+        private dialogRef: DialogRef,
         private cdr: ChangeDetectorRef,
         private customToolsService: CustomToolsService,
         private toastService: ToastService,
+        private confirmation: ConfirmationDialogService,
+        private destroyRef: DestroyRef,
         @Inject(DIALOG_DATA) public data: DialogData
     ) {
         if (data.selectedTool) {
@@ -101,10 +106,10 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
     ngOnInit(): void {
         // Initialize form
         this.form = new FormGroup({
-            toolName: new FormControl(
-                this.selectedTool ? this.selectedTool.name : '',
-                [Validators.required, this.uniqueNameValidator.bind(this)]
-            ),
+            toolName: new FormControl(this.selectedTool ? this.selectedTool.name : '', [
+                Validators.required,
+                this.uniqueNameValidator.bind(this),
+            ]),
             toolDescription: new FormControl(
                 this.selectedTool ? this.selectedTool.description : '',
                 Validators.required
@@ -113,37 +118,38 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
 
         if (this.selectedTool) {
             this.pythonCode = this.selectedTool.python_code.code;
-            this.selectedLibraries =
-                this.selectedTool.python_code.libraries || [];
+            this.selectedLibraries = this.selectedTool.python_code.libraries || [];
 
-            if (
-                this.selectedTool.args_schema &&
-                this.selectedTool.args_schema.properties
-            ) {
+            if (this.selectedTool.args_schema && this.selectedTool.args_schema.properties) {
                 this.selectedVariables = Object.entries(
                     this.selectedTool.args_schema.properties
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ).map(([name, prop]: [string, any]) => ({
                     name,
                     description: prop.description || '',
-                    required:
-                        this.selectedTool?.args_schema.required?.includes(
-                            name
-                        ) || false,
+                    required: this.selectedTool?.args_schema.required?.includes(name) || false,
                 }));
 
                 const schemaWithoutType = {
                     properties: this.selectedTool.args_schema.properties,
                     required: this.selectedTool.args_schema.required || [],
                 };
-                this.inputsJsonConfig.set(
-                    JSON.stringify(schemaWithoutType, null, 2)
-                );
+                this.inputsJsonConfig.set(JSON.stringify(schemaWithoutType, null, 2));
             } else {
                 this.inputsJsonConfig.set(this.getDefaultInputsSchema());
             }
         } else {
             this.inputsJsonConfig.set(this.getDefaultInputsSchema());
         }
+
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((event: KeyboardEvent) => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.createTool();
+                }
+            });
 
         this.cdr.markForCheck();
     }
@@ -173,22 +179,37 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
             return null;
         }
         const duplicateExists = this.data.pythonTools.some(
-            (tool) =>
-                tool.name.toLowerCase() === name &&
-                (!this.selectedTool || tool.id !== this.selectedTool.id)
+            (tool) => tool.name.toLowerCase() === name && (!this.selectedTool || tool.id !== this.selectedTool.id)
         );
         return duplicateExists ? { nonUniqueName: true } : null;
     }
 
     public close(): void {
-        this.dialogRef.close();
+        const confirmationData: ConfirmationDialogData = {
+            title: 'Are you sure you want to leave?',
+            message: 'All unsaved changes will be lost',
+            type: 'warning',
+        };
+
+        this.confirmation
+            .confirm(confirmationData)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((result) => {
+                if (result === true) {
+                    this.dialogRef.close();
+                }
+            });
     }
 
     public createTool(): void {
         this.form.markAllAsTouched();
         if (this.form.invalid || !this.isInputsJsonValid()) {
+            this.toastService.warning('Please fill in all required fields');
+            this.cdr.markForCheck();
             return;
         }
+        if (this.isSaving) return;
+        this.isSaving = true;
 
         const toolName = this.form.value.toolName;
         const toolDescription = this.form.value.toolDescription;
@@ -202,7 +223,7 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
                 properties: parsedInputs.properties || {},
                 required: parsedInputs.required || [],
             };
-        } catch (e) {
+        } catch {
             this.toastService.error('Invalid inputs JSON format');
             return;
         }
@@ -239,38 +260,36 @@ export class CustomToolDialogComponent implements OnInit, AfterViewInit {
             };
             this.customToolsService
                 .updatePythonCodeTool(String(this.selectedTool.id), updateTool)
+                .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: (result: GetPythonCodeToolRequest) => {
-                        console.log('Tool updated successfully:', result);
-                        this.toastService.success(
-                            `Custom Tool updated successfully!`
-                        );
+                        this.isSaving = false;
+                        this.toastService.success(`Custom Tool updated successfully!`);
                         this.dialogRef.close(result);
                     },
-                    error: (error: any) => {
+                    error: (error: HttpErrorResponse) => {
+                        this.isSaving = false;
                         console.error('Error updating tool:', error);
-                        this.toastService.error(
-                            'Failed to update custom tool. Please try again.'
-                        );
+                        this.toastService.error('Failed to update custom tool. Please try again.');
                     },
                 });
         } else {
             // Create scenario
-            this.customToolsService.createPythonCodeTool(toolData).subscribe({
-                next: (result: GetPythonCodeToolRequest) => {
-                    console.log('Tool created successfully in dialog:', result);
-                    this.toastService.success(
-                        `Custom Tool created successfully!`
-                    );
-                    this.dialogRef.close(result);
-                },
-                error: (error: any) => {
-                    console.error('Error creating tool:', error);
-                    this.toastService.error(
-                        'Failed to create custom tool. Please try again.'
-                    );
-                },
-            });
+            this.customToolsService
+                .createPythonCodeTool(toolData)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (result: GetPythonCodeToolRequest) => {
+                        this.isSaving = false;
+                        this.toastService.success(`Custom Tool created successfully!`);
+                        this.dialogRef.close(result);
+                    },
+                    error: (error: HttpErrorResponse) => {
+                        this.isSaving = false;
+                        console.error('Error creating tool:', error);
+                        this.toastService.error('Failed to create custom tool. Please try again.');
+                    },
+                });
         }
     }
 

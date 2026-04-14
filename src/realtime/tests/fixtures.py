@@ -1,12 +1,29 @@
 from fastapi import WebSocket
 import pytest
 from unittest.mock import AsyncMock
-from services.tool_manager_service import ToolManagerService
-from services.redis_service import RedisService
-from services.python_code_executor_service import PythonCodeExecutorService
+from application.tool_manager_service import ToolManagerService
+from infrastructure.messaging.redis_service import RedisService
+from infrastructure.messaging.python_code_executor_service import (
+    PythonCodeExecutorService,
+)
 from src.shared.models import RealtimeAgentChatData
 from tool_executors.base_tool_executor import BaseToolExecutor
 from tests.conftest import CONNECTION_KEY
+
+
+class FakeTokenizer:
+    """Returns one token per character — no tiktoken download needed in tests."""
+
+    def tokenize(self, text: str) -> list[int]:
+        return list(range(len(text)))
+
+    def detokenize(self, tokens) -> str:
+        return "x" * len(tokens)
+
+
+@pytest.fixture
+def fake_tokenizer():
+    return FakeTokenizer()
 
 
 class DummyToolExecutor(BaseToolExecutor):
