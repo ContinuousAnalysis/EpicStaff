@@ -1,17 +1,12 @@
-import {
-    Component,
-    Input,
-    Output,
-    EventEmitter,
-    ChangeDetectionStrategy,
-    inject,
-} from '@angular/core';
 import { CommonModule, NgStyle } from '@angular/common';
-import { ClassificationDecisionTableNodeModel } from '../../../core/models/node.model';
-import { ConditionGroup } from '../../../core/models/decision-table.model';
+import { ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ClickOrDragDirective } from '../../../core/directives/click-or-drag.directive';
 import { FFlowModule } from '@foblex/flow';
+
+import { ClickOrDragDirective } from '../../../core/directives/click-or-drag.directive';
+import { ConditionGroup } from '../../../core/models/decision-table.model';
+import { ClassificationDecisionTableNodeModel } from '../../../core/models/node.model';
+import { ViewPort } from '../../../core/models/port.model';
 import { FlowService } from '../../../services/flow.service';
 
 @Component({
@@ -28,9 +23,9 @@ export class ClassificationDecisionTableNodeComponent {
 
     private flowService = inject(FlowService);
 
-    get routeDocks(): Array<{ code: string; port: any }> {
+    get routeDocks(): Array<{ code: string; port: ViewPort | undefined }> {
         const allGroups = this.node.data.table?.condition_groups ?? [];
-        const uniqueRouteCodes = new Map<string, any>();
+        const uniqueRouteCodes = new Map<string, ViewPort | undefined>();
 
         // Collect unique route codes where dock_visible=true
         allGroups.forEach((group: ConditionGroup) => {
@@ -56,9 +51,7 @@ export class ClassificationDecisionTableNodeComponent {
         const idOrName = this.defaultNextNode;
         if (!idOrName) return null;
         const nodes = this.flowService.nodes();
-        const node = nodes.find(
-            (n) => n.id === idOrName || n.node_name === idOrName
-        );
+        const node = nodes.find((n) => n.id === idOrName || n.node_name === idOrName);
         return node ? node.node_name : idOrName;
     }
 
@@ -70,9 +63,7 @@ export class ClassificationDecisionTableNodeComponent {
         const idOrName = this.nextErrorNode;
         if (!idOrName) return null;
         const nodes = this.flowService.nodes();
-        const node = nodes.find(
-            (n) => n.id === idOrName || n.node_name === idOrName
-        );
+        const node = nodes.find((n) => n.id === idOrName || n.node_name === idOrName);
         return node ? node.node_name : idOrName;
     }
 
@@ -88,7 +79,7 @@ export class ClassificationDecisionTableNodeComponent {
         return this.node.ports?.find((p) => p.role === 'decision-error');
     }
 
-    trackRouteDock(index: number, dock: { code: string; port: any }): string {
+    trackRouteDock(index: number, dock: { code: string; port: ViewPort | undefined }): string {
         return dock.code;
     }
 

@@ -9,6 +9,7 @@
 
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
 import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
+import { GetClassificationDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/classification-decision-table-node.model';
 import { GetCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { CrewNode } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
@@ -20,8 +21,10 @@ import { PythonNode } from '../../../pages/flows-page/components/flow-visual-pro
 import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
 import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
+import { ConditionGroup } from '../../core/models/decision-table.model';
 import {
     AudioToTextNodeModel,
+    ClassificationDecisionTableNodeModel,
     CodeAgentNodeModel,
     DecisionTableNodeModel,
     FileExtractorNodeModel,
@@ -444,5 +447,68 @@ export function getCodeAgentNodeForComparisonFromUI(node: CodeAgentNodeModel) {
         stream_config: node.stream_config ?? {},
         output_schema: node.data?.output_schema ?? {},
         metadata: getUIMetadataForComparison(node),
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ClassificationDecisionTableNode
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getClassificationDecisionTableNodeForComparisonFromBackend(
+    node: GetClassificationDecisionTableNodeRequest
+) {
+    return {
+        node_name: node.node_name,
+        pre_computation_code: node.pre_computation_code,
+        condition_groups: node.condition_groups.map((g) => ({
+            group_name: g.group_name,
+            order: g.order,
+            expression: g.expression,
+            prompt_id: g.prompt_id,
+            manipulation: g.manipulation,
+            continue_flag: g.continue_flag,
+            route_code: g.route_code,
+            dock_visible: g.dock_visible,
+            field_expressions: g.field_expressions,
+            field_manipulations: g.field_manipulations,
+        })),
+        prompts: node.prompts,
+        route_variable_name: node.route_variable_name,
+        default_next_node: node.default_next_node,
+        next_error_node: node.next_error_node,
+        expression_errors_as_false: node.expression_errors_as_false,
+    };
+}
+
+export function getClassificationDecisionTableNodeForComparisonFromUI(node: ClassificationDecisionTableNodeModel) {
+    const tableData = node.data?.table;
+    const preCode = tableData?.pre_computation?.code || tableData?.pre_computation_code || null;
+    const groups = (tableData?.condition_groups || [])
+        .sort(
+            (a: ConditionGroup & { continue_flag?: boolean }, b: ConditionGroup & { continue_flag?: boolean }) =>
+                (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
+        )
+        .map((g: ConditionGroup & { continue_flag?: boolean }, idx: number) => ({
+            group_name: g.group_name,
+            order: typeof g.order === 'number' ? g.order : idx + 1,
+            expression: g.expression || null,
+            prompt_id: g.prompt_id || null,
+            manipulation: g.manipulation || null,
+            continue_flag: !!(g.continue_flag ?? g.continue),
+            route_code: g.route_code || null,
+            dock_visible: g.dock_visible !== false,
+            field_expressions: g.field_expressions || {},
+            field_manipulations: g.field_manipulations || {},
+        }));
+
+    return {
+        node_name: node.node_name,
+        pre_computation_code: preCode,
+        condition_groups: groups,
+        prompts: tableData?.prompts || {},
+        route_variable_name: tableData?.route_variable_name || 'route_code',
+        default_next_node: tableData?.default_next_node || null,
+        next_error_node: tableData?.next_error_node || null,
+        expression_errors_as_false: tableData?.expression_errors_as_false ?? false,
     };
 }

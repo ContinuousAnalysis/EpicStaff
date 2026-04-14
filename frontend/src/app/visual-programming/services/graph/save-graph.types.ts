@@ -1,4 +1,5 @@
 import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
+import { GetClassificationDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/classification-decision-table-node.model';
 import { GetCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { CrewNode } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
@@ -15,6 +16,7 @@ import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/componen
 import {
     AudioToTextNodeModel,
     BaseNodeModel,
+    ClassificationDecisionTableNodeModel,
     CodeAgentNodeModel,
     DecisionTableNodeModel,
     EdgeNodeModel,
@@ -120,6 +122,7 @@ export interface GraphPreviousState {
     decisionTableNodes: GetDecisionTableNodeRequest[];
     graphNotes: GraphNote[];
     codeAgentNodes: GetCodeAgentNodeRequest[];
+    classificationDecisionTableNodes: GetClassificationDecisionTableNodeRequest[];
 }
 
 // ---- New state (what the UI currently shows) ----
@@ -141,6 +144,7 @@ export interface GraphNewState {
     decisionTableNodes: DecisionTableNodeModel[];
     graphNotes: GraphNoteModel[];
     codeAgentNodes: CodeAgentNodeModel[];
+    classificationDecisionTableNodes: ClassificationDecisionTableNodeModel[];
     /** All UI nodes — used to resolve UUID → backendId for decision tables/edges. */
     allNodes: NodeModel[];
 }
@@ -160,6 +164,10 @@ export interface NodeOnlyDiff {
     endNodes: NodeDiff<EndNode, EndNodeModel>;
     graphNotes: NodeDiff<GraphNote, GraphNoteModel>;
     codeAgentNodes: NodeDiff<GetCodeAgentNodeRequest, CodeAgentNodeModel>;
+    classificationDecisionTableNodes: NodeDiff<
+        GetClassificationDecisionTableNodeRequest,
+        ClassificationDecisionTableNodeModel
+    >;
 }
 
 // ---- Connection diff (Phase 2 — after node IDs are known) ----

@@ -39,6 +39,7 @@ from src.crew.services.run_python_code_service import RunPythonCodeService
 from src.crew.services.knowledge_search_service import KnowledgeSearchService
 
 from src.crew.utils import map_variables_to_input
+from utils.logger import logger
 
 
 class ReturnCodeError(Exception): ...
@@ -134,9 +135,9 @@ class SessionGraphBuilder:
             source=from_node,
             path=inner_decision_function,
         )
-
+        
     def add_edge(self, start_key: str, end_key: str):
-        self._graph_builder.add_edge(start_key, end_key)
+        self._graph_builder.add_edge(start_key, end_key) 
 
     def set_entrypoint(self, node_name: str):
         self._graph_builder.set_entry_point(node_name)

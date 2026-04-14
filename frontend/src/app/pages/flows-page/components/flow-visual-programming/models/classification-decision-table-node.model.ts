@@ -31,12 +31,18 @@ export interface GetClassificationDecisionTableNodeRequest {
     graph: number;
     node_name: string;
     pre_computation_code: string | null;
-    prompts: Record<string, any>;
+    pre_input_map: Record<string, string>;
+    pre_output_variable_path: string | null;
+    post_computation_code: string | null;
+    post_input_map: Record<string, string>;
+    post_output_variable_path: string | null;
+    prompts: Record<string, unknown>;
     route_variable_name: string;
     default_next_node: string | null;
     next_error_node: string | null;
     condition_groups: ClassificationConditionGroupBackend[];
     expression_errors_as_false: boolean;
+    metadata?: unknown;
 }
 
 export interface CreateClassificationDecisionTableNodeRequest {
@@ -48,10 +54,11 @@ export interface CreateClassificationDecisionTableNodeRequest {
     post_computation_code: string | null;
     post_input_map: Record<string, string> | null;
     post_output_variable_path: string | null;
-    prompts: Record<string, any>;
+    prompts: Record<string, unknown>;
     route_variable_name: string;
     default_next_node: string | null;
     next_error_node: string | null;
     condition_groups: CreateClassificationConditionGroupRequest[];
     expression_errors_as_false: boolean;
+    metadata?: unknown;
 }

@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { GraphDto } from '../../../features/flows/models/graph.model';
 import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
+import { GetClassificationDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/classification-decision-table-node.model';
 import { GetCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { CrewNode } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
@@ -33,6 +34,7 @@ import { ConnectionModel } from '../../core/models/connection.model';
 import { FlowModel } from '../../core/models/flow.model';
 import {
     AudioToTextNodeModel,
+    ClassificationDecisionTableNodeModel,
     CodeAgentNodeModel,
     DecisionTableNodeModel,
     EdgeNodeModel,
@@ -516,6 +518,61 @@ function buildConditionalEdgeNode(ce: ConditionalEdge, idx: number): EdgeNodeMod
     };
 }
 
+function buildClassificationDecisionTableNode(
+    n: GetClassificationDecisionTableNodeRequest,
+    idx: number
+): ClassificationDecisionTableNodeModel {
+    const ui = readUIMetadata(
+        n.metadata as Record<string, unknown> | undefined,
+        NodeType.CLASSIFICATION_TABLE,
+        idx,
+        n.node_name
+    );
+    return {
+        id: uuidv4(),
+        backendId: n.id,
+        category: 'web',
+        type: NodeType.CLASSIFICATION_TABLE,
+        node_name: n.node_name,
+        nodeNumber: ui.nodeNumber,
+        data: {
+            name: n.node_name,
+            table: {
+                pre_computation_code: n.pre_computation_code,
+                pre_input_map: n.pre_input_map ?? {},
+                pre_output_variable_path: n.pre_output_variable_path,
+                post_computation_code: n.post_computation_code,
+                post_input_map: n.post_input_map ?? {},
+                post_output_variable_path: n.post_output_variable_path,
+                prompts: n.prompts ?? {},
+                route_variable_name: n.route_variable_name,
+                default_next_node: n.default_next_node,
+                next_error_node: n.next_error_node,
+                expression_errors_as_false: n.expression_errors_as_false,
+                condition_groups: n.condition_groups.map((g) => ({
+                    group_name: g.group_name,
+                    order: g.order,
+                    expression: g.expression,
+                    prompt_id: g.prompt_id,
+                    manipulation: g.manipulation,
+                    continue_flag: g.continue_flag,
+                    route_code: g.route_code,
+                    dock_visible: g.dock_visible,
+                    field_expressions: g.field_expressions ?? {},
+                    field_manipulations: g.field_manipulations ?? {},
+                })),
+            },
+        },
+        position: ui.position,
+        ports: null,
+        color: ui.color,
+        icon: ui.icon,
+        input_map: {},
+        output_variable_path: null,
+        size: ui.size,
+    };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Connection builders — now use backendId → UUID maps
 // ─────────────────────────────────────────────────────────────────────────────
@@ -579,6 +636,8 @@ function getInputPortRole(nodeType: NodeType): string {
             return 'end-in';
         case NodeType.CODE_AGENT:
             return 'code-agent-in';
+        case NodeType.CLASSIFICATION_TABLE:
+            return 'table-in';
         default:
             return 'input';
     }
@@ -605,7 +664,12 @@ function buildEdgeConnections(
 
         // DT connections are handled by buildDecisionTableConnections;
         // EDGE connections are handled by buildConditionalEdgeConnections.
-        if (sourceNode.type === NodeType.TABLE || sourceNode.type === NodeType.EDGE) continue;
+        if (
+            sourceNode.type === NodeType.TABLE ||
+            sourceNode.type === NodeType.CLASSIFICATION_TABLE ||
+            sourceNode.type === NodeType.EDGE
+        )
+            continue;
         if (targetNode.type === NodeType.EDGE) continue;
 
         const sourcePortRole = getOutputPortRole(sourceNode.type);
@@ -895,6 +959,9 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     const endNodes = (graph.end_node_list ?? []).map((en) => buildEndNode(en, idx++));
     const codeAgentNodes = (graph.code_agent_node_list ?? []).map((ca) => buildCodeAgentNode(ca, idx++));
     const decisionTableNodes = (graph.decision_table_node_list ?? []).map((dn) => buildDecisionTableNode(dn, idx++));
+    const classificationDecisionTableNodes = (graph.classification_decision_table_node_list ?? []).map((n) =>
+        buildClassificationDecisionTableNode(n, idx++)
+    );
     const conditionalEdgeNodes = (graph.conditional_edge_list ?? []).map((ce) => buildConditionalEdgeNode(ce, idx++));
 
     // ── 2. Combine all nodes ─────────────────────────────────────────────
@@ -912,6 +979,7 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
         ...endNodes,
         ...codeAgentNodes,
         ...decisionTableNodes,
+        ...classificationDecisionTableNodes,
         ...conditionalEdgeNodes,
     ];
 

@@ -1,46 +1,50 @@
 import {
     ChangeDetectionStrategy,
-    Component,
-    input,
-    output,
-    signal,
-    computed,
     ChangeDetectorRef,
+    Component,
+    computed,
+    effect,
     ElementRef,
     inject,
+    input,
     OnDestroy,
-    effect,
+    output,
+    signal,
 } from '@angular/core';
 import { AgGridModule } from 'ag-grid-angular';
 import {
+    CellClickedEvent,
+    CellValueChangedEvent,
     ColDef,
+    ColumnMovedEvent,
+    ColumnResizedEvent,
     GridApi,
     GridOptions,
     GridReadyEvent,
-    CellValueChangedEvent,
-    CellClickedEvent,
-    CellContextMenuEvent,
-    ICellEditorParams,
+    RowSpanParams,
+    ValueGetterParams,
+    ValueSetterParams,
 } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import { themeQuartz } from 'ag-grid-community';
-import { ConditionGroup } from '../../../../core/models/decision-table.model';
-import { PromptConfig } from '../../../../core/models/classification-decision-table.model';
-import { FlowService } from '../../../../services/flow.service';
-import { NodeType } from '../../../../core/enums/node-type';
+
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
-import { MonacoCellEditorComponent } from './monaco-cell-editor/monaco-cell-editor.component';
-import { MonacoCellRendererComponent } from './monaco-cell-renderer/monaco-cell-renderer.component';
-import { PromptTooltipRendererComponent } from './prompt-tooltip-renderer/prompt-tooltip-renderer.component';
-import { PromptIdCellEditorComponent } from './prompt-id-cell-editor/prompt-id-cell-editor.component';
+import { NodeType } from '../../../../core/enums/node-type';
+import { PromptConfig } from '../../../../core/models/classification-decision-table.model';
+import { ConditionGroup } from '../../../../core/models/decision-table.model';
+import { NodeModel } from '../../../../core/models/node.model';
+import { FlowService } from '../../../../services/flow.service';
 import { IconHeaderComponent } from './icon-header/icon-header.component';
+import { MonacoCellRendererComponent } from './monaco-cell-renderer/monaco-cell-renderer.component';
+import { PromptIdCellEditorComponent } from './prompt-id-cell-editor/prompt-id-cell-editor.component';
+import { PromptTooltipRendererComponent } from './prompt-tooltip-renderer/prompt-tooltip-renderer.component';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
     selector: 'app-classification-decision-table-grid',
     standalone: true,
-    imports: [AgGridModule, ButtonComponent, MonacoCellEditorComponent, MonacoCellRendererComponent, PromptTooltipRendererComponent, PromptIdCellEditorComponent, IconHeaderComponent],     
+    imports: [AgGridModule, ButtonComponent],
     templateUrl: './classification-decision-table-grid.component.html',
     styleUrls: ['./classification-decision-table-grid.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,7 +60,11 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     public domainKeys = input<string[]>([]);
 
     public conditionGroupsChange = output<ConditionGroup[]>();
-    public promptChange = output<{ promptId: string; field: keyof PromptConfig; value: any }>();
+    public promptChange = output<{
+        promptId: string;
+        field: keyof PromptConfig;
+        value: PromptConfig[keyof PromptConfig];
+    }>();
     public promptAdd = output<{ id: string; config: PromptConfig }>();
 
     private flowService = inject(FlowService);
@@ -85,8 +93,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     public activeFieldColumns = computed(() => {
         const hidden = this.hiddenFieldsSet();
         return this.movableColumnOrder()
-            .filter(id => id.startsWith('field_') && !hidden.has(id.substring(6)))
-            .map(id => id.substring(6));
+            .filter((id) => id.startsWith('field_') && !hidden.has(id.substring(6)))
+            .map((id) => id.substring(6));
     });
 
     public isEmpty = computed(() => this.rowData().length === 0);
@@ -94,16 +102,16 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     public availableInputMapFields = computed(() => {
         const active = new Set(this.activeFieldColumns());
         const q = this.fieldSearchQuery().toLowerCase();
-        return this.preInputMapKeys()
-            .filter(k => !active.has(k) && (!q || k.toLowerCase().includes(q)));
+        return this.preInputMapKeys().filter((k) => !active.has(k) && (!q || k.toLowerCase().includes(q)));
     });
 
     public availableDomainFields = computed(() => {
         const active = new Set(this.activeFieldColumns());
         const inputMapKeys = new Set(this.preInputMapKeys());
         const q = this.fieldSearchQuery().toLowerCase();
-        return this.domainKeys()
-            .filter(k => !active.has(k) && !inputMapKeys.has(k) && (!q || k.toLowerCase().includes(q)));
+        return this.domainKeys().filter(
+            (k) => !active.has(k) && !inputMapKeys.has(k) && (!q || k.toLowerCase().includes(q))
+        );
     });
 
     public hiddenFieldColumns = computed(() => {
@@ -112,47 +120,50 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         const hidden = new Set<string>();
         // Fields in movableColumnOrder that are hidden
         this.movableColumnOrder()
-            .filter(id => id.startsWith('field_'))
-            .map(id => id.substring(6))
-            .forEach(name => { if (!visible.has(name)) hidden.add(name); });
+            .filter((id) => id.startsWith('field_'))
+            .map((id) => id.substring(6))
+            .forEach((name) => {
+                if (!visible.has(name)) hidden.add(name);
+            });
         // Also check row data for orphaned fields
-        this.rowData().forEach(row => {
+        this.rowData().forEach((row) => {
             if (row.field_expressions) {
                 Object.entries(row.field_expressions).forEach(([k, v]) => {
                     if (v && !visible.has(k)) hidden.add(k);
                 });
             }
         });
-        return [...hidden].filter(k => !q || k.toLowerCase().includes(q));
+        return [...hidden].filter((k) => !q || k.toLowerCase().includes(q));
     });
 
-    public hasAvailableFields = computed(() =>
-        this.availableInputMapFields().length > 0
-        || this.availableDomainFields().length > 0
-        || this.hiddenFieldColumns().length > 0
+    public hasAvailableFields = computed(
+        () =>
+            this.availableInputMapFields().length > 0 ||
+            this.availableDomainFields().length > 0 ||
+            this.hiddenFieldColumns().length > 0
     );
 
     // Manipulation field computed properties
     public activeManipFieldColumns = computed(() => {
         const hidden = this.hiddenManipFieldsSet();
         return this.manipColumnOrder()
-            .filter(id => id.startsWith('manip_') && !hidden.has(id.substring(6)))
-            .map(id => id.substring(6));
+            .filter((id) => id.startsWith('manip_') && !hidden.has(id.substring(6)))
+            .map((id) => id.substring(6));
     });
 
     public availableManipInputMapFields = computed(() => {
         const active = new Set(this.activeManipFieldColumns());
         const q = this.manipFieldSearchQuery().toLowerCase();
-        return this.preInputMapKeys()
-            .filter(k => !active.has(k) && (!q || k.toLowerCase().includes(q)));
+        return this.preInputMapKeys().filter((k) => !active.has(k) && (!q || k.toLowerCase().includes(q)));
     });
 
     public availableManipDomainFields = computed(() => {
         const active = new Set(this.activeManipFieldColumns());
         const inputMapKeys = new Set(this.preInputMapKeys());
         const q = this.manipFieldSearchQuery().toLowerCase();
-        return this.domainKeys()
-            .filter(k => !active.has(k) && !inputMapKeys.has(k) && (!q || k.toLowerCase().includes(q)));
+        return this.domainKeys().filter(
+            (k) => !active.has(k) && !inputMapKeys.has(k) && (!q || k.toLowerCase().includes(q))
+        );
     });
 
     public hiddenManipFieldColumns = computed(() => {
@@ -160,23 +171,26 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         const q = this.manipFieldSearchQuery().toLowerCase();
         const hidden = new Set<string>();
         this.manipColumnOrder()
-            .filter(id => id.startsWith('manip_'))
-            .map(id => id.substring(6))
-            .forEach(name => { if (!visible.has(name)) hidden.add(name); });
-        this.rowData().forEach(row => {
+            .filter((id) => id.startsWith('manip_'))
+            .map((id) => id.substring(6))
+            .forEach((name) => {
+                if (!visible.has(name)) hidden.add(name);
+            });
+        this.rowData().forEach((row) => {
             if (row.field_manipulations) {
                 Object.entries(row.field_manipulations).forEach(([k, v]) => {
                     if (v && !visible.has(k)) hidden.add(k);
                 });
             }
         });
-        return [...hidden].filter(k => !q || k.toLowerCase().includes(q));
+        return [...hidden].filter((k) => !q || k.toLowerCase().includes(q));
     });
 
-    public hasAvailableManipFields = computed(() =>
-        this.availableManipInputMapFields().length > 0
-        || this.availableManipDomainFields().length > 0
-        || this.hiddenManipFieldColumns().length > 0
+    public hasAvailableManipFields = computed(
+        () =>
+            this.availableManipInputMapFields().length > 0 ||
+            this.availableManipDomainFields().length > 0 ||
+            this.hiddenManipFieldColumns().length > 0
     );
 
     public availableNodes = computed(() => {
@@ -184,12 +198,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         const currentId = this.currentNodeId();
         return nodes
             .filter(
-                (node: any) =>
-                    node.id !== currentId &&
-                    node.type !== NodeType.NOTE &&
-                    node.type !== NodeType.EDGE
+                (node: NodeModel) => node.id !== currentId && node.type !== NodeType.NOTE && node.type !== NodeType.EDGE
             )
-            .map((node: any) => ({
+            .map((node: NodeModel) => ({
                 label: node.node_name,
                 value: node.id,
             }));
@@ -227,21 +238,21 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
         const fieldKeys = new Set<string>();
         const manipKeys = new Set<string>();
-        groups.forEach(g => {
+        groups.forEach((g) => {
             if (g.field_expressions) {
-                Object.keys(g.field_expressions).forEach(k => fieldKeys.add(k));
+                Object.keys(g.field_expressions).forEach((k) => fieldKeys.add(k));
             }
             if (g.field_manipulations) {
-                Object.keys(g.field_manipulations).forEach(k => manipKeys.add(k));
+                Object.keys(g.field_manipulations).forEach((k) => manipKeys.add(k));
             }
         });
         if (fieldKeys.size > 0 && this.movableColumnOrder().length <= 1) {
-            const colIds = [...fieldKeys].map(f => `field_${f}`);
+            const colIds = [...fieldKeys].map((f) => `field_${f}`);
             colIds.push('expression');
             this.movableColumnOrder.set(colIds);
         }
         if (manipKeys.size > 0 && this.manipColumnOrder().length <= 1) {
-            const colIds = ['manipulation', ...([...manipKeys].map(f => `manip_${f}`))];            
+            const colIds = ['manipulation', ...[...manipKeys].map((f) => `manip_${f}`)];
             this.manipColumnOrder.set(colIds);
         }
     }
@@ -265,7 +276,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     private unmergedGroup = signal<{ colId: string; startRow: number; endRow: number } | null>(null);
     private savedColumnWidths = new Map<string, number>();
-    private saveTimeout: any = null;
+    private saveTimeout: ReturnType<typeof setTimeout> | null = null;
     private isRebuilding = false;
 
     private get storageKey(): string {
@@ -276,7 +287,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         if (this.saveTimeout) clearTimeout(this.saveTimeout);
         this.saveTimeout = setTimeout(() => {
             const widths: Record<string, number> = {};
-            this.gridApi?.getColumnState()?.forEach(s => {
+            this.gridApi?.getColumnState()?.forEach((s) => {
                 if (s.colId && s.width) widths[s.colId] = s.width;
             });
             const state = {
@@ -286,7 +297,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 manipOrder: this.manipColumnOrder(),
                 hiddenManip: [...this.hiddenManipFieldsSet()],
             };
-            try { localStorage.setItem(this.storageKey, JSON.stringify(state)); } catch {}
+            try {
+                localStorage.setItem(this.storageKey, JSON.stringify(state));
+            } catch {}
         }, 300);
     }
 
@@ -324,7 +337,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         domLayout: 'autoHeight',
         rowDragManaged: true,
         animateRows: true,
-        onRowDragEnd: (event) => {
+        onRowDragEnd: () => {
             const updatedRows = this.getUpdatedRows();
             this.emitChanges(updatedRows);
         },
@@ -338,50 +351,60 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             });
             this.cdr.markForCheck();
         },
-        onColumnMoved: (event) => {
+        onColumnMoved: (event: ColumnMovedEvent) => {
             if (this.isRebuilding) return;
-            if (!(event as any).finished) return;
+            if (!event.finished) return;
             const colState = this.gridApi?.getColumnState();
             if (!colState) return;
-            const allVisible = colState.map(s => s.colId!);
+            const allVisible = colState.map((s) => s.colId!);
 
             // Update expression column order
-            const exprVisible = allVisible.filter(id => id?.startsWith('field_') || id === 'expression');
+            const exprVisible = allVisible.filter((id) => id?.startsWith('field_') || id === 'expression');
             const oldExprOrder = this.movableColumnOrder();
             const hiddenExpr = this.hiddenFieldsSet();
-            const hiddenExprIds = oldExprOrder.filter(id => id.startsWith('field_') && hiddenExpr.has(id.substring(6)));
+            const hiddenExprIds = oldExprOrder.filter(
+                (id) => id.startsWith('field_') && hiddenExpr.has(id.substring(6))
+            );
             const exprResult = [...exprVisible];
             for (const hid of hiddenExprIds) {
                 const oldIdx = oldExprOrder.indexOf(hid);
                 let insertAfter = -1;
                 for (let i = oldIdx - 1; i >= 0; i--) {
                     const pos = exprResult.indexOf(oldExprOrder[i]);
-                    if (pos >= 0) { insertAfter = pos; break; }
+                    if (pos >= 0) {
+                        insertAfter = pos;
+                        break;
+                    }
                 }
                 exprResult.splice(insertAfter + 1, 0, hid);
             }
             this.movableColumnOrder.set(exprResult);
 
             // Update manipulation column order
-            const manipVisible = allVisible.filter(id => id?.startsWith('manip_') || id === 'manipulation');
+            const manipVisible = allVisible.filter((id) => id?.startsWith('manip_') || id === 'manipulation');
             const oldManipOrder = this.manipColumnOrder();
             const hiddenManip = this.hiddenManipFieldsSet();
-            const hiddenManipIds = oldManipOrder.filter(id => id.startsWith('manip_') && hiddenManip.has(id.substring(6)));
+            const hiddenManipIds = oldManipOrder.filter(
+                (id) => id.startsWith('manip_') && hiddenManip.has(id.substring(6))
+            );
             const manipResult = [...manipVisible];
             for (const hid of hiddenManipIds) {
                 const oldIdx = oldManipOrder.indexOf(hid);
                 let insertAfter = -1;
                 for (let i = oldIdx - 1; i >= 0; i--) {
                     const pos = manipResult.indexOf(oldManipOrder[i]);
-                    if (pos >= 0) { insertAfter = pos; break; }
+                    if (pos >= 0) {
+                        insertAfter = pos;
+                        break;
+                    }
                 }
                 manipResult.splice(insertAfter + 1, 0, hid);
             }
             this.manipColumnOrder.set(manipResult);
             this.saveGridState();
         },
-        onColumnResized: (event) => {
-            if ((event as any).finished) {
+        onColumnResized: (event: ColumnResizedEvent) => {
+            if (event.finished) {
                 this.saveGridState();
             }
         },
@@ -397,19 +420,18 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
             cellRendererParams: { singleLine: true },
-            rowSpan: (params: any) => this.getRowSpan(
-                params, `field_${fieldName}`,
-                (d) => d?.field_expressions?.[fieldName] || '',
-            ),
-            cellStyle: (params: any) => this.getSpanCellStyle(
-                params, `field_${fieldName}`,
-                (d) => d?.field_expressions?.[fieldName] || '',
-                { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
-            ),
-            valueGetter: (params: any) => {
+            rowSpan: (params: RowSpanParams<ConditionGroup>) =>
+                this.getRowSpan(params, `field_${fieldName}`, (d) => d?.field_expressions?.[fieldName] || ''),
+            cellStyle: (params: RowSpanParams<ConditionGroup>) =>
+                this.getSpanCellStyle(params, `field_${fieldName}`, (d) => d?.field_expressions?.[fieldName] || '', {
+                    fontSize: '13px',
+                    fontFamily: 'monospace',
+                    color: '#d4d4d4',
+                }),
+            valueGetter: (params: ValueGetterParams<ConditionGroup>) => {
                 return params.data?.field_expressions?.[fieldName] || '';
             },
-            valueSetter: (params: any) => {
+            valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
                 if (!params.data.field_expressions) {
                     params.data.field_expressions = {};
                 }
@@ -428,10 +450,10 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             cellRenderer: MonacoCellRendererComponent,
             cellRendererParams: { singleLine: true },
             cellStyle: { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
-            valueGetter: (params: any) => {
+            valueGetter: (params: ValueGetterParams<ConditionGroup>) => {
                 return params.data?.field_manipulations?.[fieldName] || '';
             },
-            valueSetter: (params: any) => {
+            valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
                 if (!params.data.field_manipulations) {
                     params.data.field_manipulations = {};
                 }
@@ -465,15 +487,14 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             editable: false,
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
-            rowSpan: (params: any) => this.getRowSpan(
-                params, 'expression',
-                (d) => d?.expression || '',
-            ),
-            cellStyle: (params: any) => this.getSpanCellStyle(
-                params, 'expression',
-                (d) => d?.expression || '',
-                { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
-            ),
+            rowSpan: (params: RowSpanParams<ConditionGroup>) =>
+                this.getRowSpan(params, 'expression', (d) => d?.expression || ''),
+            cellStyle: (params: RowSpanParams<ConditionGroup>) =>
+                this.getSpanCellStyle(params, 'expression', (d) => d?.expression || '', {
+                    fontSize: '13px',
+                    fontFamily: 'monospace',
+                    color: '#d4d4d4',
+                }),
         };
     }
 
@@ -527,12 +548,12 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         // Build expression field columns from movableColumnOrder
         const hidden = this.hiddenFieldsSet();
         const exprCols: ColDef[] = this.movableColumnOrder()
-            .filter(colId => {
+            .filter((colId) => {
                 if (colId === 'expression') return true;
                 if (colId.startsWith('field_')) return !hidden.has(colId.substring(6));
                 return false;
             })
-            .map(colId => {
+            .map((colId) => {
                 if (colId === 'expression') return this.buildExpressionColDef();
                 return this.buildFieldColDef(colId.substring(6));
             });
@@ -540,12 +561,12 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         // Build manipulation field columns from manipColumnOrder
         const hiddenManip = this.hiddenManipFieldsSet();
         const manipCols: ColDef[] = this.manipColumnOrder()
-            .filter(colId => {
+            .filter((colId) => {
                 if (colId === 'manipulation') return true;
                 if (colId.startsWith('manip_')) return !hiddenManip.has(colId.substring(6));
                 return false;
             })
-            .map(colId => {
+            .map((colId) => {
                 if (colId === 'manipulation') return this.buildManipulationColDef();
                 return this.buildManipFieldColDef(colId.substring(6));
             });
@@ -559,7 +580,11 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             cellRenderer: PromptTooltipRendererComponent,
             cellRendererParams: () => ({
                 prompts: this.prompts(),
-                onPromptChange: (promptId: string, field: keyof PromptConfig, value: any) => {
+                onPromptChange: (
+                    promptId: string,
+                    field: keyof PromptConfig,
+                    value: PromptConfig[keyof PromptConfig]
+                ) => {
                     this.promptChange.emit({ promptId, field, value });
                 },
             }),
@@ -571,7 +596,11 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 onAddPrompt: (id: string, config: PromptConfig) => {
                     this.promptAdd.emit({ id, config });
                 },
-                onPromptChange: (promptId: string, field: keyof PromptConfig, value: any) => {
+                onPromptChange: (
+                    promptId: string,
+                    field: keyof PromptConfig,
+                    value: PromptConfig[keyof PromptConfig]
+                ) => {
                     this.promptChange.emit({ promptId, field, value });
                 },
             }),
@@ -646,17 +675,17 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         return [...staticBefore, ...exprCols, promptIdCol, ...manipCols, ...staticAfter];
     }
 
-
     private getMergeableColIds(): string[] {
-        return [
-            ...this.activeFieldColumns().map(f => `field_${f}`),
-            'expression',
-        ];
+        return [...this.activeFieldColumns().map((f) => `field_${f}`), 'expression'];
     }
 
     // Returns the row range that column `colId` is allowed to merge within,
     // based on the left column's merge group hierarchy.
-    private getHierarchicalBounds(params: any, colId: string, idx: number): { start: number; end: number } {
+    private getHierarchicalBounds(
+        params: RowSpanParams<ConditionGroup>,
+        colId: string,
+        idx: number
+    ): { start: number; end: number } {
         const mergeableCols = this.getMergeableColIds();
         const colIndex = mergeableCols.indexOf(colId);
 
@@ -669,9 +698,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         // Recursively get the left column's own bounds
         const leftBounds = this.getHierarchicalBounds(params, leftColId, idx);
 
-        const leftVal = this.getMergeableValueFromData(
-            params.api?.getDisplayedRowAtIndex(idx)?.data, leftColId,
-        );
+        const leftVal = this.getMergeableValueFromData(params.api?.getDisplayedRowAtIndex(idx)?.data, leftColId);
 
         let start = idx;
         while (start > leftBounds.start) {
@@ -689,9 +716,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     private getRowSpan(
-        params: any,
+        params: RowSpanParams<ConditionGroup>,
         colId: string,
-        getValue: (data: any) => string,
+        getValue: (data: ConditionGroup | undefined) => string
     ): number {
         const idx = params.node?.rowIndex ?? 0;
         const ug = this.unmergedGroup();
@@ -717,7 +744,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         return span;
     }
 
-    private isCellMerged(params: any, colId: string, idx: number): boolean {
+    private isCellMerged(params: RowSpanParams<ConditionGroup>, colId: string, idx: number): boolean {
         const ug = this.unmergedGroup();
         if (ug && ug.colId === colId && idx >= ug.startRow && idx <= ug.endRow) return false;
         const val = this.getMergeableValue(params, colId);
@@ -725,15 +752,17 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         const bounds = this.getHierarchicalBounds(params, colId, idx);
         const prevNode = idx > bounds.start ? params.api?.getDisplayedRowAtIndex(idx - 1) : null;
         const nextNode = idx < bounds.end ? params.api?.getDisplayedRowAtIndex(idx + 1) : null;
-        return (prevNode && val === this.getMergeableValueFromData(prevNode.data, colId))
-            || (nextNode && val === this.getMergeableValueFromData(nextNode.data, colId));
+        return (
+            !!(prevNode && val === this.getMergeableValueFromData(prevNode.data, colId)) ||
+            !!(nextNode && val === this.getMergeableValueFromData(nextNode.data, colId))
+        );
     }
 
-    private getMergeableValue(params: any, colId: string): string {
+    private getMergeableValue(params: RowSpanParams<ConditionGroup>, colId: string): string {
         return this.getMergeableValueFromData(params.data, colId);
     }
 
-    private getMergeableValueFromData(data: any, colId: string): string {
+    private getMergeableValueFromData(data: ConditionGroup | undefined, colId: string): string {
         if (!data) return '';
         if (colId === 'expression') return data.expression || '';
         if (colId.startsWith('field_')) {
@@ -762,7 +791,10 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     // Non-merged non-empty cells: no color; breaks chain for columns to the right.
     // Color lightens going right.
 
-    private getColumnGroupInfo(params: any, colId: string): { groupIdx: number; totalGroups: number } {
+    private getColumnGroupInfo(
+        params: RowSpanParams<ConditionGroup>,
+        colId: string
+    ): { groupIdx: number; totalGroups: number } {
         const totalRows = params.api?.getDisplayedRowCount?.() ?? 0;
         const idx = params.node?.rowIndex ?? 0;
         let groupIdx = 0;
@@ -780,7 +812,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         return { groupIdx, totalGroups };
     }
 
-    private computeCellBg(params: any, colId: string, idx: number): string {
+    private computeCellBg(params: RowSpanParams<ConditionGroup>, colId: string, idx: number): string {
         const mergeableCols = this.getMergeableColIds();
         const colIndex = mergeableCols.indexOf(colId);
         if (colIndex < 0) return '';
@@ -799,15 +831,13 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             if (i === 0) {
                 // Leftmost column: evenly spaced hues for all groups (including empty)
                 const info = this.getColumnGroupInfo(params, col);
-                hue = info.totalGroups > 1
-                    ? (info.groupIdx * 360) / info.totalGroups
-                    : 200; // single-group fallback
+                hue = info.totalGroups > 1 ? (info.groupIdx * 360) / info.totalGroups : 200; // single-group fallback
                 depth++;
             } else if (val !== '') {
                 // Non-leftmost with value: blend parent hue with value hash
                 const valHash = ClassificationDecisionTableGridComponent.hashStr(val);
                 const valHue = ((Math.abs(valHash) * 0.618033988749895) % 1) * 360;
-                hue = (hue * 0.6 + valHue * 0.4); // weighted blend toward parent
+                hue = hue * 0.6 + valHue * 0.4; // weighted blend toward parent
                 depth++;
             }
             // Empty non-leftmost: just inherit (hue unchanged, depth unchanged)
@@ -820,12 +850,12 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     private getSpanCellStyle(
-        params: any,
+        params: RowSpanParams<ConditionGroup>,
         colId: string,
-        getValue: (data: any) => string,
-        baseStyle: Record<string, string>,
+        getValue: (data: ConditionGroup | undefined) => string,
+        baseStyle: Record<string, string>
     ): Record<string, string> {
-        const style: any = { ...baseStyle };
+        const style: Record<string, string> = { ...baseStyle };
         const idx = params.node?.rowIndex ?? 0;
         const ug = this.unmergedGroup();
         if (ug && ug.colId === colId && idx >= ug.startRow && idx <= ug.endRow) return style;
@@ -841,13 +871,13 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         // Compute background color
         const bg = this.computeCellBg(params, colId, idx);
         if (bg) {
-            style.backgroundColor = bg;
+            style['backgroundColor'] = bg;
         }
 
         // Merged cell layout
         if (isMerged) {
-            style.display = 'flex';
-            style.alignItems = 'center';
+            style['display'] = 'flex';
+            style['alignItems'] = 'center';
         }
 
         // Separator border at top of spanning cell (group boundary)
@@ -856,7 +886,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         const isGroupStart = !matchesAbove && matchesBelow;
         const isEmptyBoundsStart = cur === '' && isMerged && idx === bounds.start && idx > 0;
         if (isGroupStart || isEmptyBoundsStart) {
-            style.borderTop = '2px solid rgba(255, 255, 255, 0.18)';
+            style['borderTop'] = '2px solid rgba(255, 255, 255, 0.18)';
         }
         return style;
     }
@@ -891,7 +921,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     private rebuildColumnDefs(): void {
         // Capture current column widths to prevent layout jump
         const widthMap = new Map<string, number>(this.savedColumnWidths);
-        this.gridApi?.getColumnState()?.forEach(s => {
+        this.gridApi?.getColumnState()?.forEach((s) => {
             if (s.colId && s.width) widthMap.set(s.colId, s.width);
         });
 
@@ -899,11 +929,10 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
         // Apply captured widths, replacing flex with explicit width
         if (widthMap.size > 0) {
-            this.columnDefs = this.columnDefs.map(col => {
-                const id = (col as any).colId || col.field;
+            this.columnDefs = this.columnDefs.map((col) => {
+                const id = col.colId || col.field;
                 if (id && widthMap.has(id)) {
-                    const { flex, ...rest } = col as any;
-                    return { ...rest, width: widthMap.get(id) };
+                    return { ...col, flex: undefined, width: widthMap.get(id) };
                 }
                 return col;
             });
@@ -948,18 +977,14 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     removeFieldColumn(fieldName: string): void {
-        const hasData = this.rowData().some(row =>
-            row.field_expressions && !!row.field_expressions[fieldName]
-        );
+        const hasData = this.rowData().some((row) => row.field_expressions && !!row.field_expressions[fieldName]);
         if (hasData) {
             const newHidden = new Set(this.hiddenFieldsSet());
             newHidden.add(fieldName);
             this.hiddenFieldsSet.set(newHidden);
         } else {
             const colId = `field_${fieldName}`;
-            this.movableColumnOrder.set(
-                this.movableColumnOrder().filter(id => id !== colId)
-            );
+            this.movableColumnOrder.set(this.movableColumnOrder().filter((id) => id !== colId));
         }
         this.saveGridState();
     }
@@ -992,18 +1017,14 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     removeManipFieldColumn(fieldName: string): void {
-        const hasData = this.rowData().some(row =>
-            row.field_manipulations && !!row.field_manipulations[fieldName]
-        );
+        const hasData = this.rowData().some((row) => row.field_manipulations && !!row.field_manipulations[fieldName]);
         if (hasData) {
             const newHidden = new Set(this.hiddenManipFieldsSet());
             newHidden.add(fieldName);
             this.hiddenManipFieldsSet.set(newHidden);
         } else {
             const colId = `manip_${fieldName}`;
-            this.manipColumnOrder.set(
-                this.manipColumnOrder().filter(id => id !== colId)
-            );
+            this.manipColumnOrder.set(this.manipColumnOrder().filter((id) => id !== colId));
         }
         this.saveGridState();
     }
@@ -1013,7 +1034,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         this.setupBodyClickListener();
         // Apply saved column widths after grid is ready
         if (this.savedColumnWidths.size > 0) {
-            const colState = this.gridApi.getColumnState().map(s => {
+            const colState = this.gridApi.getColumnState().map((s) => {
                 const saved = s.colId ? this.savedColumnWidths.get(s.colId) : undefined;
                 return saved ? { ...s, width: saved } : s;
             });
@@ -1088,7 +1109,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         document.removeEventListener('click', this.bodyClickHandler);
     }
 
-    onCellValueChanged(event: CellValueChangedEvent): void {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    onCellValueChanged(_event: CellValueChangedEvent): void {
         this.unmergedGroup.set(null);
         const updatedRows = this.getUpdatedRows();
         this.emitChanges(updatedRows);
@@ -1097,7 +1119,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     private createNewRow(index: number): ConditionGroup {
         const fieldExpressions: Record<string, string> = {};
-        this.activeFieldColumns().forEach(f => fieldExpressions[f] = '');
+        this.activeFieldColumns().forEach((f) => (fieldExpressions[f] = ''));
         return {
             group_name: `Condition ${index + 1}`,
             group_type: 'complex',
@@ -1121,8 +1143,12 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         this.emitChanges([...currentRows, newRow]);
     }
 
-    addRowAbove(): void { this.insertRowAtContext(0); }
-    addRowBelow(): void { this.insertRowAtContext(1); }
+    addRowAbove(): void {
+        this.insertRowAtContext(0);
+    }
+    addRowBelow(): void {
+        this.insertRowAtContext(1);
+    }
 
     private insertRowAtContext(offset: 0 | 1): void {
         const ctx = this.contextMenu();
@@ -1130,11 +1156,10 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         const currentRows = this.rowData();
         const insertAt = ctx.rowIndex + offset;
         const newRow = this.createNewRow(insertAt);
-        const updated = [
-            ...currentRows.slice(0, insertAt),
-            newRow,
-            ...currentRows.slice(insertAt),
-        ].map((r, i) => ({ ...r, order: i + 1 }));
+        const updated = [...currentRows.slice(0, insertAt), newRow, ...currentRows.slice(insertAt)].map((r, i) => ({
+            ...r,
+            order: i + 1,
+        }));
         this.rowData.set(updated);
         this.emitChanges(updated);
         this.contextMenu.set(null);

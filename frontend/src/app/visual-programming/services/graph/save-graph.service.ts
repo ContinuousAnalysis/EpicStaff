@@ -5,6 +5,7 @@ import { catchError, map, switchMap } from 'rxjs/operators';
 import { GraphDto, UpdateGraphDtoRequest } from '../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../features/flows/services/flows-api.service';
 import { AudioToTextService } from '../../../pages/flows-page/components/flow-visual-programming/services/audio-to-text-node';
+import { ClassificationDecisionTableNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/classification-decision-table-node.service';
 import { CodeAgentNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/code-agent-node.service';
 import { ConditionalEdgeService } from '../../../pages/flows-page/components/flow-visual-programming/services/conditional-edge.service';
 import { CrewNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/crew-node.service';
@@ -18,14 +19,12 @@ import { PythonNodeService } from '../../../pages/flows-page/components/flow-vis
 import { SubGraphNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/subgraph-node.service';
 import { TelegramTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/telegram-trigger-node.service';
 import { WebhookTriggerNodeService } from '../../../pages/flows-page/components/flow-visual-programming/services/webhook-trigger.service';
-import {
-    ClassificationDecisionTableNodeService
-} from '../../../pages/flows-page/components/flow-visual-programming/services/classification-decision-table-node.service';
 import { ToastService } from '../../../services/notifications/toast.service';
 import { FlowModel } from '../../core/models/flow.model';
 import { DecisionTableNodeModel, NodeModel } from '../../core/models/node.model';
 import {
     buildAudioToTextPayload,
+    buildClassificationDecisionTablePayload,
     buildCodeAgentPayload,
     buildCondEdgePayload,
     buildCrewPayload,
@@ -160,7 +159,6 @@ export class GraphUpdateService {
     // ─────────────────────────────────────────────────────────────────────────
     // Public API — Two-phase save
     // ─────────────────────────────────────────────────────────────────────────
-
 
     public saveGraph(
         flowState: FlowModel,
@@ -321,6 +319,57 @@ export class GraphUpdateService {
                     this.codeAgentNodeService.updateCodeAgentNode(id.toString(), buildCodeAgentPayload(n, graphId)),
                 (n) => n.id
             ),
+            classificationDecisionTableNodes: (() => {
+                const cdtDiff = diff.classificationDecisionTableNodes;
+                const toDelete = [...cdtDiff.toDelete, ...cdtDiff.toUpdate.map((u) => u.backend)];
+                const toCreate = [...cdtDiff.toCreate, ...cdtDiff.toUpdate.map((u) => u.ui)];
+
+                if (!toDelete.length && !toCreate.length) {
+                    return of({ results: [], createdMappings: [] } as NodeDiffResult);
+                }
+
+                // Delete all first (parallel), then create all (parallel) — sequential to avoid unique constraint violations
+                const deleteAll$ = toDelete.length
+                    ? forkJoin(
+                          toDelete.map((n) =>
+                              this.classificationDecisionTableNodeService.deleteNode(n.id.toString()).pipe(
+                                  catchError((err) => {
+                                      console.error('[SaveGraph] CDT delete failed:', err);
+                                      return of(null);
+                                  })
+                              )
+                          )
+                      )
+                    : of([]);
+
+                return deleteAll$.pipe(
+                    switchMap(() => {
+                        if (!toCreate.length) {
+                            return of({ results: [], createdMappings: [] } as NodeDiffResult);
+                        }
+                        return forkJoin(
+                            toCreate.map((n) =>
+                                this.classificationDecisionTableNodeService
+                                    .createNode(buildClassificationDecisionTablePayload(n, graphId, allNodes))
+                                    .pipe(
+                                        map((r) => ({ uiNodeId: n.id, backendId: (r as { id: number }).id })),
+                                        catchError((err) => {
+                                            console.error('[SaveGraph] CDT create failed:', err);
+                                            return of(null);
+                                        })
+                                    )
+                            )
+                        ).pipe(
+                            map((results) => {
+                                const createdMappings: CreatedNodeMapping[] = results.filter(
+                                    (r): r is CreatedNodeMapping => r != null && r.backendId != null
+                                );
+                                return { results, createdMappings } as NodeDiffResult;
+                            })
+                        );
+                    })
+                );
+            })(),
         });
     }
 
