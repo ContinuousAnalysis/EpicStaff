@@ -1,7 +1,9 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { ConfirmationDialogService } from '../../../../shared/components/cofirm-dialog';
 import { StorageItemInfo } from '../../models/storage.models';
 
 interface StorageDetailsDialogData extends StorageItemInfo {
@@ -19,6 +21,8 @@ interface StorageDetailsDialogData extends StorageItemInfo {
 export class StorageDetailsDialogComponent {
     readonly dialogRef = inject(DialogRef<void>);
     readonly data = inject<StorageDetailsDialogData>(DIALOG_DATA);
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly confirmationDialogService = inject(ConfirmationDialogService);
 
     get modifiedAt(): string {
         return this.formatDate(this.data.modified);
@@ -68,6 +72,35 @@ export class StorageDetailsDialogComponent {
         this.dialogRef.close();
     }
 
+    onRemoveFromFlow(flowName: string): void {
+        const itemType = this.data.type === 'folder' ? 'folder' : 'file';
+        const itemTitle = this.data.type === 'folder' ? 'Remove Folder?' : 'Remove File?';
+        const itemName = this.escapeHtml(this.data.name ?? 'item');
+        const safeFlowName = this.escapeHtml(flowName);
+
+        this.confirmationDialogService
+            .confirm({
+                title: itemTitle,
+                message: `Are you sure you want to remove <strong>${itemName}</strong> ${itemType} from the <strong>${safeFlowName}</strong> flow?`,
+                confirmText: 'Remove',
+                cancelText: 'Cancel',
+                type: 'warning',
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((confirmed) => {
+                if (confirmed !== true) {
+                    return;
+                }
+
+                // TODO: replace with API call when backend endpoint is ready.
+                console.log('remove-from-flow stub', {
+                    itemPath: this.data.path,
+                    itemType,
+                    flowName,
+                });
+            });
+    }
+
     private formatDate(value?: string): string {
         if (!value) return '-';
         const date = new Date(value);
@@ -75,5 +108,14 @@ export class StorageDetailsDialogComponent {
             return value;
         }
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    private escapeHtml(value: string): string {
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 }

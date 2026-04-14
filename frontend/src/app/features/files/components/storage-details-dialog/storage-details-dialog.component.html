@@ -49,7 +49,18 @@
                     @for (flow of usedInFlows; track flow) {
                         <span class="storage-details-dialog__chip">
                             {{ flow }}
-                            <app-svg-icon icon="x" size="20px" class="storage-details-dialog__chip-x"></app-svg-icon>
+                            <button
+                                class="storage-details-dialog__chip-remove"
+                                type="button"
+                                aria-label="Remove from flow"
+                                (click)="onRemoveFromFlow(flow)"
+                            >
+                                <app-svg-icon
+                                    icon="x"
+                                    size="20px"
+                                    class="storage-details-dialog__chip-x"
+                                ></app-svg-icon>
+                            </button>
                         </span>
                     }
                 </div>

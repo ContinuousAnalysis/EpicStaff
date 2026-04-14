@@ -6,6 +6,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 
 import { ToastService } from '../../../../../../services/notifications/toast.service';
+import { ConfirmationDialogService } from '../../../../../../shared/components/cofirm-dialog';
 import { DragDropAreaComponent } from '../../../../../../shared/components/drag-drop-area/drag-drop-area.component';
 import { SpinnerComponent } from '../../../../../../shared/components/spinner/spinner.component';
 import {
@@ -42,6 +43,7 @@ export class StoragePageComponent {
     private destroyRef = inject(DestroyRef);
     private storageApiService = inject(StorageApiService);
     private toastService = inject(ToastService);
+    private confirmationDialogService = inject(ConfirmationDialogService);
     private dialog = inject(Dialog);
 
     readonly isLoading = signal<boolean>(true);
@@ -329,18 +331,30 @@ export class StoragePageComponent {
     }
 
     private handleDelete(item: StorageItem): void {
-        this.storageApiService
-            .delete(item.path)
+        if (!item.path) {
+            return;
+        }
+
+        this.confirmDelete([item])
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.toastService.success(`"${item.name}" deleted`);
-                    if (this.selectedFile()?.path === item.path) {
-                        this.selectedFile.set(null);
-                    }
-                    this.loadTree();
-                },
-                error: () => this.toastService.error(`Failed to delete "${item.name}"`),
+            .subscribe((confirmed) => {
+                if (confirmed !== true) {
+                    return;
+                }
+
+                this.storageApiService
+                    .delete(item.path)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.toastService.success(`"${item.name}" deleted`);
+                            if (this.selectedFile()?.path === item.path) {
+                                this.selectedFile.set(null);
+                            }
+                            this.loadTree();
+                        },
+                        error: () => this.toastService.error(`Failed to delete "${item.name}"`),
+                    });
             });
     }
 
@@ -457,29 +471,90 @@ export class StoragePageComponent {
             return;
         }
 
-        const requests = items.map((item) =>
-            this.storageApiService.delete(item.path).pipe(
-                map(() => ({ item, ok: true as const })),
-                catchError((error: HttpErrorResponse) => of({ item, ok: false as const, error }))
-            )
-        );
-
-        forkJoin(requests)
+        this.confirmDelete(items)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((results) => {
-                const failed = results.filter((result) => !result.ok && result.error?.status !== 404);
-                if (failed.length === 0) {
-                    this.toastService.success(successMessage);
-                } else {
-                    this.toastService.error(`Failed to delete ${failed.length} item(s)`);
+            .subscribe((confirmed) => {
+                if (confirmed !== true) {
+                    return;
                 }
 
-                if (clearSelectedFile) {
-                    this.selectedFile.set(null);
-                } else if (this.selectedFile()?.path && items.some((item) => item.path === this.selectedFile()?.path)) {
-                    this.selectedFile.set(null);
-                }
-                this.loadTree();
+                const requests = items.map((item) =>
+                    this.storageApiService.delete(item.path).pipe(
+                        map(() => ({ item, ok: true as const })),
+                        catchError((error: HttpErrorResponse) => of({ item, ok: false as const, error }))
+                    )
+                );
+
+                forkJoin(requests)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe((results) => {
+                        const failed = results.filter((result) => !result.ok && result.error?.status !== 404);
+                        if (failed.length === 0) {
+                            this.toastService.success(successMessage);
+                        } else {
+                            this.toastService.error(`Failed to delete ${failed.length} item(s)`);
+                        }
+
+                        if (clearSelectedFile) {
+                            this.selectedFile.set(null);
+                        } else if (
+                            this.selectedFile()?.path &&
+                            items.some((item) => item.path === this.selectedFile()?.path)
+                        ) {
+                            this.selectedFile.set(null);
+                        }
+                        this.loadTree();
+                    });
             });
+    }
+
+    private confirmDelete(items: StorageItem[]): ReturnType<ConfirmationDialogService['confirm']> {
+        const fileCount = items.filter((item) => item.type === 'file').length;
+        const folderCount = items.filter((item) => item.type === 'folder').length;
+        const isSingle = items.length === 1;
+
+        let title = 'Delete File';
+        if (isSingle) {
+            title = items[0].type === 'folder' ? 'Delete Folder' : 'Delete File';
+        } else if (fileCount > 0 && folderCount === 0) {
+            title = 'Delete Files';
+        } else if (folderCount > 0 && fileCount === 0) {
+            title = 'Delete Folders';
+        } else {
+            title = 'Delete Files and Folders';
+        }
+
+        let message = '';
+        if (isSingle) {
+            const item = items[0];
+            message = `Are you sure you want to delete <strong>${this.escapeHtml(item.name)}</strong> ${item.type}?`;
+        } else if (fileCount > 0 && folderCount > 0) {
+            message = `Are you sure you want to delete ${this.formatCount(fileCount, 'file', 'files')} and ${this.formatCount(folderCount, 'folder', 'folders')}?`;
+        } else if (fileCount > 0) {
+            message = `Are you sure you want to delete ${this.formatCount(fileCount, 'file', 'files')}?`;
+        } else {
+            message = `Are you sure you want to delete ${this.formatCount(folderCount, 'folder', 'folders')}?`;
+        }
+
+        return this.confirmationDialogService.confirm({
+            title,
+            message,
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            type: 'danger',
+        });
+    }
+
+    private formatCount(count: number, single: string, plural: string): string {
+        return `${count} ${count === 1 ? single : plural}`;
+    }
+
+    private escapeHtml(value: string): string {
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 }

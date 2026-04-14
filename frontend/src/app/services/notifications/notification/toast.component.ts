@@ -36,7 +36,7 @@ import { ToastMessage, ToastPosition, ToastService } from '../toast.service';
         `
             .toast-container {
                 position: fixed;
-                z-index: 9999;
+                z-index: 20000;
                 display: flex;
                 gap: 10px;
                 max-width: 350px;

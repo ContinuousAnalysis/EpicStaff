@@ -1,8 +1,10 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
+import { ToastService } from '../../../../services/notifications/toast.service';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { Spinner2Component } from '../../../../shared/components/spinner-type2/spinner.component';
 import { StorageApiService } from '../../services/storage-api.service';
@@ -48,6 +50,7 @@ export class CreateFolderDialogComponent {
     private dialogRef = inject(DialogRef<CreateFolderDialogResult | undefined>);
     private data: CreateFolderDialogData = inject(DIALOG_DATA, { optional: true }) ?? {};
     private storageApiService = inject(StorageApiService);
+    private toastService = inject(ToastService);
     private destroyRef = inject(DestroyRef);
 
     private static readonly ARCHIVE_EXTENSIONS = new Set([
@@ -242,8 +245,9 @@ export class CreateFolderDialogComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (res) => this.dialogRef.close(res),
-                error: () => {
+                error: (error: unknown) => {
                     this.isUploading.set(false);
+                    this.toastService.error(this.getUploadErrorMessage(error));
                 },
             });
     }
@@ -319,5 +323,22 @@ export class CreateFolderDialogComponent {
             const names = new Set(existing.map((f) => f.name));
             return [...existing, ...newFiles.filter((f) => !names.has(f.name))];
         });
+    }
+
+    private getUploadErrorMessage(error: unknown): string {
+        const fallbackMessage = 'Failed to upload files';
+        if (!(error instanceof HttpErrorResponse)) return fallbackMessage;
+
+        const responseError = error.error;
+        if (typeof responseError === 'string' && responseError.trim()) return responseError;
+
+        if (responseError && typeof responseError === 'object') {
+            const payload = responseError as { detail?: unknown; error?: unknown; message?: unknown; reason?: unknown };
+            const backendMessage = payload.detail ?? payload.error ?? payload.message ?? payload.reason;
+            if (typeof backendMessage === 'string' && backendMessage.trim()) return backendMessage;
+        }
+
+        if (typeof error.message === 'string' && error.message.trim()) return error.message;
+        return fallbackMessage;
     }
 }

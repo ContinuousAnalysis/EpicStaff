@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { ConfirmationDialogService } from '../../../../shared/components/cofirm-dialog';
 import { FlowsApiService } from '../../../flows/services/flows-api.service';
 import { StorageItem } from '../../models/storage.models';
 import { StorageApiService } from '../../services/storage-api.service';
@@ -36,6 +37,7 @@ export class AddToFlowDialogComponent {
     readonly data: AddToFlowDialogData = inject(DIALOG_DATA);
     private flowsApiService = inject(FlowsApiService);
     private storageApiService = inject(StorageApiService);
+    private confirmationDialogService = inject(ConfirmationDialogService);
     private destroyRef = inject(DestroyRef);
 
     readonly searchQuery = signal('');
@@ -112,10 +114,47 @@ export class AddToFlowDialogComponent {
         const all = this.flows();
         const addGraphIds = all.filter((f) => f.checked && !this.initialCheckedIds.has(f.id)).map((f) => f.id);
         const removeGraphIds = all.filter((f) => !f.checked && this.initialCheckedIds.has(f.id)).map((f) => f.id);
-        this.dialogRef.close({ addGraphIds, removeGraphIds });
+        if (!removeGraphIds.length) {
+            this.dialogRef.close({ addGraphIds, removeGraphIds });
+            return;
+        }
+
+        const removedFlows = all.filter((f) => removeGraphIds.includes(f.id));
+        const itemType = this.data.item.type === 'folder' ? 'folder' : 'file';
+        const title = this.data.item.type === 'folder' ? 'Remove Folder?' : 'Remove File?';
+        const itemName = this.escapeHtml(this.data.item.name);
+        const message =
+            removedFlows.length === 1
+                ? `Are you sure you want to remove <strong>${itemName}</strong> ${itemType} from the <strong>${this.escapeHtml(removedFlows[0].name)}</strong> flow?`
+                : `Are you sure you want to remove <strong>${itemName}</strong> ${itemType} from ${removedFlows.length} flows?`;
+
+        this.confirmationDialogService
+            .confirm({
+                title,
+                message,
+                confirmText: 'Remove',
+                cancelText: 'Cancel',
+                type: 'warning',
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((confirmed) => {
+                if (confirmed !== true) {
+                    return;
+                }
+                this.dialogRef.close({ addGraphIds, removeGraphIds });
+            });
     }
 
     onCancel(): void {
         this.dialogRef.close();
+    }
+
+    private escapeHtml(value: string): string {
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 }

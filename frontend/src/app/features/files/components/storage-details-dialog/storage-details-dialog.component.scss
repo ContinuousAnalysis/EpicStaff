@@ -165,6 +165,18 @@
         flex-shrink: 0;
     }
 
+    &__chip-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
     &__empty {
         color: rgba(217, 217, 222, 0.6);
         font-size: 14px;
