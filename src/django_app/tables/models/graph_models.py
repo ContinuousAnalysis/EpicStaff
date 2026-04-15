@@ -97,6 +97,7 @@ class PythonNode(BaseNode):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
     stream_config = models.JSONField(default=dict, blank=True)
+    test_input = models.JSONField(default=dict, blank=True)
 
     def generate_hash(self):
         """
@@ -110,6 +111,7 @@ class PythonNode(BaseNode):
             "content_hash",
             "metadata",
             "python_code",
+            "test_input",
         ]
 
         data = {
