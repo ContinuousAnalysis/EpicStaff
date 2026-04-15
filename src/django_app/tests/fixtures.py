@@ -25,7 +25,6 @@ from tables.models.crew_models import (
 from tables.services.config_service import YamlConfigService
 from tables.services.redis_service import RedisService
 from tables.services.session_manager_service import SessionManagerService
-
 from tables.models import (
     LLMConfig,
     EmbeddingConfig,
@@ -47,7 +46,6 @@ from tables.models import (
     PythonCode,
     RealtimeAgent,
 )
-
 
 from tests.helpers import data_to_json_file
 

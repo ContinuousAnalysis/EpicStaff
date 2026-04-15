@@ -18,7 +18,6 @@ import { NodeGroup } from 'src/app/shared/models/node-group.model';
 import { GraphDto } from '../../models/graph.model';
 import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../../services/flows-sessions.service';
 import { FlowSessionNodeFilterDropdownComponent } from './flow-session-node-filter-dropdown.component';
-import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-filter-dropdown.component';
 import { FlowSessionsTableComponent } from './flow-sessions-table.component';
 
 @Component({
@@ -30,7 +29,6 @@ import { FlowSessionsTableComponent } from './flow-sessions-table.component';
         CommonModule,
         FlowSessionsTableComponent,
         PaginationControlsComponent,
-        FlowSessionStatusFilterDropdownComponent,
         FlowSessionNodeFilterDropdownComponent,
         IconButtonComponent,
     ],
@@ -49,6 +47,7 @@ export class FlowSessionsListComponent implements OnInit {
     public isErrorCauseFilter = signal<boolean>(false);
     private reloadTrigger = signal(0);
     public availableNodeGroups = signal<NodeGroup[]>([]);
+    public selectedIds = signal<Set<number>>(new Set());
 
     @ViewChild('sessionSearchInput')
     sessionSearchInput!: ElementRef<HTMLInputElement>;
@@ -251,5 +250,14 @@ export class FlowSessionsListComponent implements OnInit {
     onNodeFilterChange(value: string | null) {
         this.currentPage.set(1);
         this.nodeFilter.set(value);
+    }
+
+    public onSelectedIdsChange(ids: Set<number>): void {
+        this.selectedIds.set(ids);
+    }
+
+    public onBulkDelete(): void {
+        this.onDeleteSelected(Array.from(this.selectedIds()));
+        this.selectedIds.set(new Set());
     }
 }
