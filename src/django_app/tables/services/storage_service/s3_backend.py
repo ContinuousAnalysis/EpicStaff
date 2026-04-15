@@ -355,6 +355,8 @@ class S3StorageBackend(AbstractStorageBackend):
         yield buffer.read()
 
     def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
+        self._check_archive_password(archive_file, archive_name)
+
         stem = archive_name
         for ext in (".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".tar"):
             if stem.lower().endswith(ext):
@@ -367,8 +369,10 @@ class S3StorageBackend(AbstractStorageBackend):
         unique_folder_path = self._strip_prefix(unique_full_key)
 
         extracted_paths = []
+
         for relative_path, file_bytes in self._iter_archive_entries(archive_file):
             destination_path = unique_folder_path.rstrip("/") + "/" + relative_path
             self.upload(destination_path, io.BytesIO(file_bytes))
             extracted_paths.append(destination_path)
+
         return extracted_paths

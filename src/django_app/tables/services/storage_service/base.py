@@ -41,23 +41,41 @@ class AbstractStorageBackend(ABC):
                 stem, counter = prefix, int(num)
         return f"{stem} ({counter + 1}){ext}"
 
+    def _check_archive_password(self, archive_file, archive_name: str) -> None:
+        """Raise ValueError if archive contains any password-protected entries."""
+        pos = archive_file.tell()
+        is_zip = zipfile.is_zipfile(archive_file)
+        archive_file.seek(pos)
+        if not is_zip:
+            return
+
+        msg = f"Archive '{archive_name}' contains protected files"
+        try:
+            with zipfile.ZipFile(archive_file, "r") as zf:
+                for entry in zf.infolist():
+                    if not entry.is_dir() and entry.flag_bits & 0x1:
+                        raise ValueError(msg)
+        except (RuntimeError, zipfile.BadZipFile):
+            raise ValueError(msg)
+        finally:
+            archive_file.seek(pos)
+
     def _iter_archive_entries(self, archive_file) -> Iterator[tuple[str, bytes]]:
-        """
-        Yield (relative_path, bytes) for every file inside a ZIP or TAR archive.
-        Supports .zip, .tar, .tar.gz, .tar.bz2, .tar.xz (anything the stdlib handles).
-        Raises ValueError for unrecognised formats.
-        """
+        """Yield (relative_path, bytes) for every file inside a ZIP or TAR archive."""
         pos = archive_file.tell()
 
         if zipfile.is_zipfile(archive_file):
             archive_file.seek(pos)
+
             with zipfile.ZipFile(archive_file, "r") as zf:
                 for entry in zf.infolist():
                     if not entry.is_dir():
                         yield entry.filename, zf.read(entry.filename)
+
             return
 
         archive_file.seek(pos)
+
         try:
             is_tar = tarfile.is_tarfile(archive_file)
         except Exception:
@@ -65,12 +83,14 @@ class AbstractStorageBackend(ABC):
 
         if is_tar:
             archive_file.seek(pos)
+
             with tarfile.open(fileobj=archive_file, mode="r:*") as tf:
                 for member in tf.getmembers():
                     if member.isfile():
                         fobj = tf.extractfile(member)
                         if fobj:
                             yield member.name, fobj.read()
+
             return
 
         archive_file.seek(pos)
@@ -126,4 +146,4 @@ class AbstractStorageBackend(ABC):
 
     @abstractmethod
     def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
-        """Extract archive (ZIP or TAR) into a subfolder of prefix named after the archive. Returns list of extracted relative paths."""
+        """Extract archive into prefix. Returns list of extracted paths."""

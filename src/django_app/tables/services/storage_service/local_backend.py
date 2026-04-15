@@ -195,6 +195,8 @@ class LocalStorageBackend(AbstractStorageBackend):
         yield buffer.read()
 
     def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
+        self._check_archive_password(archive_file, archive_name)
+
         stem = archive_name
         for ext in (".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".tar"):
             if stem.lower().endswith(ext):
@@ -207,6 +209,7 @@ class LocalStorageBackend(AbstractStorageBackend):
         archive_folder.mkdir(parents=True, exist_ok=True)
 
         extracted_paths = []
+
         for relative_path, file_bytes in self._iter_archive_entries(archive_file):
             destination = archive_folder / relative_path
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -215,4 +218,5 @@ class LocalStorageBackend(AbstractStorageBackend):
                 archive_folder.relative_to(self.base_path) / relative_path
             ).replace("\\", "/")
             extracted_paths.append(rel)
+
         return extracted_paths

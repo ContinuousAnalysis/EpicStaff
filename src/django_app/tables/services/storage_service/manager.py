@@ -244,8 +244,10 @@ class StorageManager:
                 user_name, org_id, action=StorageAction.UPLOAD, path=path
             )
             extracted = self._upload_archive(org_id, path, file_object)
+
             for p in extracted:
                 StorageFileSync.on_upload(org_id, p)
+
             return ArchiveUploadResult(type="archive", extracted=extracted)
 
         destination = (

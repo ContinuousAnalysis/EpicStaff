@@ -119,7 +119,14 @@ class StorageAPIView(ViewSet):
         serializer.is_valid(raise_exception=True)
         path = serializer.validated_data["path"]
         files = serializer.validated_data["files"]
-        results = [self.manager.upload_file(user_name, org_id, path, f) for f in files]
+
+        try:
+            results = [
+                self.manager.upload_file(user_name, org_id, path, f) for f in files
+            ]
+        except ValueError as e:
+            raise ValidationError({"detail": str(e)})
+
         return Response(
             {"uploaded": [r.to_dict() for r in results]},
             status=status.HTTP_201_CREATED,
