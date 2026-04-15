@@ -401,6 +401,7 @@ export class StoragePageComponent {
                 type: details.type ?? fallbackType,
                 path: details.path || fallbackPath,
                 usedIn: details.graphs ?? [],
+                graphs: details.graphs ?? [],
             },
         });
     }

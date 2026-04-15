@@ -46,9 +46,9 @@
             <div class="storage-details-dialog__section-title">USED IN FLOWS</div>
             @if (usedInFlows.length) {
                 <div class="storage-details-dialog__chips">
-                    @for (flow of usedInFlows; track flow) {
+                    @for (flow of usedInFlows; track flow.id) {
                         <span class="storage-details-dialog__chip">
-                            {{ flow }}
+                            {{ flow.name }}
                             <button
                                 class="storage-details-dialog__chip-remove"
                                 type="button"

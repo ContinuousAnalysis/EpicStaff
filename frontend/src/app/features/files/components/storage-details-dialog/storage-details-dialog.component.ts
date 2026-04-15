@@ -1,13 +1,14 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ConfirmationDialogService } from '../../../../shared/components/cofirm-dialog';
-import { StorageItemInfo } from '../../models/storage.models';
+import { StorageGraph, StorageItemInfo } from '../../models/storage.models';
+import { StorageApiService } from '../../services/storage-api.service';
 
 interface StorageDetailsDialogData extends StorageItemInfo {
-    usedIn?: string[];
+    usedIn?: StorageGraph[];
 }
 
 @Component({
@@ -23,13 +24,16 @@ export class StorageDetailsDialogComponent {
     readonly data = inject<StorageDetailsDialogData>(DIALOG_DATA);
     private readonly destroyRef = inject(DestroyRef);
     private readonly confirmationDialogService = inject(ConfirmationDialogService);
+    private readonly storageApiService = inject(StorageApiService);
+
+    readonly usedInFlowsSignal = signal<StorageGraph[]>(this.data.usedIn ?? []);
 
     get modifiedAt(): string {
         return this.formatDate(this.data.modified);
     }
 
-    get usedInFlows(): string[] {
-        return this.data.usedIn?.length ? this.data.usedIn : [];
+    get usedInFlows(): StorageGraph[] {
+        return this.usedInFlowsSignal();
     }
 
     get title(): string {
@@ -72,11 +76,11 @@ export class StorageDetailsDialogComponent {
         this.dialogRef.close();
     }
 
-    onRemoveFromFlow(flowName: string): void {
+    onRemoveFromFlow(graph: StorageGraph): void {
         const itemType = this.data.type === 'folder' ? 'folder' : 'file';
         const itemTitle = this.data.type === 'folder' ? 'Remove Folder?' : 'Remove File?';
         const itemName = this.escapeHtml(this.data.name ?? 'item');
-        const safeFlowName = this.escapeHtml(flowName);
+        const safeFlowName = this.escapeHtml(graph.name);
 
         this.confirmationDialogService
             .confirm({
@@ -92,12 +96,14 @@ export class StorageDetailsDialogComponent {
                     return;
                 }
 
-                // TODO: replace with API call when backend endpoint is ready.
-                console.log('remove-from-flow stub', {
-                    itemPath: this.data.path,
-                    itemType,
-                    flowName,
-                });
+                this.storageApiService
+                    .removeFromGraph(this.data.path ?? '', [graph.id])
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: () => {
+                            this.usedInFlowsSignal.update((flows) => flows.filter((f) => f.id !== graph.id));
+                        },
+                    });
             });
     }
 
