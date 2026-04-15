@@ -85,6 +85,7 @@ export class CreateAgentFormComponent implements OnInit {
     public allKnowledgeSources: GetCollectionRequest[] = [];
     public agentRags: GetCollectionRagsResponse[] = [];
     public isLoadingKnowledgeSources = false;
+    public isLoadingRags = false;
 
     public tabs: Tab[] = [
         { id: TabId.GENERAL, label: 'General' },
@@ -107,6 +108,9 @@ export class CreateAgentFormComponent implements OnInit {
         this.initializeForm();
         this.loadLLMConfigs();
         this.loadKnowledgeSources();
+        if (this.isEditMode && this.agentToEdit?.knowledge_collection) {
+            this.getRagsByCollectionId(this.agentToEdit.knowledge_collection);
+        }
 
         this.agentForm
             .get('knowledge_collection')
@@ -137,10 +141,21 @@ export class CreateAgentFormComponent implements OnInit {
     }
 
     private getRagsByCollectionId(id: number): void {
+        this.isLoadingRags = true;
         this.collectionsService
             .getRagsByCollectionId(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((rags) => (this.agentRags = rags));
+            .subscribe({
+                next: (rags) => {
+                    this.agentRags = rags;
+                    this.isLoadingRags = false;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.isLoadingRags = false;
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     private initializeForm(): void {

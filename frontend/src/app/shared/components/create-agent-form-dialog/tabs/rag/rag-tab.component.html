@@ -8,6 +8,7 @@
                 tooltipText="Choose a knowledge source to provide additional context and information for this agent."
                 placeholder="Select Knowledge Source"
                 [items]="knowledgeSelectItems()"
+                [loading]="loadingKnowledgeSources()"
             />
         </div>
 
@@ -19,6 +20,7 @@
                 tooltipText="Choose a agent rag to provide additional context and information for this agent."
                 [invalid]="isKnowledgeControlInvalid() && isRagControlInvalid()"
                 [items]="agentRagSelectItems()"
+                [loading]="loadingRags()"
             />
             <app-validation-errors [control]="form().get('rag')!" />
         </div>

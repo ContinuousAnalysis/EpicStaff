@@ -43,6 +43,8 @@ export class RagTabComponent implements OnInit {
     allKnowledgeSources = input.required<GetCollectionRequest[]>();
     agentRags = input.required<GetCollectionRagsResponse[]>();
     searchConfigs = input.required<AgentSearchConfigs | null>();
+    loadingKnowledgeSources = input<boolean>(false);
+    loadingRags = input<boolean>(false);
 
     selectedRagType = signal<'naive' | 'graph' | null>(null);
 

@@ -8,10 +8,7 @@
         </button>
     </div>
 
-    <form
-        [formGroup]="agentForm"
-        class="create-agent__body"
-    >
+    <form [formGroup]="agentForm" class="create-agent__body">
         <!-- Left Side - Basic Information -->
         <div class="create-agent__content">
             <div>
@@ -22,9 +19,7 @@
                     tooltipText="Agent role"
                     [required]="true"
                 />
-                <app-validation-errors
-                    [control]="agentForm.get('role')!"
-                />
+                <app-validation-errors [control]="agentForm.get('role')!" />
             </div>
 
             <div>
@@ -35,9 +30,7 @@
                     tooltipText="Goal"
                     [required]="true"
                 />
-                <app-validation-errors
-                    [control]="agentForm.get('goal')!"
-                />
+                <app-validation-errors [control]="agentForm.get('goal')!" />
             </div>
 
             <div>
@@ -48,9 +41,7 @@
                     tooltipText="Backstory"
                     [required]="true"
                 />
-                <app-validation-errors
-                    [control]="agentForm.get('backstory')!"
-                />
+                <app-validation-errors [control]="agentForm.get('backstory')!" />
             </div>
         </div>
 
@@ -58,11 +49,7 @@
         <div class="create-agent__sidebar">
             <div class="tabs">
                 @for (tab of tabs; track tab.id) {
-                    <app-tab-button
-                        [mod]="'sm'"
-                        [active]="tab.id === activeTab()"
-                        (click)="activeTab.set(tab.id)"
-                    >
+                    <app-tab-button [mod]="'sm'" [active]="tab.id === activeTab()" (click)="activeTab.set(tab.id)">
                         {{ tab.label }}
                     </app-tab-button>
                     @if (!$last) {
@@ -83,6 +70,8 @@
                 [allKnowledgeSources]="allKnowledgeSources"
                 [agentRags]="agentRags"
                 [searchConfigs]="agentToEdit?.search_configs || null"
+                [loadingKnowledgeSources]="isLoadingKnowledgeSources"
+                [loadingRags]="isLoadingRags"
             />
             <!--    Might be used un the future-->
             <!--    <app-llm-params-tab-->
@@ -104,18 +93,8 @@
     </form>
 
     <div class="create-agent__footer">
-        <app-button
-            type="outline-primary"
-            (click)="onCancelForm()"
-            [disabled]="isSubmitting()"
-        >
-            Cancel
-        </app-button>
-        <app-button
-            type="primary"
-            [disabled]="isSubmitting() || agentForm.invalid"
-            (click)="onSubmitForm()"
-        >
+        <app-button type="outline-primary" (click)="onCancelForm()" [disabled]="isSubmitting()"> Cancel </app-button>
+        <app-button type="primary" [disabled]="isSubmitting() || agentForm.invalid" (click)="onSubmitForm()">
             @if (isSubmitting()) {
                 <mat-spinner diameter="16"></mat-spinner>
             } @else {

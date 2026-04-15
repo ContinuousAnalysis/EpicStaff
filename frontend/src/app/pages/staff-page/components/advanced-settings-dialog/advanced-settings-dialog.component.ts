@@ -71,6 +71,8 @@ export class AdvancedSettingsDialogComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
 
     activeTab = signal<TabId>(TabId.GENERAL);
+    loadingKnowledgeSources = signal(true);
+    loadingRags = signal(false);
 
     public combinedLLMs: FullLLMConfig[] = [];
     public form!: FormGroup;
@@ -99,6 +101,7 @@ export class AdvancedSettingsDialogComponent implements OnInit {
 
         // Fetch LLM configs, models, and knowledge sources
         const collectionId = this.data.knowledge_collection;
+        if (collectionId) this.loadingRags.set(true);
         forkJoin({
             llmConfigs: this.fullLLMConfigService.getFullLLMConfigs(),
             knowledgeSources: this.collectionsService.getCollections(),
@@ -110,11 +113,14 @@ export class AdvancedSettingsDialogComponent implements OnInit {
                     this.agentRags = rags;
                     this.combinedLLMs = llmConfigs;
                     this.allKnowledgeSources = knowledgeSources;
-
+                    this.loadingKnowledgeSources.set(false);
+                    this.loadingRags.set(false);
                     this.cdr.markForCheck();
                 },
                 error: (err) => {
                     console.error('Error fetching data:', err);
+                    this.loadingKnowledgeSources.set(false);
+                    this.loadingRags.set(false);
                     this.cdr.markForCheck();
                 },
             });
@@ -173,10 +179,18 @@ export class AdvancedSettingsDialogComponent implements OnInit {
     }
 
     private getRagsByCollectionId(id: number): void {
+        this.loadingRags.set(true);
         this.collectionsService
             .getRagsByCollectionId(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((rags) => (this.agentRags = rags));
+            .subscribe({
+                next: (rags) => {
+                    this.agentRags = rags;
+                    this.loadingRags.set(false);
+                    this.cdr.markForCheck();
+                },
+                error: () => this.loadingRags.set(false),
+            });
     }
 
     // In save method
