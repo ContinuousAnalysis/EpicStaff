@@ -1037,20 +1037,6 @@ class PythonNodeLastTestInputView(APIView):
         except PythonNode.DoesNotExist:
             raise NotFound(detail="PythonNode not found.")
 
-        successful_sessions_exist = Session.objects.filter(
-            graph_id=python_node.graph_id,
-            status=Session.SessionStatus.END,
-        ).exists()
-
-        if not successful_sessions_exist:
-            return Response(
-                {
-                    "detail": "No successful sessions found for this flow.",
-                    "input": None,
-                },
-                status=status.HTTP_200_OK,
-            )
-
         python_node_name = f"{python_node.node_name} #{python_node.pk}"
         message = (
             GraphSessionMessage.objects.filter(
