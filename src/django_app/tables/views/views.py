@@ -19,6 +19,9 @@ from tables.models import GraphFile
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
 from tables.services.realtime_service import RealtimeService
+from tables.swagger_schemas.python_node_test_mode_schema import (
+    LAST_TEST_INPUT_SWAGGER as _LAST_TEST_INPUT_SWAGGER,
+)
 from utils.logger import logger
 
 from drf_yasg import openapi
@@ -1027,32 +1030,7 @@ class RegisterWebhooksApiView(APIView):
 
 
 class PythonNodeLastTestInputView(APIView):
-    @swagger_auto_schema(
-        operation_summary="Get Last Test Input for Python Node",
-        responses={
-            200: openapi.Response(
-                description="Result of the lookup — always 200, check 'input' for data.",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "detail": openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description="Human-readable status message.",
-                        ),
-                        "input": openapi.Schema(
-                            type=openapi.TYPE_OBJECT,
-                            nullable=True,
-                            description=(
-                                "The input dict from the last successful test run, "
-                                "or null when no matching data is found."
-                            ),
-                        ),
-                    },
-                ),
-            ),
-            404: openapi.Response(description="PythonNode not found"),
-        },
-    )
+    @swagger_auto_schema(**_LAST_TEST_INPUT_SWAGGER)
     def get(self, request, pk):
         try:
             python_node = PythonNode.objects.get(pk=pk)
