@@ -1,8 +1,6 @@
 <div [formGroup]="form()">
     <div class="form-section">
-        <h3 class="section-title">
-            RETRIEVAL SETTINGS
-        </h3>
+        <h3 class="section-title">RETRIEVAL SETTINGS</h3>
         <div class="form-group">
             <app-select
                 formControlName="knowledge_collection"
@@ -22,6 +20,7 @@
                 [invalid]="isKnowledgeControlInvalid() && isRagControlInvalid()"
                 [items]="agentRagSelectItems()"
             />
+            <app-validation-errors [control]="form().get('rag')!" />
         </div>
 
         @if (searchConfigsFormGroup) {
@@ -172,14 +171,10 @@
                             </div>
                         }
                         @case ('global') {
-                            <h3>
-                                Not available yet
-                            </h3>
+                            <h3>Not available yet</h3>
                         }
                         @case ('drift') {
-                            <h3>
-                                Not available yet
-                            </h3>
+                            <h3>Not available yet</h3>
                         }
                     }
                 }

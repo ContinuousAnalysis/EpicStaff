@@ -112,15 +112,28 @@ export class CreateAgentFormComponent implements OnInit {
             .get('knowledge_collection')
             ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((id) => this.onKnowledgeSourceChange(id));
+
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                event.stopPropagation();
+                this.onSubmitForm();
+            }
+        });
     }
 
     private onKnowledgeSourceChange(collectionId: number | null): void {
+        const ragControl = this.agentForm.get('rag');
         if (collectionId === null) {
             this.agentRags = [];
+            ragControl?.clearValidators();
         } else {
             this.getRagsByCollectionId(collectionId);
+            ragControl?.markAsTouched();
+            ragControl?.setValidators([Validators.required]);
         }
-        this.agentForm.get('rag')?.patchValue(null);
+        ragControl?.patchValue(null);
+        ragControl?.updateValueAndValidity();
     }
 
     private getRagsByCollectionId(id: number): void {
@@ -133,6 +146,7 @@ export class CreateAgentFormComponent implements OnInit {
     private initializeForm(): void {
         const agent = this.agentToEdit;
         const editMode = this.isEditMode;
+        const ragValidators = editMode && agent?.knowledge_collection ? [Validators.required] : [];
 
         this.agentForm = this.fb.group({
             role: [editMode ? agent?.role : '', [Validators.required]],
@@ -156,6 +170,7 @@ export class CreateAgentFormComponent implements OnInit {
                           rag_type: agent?.rag?.rag_type || null,
                       }
                     : null,
+                ragValidators,
             ],
             search_configs: [editMode ? agent?.search_configs : null],
 

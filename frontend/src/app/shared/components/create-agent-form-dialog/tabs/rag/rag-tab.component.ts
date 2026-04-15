@@ -9,6 +9,7 @@ import {
     SelectItem,
     SliderWithStepperComponent,
     TextareaComponent,
+    ValidationErrorsComponent,
 } from '@shared/components';
 
 import {
@@ -30,6 +31,7 @@ import { AgentSearchConfigs, GraphBasicSearchConfig, GraphLocalSearchConfig } fr
         InputNumberComponent,
         DualSliderComponent,
         TextareaComponent,
+        ValidationErrorsComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

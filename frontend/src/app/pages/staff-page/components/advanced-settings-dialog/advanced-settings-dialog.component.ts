@@ -123,10 +123,26 @@ export class AdvancedSettingsDialogComponent implements OnInit {
             .get('knowledge_collection')
             ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((id) => this.onKnowledgeSourceChange(id));
+
+        this.dialogRef.backdropClick.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.save());
+
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.save();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') {
+                e.preventDefault();
+                e.stopPropagation();
+                this._closeWithPageSave = true;
+                this.save();
+            }
+        });
     }
 
     private initForm(): void {
         const data = this.data;
+        const ragValidators = data.knowledge_collection ? [Validators.required] : [];
         this.form = this.fb.group({
             role: [data.role],
             max_iter: [data.max_iter || 10, [Validators.min(1), Validators.max(30)]],
@@ -142,18 +158,24 @@ export class AdvancedSettingsDialogComponent implements OnInit {
                     rag_id: data.rag?.rag_id || null,
                     rag_type: data.rag?.rag_type || null,
                 },
+                ragValidators,
             ],
             search_configs: [data.search_configs || null, [Validators.required]],
         });
     }
 
     private onKnowledgeSourceChange(collectionId: number | null): void {
+        const ragControl = this.form.get('rag');
         if (collectionId === null) {
             this.agentRags = [];
+            ragControl?.clearValidators();
         } else {
             this.getRagsByCollectionId(collectionId);
+            ragControl?.markAsTouched();
+            ragControl?.setValidators([Validators.required]);
         }
-        this.form.get('rag')?.patchValue(null);
+        ragControl?.patchValue(null);
+        ragControl?.updateValueAndValidity();
     }
 
     private getRagsByCollectionId(id: number): void {
