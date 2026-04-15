@@ -5,12 +5,20 @@ from rest_framework import serializers
 from tables.validators.file_upload_validator import FileValidator
 
 
+def _normalize_path(value: str) -> str:
+    """Strip trailing slashes so endpoints behave consistently."""
+    return value.rstrip("/") if value else value
+
+
 class StoragePathQuerySerializer(serializers.Serializer):
     path = serializers.CharField(
         required=False,
         default="",
         help_text="Storage path (e.g. `/` or `/reports/`)",
     )
+
+    def validate_path(self, value: str) -> str:
+        return _normalize_path(value)
 
 
 class StorageSessionOutputsQuerySerializer(serializers.Serializer):
@@ -32,6 +40,9 @@ class StorageUploadSerializer(serializers.Serializer):
         help_text="Files to upload",
     )
 
+    def validate_path(self, value: str) -> str:
+        return _normalize_path(value)
+
     def validate_files(self, value):
         return FileValidator().validate(value)
 
@@ -42,6 +53,9 @@ class StorageMkdirSerializer(serializers.Serializer):
         help_text="Folder path to create",
     )
 
+    def validate_path(self, value: str) -> str:
+        return _normalize_path(value)
+
 
 class StorageBulkDeleteSerializer(serializers.Serializer):
     paths = serializers.ListField(
@@ -49,6 +63,9 @@ class StorageBulkDeleteSerializer(serializers.Serializer):
         min_length=1,
         help_text="List of storage paths to delete",
     )
+
+    def validate_paths(self, value: list[str]) -> list[str]:
+        return [_normalize_path(path) for path in value]
 
 
 class StorageDownloadZipSerializer(serializers.Serializer):
@@ -58,12 +75,19 @@ class StorageDownloadZipSerializer(serializers.Serializer):
         help_text="List of file paths to include in the zip",
     )
 
+    def validate_paths(self, value: list[str]) -> list[str]:
+        return [_normalize_path(path) for path in value]
+
 
 class StorageRenameSerializer(serializers.Serializer):
     from_path = serializers.CharField(source="from", help_text="Source path")
     to_path = serializers.CharField(source="to", help_text="Destination path")
 
+    def validate_from_path(self, value: str) -> str:
+        return _normalize_path(value)
+
     def validate_to_path(self, value: str) -> str:
+        value = _normalize_path(value)
         if FileValidator().is_executable_filename(value):
             ext = os.path.splitext(value)[1].lower()
             raise serializers.ValidationError(
@@ -88,6 +112,12 @@ class StorageMoveSerializer(serializers.Serializer):
         help_text="Destination organization ID (cross-org move)",
     )
 
+    def validate_from_path(self, value: str) -> str:
+        return _normalize_path(value)
+
+    def validate_to_path(self, value: str) -> str:
+        return _normalize_path(value)
+
 
 class StorageCopySerializer(serializers.Serializer):
     from_path = serializers.CharField(source="from", help_text="Source path")
@@ -105,6 +135,12 @@ class StorageCopySerializer(serializers.Serializer):
         help_text="Destination organization ID (cross-org copy)",
     )
 
+    def validate_from_path(self, value: str) -> str:
+        return _normalize_path(value)
+
+    def validate_to_path(self, value: str) -> str:
+        return _normalize_path(value)
+
 
 class StorageAddToGraphSerializer(serializers.Serializer):
     path = serializers.CharField(
@@ -116,6 +152,9 @@ class StorageAddToGraphSerializer(serializers.Serializer):
         allow_empty=False,
         help_text="Target graph IDs",
     )
+
+    def validate_path(self, value: str) -> str:
+        return _normalize_path(value)
 
 
 class FileItemSerializer(serializers.Serializer):
@@ -212,6 +251,9 @@ class StorageRemoveFromGraphSerializer(serializers.Serializer):
         allow_empty=False,
         help_text="Graph IDs to unlink from",
     )
+
+    def validate_path(self, value: str) -> str:
+        return _normalize_path(value)
 
 
 class StorageGraphFilesQuerySerializer(serializers.Serializer):
