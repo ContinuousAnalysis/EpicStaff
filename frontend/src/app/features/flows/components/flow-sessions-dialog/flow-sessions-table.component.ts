@@ -111,7 +111,7 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
 })
 export class FlowSessionsTableComponent {
     @Input() sessions: GraphSessionLight[] = [];
-    @Input() flow!: GraphDto;
+    @Input() flow?: GraphDto;
     @Input() isLoading: boolean = false;
     @Input() showEmptyState: boolean = false;
 

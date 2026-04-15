@@ -106,6 +106,13 @@ export const routes: Routes = [
                 canDeactivate: [UnsavedChangesGuard],
             },
             {
+                path: 'sessions',
+                loadComponent: () =>
+                    import('./features/flows/pages/global-sessions-list/global-sessions-list.component').then(
+                        (m) => m.GlobalSessionsListComponent
+                    ),
+            },
+            {
                 path: 'graph/:graphId/session/:sessionId',
                 loadComponent: () =>
                     import('./pages/running-graph/pages/running-graph-page/running-graph-page.component').then(
