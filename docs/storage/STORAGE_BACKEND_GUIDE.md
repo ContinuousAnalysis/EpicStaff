@@ -62,6 +62,8 @@ Files are stored at the `STORAGE_LOCAL_ROOT` path inside the container.
 | `STORAGE_LOCAL_ROOT` | `/app/storage` | Root directory for local backend |
 | `MINIO_PORT` | `9000` | MinIO API port (used in healthcheck and mc commands) |
 | `MINIO_CONSOLE_PORT` | `9001` | MinIO web console port |
+| `STORAGE_MUTATION_CHANNEL` | `storage_mutations` | Redis pub/sub channel for storage mutation events |
+| `MAX_TOTAL_FILE_SIZE` | `10485760` (10 MB) | Maximum total upload size per request |
 
 ---
 
@@ -84,18 +86,23 @@ LocalStorageBackend     S3StorageBackend
 
 | File | Purpose |
 |------|---------|
-| `tables/services/storage/__init__.py` | Factory functions `get_storage_backend()`, `get_storage_manager()` |
-| `tables/services/storage/base.py` | `AbstractStorageBackend` interface |
-| `tables/services/storage/local_backend.py` | Local filesystem implementation |
-| `tables/services/storage/s3_backend.py` | S3/MinIO implementation |
-| `tables/services/storage/manager.py` | `StorageManager` (org prefixing, permissions, archive handling) |
-| `tables/services/storage/enums.py` | `StorageAction` enum |
-| `tables/services/storage/decorators.py` | `@check_permission` decorator |
+| `tables/services/storage_service/__init__.py` | Factory functions `get_storage_backend()`, `get_storage_manager()` |
+| `tables/services/storage_service/base.py` | `AbstractStorageBackend` interface |
+| `tables/services/storage_service/local_backend.py` | Local filesystem implementation |
+| `tables/services/storage_service/s3_backend.py` | S3/MinIO implementation |
+| `tables/services/storage_service/manager.py` | `StorageManager` (org prefixing, permissions, archive handling) |
+| `tables/services/storage_service/enums.py` | `StorageAction` enum |
+| `tables/services/storage_service/decorators.py` | `@check_permission` decorator |
+| `tables/services/storage_service/db_sync.py` | `StorageFileSync` — keeps DB in sync with storage mutations |
+| `tables/services/storage_service/dataclasses.py` | Data classes: `FileListItem`, `FileInfo`, `FolderInfo`, `UploadResult`, etc. |
 | `tables/storage_permissions.py` | `StoragePermission` DRF permission class |
+| `tables/validators/file_upload_validator.py` | `FileValidator` — blocks executable uploads, scans archives |
+| `tables/models/graph_models.py` | `StorageFile`, `GraphStorageFile`, `SessionStorageFile` models |
 | `tables/views/storage_views.py` | `StorageAPIView` REST endpoints |
 | `tables/swagger_schemas/storage_schema.py` | Swagger/OpenAPI schema definitions |
 | `tables/urls.py` | Router registration (`/api/storage/`) |
 | `django_app/settings.py` | `STORAGE_*` settings (read from env) |
+| `shared/epicstaff_storage/storage.py` | Storage SDK for Python/Code Agent nodes in flows |
 
 ---
 
@@ -133,6 +140,14 @@ Every public method is decorated with `@check_permission`, which calls `_require
 
 `upload_file()` detects ZIP and TAR archives and extracts them into the target directory automatically. Supported formats: `.zip`, `.tar`, `.tar.gz`, `.tar.bz2`, `.tar.xz`.
 
+Archives extract into a subfolder named after the archive stem (e.g., `data.zip` → `data/`). If the subfolder already exists, the name auto-increments: `data` → `data (1)` → `data (2)`.
+
+Password-protected ZIP files are rejected.
+
+Document formats (`.xlsx`, `.docx`, `.pptx`, `.epub`, `.jar`, `.apk`, `.war`, `.xpi`, etc.) are NOT extracted even though they are ZIP-based.
+
+**Note:** `.jar`, `.war`, and `.ear` also appear in the blocked executable extensions list. Since upload validation runs first, these formats are rejected before the archive detection step. They appear in both lists as a defense-in-depth measure.
+
 ### Cross-org operations
 
 - `copy_cross_org(user_name, src_org_id, src_path, dst_org_id, dst_path)` -- copy between orgs
@@ -142,24 +157,60 @@ Both require the user to have permission in source and destination orgs.
 
 ---
 
+## File Validation
+
+`FileValidator` (in `tables/validators/file_upload_validator.py`) enforces upload security:
+
+- Blocks executable file extensions (Windows, Unix, Java, shared libs)
+- Blocks unsupported archive formats (only ZIP and TAR allowed)
+- Scans ZIP/TAR contents for embedded executable files without extracting
+- Rename operations also validate the destination extension
+
+---
+
+## Database Sync
+
+`StorageFileSync` (in `tables/services/storage_service/db_sync.py`) maintains `StorageFile` records in the database:
+
+- Creates records on upload
+- Deletes records (or prefix-matched records for folders) on delete
+- Updates paths (or bulk-updates folder children) on move/rename
+- Bulk-creates on copy
+- Handles cross-org operations
+
+---
+
+## Graph and Session File Tracking
+
+Three models track file relationships:
+
+- `StorageFile` — core record per org-scoped path
+- `GraphStorageFile` — links files to graphs (flows) for reuse
+- `SessionStorageFile` — tracks files created during flow execution sessions
+
+---
+
 ## API Endpoints
 
 Base path: `/api/storage/`
 
 | Method | Path | Description | Parameters |
 |--------|------|-------------|------------|
-| GET | `/list` | List files and folders | `path` (query) |
-| GET | `/info` | Get file metadata | `path` (query) |
-| GET | `/download` | Download a file | `path` (query) |
-| POST | `/upload` | Upload files (multipart) | `path` (form), `files` (multipart) |
-| POST | `/download-zip` | Download multiple files as ZIP | `paths` (JSON array) |
-| POST | `/mkdir` | Create a folder | `path` (body) |
-| DELETE | `/delete` | Delete file or folder | `path` (query) |
-| POST | `/rename` | Rename file/folder | `from`, `to` (body) |
-| POST | `/move` | Move file/folder | `from`, `to`, `source_org_id`, `destination_org_id` (body) |
-| POST | `/copy` | Copy file/folder | `from`, `to`, `source_org_id`, `destination_org_id` (body) |
-| POST | `/add-to-flow` | Link file to flow (stub) | `path`, `flow_id`, `variable_name` (body) |
-| GET | `/session-outputs` | List session output files | `session_id` (query) |
+| GET | `/list/` | List files and folders | `path` (query) |
+| GET | `/info/` | File/folder metadata + linked graphs | `path` (query) |
+| GET | `/download/` | Download a file | `path` (query) |
+| POST | `/upload/` | Upload files (multipart) | `path` (form), `files` (multipart) |
+| POST | `/download-zip/` | Download multiple files/folders as ZIP | `paths` (JSON body) |
+| POST | `/mkdir/` | Create a folder | `path` (body) |
+| DELETE | `/delete/` | Bulk delete files/folders | `paths` (JSON body, min 1) |
+| POST | `/rename/` | Rename file/folder | `from`, `to` (body) |
+| POST | `/move/` | Move (same-org + cross-org) | `from`, `to`, `source_org_id`, `destination_org_id` (body) |
+| POST | `/copy/` | Copy (same-org + cross-org) | `from`, `to`, `source_org_id`, `destination_org_id` (body) |
+| POST | `/add-to-graph/` | Link storage file to graphs | `path`, `graph_ids` (body) |
+| DELETE | `/remove-from-graph/` | Unlink storage file from graphs | `path`, `graph_ids` (body) |
+| GET | `/graph-files/` | List files attached to a graph | `graph_id` (query) |
+
+`GET /api/sessions/{id}/output-files/` lives on the `SessionViewSet` and returns files tracked during session execution.
 
 Archive uploads are auto-detected and extracted. Cross-org move/copy is triggered when `source_org_id` and `destination_org_id` differ.
 
@@ -175,3 +226,11 @@ MinIO is a core service — it starts with every `docker compose up`. No profile
 - **`minio-init`** — one-shot container that creates the bucket using `mc` (MinIO client), restarts on failure until successful
 
 The `django_app` service depends on `minio` being healthy before starting.
+
+---
+
+## Related Documentation
+
+- [Storage API Reference](STORAGE_API_REFERENCE.md) — complete endpoint documentation
+- [Storage SDK Reference](STORAGE_SDK_REFERENCE.md) — SDK for Python/Code Agent nodes
+- [Storage System Documentation](STORAGE_SYSTEM_DOCUMENTATION.md) — architecture and internals
