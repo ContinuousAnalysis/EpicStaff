@@ -2,7 +2,6 @@ import {
     AfterViewInit,
     ChangeDetectionStrategy,
     Component,
-    computed,
     DestroyRef,
     inject,
     input,
@@ -46,10 +45,6 @@ export class GraphRagConfigurationComponent implements OnInit, AfterViewInit, Ra
 
     selectedFormat = signal<GraphRagFileType>('text');
     format$ = toObservable(this.selectedFormat);
-
-    hasNonTxtFiles = computed(() =>
-        this.graphRag().documents.some((doc) => !doc.file_name.toLowerCase().endsWith('.txt'))
-    );
 
     formatOptions: SelectItem[] = [
         {

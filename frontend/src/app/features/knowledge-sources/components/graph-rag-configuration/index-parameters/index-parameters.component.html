@@ -1,11 +1,6 @@
 <div class="wrapper">
-    <form
-        class="form"
-        [formGroup]="form"
-    >
-        <div class="tooltip">
-            Index Parameters
-        </div>
+    <form class="form" [formGroup]="form">
+        <div class="tooltip">Index Parameters</div>
         <div></div>
 
         <div class="tooltip">
@@ -19,13 +14,9 @@
             </mat-icon>
         </div>
         <div class="control">
-            <app-radio-button
-                formControlName="chunk_strategy"
-                [options]="chunkStrategyOptions"
-            />
-            <app-validation-errors [control]="getControl('chunk_strategy')!"/>
+            <app-radio-button formControlName="chunk_strategy" [options]="chunkStrategyOptions" />
+            <app-validation-errors [control]="getControl('chunk_strategy')!" />
         </div>
-
 
         <div class="tooltip">
             <label>Chunk Size</label>
@@ -45,9 +36,8 @@
                 [invalid]="!!getControl('chunk_size')?.invalid"
                 [alwaysShowSteps]="true"
             />
-            <app-validation-errors [control]="getControl('chunk_size')!"/>
+            <app-validation-errors [control]="getControl('chunk_size')!" />
         </div>
-
 
         <div class="tooltip">
             <label>Chunk Overlap</label>
@@ -67,26 +57,18 @@
                 [invalid]="!!getControl('chunk_overlap')?.invalid"
                 [alwaysShowSteps]="true"
             />
-            <app-validation-errors [control]="getControl('chunk_overlap')!"/>
+            <app-validation-errors [control]="getControl('chunk_overlap')!" />
         </div>
 
         <div class="tooltip">
             <label>Entity Types</label>
-            <mat-icon
-                class="icon"
-                matTooltip="The entity types to identify."
-                matTooltipPosition="above"
-            >
+            <mat-icon class="icon" matTooltip="The entity types to identify." matTooltipPosition="above">
                 help_outline
             </mat-icon>
         </div>
         <div>
-            <app-chips-input
-                formControlName="entity_types"
-                [minItemLength]="1"
-                [maxItemLength]="20"
-            />
-            <app-validation-errors [control]="getControl('entity_types')!"/>
+            <app-chips-input formControlName="entity_types" [minItemLength]="1" [maxItemLength]="20" />
+            <app-validation-errors [control]="getControl('entity_types')!" />
         </div>
 
         <div class="tooltip">
@@ -104,17 +86,15 @@
                 formControlName="max_gleanings"
                 [invalid]="!!getControl('max_gleanings')?.invalid"
                 [alwaysShowSteps]="true"
+                [min]="1"
+                [max]="10"
             />
-            <app-validation-errors [control]="getControl('max_gleanings')!"/>
+            <app-validation-errors [control]="getControl('max_gleanings')!" />
         </div>
 
         <div class="tooltip">
             <label>Max Cluster Size</label>
-            <mat-icon
-                class="icon"
-                matTooltip="The maximum cluster size to export."
-                matTooltipPosition="above"
-            >
+            <mat-icon class="icon" matTooltip="The maximum cluster size to export." matTooltipPosition="above">
                 help_outline
             </mat-icon>
         </div>
@@ -126,7 +106,7 @@
                 [invalid]="!!getControl('max_cluster_size')?.invalid"
                 [alwaysShowSteps]="true"
             />
-            <app-validation-errors [control]="getControl('max_cluster_size')!"/>
+            <app-validation-errors [control]="getControl('max_cluster_size')!" />
         </div>
     </form>
 

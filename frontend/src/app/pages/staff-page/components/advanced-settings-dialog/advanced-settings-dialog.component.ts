@@ -153,14 +153,8 @@ export class AdvancedSettingsDialogComponent implements OnInit {
             respect_context_window: [data.respect_context_window ?? false],
             fcm_llm_config: [data.fcm_llm_config || null],
             knowledge_collection: [data.knowledge_collection || null],
-            rag: [
-                {
-                    rag_id: data.rag?.rag_id || null,
-                    rag_type: data.rag?.rag_type || null,
-                },
-                ragValidators,
-            ],
-            search_configs: [data.search_configs || null, [Validators.required]],
+            rag: [data.rag?.rag_id ? { rag_id: data.rag.rag_id, rag_type: data.rag.rag_type } : null, ragValidators],
+            search_configs: [data.search_configs || null],
         });
     }
 

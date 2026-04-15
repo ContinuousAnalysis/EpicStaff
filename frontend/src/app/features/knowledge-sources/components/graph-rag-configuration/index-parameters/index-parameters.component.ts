@@ -1,13 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, signal } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    ChipsInputComponent, InputNumberComponent, JsonEditorComponent,
+    ChipsInputComponent,
+    InputNumberComponent,
+    JsonEditorComponent,
     RadioButtonComponent,
-    SelectItem, ValidationErrorsComponent
-} from "@shared/components";
-import { MATERIAL_FORMS } from "@shared/material-forms";
-import { GraphRagFileType, GraphRagIndexConfig } from "../../../models/graph-rag.model";
+    SelectItem,
+    ValidationErrorsComponent,
+} from '@shared/components';
+import { MATERIAL_FORMS } from '@shared/material-forms';
+
+import { GraphRagFileType, GraphRagIndexConfig } from '../../../models/graph-rag.model';
 
 @Component({
     selector: 'app-graph-rag-index-parameters',
@@ -22,7 +26,7 @@ import { GraphRagFileType, GraphRagIndexConfig } from "../../../models/graph-rag
         ValidationErrorsComponent,
         JsonEditorComponent,
     ],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppGraphRagParametersComponent implements OnInit {
     private fb = inject(FormBuilder);
@@ -40,7 +44,7 @@ export class AppGraphRagParametersComponent implements OnInit {
     });
 
     form!: FormGroup;
-    editorOptions: any = {
+    editorOptions: Record<string, unknown> = {
         lineNumbers: 'off',
         theme: 'vs-dark',
         language: 'json',
@@ -62,14 +66,14 @@ export class AppGraphRagParametersComponent implements OnInit {
         {
             name: 'sentences',
             value: 'sentence',
-        }
+        },
     ];
 
     ngOnInit(): void {
         this.initForm();
         this.form.valueChanges
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(value => this.formValue.set(value));
+            .subscribe((value) => this.formValue.set(value));
     }
 
     initForm(): void {
@@ -77,10 +81,16 @@ export class AppGraphRagParametersComponent implements OnInit {
         this.form = this.fb.group({
             chunk_strategy: [config?.chunk_strategy || 'tokens', [Validators.required]],
             chunk_size: [config?.chunk_size || 1200, [Validators.required, Validators.min(100), Validators.max(10000)]],
-            chunk_overlap: [config?.chunk_overlap || 100, [Validators.required, Validators.min(0), Validators.max(5000)]],
+            chunk_overlap: [
+                config?.chunk_overlap || 100,
+                [Validators.required, Validators.min(0), Validators.max(5000)],
+            ],
             entity_types: [config?.entity_types || ['organization', 'person', 'geo', 'event'], [Validators.required]],
             max_gleanings: [config?.max_gleanings || 1, [Validators.required, Validators.min(0), Validators.max(10)]],
-            max_cluster_size: [config?.max_cluster_size || 10, [Validators.required, Validators.min(1), Validators.max(100)]],
+            max_cluster_size: [
+                config?.max_cluster_size || 10,
+                [Validators.required, Validators.min(1), Validators.max(100)],
+            ],
         });
         this.formValue.set(this.form.value);
     }
