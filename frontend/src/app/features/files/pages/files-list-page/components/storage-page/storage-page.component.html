@@ -7,7 +7,7 @@
         } @else {
             <div class="storage-page__sidebar" [class.storage-page__sidebar--hidden]="!showSidebar()">
                 <app-storage-tree
-                    [items]="treeData()"
+                    [items]="filteredTreeData()"
                     (fileSelected)="onFileSelect($event)"
                     (folderSelected)="onFolderSelect($event)"
                     (folderToggled)="onFolderToggle($event)"

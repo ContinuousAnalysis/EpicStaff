@@ -1,9 +1,17 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, ViewChild } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    effect,
+    inject,
+    signal,
+    ViewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin, of } from 'rxjs';
-import { catchError, finalize, map } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { ConfirmationDialogService } from '../../../../../../shared/components/cofirm-dialog';
@@ -26,6 +34,7 @@ import {
 } from '../../../../components/create-folder-dialog/create-folder-dialog.component';
 import { StorageDetailsDialogComponent } from '../../../../components/storage-details-dialog/storage-details-dialog.component';
 import { StorageItem, StorageItemInfo } from '../../../../models/storage.models';
+import { FilesSearchService } from '../../../../services/files-search.service';
 import { StorageApiService } from '../../../../services/storage-api.service';
 import { StoragePreviewComponent } from './components/storage-preview/storage-preview.component';
 import { StorageTreeComponent } from './components/storage-tree/storage-tree.component';
@@ -45,12 +54,17 @@ export class StoragePageComponent {
     private toastService = inject(ToastService);
     private confirmationDialogService = inject(ConfirmationDialogService);
     private dialog = inject(Dialog);
+    private filesSearchService = inject(FilesSearchService);
 
     readonly isLoading = signal<boolean>(true);
     readonly treeData = signal<StorageItem[]>([]);
     readonly selectedFile = signal<StorageItem | null>(null);
     readonly selectedItems = signal<StorageItem[]>([]);
     readonly showSidebar = signal<boolean>(true);
+
+    readonly filteredTreeData = computed(() =>
+        filterStorageItems(this.treeData(), this.filesSearchService.searchTerm())
+    );
     private readonly blockedUploadExtensions = new Set([
         // Windows executables & installers
         'exe',
@@ -254,12 +268,13 @@ export class StoragePageComponent {
         });
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
             if (!result) return;
+            const path = item.type === 'folder' && !item.path.endsWith('/') ? `${item.path}/` : item.path;
             const requests = [];
             if (result.addGraphIds.length) {
-                requests.push(this.storageApiService.addToGraph(item.path, result.addGraphIds));
+                requests.push(this.storageApiService.addToGraph(path, result.addGraphIds));
             }
             if (result.removeGraphIds.length) {
-                requests.push(this.storageApiService.removeFromGraph(item.path, result.removeGraphIds));
+                requests.push(this.storageApiService.removeFromGraph(path, result.removeGraphIds));
             }
             if (!requests.length) return;
             forkJoin(requests)
@@ -343,7 +358,7 @@ export class StoragePageComponent {
                 }
 
                 this.storageApiService
-                    .delete(item.path)
+                    .delete([item.path])
                     .pipe(takeUntilDestroyed(this.destroyRef))
                     .subscribe({
                         next: () => {
@@ -386,6 +401,7 @@ export class StoragePageComponent {
                 type: details.type ?? fallbackType,
                 path: details.path || fallbackPath,
                 usedIn: details.graphs ?? [],
+                graphs: details.graphs ?? [],
             },
         });
     }
@@ -478,32 +494,25 @@ export class StoragePageComponent {
                     return;
                 }
 
-                const requests = items.map((item) =>
-                    this.storageApiService.delete(item.path).pipe(
-                        map(() => ({ item, ok: true as const })),
-                        catchError((error: HttpErrorResponse) => of({ item, ok: false as const, error }))
-                    )
-                );
+                const paths = items.map((item) => item.path);
 
-                forkJoin(requests)
+                this.storageApiService
+                    .delete(paths)
                     .pipe(takeUntilDestroyed(this.destroyRef))
-                    .subscribe((results) => {
-                        const failed = results.filter((result) => !result.ok && result.error?.status !== 404);
-                        if (failed.length === 0) {
+                    .subscribe({
+                        next: () => {
                             this.toastService.success(successMessage);
-                        } else {
-                            this.toastService.error(`Failed to delete ${failed.length} item(s)`);
-                        }
-
-                        if (clearSelectedFile) {
-                            this.selectedFile.set(null);
-                        } else if (
-                            this.selectedFile()?.path &&
-                            items.some((item) => item.path === this.selectedFile()?.path)
-                        ) {
-                            this.selectedFile.set(null);
-                        }
-                        this.loadTree();
+                            if (clearSelectedFile) {
+                                this.selectedFile.set(null);
+                            } else if (
+                                this.selectedFile()?.path &&
+                                items.some((item) => item.path === this.selectedFile()?.path)
+                            ) {
+                                this.selectedFile.set(null);
+                            }
+                            this.loadTree();
+                        },
+                        error: () => this.toastService.error(`Failed to delete item(s)`),
                     });
             });
     }
@@ -557,4 +566,21 @@ export class StoragePageComponent {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
+}
+
+function filterStorageItems(items: StorageItem[], term: string): StorageItem[] {
+    if (!term.trim()) return items;
+    const lower = term.toLowerCase();
+    const result: StorageItem[] = [];
+    for (const item of items) {
+        if (item.type === 'folder') {
+            const filteredChildren = filterStorageItems(item.children ?? [], lower);
+            if (filteredChildren.length || item.name.toLowerCase().includes(lower)) {
+                result.push({ ...item, children: filteredChildren, isExpanded: filteredChildren.length > 0 });
+            }
+        } else {
+            if (item.name.toLowerCase().includes(lower)) result.push(item);
+        }
+    }
+    return result;
 }

@@ -74,11 +74,11 @@ export class AddToFlowDialogComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: ({ graphs, info }) => {
-                    const assignedNames = new Set(info.graphs ?? []);
+                    const assignedIds = new Set((info.graphs ?? []).map((gr) => gr.id));
                     const options = graphs.map((g) => ({
                         id: g.id,
                         name: g.name,
-                        checked: assignedNames.has(g.name),
+                        checked: assignedIds.has(g.id),
                     }));
                     this.initialCheckedIds = new Set(options.filter((o) => o.checked).map((o) => o.id));
                     this.flows.set(options);

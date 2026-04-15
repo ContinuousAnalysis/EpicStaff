@@ -9,11 +9,16 @@ export interface StorageItem {
     isExpanded?: boolean;
 }
 
+export interface StorageGraph {
+    id: number;
+    name: string;
+}
+
 export interface StorageItemInfo extends StorageItem {
     content_type?: string;
     created?: string;
     etag?: string;
-    graphs?: string[];
+    graphs?: StorageGraph[];
 }
 
 export interface StorageFileUploadResult {

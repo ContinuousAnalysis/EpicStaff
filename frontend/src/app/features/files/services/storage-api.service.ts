@@ -77,6 +77,10 @@ export class StorageApiService {
         window.open(url, '_blank');
     }
 
+    getDownloadUrl(path: string): string {
+        return `${this.apiUrl}download/?path=${encodeURIComponent(path)}`;
+    }
+
     downloadBlob(path: string): Observable<Blob> {
         return this.http.get(`${this.apiUrl}download/`, {
             params: { path },
@@ -110,9 +114,9 @@ export class StorageApiService {
         return this.http.post<void>(`${this.apiUrl}mkdir/`, { path });
     }
 
-    delete(path: string): Observable<void> {
+    delete(paths: string[]): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}delete/`, {
-            params: { path },
+            body: { paths },
         });
     }
 

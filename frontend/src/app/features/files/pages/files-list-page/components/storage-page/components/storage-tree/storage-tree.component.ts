@@ -29,11 +29,15 @@ export class StorageTreeComponent {
     selectionChange = output<StorageItem[]>();
 
     @ViewChild('renameInput') renameInputRef?: ElementRef<HTMLInputElement>;
+    @ViewChild('listEl') listElRef?: ElementRef<HTMLElement>;
+
+    private hoveredItemEl: HTMLElement | null = null;
 
     selectedItem = signal<StorageItem | null>(null);
     selectedPaths = signal<Set<string>>(new Set<string>());
     hoveredItem = signal<StorageItem | null>(null);
     renamingItem = signal<StorageItem | null>(null);
+    renamePos = signal<{ top: number; left: number; right: number } | null>(null);
     renamingFromPath = '';
     renameValue = '';
     private selectionAnchorPath: string | null = null;
@@ -119,6 +123,21 @@ export class StorageTreeComponent {
     startRename(item: StorageItem): void {
         this.renamingFromPath = item.path || item.name;
         this.renameValue = item.name;
+
+        const itemEl = this.hoveredItemEl;
+        const listEl = this.listElRef?.nativeElement;
+        if (itemEl && listEl) {
+            const itemRect = itemEl.getBoundingClientRect();
+            const listRect = listEl.getBoundingClientRect();
+            this.renamePos.set({
+                top: itemRect.top,
+                left: listRect.left,
+                right: window.innerWidth - listRect.right,
+            });
+        } else {
+            this.renamePos.set(null);
+        }
+
         this.renamingItem.set(item);
         setTimeout(() => {
             this.renameInputRef?.nativeElement.focus();
@@ -152,6 +171,7 @@ export class StorageTreeComponent {
             return;
         }
         this.renamingItem.set(null);
+        this.renamePos.set(null);
 
         const newName = this.renameValue.trim();
         const currentPath = this.renamingFromPath;
@@ -171,6 +191,7 @@ export class StorageTreeComponent {
         event?.preventDefault();
         event?.stopPropagation();
         this.renamingItem.set(null);
+        this.renamePos.set(null);
     }
 
     onRenameEnter(event: Event): void {
@@ -181,7 +202,7 @@ export class StorageTreeComponent {
 
     getFileIcon(item: StorageItem): string {
         if (item.type === 'folder') {
-            return item.is_empty ? 'folder-storage-empty' : 'folder-storage';
+            return 'folder-storage';
         }
         const ext = getFileExtension(item.name);
         if (ext === 'txt') return 'file-txt';
@@ -206,6 +227,27 @@ export class StorageTreeComponent {
                 const slashIndex = selected.path.lastIndexOf('/');
                 currentFolder = slashIndex >= 0 ? selected.path.substring(0, slashIndex) : '';
             }
+        }
+        this.openCreateFolder.emit(currentFolder);
+    }
+
+    onItemMouseEnter(event: MouseEvent, node: StorageItem): void {
+        this.hoveredItem.set(node);
+        this.hoveredItemEl = event.currentTarget as HTMLElement;
+    }
+
+    onItemMouseLeave(): void {
+        this.hoveredItem.set(null);
+    }
+
+    onAddFolderClickForNode(event: MouseEvent, node: StorageItem): void {
+        event.stopPropagation();
+        let currentFolder = '';
+        if (node.type === 'folder') {
+            currentFolder = node.path;
+        } else {
+            const slashIndex = node.path.lastIndexOf('/');
+            currentFolder = slashIndex >= 0 ? node.path.substring(0, slashIndex) : '';
         }
         this.openCreateFolder.emit(currentFolder);
     }
