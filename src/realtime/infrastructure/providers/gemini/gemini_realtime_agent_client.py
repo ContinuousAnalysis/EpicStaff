@@ -269,6 +269,23 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
         """Twilio stream started — Gemini starts automatically, no action needed."""
         pass
 
+    async def replay_audio_buffer(self) -> None:
+        """Replay the rolling audio buffer to the new session after a reconnect.
+
+        History context is already baked into system_instruction by connect().
+        No audio_stream_end is sent — live audio continues after the buffer and
+        Gemini's VAD detects end-of-speech naturally.
+        """
+        if not self._audio_rolling_buffer or self._session is None:
+            return
+        chunks = [chunk for _, chunk in self._audio_rolling_buffer]
+        logger.info(f"Gemini: replaying {len(chunks)} buffered audio chunks to new session")
+        for chunk in chunks:
+            await self._session.send_realtime_input(
+                audio=types.Blob(data=chunk, mime_type="audio/pcm;rate=16000")
+            )
+        self._audio_rolling_buffer.clear()
+
     async def call_tool(
         self, call_id: str, tool_name: str, tool_arguments: Dict[str, Any]
     ) -> None:

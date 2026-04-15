@@ -1,4 +1,5 @@
 import base64
+import time
 from typing import Any, Dict
 
 import numpy as np
@@ -45,8 +46,6 @@ class GeminiClientEventHandler:
             return
 
         try:
-            import time
-
             # Decode incoming PCM 16-bit Mono 24kHz from browser
             pcm_data_24k = base64.b64decode(audio_b64)
             audio_array_24k = np.frombuffer(pcm_data_24k, dtype=np.int16)

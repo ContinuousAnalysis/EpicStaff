@@ -392,6 +392,50 @@ async def test_handle_messages_cancel_stops_loop(client):
     mock_connect.assert_not_awaited()
 
 
+# ---------------------------------------------------------------------------
+# replay_audio_buffer
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_replay_audio_buffer_sends_all_chunks(client):
+    """All chunks in the rolling buffer must be sent to the new session."""
+    import time
+    now = time.monotonic()
+    client._audio_rolling_buffer.append((now, b"\x01" * 32))
+    client._audio_rolling_buffer.append((now, b"\x02" * 32))
+
+    await client.replay_audio_buffer()
+
+    assert client._session.send_realtime_input.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_replay_audio_buffer_clears_buffer_after_replay(client):
+    import time
+    now = time.monotonic()
+    client._audio_rolling_buffer.append((now, b"\x00" * 32))
+
+    await client.replay_audio_buffer()
+
+    assert len(client._audio_rolling_buffer) == 0
+
+
+@pytest.mark.asyncio
+async def test_replay_audio_buffer_noop_when_buffer_empty(client):
+    await client.replay_audio_buffer()
+
+    client._session.send_realtime_input.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_replay_audio_buffer_noop_when_session_none(client):
+    import time
+    client._audio_rolling_buffer.append((time.monotonic(), b"\x00" * 32))
+    client._session = None
+
+    await client.replay_audio_buffer()  # must not raise
+
+
 @pytest.mark.asyncio
 async def test_handle_messages_processes_messages_before_reconnect(client):
     """Messages received before server close must be dispatched."""
