@@ -181,7 +181,7 @@ export class StorageTreeComponent {
 
     getFileIcon(item: StorageItem): string {
         if (item.type === 'folder') {
-            return item.is_empty ? 'folder-storage-empty' : 'folder-storage';
+            return 'folder-storage';
         }
         const ext = getFileExtension(item.name);
         if (ext === 'txt') return 'file-txt';

@@ -1,20 +1,15 @@
-@if (!item()) {
-    <div class="storage-preview storage-preview--empty">
-        <app-svg-icon icon="file-empty-state" size="66px" class="storage-preview__empty-icon"></app-svg-icon>
-        <p class="storage-preview__empty-text">Select a file to preview</p>
-    </div>
-} @else {
-    <div class="storage-preview">
-        <div class="storage-preview__header">
-            <div class="storage-preview__header-left">
-                <button
-                    class="storage-preview__toggle-btn"
-                    [class.storage-preview__toggle-btn--active]="showSidebar()"
-                    (click)="toggleSidebar.emit()"
-                    title="Toggle Folder Branches"
-                >
-                    <app-svg-icon icon="expand-sidebar" size="0.85rem"></app-svg-icon>
-                </button>
+<div class="storage-preview" [class.storage-preview--empty]="!item()">
+    <div class="storage-preview__header">
+        <div class="storage-preview__header-left">
+            <button
+                class="storage-preview__toggle-btn"
+                [class.storage-preview__toggle-btn--active]="showSidebar()"
+                (click)="toggleSidebar.emit()"
+                title="Toggle Folder Branches"
+            >
+                <app-svg-icon icon="expand-sidebar" size="0.85rem"></app-svg-icon>
+            </button>
+            @if (item()) {
                 <div class="storage-preview__breadcrumbs">
                     @for (crumb of breadcrumbs; track crumb; let last = $last) {
                         <span class="storage-preview__breadcrumb">{{ crumb }}</span>
@@ -23,7 +18,9 @@
                         }
                     }
                 </div>
-            </div>
+            }
+        </div>
+        @if (item()) {
             <app-button
                 class="storage-preview__add-to-flow"
                 type="outline-primary"
@@ -38,8 +35,10 @@
             <button class="storage-preview__kebab" aria-label="More actions" (click)="onKebabClick($event)">
                 <app-svg-icon icon="dots-vertical" size="1rem"></app-svg-icon>
             </button>
-        </div>
+        }
+    </div>
 
+    @if (item()) {
         @if (kebabMenuOpen()) {
             <div class="storage-preview__overlay" (click)="closeKebabMenu()"></div>
             <div
@@ -61,8 +60,15 @@
                 <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('delete')">Delete</button>
             </div>
         }
+    }
 
-        <div class="storage-preview__body">
+    <div class="storage-preview__body" [class.storage-preview__body--no-content]="!item() || !hasFileSelected">
+        @if (!item() || !hasFileSelected) {
+            <div class="storage-preview__empty-state">
+                <app-svg-icon icon="file-empty-state" size="66px" class="storage-preview__empty-icon"></app-svg-icon>
+                <p class="storage-preview__empty-text">Select a file to preview</p>
+            </div>
+        } @else {
             @if (previewBadge && previewType() !== 'pdf') {
                 <div class="storage-preview__badge">
                     <span class="storage-preview__badge-type">{{ previewBadge }}</span>
@@ -70,12 +76,7 @@
                 </div>
             }
             <div class="storage-preview__scroll">
-                @if (!hasFileSelected) {
-                    <div class="storage-preview__empty-state">
-                        <app-svg-icon icon="file" size="3rem" class="storage-preview__empty-icon"></app-svg-icon>
-                        <p class="storage-preview__empty-text">Select a file to preview</p>
-                    </div>
-                } @else if (isLoadingPreview()) {
+                @if (isLoadingPreview()) {
                     <div class="storage-preview__loading">Loading preview...</div>
                 } @else if (previewError()) {
                     <div class="storage-preview__error">
@@ -116,6 +117,6 @@
                     }
                 }
             </div>
-        </div>
+        }
     </div>
-}
+</div>

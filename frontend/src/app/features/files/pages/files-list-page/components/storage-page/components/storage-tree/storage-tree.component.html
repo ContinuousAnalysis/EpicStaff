@@ -2,17 +2,17 @@
     <div class="storage-tree__header">
         <span class="storage-tree__header-label">Folder Branches</span>
         <button class="storage-tree__header-close" aria-label="Close panel" (click)="closeSidebar.emit()">
-            <app-svg-icon icon="x" size="1.5rem"></app-svg-icon>
+            <app-svg-icon icon="x" size="1.25rem"></app-svg-icon>
         </button>
     </div>
 
     <div class="storage-tree__toolbar">
         <span class="storage-tree__toolbar-label">Folders</span>
         <button class="storage-tree__toolbar-btn" aria-label="Add folder" (click)="onAddFolderClick()">
-            <app-svg-icon icon="plus" size="0.875rem"></app-svg-icon>
+            <app-svg-icon icon="plus" size="1rem"></app-svg-icon>
         </button>
         <button class="storage-tree__toolbar-btn" aria-label="More options" (click)="onMoreOptionsClick($event)">
-            <app-svg-icon icon="dots-vertical" size="0.875rem"></app-svg-icon>
+            <app-svg-icon icon="dots-vertical" size="1rem"></app-svg-icon>
         </button>
     </div>
 
@@ -32,6 +32,7 @@
         <div
             class="storage-tree__item"
             [class.storage-tree__item--selected]="isItemSelected(node)"
+            [class.storage-tree__item--non-empty]="node.type === 'folder' && !node.is_empty"
             [class.storage-tree__item--hovered]="hoveredItem() === node"
             [class.storage-tree__item--drop-target]="isDropTarget(node)"
             [class.storage-tree__item--dragging]="draggedItem()?.path === node.path"

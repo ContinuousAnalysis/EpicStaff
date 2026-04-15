@@ -47,6 +47,7 @@
     &__toolbar {
         display: flex;
         align-items: center;
+        margin-top: 0.5rem;
         padding: 0.5rem 0.75rem;
         gap: 0.25rem;
     }
@@ -126,6 +127,13 @@
             opacity: 0.4;
         }
 
+        &--non-empty {
+            .storage-tree__chevron-btn,
+            .storage-tree__icon {
+                color: var(--color-text-primary);
+            }
+        }
+
         &--selected {
             background-color: #685fff14;
             color: #685fff;
@@ -157,7 +165,7 @@
         background: transparent;
         border: none;
         cursor: pointer;
-        color: var(--color-text-secondary);
+        color: rgba(217, 217, 222, 0.16);
         border-radius: 3px;
 
         app-svg-icon {
@@ -180,7 +188,7 @@
 
     &__icon {
         flex-shrink: 0;
-        color: var(--color-text-secondary);
+        color: rgba(217, 217, 222, 0.16);
     }
 
     &__folder-meta {
