@@ -85,7 +85,7 @@ class StorageAPIView(ViewSet):
             Graph.objects.filter(
                 storage_files__storage_file__path=path,
                 storage_files__storage_file__org_id=org_id,
-            ).values_list("name", flat=True)
+            ).values("id", "name")
         )
         return Response(response)
 
