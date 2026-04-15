@@ -290,8 +290,10 @@ class SessionManagerService(metaclass=SingletonMeta):
             unique_subgraphs: Dictionary to collect unique subgraphs (only used at top level)
         """
         crew_node_list = CrewNode.objects.filter(graph=graph.pk).select_related("crew")
-        python_node_list = PythonNode.objects.filter(graph=graph.pk).select_related(
-            "python_code"
+        python_node_list = (
+            PythonNode.objects.filter(graph=graph.pk)
+            .defer("test_input")
+            .select_related("python_code")
         )
         file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
         audio_transcription_node_list = AudioTranscriptionNode.objects.filter(
