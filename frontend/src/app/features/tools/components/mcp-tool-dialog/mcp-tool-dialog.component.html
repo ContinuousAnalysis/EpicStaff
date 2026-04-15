@@ -54,6 +54,8 @@
                     placeholder="30"
                     tooltipText="Maximum time in seconds to wait for a request response. Leave empty for default timeout."
                     formControlName="timeout"
+                    [min]="1"
+                    [max]="2147483647"
                 />
                 <app-validation-errors [control]="form.get('timeout')!" />
             </div>
