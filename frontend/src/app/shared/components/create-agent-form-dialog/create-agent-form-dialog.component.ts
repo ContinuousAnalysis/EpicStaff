@@ -29,8 +29,16 @@ import { ValidationErrorsComponent } from '../app-validation-errors/validation-e
 import { AdvancedTabComponent, ExecutionTabComponent, GeneralTabComponent, RagTabComponent } from './tabs';
 import { Tab, TabId } from './tabs';
 
+export type MergedToolItem = { id: number; configName: string; toolName: string; type: string };
+
+export type EnrichedCreateAgentPayload = CreateAgentRequest & {
+    fullLlmConfig?: FullLLMConfig | null;
+    fullFcmLlmConfig?: FullLLMConfig | null;
+    mergedTools?: MergedToolItem[];
+};
+
 export type AgentDialogResult =
-    | { kind: 'create'; payload: CreateAgentRequest }
+    | { kind: 'create'; payload: EnrichedCreateAgentPayload }
     | { kind: 'update'; payload: GetAgentRequest };
 
 @Component({
@@ -81,6 +89,7 @@ export class CreateAgentFormComponent implements OnInit {
     // LLM configurations
     public llmConfigs: FullLLMConfig[] = [];
     public isLoadingLLMs = true;
+    public selectedMergedTools: MergedToolItem[] = [];
 
     // Knowledge sources
     public allKnowledgeSources: GetCollectionRequest[] = [];
@@ -289,8 +298,20 @@ export class CreateAgentFormComponent implements OnInit {
             };
             this.dialogRef.close({ kind: 'update', payload: updateRequest });
         } else {
-            this.dialogRef.close({ kind: 'create', payload: basePayload });
+            this.dialogRef.close({
+                kind: 'create',
+                payload: {
+                    ...basePayload,
+                    fullLlmConfig: this.llmConfigs.find((c) => c.id === formData.llm_config) ?? null,
+                    fullFcmLlmConfig: this.llmConfigs.find((c) => c.id === formData.fcm_llm_config) ?? null,
+                    mergedTools: this.selectedMergedTools,
+                },
+            });
         }
+    }
+
+    public onMergedToolsChange(tools: MergedToolItem[]): void {
+        this.selectedMergedTools = tools;
     }
 
     public onCancelForm(): void {

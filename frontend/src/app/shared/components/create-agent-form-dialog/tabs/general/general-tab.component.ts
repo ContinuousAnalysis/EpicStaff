@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
     LlmModelSelectorComponent,
@@ -25,6 +25,7 @@ export class GeneralTabComponent {
     form = input.required<FormGroup>();
     combinedLLMs = input.required<FullLLMConfig[]>();
     loadingLLMs = input<boolean>(false);
+    mergedToolsChange = output<{ id: number; configName: string; toolName: string; type: string }[]>();
 
     public onConfiguredToolsChange(toolConfigIds: number[]): void {
         this.form().patchValue({ configured_tools: toolConfigIds });

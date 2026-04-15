@@ -44,6 +44,7 @@ import {
 import { RealtimeAgentService } from '../../../../features/staff/services/realtime-agent.service';
 import { AgentsService } from '../../../../features/staff/services/staff.service';
 import { ToastService } from '../../../../services/notifications/toast.service';
+import { EnrichedCreateAgentPayload } from '../../../../shared/components/create-agent-form-dialog/create-agent-form-dialog.component';
 import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
 import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
 import { buildToolIdsArray } from '../../../../shared/utils/tool-ids-builder.util';
@@ -1872,8 +1873,27 @@ export class AgentsTableComponent {
         this.cdr.markForCheck();
     }
 
-    public addPendingCreateFromDialog(payload: CreateAgentRequest): void {
+    public addPendingCreateFromDialog(payload: EnrichedCreateAgentPayload): void {
         if (this.shouldBlockInteraction()) return;
+
+        const mergedConfigs: MergedConfig[] = [];
+        if (payload.fullLlmConfig) {
+            mergedConfigs.push({
+                id: payload.fullLlmConfig.id,
+                custom_name: payload.fullLlmConfig.custom_name,
+                model_name: payload.fullLlmConfig.modelDetails?.name ?? 'Unknown Model',
+                type: 'llm',
+                provider_id: payload.fullLlmConfig.modelDetails?.llm_provider,
+                provider_name: payload.fullLlmConfig.providerDetails?.name ?? 'Unknown Provider',
+            });
+        }
+
+        const enrichedFields = {
+            fullLlmConfig: payload.fullLlmConfig ?? null,
+            fullFcmLlmConfig: payload.fullFcmLlmConfig ?? null,
+            mergedTools: payload.mergedTools ?? [],
+            mergedConfigs,
+        };
 
         if (!this.gridApi) {
             const tempRow = this.createEmptyFullAgent();
@@ -1901,6 +1921,7 @@ export class AgentsTableComponent {
                 mcp_tools: payload.mcp_tools ?? [],
                 search_configs: payload.search_configs ?? tempRow.search_configs,
                 realtime_agent: payload.realtime_agent ?? tempRow.realtime_agent,
+                ...enrichedFields,
             });
 
             this.rowData.unshift(tempRow);
@@ -1937,6 +1958,7 @@ export class AgentsTableComponent {
             mcp_tools: payload.mcp_tools ?? [],
             search_configs: payload.search_configs ?? tempRow.search_configs,
             realtime_agent: payload.realtime_agent ?? tempRow.realtime_agent,
+            ...enrichedFields,
         });
 
         this.rowData.unshift(tempRow);

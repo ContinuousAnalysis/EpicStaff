@@ -63,6 +63,7 @@
                 [form]="agentForm"
                 [combinedLLMs]="llmConfigs"
                 [loadingLLMs]="isLoadingLLMs"
+                (mergedToolsChange)="onMergedToolsChange($event)"
             />
             <app-rag-tab
                 class="tab-content"
