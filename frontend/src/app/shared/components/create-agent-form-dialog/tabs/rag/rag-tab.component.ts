@@ -49,10 +49,16 @@ export class RagTabComponent implements OnInit {
     selectedRagType = signal<'naive' | 'graph' | null>(null);
 
     knowledgeSelectItems = computed<SelectItem[]>(() => {
-        return this.allKnowledgeSources().map((item) => ({
-            name: item.collection_name,
-            value: item.collection_id,
-        }));
+        return [
+            {
+                name: 'No collection',
+                value: null,
+            },
+            ...this.allKnowledgeSources().map((item) => ({
+                name: item.collection_name,
+                value: item.collection_id,
+            })),
+        ];
     });
     agentRagSelectItems = computed<SelectItem<AgentRag>[]>(() => {
         return this.agentRags().map((item) => ({
