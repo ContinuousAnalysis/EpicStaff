@@ -94,15 +94,22 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
             return []
         declarations = []
         for t in rt_tools:
-            d = t if isinstance(t, dict) else t.model_dump()
+            if isinstance(t, dict):
+                name = t["name"]
+                description = t.get("description", name)
+                parameters = t["parameters"]
+            else:
+                name = t.name
+                description = t.description or name
+                parameters = t.model_dump()["parameters"]
             declarations.append(
                 {
-                    "name": d["name"],
-                    "description": d.get("description", d["name"]),
+                    "name": name,
+                    "description": description,
                     "parameters": {
                         "type": "OBJECT",
-                        "properties": d["parameters"]["properties"],
-                        "required": d["parameters"].get("required", []),
+                        "properties": parameters["properties"],
+                        "required": parameters.get("required", []),
                     },
                 }
             )
