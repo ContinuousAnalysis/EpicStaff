@@ -43,6 +43,14 @@ class StorageMkdirSerializer(serializers.Serializer):
     )
 
 
+class StorageBulkDeleteSerializer(serializers.Serializer):
+    paths = serializers.ListField(
+        child=serializers.CharField(),
+        min_length=1,
+        help_text="List of storage paths to delete",
+    )
+
+
 class StorageDownloadZipSerializer(serializers.Serializer):
     paths = serializers.ListField(
         child=serializers.CharField(),

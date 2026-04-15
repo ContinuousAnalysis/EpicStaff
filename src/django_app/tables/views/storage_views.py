@@ -12,6 +12,7 @@ from tables.models.graph_models import Graph
 from tables.serializers.storage_serializers import (
     GraphStorageFileSerializer,
     StorageAddToGraphSerializer,
+    StorageBulkDeleteSerializer,
     StorageCopySerializer,
     StorageDownloadZipSerializer,
     StorageGraphFilesQuerySerializer,
@@ -157,10 +158,12 @@ class StorageAPIView(ViewSet):
     @swagger_auto_schema(**STORAGE_DELETE_SWAGGER)
     def delete_file(self, request):
         user_name, org_id = self._resolve_context(request)
-        params = StoragePathQuerySerializer(data=request.query_params)
-        params.is_valid(raise_exception=True)
-        path = params.validated_data["path"]
-        self.manager.delete(user_name, org_id, path)
+        serializer = StorageBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        for path in serializer.validated_data["paths"]:
+            self.manager.delete(user_name, org_id, path)
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=["post"], url_path="rename")

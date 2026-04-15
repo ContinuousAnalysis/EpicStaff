@@ -1,6 +1,7 @@
 from tables.serializers.storage_serializers import (
     GraphStorageFileSerializer,
     StorageAddToGraphSerializer,
+    StorageBulkDeleteSerializer,
     StorageCopySerializer,
     StorageDownloadZipSerializer,
     StorageFromToResponseSerializer,
@@ -79,9 +80,9 @@ STORAGE_MKDIR_SWAGGER = dict(
 )
 
 STORAGE_DELETE_SWAGGER = dict(
-    operation_summary="Delete a file or folder",
-    operation_description="Deletes the file or folder at the specified path.",
-    query_serializer=StoragePathQuerySerializer,
+    operation_summary="Bulk delete files or folders",
+    operation_description="Deletes the files or folders at the specified paths.",
+    request_body=StorageBulkDeleteSerializer,
     responses={204: "Deleted successfully"},
 )
 
