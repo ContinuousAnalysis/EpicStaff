@@ -23,7 +23,9 @@
         (dragleave)="onRootDragLeave($event)"
         (drop)="onRootDrop($event)"
     >
-        <ng-container *ngTemplateOutlet="treeNodes; context: { $implicit: items(), level: 0 }"></ng-container>
+        <div class="storage-tree__list-content">
+            <ng-container *ngTemplateOutlet="treeNodes; context: { $implicit: items(), level: 0 }"></ng-container>
+        </div>
     </div>
 </div>
 
@@ -41,7 +43,7 @@
             (click)="onItemClick($event, node)"
             (contextmenu)="onContextMenu($event, node)"
             (mouseenter)="hoveredItem.set(node)"
-            (mouseleave)="hoveredItem.set(null)"
+            (mouseleave)="onItemMouseLeave()"
             (dragstart)="onDragStart($event, node)"
             (dragover)="onDragOver($event, node)"
             (dragleave)="onDragLeave($event, node)"
@@ -60,7 +62,7 @@
                 <span class="storage-tree__chevron-placeholder"></span>
             }
 
-            <app-svg-icon class="storage-tree__icon" [icon]="getFileIcon(node)" size="12px"></app-svg-icon>
+            <app-svg-icon class="storage-tree__icon" [icon]="getFileIcon(node)" size="13px"></app-svg-icon>
 
             @if (renamingItem()?.path === node.path) {
                 <div class="storage-tree__rename-controls" (click)="$event.stopPropagation()">
@@ -108,8 +110,15 @@
 
             @if (hoveredItem() === node && renamingItem()?.path !== node.path) {
                 <div class="storage-tree__hover-actions">
+                    <button
+                        class="storage-tree__hover-btn storage-tree__hover-btn--plus"
+                        aria-label="Add folder"
+                        (click)="onAddFolderClickForNode($event, node)"
+                    >
+                        <app-svg-icon icon="plus" size="1rem"></app-svg-icon>
+                    </button>
                     <button class="storage-tree__hover-btn" aria-label="More" (click)="onKebabClick($event, node)">
-                        <app-svg-icon icon="dots-vertical" size="0.75rem"></app-svg-icon>
+                        <app-svg-icon icon="dots-vertical" size="1rem"></app-svg-icon>
                     </button>
                 </div>
             }

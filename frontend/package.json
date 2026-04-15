@@ -57,6 +57,7 @@
         "tslib": "^2.3.0",
         "uuid": "^11.0.5",
         "wavtools": "^0.1.5",
+        "xlsx": "^0.18.5",
         "zone.js": "~0.15.0"
     },
     "devDependencies": {

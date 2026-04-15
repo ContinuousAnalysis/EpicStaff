@@ -77,6 +77,10 @@ export class StorageApiService {
         window.open(url, '_blank');
     }
 
+    getDownloadUrl(path: string): string {
+        return `${this.apiUrl}download/?path=${encodeURIComponent(path)}`;
+    }
+
     downloadBlob(path: string): Observable<Blob> {
         return this.http.get(`${this.apiUrl}download/`, {
             params: { path },

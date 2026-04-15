@@ -210,6 +210,22 @@ export class StorageTreeComponent {
         this.openCreateFolder.emit(currentFolder);
     }
 
+    onItemMouseLeave(): void {
+        this.hoveredItem.set(null);
+    }
+
+    onAddFolderClickForNode(event: MouseEvent, node: StorageItem): void {
+        event.stopPropagation();
+        let currentFolder = '';
+        if (node.type === 'folder') {
+            currentFolder = node.path;
+        } else {
+            const slashIndex = node.path.lastIndexOf('/');
+            currentFolder = slashIndex >= 0 ? node.path.substring(0, slashIndex) : '';
+        }
+        this.openCreateFolder.emit(currentFolder);
+    }
+
     onMoreOptionsClick(event: MouseEvent): void {
         event.preventDefault();
         event.stopPropagation();
