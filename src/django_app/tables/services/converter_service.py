@@ -388,6 +388,7 @@ class ConverterService(metaclass=SingletonMeta):
         use_storage: bool = False,
         storage_allowed_paths: list[str] | None = None,
         storage_org_prefix: str | None = None,
+        session_id: int | None = None,
     ):
         libraries = python_code.get_libraries_list()
         venv_name = str(python_code.pk)
@@ -402,6 +403,7 @@ class ConverterService(metaclass=SingletonMeta):
             use_storage=use_storage,
             storage_allowed_paths=storage_allowed_paths,
             storage_org_prefix=storage_org_prefix,
+            session_id=session_id,
         )
 
     def convert_python_code_tool_to_pydantic(
@@ -560,6 +562,7 @@ class ConverterService(metaclass=SingletonMeta):
             use_storage=python_node.use_storage,
             storage_allowed_paths=storage_allowed_paths,
             storage_org_prefix=storage_org_prefix,
+            session_id=session_id,
         )
         return PythonNodeData(
             node_name=resolver(python_node.id),

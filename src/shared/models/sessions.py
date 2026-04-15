@@ -43,4 +43,5 @@ class StorageMutation(BaseModel):
 class StorageMutationEvent(BaseModel):
     execution_id: str
     org_prefix: str
+    session_id: int | None = None
     mutations: list[StorageMutation]

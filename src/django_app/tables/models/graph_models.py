@@ -599,3 +599,21 @@ class GraphStorageFile(models.Model):
                 fields=["graph", "storage_file"], name="unique_graph_storage_file"
             )
         ]
+
+
+class SessionStorageFile(models.Model):
+    session = models.ForeignKey(
+        "Session", on_delete=models.CASCADE, related_name="storage_files"
+    )
+    storage_file = models.ForeignKey(
+        "StorageFile", on_delete=models.CASCADE, related_name="session_storage_files"
+    )
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "storage_file"],
+                name="unique_session_storage_file",
+            )
+        ]

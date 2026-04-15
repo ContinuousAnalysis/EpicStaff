@@ -67,10 +67,6 @@ async def run(code_task_data: CodeTaskData):
         storage_allowed_paths=code_task_data.storage_allowed_paths,
         storage_org_prefix=code_task_data.storage_org_prefix,
     )
-    await redis_service.async_publish(
-        channel=code_result_channel, message=result.model_dump()
-    )
-
     if code_task_data.use_storage and code_task_data.storage_org_prefix:
         try:
             mutations_path = (
@@ -85,6 +81,7 @@ async def run(code_task_data: CodeTaskData):
                     event = {
                         "execution_id": code_task_data.execution_id,
                         "org_prefix": code_task_data.storage_org_prefix,
+                        "session_id": code_task_data.session_id,
                         "mutations": mutations,
                     }
                     await redis_service.async_publish(
@@ -92,6 +89,10 @@ async def run(code_task_data: CodeTaskData):
                     )
         except Exception as e:
             logger.warning(f"Failed to publish storage mutations: {e}")
+
+    await redis_service.async_publish(
+        channel=code_result_channel, message=result.model_dump()
+    )
 
 
 if __name__ == "__main__":

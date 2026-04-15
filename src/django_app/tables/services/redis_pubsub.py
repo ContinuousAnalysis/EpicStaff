@@ -7,13 +7,6 @@ from uuid import uuid4
 
 import redis
 from django.db import close_old_connections, IntegrityError, models, transaction
-from tables.services.telegram_trigger_service import TelegramTriggerService
-from tables.services.webhook_trigger_service import WebhookTriggerService
-from tables.models import GraphSessionMessage
-from tables.models import PythonCodeResult
-from tables.models import GraphOrganization
-from src.shared.models import CodeResultData, GraphSessionMessageData, WebhookEventData
-from tables.models import Session
 from loguru import logger
 
 from django_app.settings import (
@@ -31,15 +24,17 @@ from tables.models import (
     GraphSessionMessage,
     PythonCodeResult,
     Session,
+    SessionStorageFile,
+    StorageFile,
 )
+from tables.services.telegram_trigger_service import TelegramTriggerService
+from tables.services.webhook_trigger_service import WebhookTriggerService
 from src.shared.models import (
     CodeResultData,
     GraphSessionMessageData,
     StorageMutationEvent,
     WebhookEventData,
 )
-from tables.services.telegram_trigger_service import TelegramTriggerService
-from tables.services.webhook_trigger_service import WebhookTriggerService
 
 
 class RedisPubSub:
@@ -100,6 +95,7 @@ class RedisPubSub:
                         Session.SessionStatus.ERROR,
                     ]:
                         self._save_organization_variables(session=session, data=data)
+                        self._save_session_storage_files(session=session)
 
         except Exception as e:
             logger.error(f"Error handling session_status message: {e}")
@@ -142,6 +138,24 @@ class RedisPubSub:
                     StorageFileSync.on_upload(org_id, rel_path)
                 elif mutation.op == "delete":
                     StorageFileSync.on_delete(org_id, rel_path)
+
+            if event.session_id is not None:
+                redis_key = f"session:{event.session_id}:storage_mutations"
+
+                for mutation in event.mutations:
+                    rel_path = mutation.path
+
+                    if rel_path and rel_path.startswith(org_prefix + "/"):
+                        rel_path = rel_path[len(org_prefix) + 1 :]
+
+                    entry = f"{org_id}:{rel_path}"
+
+                    if mutation.op == "write":
+                        self.redis_client.sadd(redis_key, entry)
+                    elif mutation.op == "delete":
+                        self.redis_client.srem(redis_key, entry)
+
+                self.redis_client.expire(redis_key, 7200)
 
         except Exception as e:
             logger.error(f"Error handling storage_mutations message: {e}")
@@ -213,6 +227,47 @@ class RedisPubSub:
 
         except Exception as e:
             logger.error(f"Error handling organization variables message: {e}")
+
+    def _save_session_storage_files(self, session: Session):
+        try:
+            redis_key = f"session:{session.id}:storage_mutations"
+            members = self.redis_client.smembers(redis_key)
+
+            if not members:
+                return
+
+            file_refs = []
+
+            for member in members:
+                try:
+                    member_str = (
+                        member.decode() if isinstance(member, bytes) else member
+                    )
+                    org_id_str, path = member_str.split(":", 1)
+                    org_id = int(org_id_str)
+                    storage_file = StorageFile.objects.filter(
+                        org_id=org_id, path=path
+                    ).first()
+
+                    if storage_file:
+                        file_refs.append(
+                            SessionStorageFile(
+                                session=session, storage_file=storage_file
+                            )
+                        )
+
+                except Exception as e:
+                    logger.warning(
+                        f"Skipping malformed session storage entry '{member}': {e}"
+                    )
+
+            if file_refs:
+                SessionStorageFile.objects.bulk_create(file_refs, ignore_conflicts=True)
+
+            self.redis_client.delete(redis_key)
+
+        except Exception as e:
+            logger.error(f"Error saving session storage files: {e}")
 
     def _update_persistent_values(self, persistent: dict, incoming: dict) -> bool:
         """
