@@ -1533,11 +1533,14 @@ class SessionSerializer(serializers.ModelSerializer):
 
 
 class SessionLightSerializer(serializers.ModelSerializer):
+    graph_name = serializers.CharField(source="graph.name", read_only=True)
+
     class Meta:
         model = Session
         fields = (
             "id",
             "graph_id",
+            "graph_name",
             "status",
             "status_updated_at",
             "created_at",
@@ -1967,6 +1970,7 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
 
+
 class LabelSerializer(serializers.ModelSerializer):
     full_path = serializers.CharField(read_only=True)
 
@@ -2013,12 +2017,20 @@ class VoiceSettingsSerializer(serializers.ModelSerializer):
         if not obj.ngrok_config:
             return None
         from tables.services.webhook_trigger_service import WebhookTriggerService
+
         try:
-            base = WebhookTriggerService().get_tunnel_url(ngrok_webhook_config=obj.ngrok_config)
+            base = WebhookTriggerService().get_tunnel_url(
+                ngrok_webhook_config=obj.ngrok_config
+            )
         except Exception:
             base = None
         if not base and obj.ngrok_config.domain:
             base = f"https://{obj.ngrok_config.domain}"
         if base:
-            return base.rstrip("/").replace("https://", "wss://").replace("http://", "wss://") + "/voice/stream"
+            return (
+                base.rstrip("/")
+                .replace("https://", "wss://")
+                .replace("http://", "wss://")
+                + "/voice/stream"
+            )
         return None
