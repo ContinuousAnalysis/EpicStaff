@@ -89,6 +89,10 @@ class VoiceCallService:
                 logger.error(f"Twilio WebSocket Error: {e}")
         finally:
             message_task.cancel()
+            try:
+                await message_task
+            except asyncio.CancelledError:
+                pass
             await rt_agent_client.close()
 
     async def _handle_twilio_message(

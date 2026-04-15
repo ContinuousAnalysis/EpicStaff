@@ -64,6 +64,8 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
         self._session_cm = None
         # Incremented on every reconnect — lets call_tool() detect session replacement
         self._session_version: int = 0
+        # Prevents concurrent close() calls from racing on _session_cm.__aexit__
+        self._close_lock = asyncio.Lock()
 
         # Stateful resampling state for Twilio paths
         self._resample_state_in = None   # µ-law 8kHz → PCM 16kHz
@@ -162,15 +164,15 @@ class GeminiRealtimeAgentClient(BaseRealtimeAgentClient):
         logger.info(f"Gemini Live connected: model={self.model}, voice={self.voice}")
 
     async def close(self) -> None:
-        """Close the Gemini Live session."""
-        if self._session_cm:
-            try:
-                await self._session_cm.__aexit__(None, None, None)
-            except Exception as e:
-                logger.warning(f"Gemini: error closing session: {e}")
-            finally:
-                self._session_cm = None
-                self._session = None
+        """Close the Gemini Live session. Protected by a lock to prevent races."""
+        async with self._close_lock:
+            if self._session_cm:
+                self._session = None  # stop send_audio immediately
+                cm, self._session_cm = self._session_cm, None
+                try:
+                    await cm.__aexit__(None, None, None)
+                except Exception as e:
+                    logger.warning(f"Gemini: error closing session: {e}")
 
     async def handle_messages(self) -> None:
         """Long-running loop receiving LiveServerMessage objects from Gemini.
