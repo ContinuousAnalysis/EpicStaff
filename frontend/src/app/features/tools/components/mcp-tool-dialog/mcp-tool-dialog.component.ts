@@ -129,7 +129,10 @@ export class McpToolDialogComponent implements OnInit {
             ]),
             timeout: new FormControl(this.selectedTool?.timeout ?? 30, [Validators.min(1), Validators.max(2147483647)]),
             auth: new FormControl(this.selectedTool?.auth || ''),
-            init_timeout: new FormControl(this.selectedTool?.init_timeout ?? 10),
+            init_timeout: new FormControl(this.selectedTool?.init_timeout ?? 10, [
+                Validators.min(1),
+                Validators.max(2147483647),
+            ]),
         });
     }
 
