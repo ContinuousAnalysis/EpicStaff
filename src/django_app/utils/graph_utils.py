@@ -88,8 +88,8 @@ class NodeNameResolver:
     into converter methods so ConverterService stays stateless.
     """
 
-    def __init__(self, ids: Iterable[int] = ()):
-        self._cache = resolve_node_names(ids)
+    def __init__(self, ids: Iterable[int] = (), cache: dict[int, str] | None = None):
+        self._cache = cache if cache is not None else resolve_node_names(ids)
 
     def __call__(self, id: int | None) -> str | None:
         if id is None:

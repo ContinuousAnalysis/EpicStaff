@@ -72,29 +72,42 @@ export class CollapseOnOverflowDirective implements AfterViewInit, OnDestroy {
     private evaluate(): void {
         const host = this.hostRef.nativeElement;
 
-        if (!this.collapseOnOverflowEnabled) {
-            this.setCollapsed(false);
-            return;
+        // Disconnect before any classList writes to prevent our own DOM mutations
+        // from re-triggering the observer and creating a ~60fps feedback loop.
+        this.mutationObserver?.disconnect();
+
+        try {
+            if (!this.collapseOnOverflowEnabled) {
+                this.setCollapsed(false);
+                return;
+            }
+
+            if (this.collapseOnOverflowRequireSelector && !host.querySelector(this.collapseOnOverflowRequireSelector)) {
+                this.setCollapsed(false);
+                return;
+            }
+
+            const target = host.querySelector<HTMLElement>(this.collapseOnOverflowTarget);
+            if (!target) {
+                this.setCollapsed(false);
+                return;
+            }
+
+            host.classList.remove(this.collapseOnOverflowClass);
+
+            const horizontalOverflow = target.scrollWidth - target.clientWidth > 1;
+            const verticalOverflow = target.scrollHeight - target.clientHeight > 2;
+            const externallyClipped = this.collapseOnOverflowCheckExternalClip ? this.isExternallyClipped(host) : false;
+
+            this.setCollapsed(horizontalOverflow || verticalOverflow || externallyClipped);
+        } finally {
+            this.mutationObserver?.observe(host, {
+                childList: true,
+                subtree: true,
+                characterData: true,
+                attributes: true,
+            });
         }
-
-        if (this.collapseOnOverflowRequireSelector && !host.querySelector(this.collapseOnOverflowRequireSelector)) {
-            this.setCollapsed(false);
-            return;
-        }
-
-        const target = host.querySelector<HTMLElement>(this.collapseOnOverflowTarget);
-        if (!target) {
-            this.setCollapsed(false);
-            return;
-        }
-
-        host.classList.remove(this.collapseOnOverflowClass);
-
-        const horizontalOverflow = target.scrollWidth - target.clientWidth > 1;
-        const verticalOverflow = target.scrollHeight - target.clientHeight > 1;
-        const externallyClipped = this.collapseOnOverflowCheckExternalClip ? this.isExternallyClipped(host) : false;
-
-        this.setCollapsed(horizontalOverflow || verticalOverflow || externallyClipped);
     }
 
     private setCollapsed(next: boolean): void {

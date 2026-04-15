@@ -17,7 +17,7 @@ import { ClickOutsideDirective } from '../../../../shared/directives/click-outsi
 @Component({
   selector: 'app-flow-session-node-filter-dropdown',
   standalone: true,
-  imports: [CommonModule, FormsModule, ClickOutsideDirective],
+  imports: [CommonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div
