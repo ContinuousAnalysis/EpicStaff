@@ -1038,7 +1038,7 @@ class PythonNodeLastTestInputView(APIView):
             raise NotFound(detail="PythonNode not found.")
 
         python_node_name = f"{python_node.node_name} #{python_node.pk}"
-        message = (
+        found_input = (
             GraphSessionMessage.objects.filter(
                 session__graph_id=python_node.graph_id,
                 session__status=Session.SessionStatus.END,
@@ -1046,27 +1046,11 @@ class PythonNodeLastTestInputView(APIView):
                 message_data__message_type="start",
             )
             .order_by("-session__created_at", "-created_at")
+            .values_list("message_data__input", flat=True)
             .first()
         )
 
-        if message is None:
-            return Response(
-                {
-                    "detail": "No matching test input found for this node.",
-                    "input": None,
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        found_input = message.message_data.get("input", {})
-        current_keys = set(python_node.input_map.keys())
-        found_keys = set(found_input.keys())
-
-        if current_keys != found_keys:
-            logger.info(
-                f"Python node {pk} input_map keys changed (current={current_keys}, found={found_keys}); "
-                "treating as no data found.",
-            )
+        if found_input is None:
             return Response(
                 {
                     "detail": "No matching test input found for this node.",
