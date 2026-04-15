@@ -17,7 +17,7 @@ import { from, of, Subject, Subscription } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { IconButtonComponent } from '../../../../shared/components/buttons/icon-button/icon-button.component';
 import type { RuffDiagnostic } from '../../../../shared/ruff-linter/models/ruff-result.model';
 import { RuffDiagnosticsService } from '../../../../shared/ruff-linter/services/ruff-diagnostics.service';
@@ -27,7 +27,7 @@ const LINT_DEBOUNCE_MS = 400;
 
 @Component({
     selector: 'app-code-editor',
-    imports: [FormsModule, NgIf, MonacoEditorModule, AppIconComponent, IconButtonComponent],
+    imports: [FormsModule, NgIf, MonacoEditorModule, AppSvgIconComponent, IconButtonComponent],
     templateUrl: './code-editor.component.html',
     styleUrls: ['./code-editor.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

@@ -4,13 +4,13 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, Input, NgZone, OnDestroy, ViewChild } from '@angular/core';
 import { fromEvent, take } from 'rxjs';
 
-import { AppIconComponent } from '../app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { TooltipContentComponent } from './tooltip-content.component';
 
 @Component({
     selector: 'app-help-tooltip',
     standalone: true,
-    imports: [CommonModule, AppIconComponent, OverlayModule],
+    imports: [CommonModule, AppSvgIconComponent, OverlayModule],
     template: `
         <div class="help-tooltip-container">
             <span
@@ -22,7 +22,7 @@ import { TooltipContentComponent } from './tooltip-content.component';
                 (focus)="showTooltip()"
                 (blur)="hideTooltip()"
             >
-                <app-icon icon="ui/help" [size]="'1.2rem'"></app-icon>
+                <app-svg-icon icon="help" size="1.2rem" />
             </span>
         </div>
     `,

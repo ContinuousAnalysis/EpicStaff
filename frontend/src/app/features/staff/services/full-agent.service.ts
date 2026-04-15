@@ -1,19 +1,19 @@
 import { Injectable } from '@angular/core';
+import { GetLlmModelRequest, LLMProvider, RealtimeModel } from '@shared/models';
+import {
+    FullLLMConfig,
+    FullRealtimeConfig,
+    LLMConfigService,
+    LLMModelsService,
+    LLMProvidersService,
+    RealtimeModelConfigsService,
+    RealtimeModelsService,
+} from '@shared/services';
 import { forkJoin, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { PythonCodeToolService } from '../../../user-settings-page/tools/custom-tool-editor/services/pythonCodeToolService.service';
 import { ProjectsStorageService } from '../../projects/services/projects-storage.service';
-import { LLM_Provider } from '../../settings-dialog/models/llm-provider.model';
-import { GetLlmModelRequest } from '../../settings-dialog/models/llms/LLM.model';
-import { RealtimeModel } from '../../settings-dialog/models/realtime-voice/realtime-model.model';
-import { LLM_Providers_Service } from '../../settings-dialog/services/llm-providers.service';
-import { FullLLMConfig } from '../../settings-dialog/services/llms/full-llm-config.service';
-import { LLM_Config_Service } from '../../settings-dialog/services/llms/llm-config.service';
-import { LLM_Models_Service } from '../../settings-dialog/services/llms/llm-models.service';
-import { FullRealtimeConfig } from '../../settings-dialog/services/realtime-llms/full-reamtime-config.service';
-import { RealtimeModelConfigsService } from '../../settings-dialog/services/realtime-llms/real-time-model-config.service';
-import { RealtimeModelsService } from '../../settings-dialog/services/realtime-llms/real-time-models.service';
 import { GetMcpToolRequest } from '../../tools/models/mcp-tool.model';
 import { GetPythonCodeToolRequest } from '../../tools/models/python-code-tool.model';
 import { GetToolConfigRequest } from '../../tools/models/tool-config.model';
@@ -75,14 +75,14 @@ export interface TableFullAgent extends Omit<FullAgent, 'id'> {
 export class FullAgentService {
     constructor(
         private agentsService: AgentsService,
-        private llmConfigService: LLM_Config_Service,
+        private llmConfigService: LLMConfigService,
         private toolConfigService: ToolConfigService,
         private pythonCodeToolService: PythonCodeToolService,
-        private llmModelsService: LLM_Models_Service,
+        private llmModelsService: LLMModelsService,
         private projectsService: ProjectsStorageService,
         private realtimeModelConfigsService: RealtimeModelConfigsService,
         private realtimeModelsService: RealtimeModelsService,
-        private llmProvidersService: LLM_Providers_Service,
+        private llmProvidersService: LLMProvidersService,
         private mcpToolsService: McpToolsService
     ) {}
 
@@ -121,7 +121,7 @@ export class FullAgentService {
                         realtimeModelMap[model.id] = model;
                     });
 
-                    const providerMap: Record<number, LLM_Provider> = {};
+                    const providerMap: Record<number, LLMProvider> = {};
                     llmProviders.forEach((provider) => {
                         providerMap[provider.id] = provider;
                     });
@@ -292,7 +292,7 @@ export class FullAgentService {
                         realtimeModelMap[model.id] = model;
                     });
 
-                    const providerMap: Record<number, LLM_Provider> = {};
+                    const providerMap: Record<number, LLMProvider> = {};
                     llmProviders.forEach((provider) => {
                         providerMap[provider.id] = provider;
                     });
@@ -475,7 +475,7 @@ export class FullAgentService {
                         realtimeModelMap[model.id] = model;
                     });
 
-                    const providerMap: Record<number, LLM_Provider> = {};
+                    const providerMap: Record<number, LLMProvider> = {};
                     llmProviders.forEach((provider) => {
                         providerMap[provider.id] = provider;
                     });

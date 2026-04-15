@@ -3,13 +3,12 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, Input } from '@angular/core';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterModule } from '@angular/router';
 
 import { FlowSessionsListComponent } from '../../../../features/flows/components/flow-sessions-dialog/flow-sessions-list.component';
 import { GraphDto } from '../../../../features/flows/models/graph.model';
 import { GraphSessionStatus } from '../../../../features/flows/services/flows-sessions.service';
-import { AppIconComponent } from '../../../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { RunGraphPageService } from '../../services/run-graph-page.service';
 import { MemoriesSidebarComponent } from '../memory-sidebar/components/memory-sidebar/memory-sidebar.component';
@@ -22,9 +21,8 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
         CommonModule,
         RouterModule,
         MatButtonModule,
-        MatIconModule,
         MatBadgeModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         StatusBadgeComponent,
         MemoriesSidebarComponent,
     ],
@@ -32,7 +30,7 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
         <div class="header">
             <div class="breadcrumbs">
                 <div class="flows-prefix" routerLink="/flows">
-                    <app-icon [icon]="'ui/arrow-left'" size="20" class="back-arrow" />
+                    <app-svg-icon icon="arrow-left" size="20px" class="back-arrow" />
                     <span>Flows</span>
                 </div>
                 <span class="slash">/</span>

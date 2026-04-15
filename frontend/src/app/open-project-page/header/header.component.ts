@@ -21,7 +21,7 @@ import { FlowsApiService } from '../../features/flows/services/flows-api.service
 import { RunGraphService } from '../../features/flows/services/run-graph-session.service';
 import { GetProjectRequest, ProjectProcess } from '../../features/projects/models/project.model';
 import { ToastService } from '../../services/notifications/toast.service';
-import { AppIconComponent } from '../../shared/components/app-icon/app-icon.component';
+import { AppSvgIconComponent } from '../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../shared/components/buttons/button/button.component';
 import { ConfirmationDialogService } from '../../shared/components/cofirm-dialog/confimation-dialog.service';
 import { SaveWithIndicatorComponent } from '../../shared/components/save-with-indicator/save-with-indicator.component';
@@ -40,7 +40,7 @@ import { EditTitleDialogComponent } from './edit-name-dialog/edit-title-dialog.c
         FormsModule,
         DialogModule,
         CommonModule,
-        AppIconComponent,
+        AppSvgIconComponent,
         ButtonComponent,
         SaveWithIndicatorComponent,
         UnsavedIndicatorComponent,

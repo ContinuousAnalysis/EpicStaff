@@ -6,7 +6,7 @@
                     <app-custom-input
                         label="Node Name"
                         tooltipText="The unique identifier used to reference this decision table node."
-                        icon="ti ti-help-circle"
+                        icon="help-circle"
                         formControlName="node_name"
                         placeholder="Enter node name"
                         [activeColor]="activeColor"
@@ -17,7 +17,7 @@
                         <label>
                             Default Next Node
                             <span class="tooltip-icon" title="Optional fallback branch when no condition matches">
-                                <i class="ti ti-help-circle"></i>
+                                <app-svg-icon icon="help"></app-svg-icon>
                             </span>
                         </label>
                         <select formControlName="default_next_node" class="node-select">
@@ -32,7 +32,7 @@
                         <label>
                             Error Next Node
                             <span class="tooltip-icon" title="Optional error branch if decision evaluation fails">
-                                <i class="ti ti-help-circle"></i>
+                                <app-svg-icon icon="help"></app-svg-icon>
                             </span>
                         </label>
                         <select formControlName="next_error_node" class="node-select">

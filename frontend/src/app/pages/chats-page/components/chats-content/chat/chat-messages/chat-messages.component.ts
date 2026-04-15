@@ -5,6 +5,7 @@ import { NgxJsonViewerModule } from 'ngx-json-viewer';
 import { MarkdownModule } from 'ngx-markdown';
 
 import { FullAgent } from '../../../../../../features/staff/services/full-agent.service';
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ChatsService } from '../../../../services/chats.service';
 import { ConsoleService } from '../../../../services/console.service';
 import { HasToolOutputPipe } from './has-tool-output.pipe';
@@ -20,7 +21,7 @@ export interface GroupedMessage {
 @Component({
     selector: 'app-chat-messages',
     standalone: true,
-    imports: [CommonModule, MarkdownModule, NgxJsonViewerModule, HasToolOutputPipe],
+    imports: [CommonModule, MarkdownModule, NgxJsonViewerModule, HasToolOutputPipe, AppSvgIconComponent],
     templateUrl: './chat-messages.component.html',
     styleUrls: ['./chat-messages.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

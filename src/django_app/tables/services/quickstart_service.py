@@ -13,9 +13,18 @@ from tables.models.llm_models import (
 )
 from tables.models.embedding_models import EmbeddingModel, EmbeddingConfig
 from tables.models.provider import Provider
+from tables.models.default_models import DefaultModels
+from tables.models.tag_models import (
+    LLMConfigTag,
+    EmbeddingConfigTag,
+    RealtimeConfigTag,
+    RealtimeTranscriptionConfigTag,
+)
 
 
 class QuickstartService(metaclass=SingletonMeta):
+    QUICKSTART_TAG = "quickstart:latest"
+
     PROVIDER_CONFIGS = {
         "openai": {
             "llm_model": "gpt-4o-mini",
@@ -51,21 +60,44 @@ class QuickstartService(metaclass=SingletonMeta):
             config_name = self._generate_unique_quickstart_config_name(provider)
             provider_obj = Provider.objects.get(name=provider)
             with transaction.atomic():
-                self._create_llm_model_config(provider_obj, api_key, config_name)
-                self._create_embedder_config(provider_obj, api_key, config_name)
+                llm_config = self._create_llm_model_config(
+                    provider_obj, api_key, config_name
+                )
+                embedding_config = self._create_embedder_config(
+                    provider_obj, api_key, config_name
+                )
+                realtime_config = None
+                realtime_transcription_config = None
                 if provider == "openai":
-                    self._create_realtime_config(provider_obj, api_key, config_name)
-                    self._create_realtime_transcription_config(
+                    realtime_config = self._create_realtime_config(
                         provider_obj, api_key, config_name
                     )
+                    realtime_transcription_config = (
+                        self._create_realtime_transcription_config(
+                            provider_obj, api_key, config_name
+                        )
+                    )
+
                 elif provider == "gemini":
                     self._create_realtime_config(provider_obj, api_key, config_name)
+
+                    
+                self._apply_quickstart_tag(
+                    llm_config,
+                    embedding_config,
+                    realtime_config,
+                    realtime_transcription_config,
+                )
             logger.success(
                 f"Quickstart configuration: {config_name} created successfully!"
             )
             return {
                 "success": True,
                 "config_name": config_name,
+                "llm_config": llm_config,
+                "embedding_config": embedding_config,
+                "realtime_config": realtime_config,
+                "realtime_transcription_config": realtime_transcription_config,
             }
         except Exception as e:
             logger.error(f"Quickstart error: {e}")
@@ -77,37 +109,146 @@ class QuickstartService(metaclass=SingletonMeta):
     def get_supported_providers(self):
         return self.PROVIDER_CONFIGS.keys()
 
+    def get_last_quickstart(self) -> dict | None:
+        """
+        Returns the active quickstart config — identified by the predefined 'quickstart'
+        tag on LLMConfig. The tag is moved to the newest config on every quickstart run.
+        Returns None if no quickstart has been run.
+        """
+        llm = LLMConfig.objects.filter(
+            tags__name=self.QUICKSTART_TAG, tags__predefined=True
+        ).first()
+        if not llm:
+            return None
+        return {
+            "config_name": llm.custom_name,
+            "llm_config": llm,
+            "embedding_config": EmbeddingConfig.objects.filter(
+                tags__name=self.QUICKSTART_TAG, tags__predefined=True
+            ).first(),
+            "realtime_config": RealtimeConfig.objects.filter(
+                tags__name=self.QUICKSTART_TAG, tags__predefined=True
+            ).first(),
+            "realtime_transcription_config": RealtimeTranscriptionConfig.objects.filter(
+                tags__name=self.QUICKSTART_TAG, tags__predefined=True
+            ).first(),
+        }
+
+    def _apply_quickstart_tag(
+        self,
+        llm_config: LLMConfig,
+        embedding_config: EmbeddingConfig,
+        realtime_config: RealtimeConfig | None,
+        realtime_transcription_config: RealtimeTranscriptionConfig | None,
+    ) -> None:
+        """
+        Moves the predefined 'quickstart' tag to the newly created configs.
+        Removes it from any previous quickstart configs first.
+        """
+        tag_map = [
+            (LLMConfigTag, LLMConfig, llm_config),
+            (EmbeddingConfigTag, EmbeddingConfig, embedding_config),
+            (RealtimeConfigTag, RealtimeConfig, realtime_config),
+            (
+                RealtimeTranscriptionConfigTag,
+                RealtimeTranscriptionConfig,
+                realtime_transcription_config,
+            ),
+        ]
+
+        for tag_model, config_model, new_config in tag_map:
+            tag, _ = tag_model.objects.update_or_create(
+                name=self.QUICKSTART_TAG, defaults={"predefined": True}
+            )
+            # Remove from previous holders
+            for old in config_model.objects.filter(tags=tag).exclude(
+                pk=new_config.pk if new_config else None
+            ):
+                old.tags.remove(tag)
+            # Apply to new config (skip if not created for this provider, e.g. realtime for non-openai)
+            if new_config:
+                new_config.tags.add(tag)
+
+    def apply_to_default_models(self, config_name: str) -> DefaultModels:
+        """
+        Applies the given quickstart config to DefaultModels singleton.
+        Sets all relevant FKs based on what configs exist for that config_name.
+        """
+        llm = LLMConfig.objects.filter(custom_name=config_name).first()
+        embedding = EmbeddingConfig.objects.filter(custom_name=config_name).first()
+        realtime = RealtimeConfig.objects.filter(custom_name=config_name).first()
+        transcription = RealtimeTranscriptionConfig.objects.filter(
+            custom_name=config_name
+        ).first()
+
+        dm = DefaultModels.load()
+        if llm:
+            dm.agent_llm_config = llm
+            dm.agent_fcm_llm_config = llm
+            dm.project_manager_llm_config = llm
+            dm.memory_llm_config = llm
+        if embedding:
+            dm.memory_embedding_config = embedding
+        if realtime:
+            dm.voice_llm_config = realtime
+        if transcription:
+            dm.transcription_llm_config = transcription
+        dm.save()
+        return dm
+
+    def is_synced(self, last_config: dict) -> bool:
+        """
+        Returns True if DefaultModels FKs all point to the configs
+        from the given last_config dict.
+        """
+        dm = DefaultModels.load()
+        checks = []
+        if last_config.get("llm_config"):
+            checks.append(dm.agent_llm_config_id == last_config["llm_config"].id)
+        if last_config.get("embedding_config"):
+            checks.append(
+                dm.memory_embedding_config_id == last_config["embedding_config"].id
+            )
+        if last_config.get("realtime_config"):
+            checks.append(dm.voice_llm_config_id == last_config["realtime_config"].id)
+        if last_config.get("realtime_transcription_config"):
+            checks.append(
+                dm.transcription_llm_config_id
+                == last_config["realtime_transcription_config"].id
+            )
+        return bool(checks) and all(checks)
+
     def _create_llm_model_config(
         self, provider: Provider, api_key: str, config_name: str
-    ) -> None:
+    ) -> LLMConfig:
         llm_model = self._get_or_create_llm_model(provider)
-        LLMConfig.objects.create(
+        return LLMConfig.objects.create(
             model=llm_model, custom_name=config_name, api_key=api_key
         )
 
     def _create_embedder_config(
         self, provider: Provider, api_key: str, config_name: str
-    ) -> None:
+    ) -> EmbeddingConfig:
         embedder_model = self._get_or_create_embedder_model(provider)
-        EmbeddingConfig.objects.create(
+        return EmbeddingConfig.objects.create(
             model=embedder_model, custom_name=config_name, api_key=api_key
         )
 
     def _create_realtime_config(
         self, provider: Provider, api_key: str, config_name: str
-    ) -> None:
+    ) -> RealtimeConfig:
         realtime_model = self._get_or_create_realtime_model(provider)
-        RealtimeConfig.objects.create(
+        return RealtimeConfig.objects.create(
             realtime_model=realtime_model, custom_name=config_name, api_key=api_key
         )
 
     def _create_realtime_transcription_config(
         self, provider: Provider, api_key: str, config_name: str
-    ) -> None:
+    ) -> RealtimeTranscriptionConfig:
         realtime_transcription_model = self._get_or_create_realtime_transcription_model(
             provider
         )
-        RealtimeTranscriptionConfig.objects.create(
+        return RealtimeTranscriptionConfig.objects.create(
             realtime_transcription_model=realtime_transcription_model,
             custom_name=config_name,
             api_key=api_key,

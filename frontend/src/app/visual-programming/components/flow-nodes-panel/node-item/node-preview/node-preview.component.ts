@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
 import { NodeModel } from '../../../../core/models/node.model';
-
 @Component({
     selector: 'app-node-preview',
     standalone: true,
