@@ -1,5 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -13,6 +13,7 @@ import {
     CreateFolderDialogComponent,
     CreateFolderDialogResult,
 } from '../../components/create-folder-dialog/create-folder-dialog.component';
+import { FilesSearchService } from '../../services/files-search.service';
 import { StorageApiService } from '../../services/storage-api.service';
 
 @Component({
@@ -30,6 +31,7 @@ import { StorageApiService } from '../../services/storage-api.service';
     templateUrl: './files-list-page.component.html',
     styleUrls: ['./files-list-page.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [FilesSearchService],
 })
 export class FilesListPageComponent {
     private readonly dialog = inject(Dialog);
@@ -37,13 +39,14 @@ export class FilesListPageComponent {
     private readonly destroyRef = inject(DestroyRef);
     private readonly storageApiService = inject(StorageApiService);
     private readonly toastService = inject(ToastService);
+    readonly filesSearchService = inject(FilesSearchService);
 
     public tabs = [
         { label: 'Knowledge Sources', link: 'knowledge-sources' },
         { label: 'Storage', link: 'storage' },
     ];
 
-    readonly searchTerm = signal('');
+    readonly searchTerm = this.filesSearchService.searchTerm;
 
     public get isStorageTabActive(): boolean {
         return this.router.url.includes('/storage');

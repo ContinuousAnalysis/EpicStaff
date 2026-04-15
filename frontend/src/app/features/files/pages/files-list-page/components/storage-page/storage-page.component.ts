@@ -1,6 +1,15 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, ViewChild } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    effect,
+    inject,
+    signal,
+    ViewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
@@ -26,6 +35,7 @@ import {
 } from '../../../../components/create-folder-dialog/create-folder-dialog.component';
 import { StorageDetailsDialogComponent } from '../../../../components/storage-details-dialog/storage-details-dialog.component';
 import { StorageItem, StorageItemInfo } from '../../../../models/storage.models';
+import { FilesSearchService } from '../../../../services/files-search.service';
 import { StorageApiService } from '../../../../services/storage-api.service';
 import { StoragePreviewComponent } from './components/storage-preview/storage-preview.component';
 import { StorageTreeComponent } from './components/storage-tree/storage-tree.component';
@@ -45,12 +55,17 @@ export class StoragePageComponent {
     private toastService = inject(ToastService);
     private confirmationDialogService = inject(ConfirmationDialogService);
     private dialog = inject(Dialog);
+    private filesSearchService = inject(FilesSearchService);
 
     readonly isLoading = signal<boolean>(true);
     readonly treeData = signal<StorageItem[]>([]);
     readonly selectedFile = signal<StorageItem | null>(null);
     readonly selectedItems = signal<StorageItem[]>([]);
     readonly showSidebar = signal<boolean>(true);
+
+    readonly filteredTreeData = computed(() =>
+        filterStorageItems(this.treeData(), this.filesSearchService.searchTerm())
+    );
     private readonly blockedUploadExtensions = new Set([
         // Windows executables & installers
         'exe',
@@ -557,4 +572,21 @@ export class StoragePageComponent {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
+}
+
+function filterStorageItems(items: StorageItem[], term: string): StorageItem[] {
+    if (!term.trim()) return items;
+    const lower = term.toLowerCase();
+    const result: StorageItem[] = [];
+    for (const item of items) {
+        if (item.type === 'folder') {
+            const filteredChildren = filterStorageItems(item.children ?? [], lower);
+            if (filteredChildren.length || item.name.toLowerCase().includes(lower)) {
+                result.push({ ...item, children: filteredChildren, isExpanded: filteredChildren.length > 0 });
+            }
+        } else {
+            if (item.name.toLowerCase().includes(lower)) result.push(item);
+        }
+    }
+    return result;
 }

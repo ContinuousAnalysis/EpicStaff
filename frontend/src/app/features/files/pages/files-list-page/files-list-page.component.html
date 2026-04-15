@@ -40,10 +40,10 @@
                         class="search-input"
                         placeholder="Search collections, folders, files..."
                         [ngModel]="searchTerm()"
-                        (ngModelChange)="searchTerm.set($event)"
+                        (ngModelChange)="filesSearchService.setSearchTerm($event)"
                     />
                     @if (searchTerm()) {
-                        <button type="button" class="clear-btn" aria-label="Clear" (click)="searchTerm.set('')">
+                        <button type="button" class="clear-btn" aria-label="Clear" (click)="filesSearchService.clear()">
                             <app-svg-icon icon="x" size="1.1rem"></app-svg-icon>
                         </button>
                     }
