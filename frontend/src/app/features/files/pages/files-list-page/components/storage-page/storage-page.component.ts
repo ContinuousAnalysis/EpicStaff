@@ -1,5 +1,4 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { HttpErrorResponse } from '@angular/common/http';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -11,8 +10,8 @@ import {
     ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin, of } from 'rxjs';
-import { catchError, finalize, map } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { ConfirmationDialogService } from '../../../../../../shared/components/cofirm-dialog';
@@ -358,7 +357,7 @@ export class StoragePageComponent {
                 }
 
                 this.storageApiService
-                    .delete(item.path)
+                    .delete([item.path])
                     .pipe(takeUntilDestroyed(this.destroyRef))
                     .subscribe({
                         next: () => {
@@ -494,32 +493,25 @@ export class StoragePageComponent {
                     return;
                 }
 
-                const requests = items.map((item) =>
-                    this.storageApiService.delete(item.path).pipe(
-                        map(() => ({ item, ok: true as const })),
-                        catchError((error: HttpErrorResponse) => of({ item, ok: false as const, error }))
-                    )
-                );
+                const paths = items.map((item) => item.path);
 
-                forkJoin(requests)
+                this.storageApiService
+                    .delete(paths)
                     .pipe(takeUntilDestroyed(this.destroyRef))
-                    .subscribe((results) => {
-                        const failed = results.filter((result) => !result.ok && result.error?.status !== 404);
-                        if (failed.length === 0) {
+                    .subscribe({
+                        next: () => {
                             this.toastService.success(successMessage);
-                        } else {
-                            this.toastService.error(`Failed to delete ${failed.length} item(s)`);
-                        }
-
-                        if (clearSelectedFile) {
-                            this.selectedFile.set(null);
-                        } else if (
-                            this.selectedFile()?.path &&
-                            items.some((item) => item.path === this.selectedFile()?.path)
-                        ) {
-                            this.selectedFile.set(null);
-                        }
-                        this.loadTree();
+                            if (clearSelectedFile) {
+                                this.selectedFile.set(null);
+                            } else if (
+                                this.selectedFile()?.path &&
+                                items.some((item) => item.path === this.selectedFile()?.path)
+                            ) {
+                                this.selectedFile.set(null);
+                            }
+                            this.loadTree();
+                        },
+                        error: () => this.toastService.error(`Failed to delete item(s)`),
                     });
             });
     }

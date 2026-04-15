@@ -110,9 +110,9 @@ export class StorageApiService {
         return this.http.post<void>(`${this.apiUrl}mkdir/`, { path });
     }
 
-    delete(path: string): Observable<void> {
+    delete(paths: string[]): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}delete/`, {
-            params: { path },
+            body: { paths },
         });
     }
 
