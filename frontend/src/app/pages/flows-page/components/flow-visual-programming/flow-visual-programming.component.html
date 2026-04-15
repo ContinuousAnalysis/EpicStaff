@@ -19,6 +19,7 @@
         <app-flow-graph
             [flowState]="loadedFlowState"
             [currentFlowId]="graph.id"
+            [flowName]="graph.name"
             [initialNodeId]="initialNodeId"
             [initialNodeId]="initialNodeId"
             (save)="handleSaveFlow(true).subscribe()"
