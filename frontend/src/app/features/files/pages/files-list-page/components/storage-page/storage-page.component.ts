@@ -268,12 +268,13 @@ export class StoragePageComponent {
         });
         dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
             if (!result) return;
+            const path = item.type === 'folder' && !item.path.endsWith('/') ? `${item.path}/` : item.path;
             const requests = [];
             if (result.addGraphIds.length) {
-                requests.push(this.storageApiService.addToGraph(item.path, result.addGraphIds));
+                requests.push(this.storageApiService.addToGraph(path, result.addGraphIds));
             }
             if (result.removeGraphIds.length) {
-                requests.push(this.storageApiService.removeFromGraph(item.path, result.removeGraphIds));
+                requests.push(this.storageApiService.removeFromGraph(path, result.removeGraphIds));
             }
             if (!requests.length) return;
             forkJoin(requests)

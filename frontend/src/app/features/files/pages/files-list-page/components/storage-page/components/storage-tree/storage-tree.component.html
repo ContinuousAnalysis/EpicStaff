@@ -17,6 +17,7 @@
     </div>
 
     <div
+        #listEl
         class="storage-tree__list"
         [class.storage-tree__list--drop-target-root]="dropTargetRoot()"
         (dragover)="onRootDragOver($event)"
@@ -42,7 +43,7 @@
             [style.padding-left.rem]="0.75 + level * 1.25"
             (click)="onItemClick($event, node)"
             (contextmenu)="onContextMenu($event, node)"
-            (mouseenter)="hoveredItem.set(node)"
+            (mouseenter)="onItemMouseEnter($event, node)"
             (mouseleave)="onItemMouseLeave()"
             (dragstart)="onDragStart($event, node)"
             (dragover)="onDragOver($event, node)"
@@ -64,51 +65,18 @@
 
             <app-svg-icon class="storage-tree__icon" [icon]="getFileIcon(node)" size="13px"></app-svg-icon>
 
-            @if (renamingItem()?.path === node.path) {
-                <div class="storage-tree__rename-controls" (click)="$event.stopPropagation()">
-                    <input
-                        #renameInput
-                        class="storage-tree__rename-input"
-                        type="text"
-                        [value]="renameValue"
-                        (input)="renameValue = renameInput.value"
-                        (keydown.enter)="onRenameEnter($event)"
-                        (keydown.escape)="onRenameCancel($event)"
-                        (blur)="onRenameCancel($event)"
-                    />
-                    <button
-                        class="storage-tree__rename-btn storage-tree__rename-btn--confirm"
-                        type="button"
-                        aria-label="Confirm rename"
-                        (mousedown)="$event.preventDefault()"
-                        (click)="onRenameConfirm()"
-                    >
-                        <app-svg-icon icon="rename-confirm" size="1.75rem"></app-svg-icon>
-                    </button>
-                    <button
-                        class="storage-tree__rename-btn storage-tree__rename-btn--cancel"
-                        type="button"
-                        aria-label="Cancel rename"
-                        (mousedown)="$event.preventDefault()"
-                        (click)="onRenameCancel($event)"
-                    >
-                        <app-svg-icon icon="rename-cancel" size="1.75rem"></app-svg-icon>
-                    </button>
+            @if (node.type === 'folder' && node.is_empty) {
+                <div class="storage-tree__folder-meta">
+                    <span class="storage-tree__name storage-tree__name--folder-meta" [title]="node.name">
+                        {{ node.name }}
+                    </span>
+                    <span class="storage-tree__empty-badge">Empty</span>
                 </div>
             } @else {
-                @if (node.type === 'folder' && node.is_empty) {
-                    <div class="storage-tree__folder-meta">
-                        <span class="storage-tree__name storage-tree__name--folder-meta" [title]="node.name">
-                            {{ node.name }}
-                        </span>
-                        <span class="storage-tree__empty-badge">Empty</span>
-                    </div>
-                } @else {
-                    <span class="storage-tree__name" [title]="node.name">{{ node.name }}</span>
-                }
+                <span class="storage-tree__name" [title]="node.name">{{ node.name }}</span>
             }
 
-            @if (hoveredItem() === node && renamingItem()?.path !== node.path) {
+            @if (hoveredItem() === node && (!renamingItem() || renamingItem()?.path !== node.path)) {
                 <div class="storage-tree__hover-actions">
                     <button
                         class="storage-tree__hover-btn storage-tree__hover-btn--plus"
@@ -131,6 +99,46 @@
         }
     }
 </ng-template>
+
+<!-- Rename overlay (fixed, always within list width) -->
+@if (renamingItem(); as item) {
+    <div
+        class="storage-tree__rename-overlay"
+        [style.top.px]="renamePos()?.top"
+        [style.left.px]="renamePos()?.left"
+        [style.right.px]="renamePos()?.right"
+        (click)="$event.stopPropagation()"
+    >
+        <input
+            #renameInput
+            class="storage-tree__rename-input"
+            type="text"
+            [value]="renameValue"
+            (input)="renameValue = renameInput.value"
+            (keydown.enter)="onRenameEnter($event)"
+            (keydown.escape)="onRenameCancel($event)"
+            (blur)="onRenameCancel($event)"
+        />
+        <button
+            class="storage-tree__rename-btn storage-tree__rename-btn--confirm"
+            type="button"
+            aria-label="Confirm rename"
+            (mousedown)="$event.preventDefault()"
+            (click)="onRenameConfirm()"
+        >
+            <app-svg-icon icon="rename-confirm" size="1.75rem"></app-svg-icon>
+        </button>
+        <button
+            class="storage-tree__rename-btn storage-tree__rename-btn--cancel"
+            type="button"
+            aria-label="Cancel rename"
+            (mousedown)="$event.preventDefault()"
+            (click)="onRenameCancel($event)"
+        >
+            <app-svg-icon icon="rename-cancel" size="1.75rem"></app-svg-icon>
+        </button>
+    </div>
+}
 
 <!-- More Options Menu Overlay -->
 @if (moreMenuOpen()) {
