@@ -37,7 +37,9 @@ export class FlowsApiService {
             httpParams = httpParams.set('no_label', 'true');
         }
         return this.http
-            .get<ApiGetRequest<GetGraphLightRequest>>(`${this.configService.apiUrl}graph-light/`, { params: httpParams })
+            .get<
+                ApiGetRequest<GetGraphLightRequest>
+            >(`${this.configService.apiUrl}graph-light/`, { params: httpParams })
             .pipe(map((response) => response.results.sort((a, b) => b.id - a.id)));
     }
 
@@ -67,6 +69,12 @@ export class FlowsApiService {
 
     patchGraph(id: number, fields: Partial<GraphDto>): Observable<GraphDto> {
         return this.http.patch<GraphDto>(`${this.apiUrl}${id}/`, fields, {
+            headers: this.httpHeaders,
+        });
+    }
+
+    bulkSaveGraph(graphId: number, payload: Record<string, unknown>): Observable<GraphDto> {
+        return this.http.post<GraphDto>(`${this.apiUrl}${graphId}/save/`, payload, {
             headers: this.httpHeaders,
         });
     }

@@ -33,17 +33,6 @@ export function getDefaultNodeSize(type: NodeType, data?: unknown): { width: num
     }
 }
 
-export function ensureNodeSize(node: NodeModel): NodeModel {
-    if (node.size?.width && node.size?.height) {
-        return node;
-    }
-
-    return {
-        ...node,
-        size: getDefaultNodeSize(node.type as NodeType, node.data),
-    };
-}
-
 export function normalizeTableNodeSize(node: NodeModel): NodeModel {
     if (node.type !== NodeType.TABLE) return node;
 

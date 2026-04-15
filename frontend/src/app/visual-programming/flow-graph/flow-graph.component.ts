@@ -35,14 +35,12 @@ import {
     ICurrentSelection,
 } from '@foblex/flow';
 import { Subject } from 'rxjs';
-import { v4 as uuidv4 } from 'uuid';
 
 import { ToastService } from '../../services/notifications/toast.service';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { FlowActionPanelComponent } from '../components/flow-action-panel/flow-action-panel.component';
 import { FlowBaseNodeComponent } from '../components/flow-base-node/flow-base-node.component';
 import { FlowGraphContextMenuComponent } from '../components/flow-graph-context-menu/flow-graph-context-menu.component';
-import { FlowNodePanelComponent } from '../components/flow-nodes-panel/flow-nodes-panel.component';
 import { FlowShortcutsButtonComponent } from '../components/flow-shortcuts-button/flow-shortcuts-button.component';
 import { NodePanelShellComponent } from '../components/node-panels/node-panel-shell/node-panel-shell.component';
 import { NodesSearchComponent } from '../components/nodes-search/nodes-search.component';
@@ -50,7 +48,6 @@ import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edi
 import { ProjectDialogComponent } from '../components/project-dialog/project-dialog.component';
 import { MouseTrackerDirective } from '../core/directives/mouse-tracker.directive';
 import { ShortcutListenerDirective } from '../core/directives/shortcut-listener.directive';
-import { NODE_COLORS, NODE_ICONS } from '../core/enums/node-config';
 import { NodeType } from '../core/enums/node-type';
 import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util';
 import {
@@ -67,8 +64,7 @@ import {
     resolveOverlapsForNode,
     snapPointToGrid,
 } from '../core/helpers/node-placement.utils';
-import { ensureNodeSize, normalizeTableNodeSize } from '../core/helpers/node-size.util';
-import { ConnectionModel } from '../core/models/connection.model';
+import { normalizeTableNodeSize } from '../core/helpers/node-size.util';
 import { FlowModel } from '../core/models/flow.model';
 import { GraphNoteModel, NodeModel, ProjectNodeModel, StartNodeModel } from '../core/models/node.model';
 import { CreateNodeRequest } from '../core/models/node-creation.types';
@@ -78,6 +74,7 @@ import { FlowService } from '../services/flow.service';
 import { NodeFactoryService } from '../services/node-factory.service';
 import { SidePanelService } from '../services/side-panel.service';
 import { UndoRedoService } from '../services/undo-redo.service';
+import { createFlowConnection } from '../utils/connection.factory';
 
 @Component({
     selector: 'app-flow-graph',
@@ -94,7 +91,6 @@ import { UndoRedoService } from '../services/undo-redo.service';
         MouseTrackerDirective,
         FlowGraphContextMenuComponent,
         FlowActionPanelComponent,
-        FlowNodePanelComponent,
         NodesSearchComponent,
         NodePanelShellComponent,
         FlowShortcutsButtonComponent,
@@ -105,7 +101,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     @Input() currentFlowId: number | null = null;
     @Input() initialNodeId: string | null = null;
 
-    @Output() save = new EventEmitter<void>();
+    @Output() save = new EventEmitter<FlowModel>();
     readonly openShortcuts = output<DOMRect>();
 
     @ViewChild(FFlowComponent, { static: false })
@@ -147,8 +143,10 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     private readonly toastService = inject(ToastService);
     private readonly injector = inject(Injector);
 
+    constructor() {}
+
     public ngOnInit(): void {
-        this.applyIncomingFlowState();
+        this.applyIncomingFlowState(this.flowState);
         if (this.initialNodeId) {
             this.openNodePanel(this.initialNodeId);
         }
@@ -156,109 +154,11 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
 
     public ngOnChanges(changes: SimpleChanges): void {
         if (changes['flowState'] && !changes['flowState'].firstChange) {
-            this.applyIncomingFlowState();
+            this.applyIncomingFlowState(this.flowState);
         }
         if (changes['initialNodeId'] && changes['initialNodeId'].currentValue) {
             this.openNodePanel(changes['initialNodeId'].currentValue);
         }
-    }
-
-    private applyIncomingFlowState(): void {
-        this.initializeFlowStateIfEmpty();
-        this.addStartNodeIfNeeded();
-        this.generatePortsForNodesIfNeeded();
-        this.sanitizeConnections();
-        this.flowService.setFlow(this.flowState);
-    }
-
-    /**
-     * Strips connections that reference ports not actually present on the rendered nodes.
-     * Prevents f-flow errors like "fOutput with id ...table-out not found".
-     */
-    private sanitizeConnections(): void {
-        const portIds = new Set<string>();
-        for (const node of this.flowState.nodes) {
-            if (node.ports) {
-                for (const port of node.ports) {
-                    portIds.add(port.id);
-                }
-            }
-        }
-        const before = this.flowState.connections.length;
-        this.flowState.connections = this.flowState.connections.filter((conn) => {
-            const srcOk = portIds.has(conn.sourcePortId);
-            const tgtOk = portIds.has(conn.targetPortId);
-            if (!srcOk || !tgtOk) {
-                console.warn(
-                    `[flow-graph] Removing invalid connection ${conn.id}: ` +
-                        `sourcePort "${conn.sourcePortId}" ${srcOk ? 'OK' : 'MISSING'}, ` +
-                        `targetPort "${conn.targetPortId}" ${tgtOk ? 'OK' : 'MISSING'}`
-                );
-            }
-            return srcOk && tgtOk;
-        });
-        if (this.flowState.connections.length < before) {
-            console.warn(`[flow-graph] Removed ${before - this.flowState.connections.length} invalid connections`);
-        }
-    }
-
-    private initializeFlowStateIfEmpty(): void {
-        if (!this.flowState || !Array.isArray(this.flowState.nodes)) {
-            this.flowState = {
-                nodes: [],
-                connections: [],
-            };
-        }
-    }
-
-    private addStartNodeIfNeeded(): void {
-        // Check if a Start node already exists
-        const alreadyHasStart: boolean = this.flowState.nodes.some((node) => node.type === NodeType.START);
-
-        if (!alreadyHasStart) {
-            // Generate unique ID
-            const newStartNodeId: string = uuidv4();
-
-            // Create a new Start node
-            const startNode: StartNodeModel = {
-                id: newStartNodeId,
-                backendId: null,
-                category: 'web',
-                type: NodeType.START,
-                node_name: '__start__',
-                data: {
-                    initialState: {},
-                },
-                position: { x: 0, y: 0 },
-                ports: generatePortsForNode(newStartNodeId, NodeType.START),
-                color: NODE_COLORS[NodeType.START],
-                icon: NODE_ICONS[NodeType.START],
-                input_map: {},
-                output_variable_path: null,
-                size: { width: 125, height: 60 },
-            };
-
-            // Add Start node to the flow
-            this.flowState.nodes.push(startNode);
-        }
-    }
-
-    private generatePortsForNodesIfNeeded(): void {
-        this.flowState.nodes = this.flowState.nodes.map((node) => {
-            if (node.ports === null) {
-                node.ports = generatePortsForNode(node.id, node.type, node.data);
-            } else if (node.type === NodeType.TABLE) {
-                const tableData = node.data.table;
-                const conditionGroups = tableData?.condition_groups ?? [];
-                const validGroups = conditionGroups.filter((group) => group?.valid === true);
-                const expectedPortCount = 1 + validGroups.length + 2;
-
-                if (node.ports.length !== expectedPortCount) {
-                    node.ports = generatePortsForDecisionTableNode(node.id, conditionGroups);
-                }
-            }
-            return node;
-        });
     }
 
     public onInitialized(): void {
@@ -298,17 +198,12 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         const newSourceNodeId = newSourcePortId.split('_')[0];
         const newTargetNodeId = newTargetPortId.split('_')[0];
 
-        // Create the updated connection
-        const updatedConnection: ConnectionModel = {
-            id: `${newSourcePortId}+${newTargetPortId}`,
-            category: 'default',
-            sourceNodeId: newSourceNodeId,
-            targetNodeId: newTargetNodeId,
-            sourcePortId: newSourcePortId as CustomPortId,
-            targetPortId: newTargetPortId as CustomPortId,
-            behavior: 'fixed',
-            type: 'segment',
-        };
+        const updatedConnection = createFlowConnection(
+            newSourceNodeId,
+            newTargetNodeId,
+            newSourcePortId as CustomPortId,
+            newTargetPortId as CustomPortId
+        );
 
         // Remove the old connection and add the new one
         this.flowService.removeConnection(event.connectionId);
@@ -339,16 +234,15 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             return;
         }
 
-        // Generate a new connection ID
-        const newConnectionId: CustomPortId = `${pair.sourcePortId}+${pair.targetPortId}` as CustomPortId;
-
         // Get the current list of connections from the flow service
         const currentConnections = this.flowService.connections();
 
         // If the connection already exists, don't add it
-        const isDuplicate = currentConnections.some((conn) => conn.id === newConnectionId);
+        const isDuplicate = currentConnections.some(
+            (conn) => conn.sourcePortId === pair.sourcePortId && conn.targetPortId === pair.targetPortId
+        );
         if (isDuplicate) {
-            console.warn('Duplicate connection detected, ignoring:', newConnectionId);
+            console.warn('Duplicate connection detected, ignoring:', `${pair.sourcePortId}+${pair.targetPortId}`);
             return;
         }
 
@@ -356,17 +250,12 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         const sourceNodeId = pair.sourcePortId.split('_')[0];
         const targetNodeId = pair.targetPortId.split('_')[0];
 
-        // Create the new connection object based on your models
-        const newConnection: ConnectionModel = {
-            id: newConnectionId,
-            category: 'default',
-            sourceNodeId: sourceNodeId,
-            targetNodeId: targetNodeId,
-            sourcePortId: pair.sourcePortId as CustomPortId,
-            targetPortId: pair.targetPortId as CustomPortId,
-            behavior: 'fixed',
-            type: 'segment',
-        };
+        const newConnection = createFlowConnection(
+            sourceNodeId,
+            targetNodeId,
+            pair.sourcePortId as CustomPortId,
+            pair.targetPortId as CustomPortId
+        );
         // Add the new connection to the flow service
         this.flowService.addConnection(newConnection);
     }
@@ -395,8 +284,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         const placedNodes: NodeModel[] = [];
         const existingBeforePaste = this.flowService.nodes().filter((n) => !newNodes.some((p) => p.id === n.id));
 
-        for (const rawNode of newNodes) {
-            const node = ensureNodeSize(rawNode as NodeModel);
+        for (const node of newNodes) {
             const safePosition = findNearestFreePosition(snapPointToGrid(node.position), getCollisionBounds(node), [
                 ...existingBeforePaste,
                 ...placedNodes,
@@ -563,11 +451,16 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.resolveTableOverlaps(normalizedNode);
     }
 
-    public flushOpenSidePanelState(): void {
+    public commitSidePanelToFlow(): void {
         const updatedNode = this.nodePanelShell?.captureCurrentNodeState();
         if (updatedNode) {
             this.flowService.updateNode(updatedNode);
         }
+    }
+
+    public emitSave(): void {
+        this.commitSidePanelToFlow();
+        this.save.emit(this.flowService.getFlowState());
     }
 
     public onNodeSizeChanged(event: { width: number; height: number }, node: NodeModel): void {
@@ -653,6 +546,37 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.openShortcuts.emit(anchorEl.getBoundingClientRect());
     }
 
+    private applyIncomingFlowState(flowState: FlowModel): void {
+        const normalizedFlowState = this.generatePortsForNodesIfNeeded(flowState);
+        this.flowService.setFlow(normalizedFlowState);
+    }
+
+    private generatePortsForNodesIfNeeded(flowState: FlowModel): FlowModel {
+        let hasChanges = false;
+        const nodes = flowState.nodes.map((node) => {
+            if (node.ports === null) {
+                hasChanges = true;
+                return { ...node, ports: generatePortsForNode(node.id, node.type, node.data) };
+            } else if (node.type === NodeType.TABLE) {
+                const tableData = node.data.table;
+                const conditionGroups = tableData?.condition_groups ?? [];
+                const validGroups = conditionGroups.filter((group) => group?.valid === true);
+                const expectedPortCount = 1 + validGroups.length + 2;
+
+                if (node.ports.length !== expectedPortCount) {
+                    hasChanges = true;
+                    return {
+                        ...node,
+                        ports: generatePortsForDecisionTableNode(node.id, conditionGroups),
+                    };
+                }
+            }
+            return node;
+        });
+
+        return hasChanges ? { ...flowState, nodes } : flowState;
+    }
+
     private isDialogOpen(): boolean {
         return this.dialog.openDialogs.length > 0;
     }
@@ -681,6 +605,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.sidePanelService.setSelectedNodeId(nodeId);
         afterNextRender(() => this.nodePanelShell?.expandPanel(), { injector: this.injector });
     }
+
     private toFlowPosition(point: IPoint): IPoint {
         return this.fFlowComponent.getPositionInFlow(PointExtensions.initialize(point.x, point.y));
     }
@@ -702,40 +627,6 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             fNodeIds: nodeIdsToDelete,
             fConnectionIds: selections.fConnectionIds,
         });
-    }
-    // TODO: take a look on how it worked.
-    public onDragStarted(event: FDragStartedEvent): void {
-        this.isDragging = true;
-        this.draggingElements.clear();
-
-        const data = event.data as FDragNodeStartEventData | undefined;
-        if (data?.fNodeIds) {
-            data.fNodeIds.forEach((id: string) => this.draggingElements.add(id));
-        }
-
-        this.undoRedoService.stateChanged();
-    }
-
-    public onDragEnded(): void {
-        const draggedNodeIds = new Set(this.draggedNodeIds);
-
-        this.draggedNodeIds.clear();
-        this.isDragging = false;
-        this.draggingElements.clear();
-
-        this.runAfterFlowSettles(() => {
-            this.applyDraggedNodePositions(draggedNodeIds);
-        });
-    }
-
-    public onNodePositionChanged(newPos: IPoint, node: NodeModel): void {
-        this.draggedNodeIds.add(node.id);
-
-        if (!this.isDragging || !this.draggingElements.has(node.id)) {
-            this.undoRedoService.stateChanged();
-            this.flowService.updateNode({ ...node, position: snapPointToGrid(newPos) });
-            this.runAfterFlowSettles(() => this.redrawFlow());
-        }
     }
 
     private applyDraggedNodePositions(draggedNodeIds: Set<string>): void {
@@ -779,6 +670,41 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         const movedNodes = resolveOverlapsForNode(node.id, this.flowService.nodes());
         if (movedNodes.length > 0) {
             this.flowService.updateNodesInBatch(movedNodes);
+        }
+    }
+
+    // TODO: take a look on how it worked.
+    public onDragStarted(event: FDragStartedEvent): void {
+        this.isDragging = true;
+        this.draggingElements.clear();
+
+        const data = event.data as FDragNodeStartEventData | undefined;
+        if (data?.fNodeIds) {
+            data.fNodeIds.forEach((id: string) => this.draggingElements.add(id));
+        }
+
+        this.undoRedoService.stateChanged();
+    }
+
+    public onDragEnded(): void {
+        const draggedNodeIds = new Set(this.draggedNodeIds);
+
+        this.draggedNodeIds.clear();
+        this.isDragging = false;
+        this.draggingElements.clear();
+
+        this.runAfterFlowSettles(() => {
+            this.applyDraggedNodePositions(draggedNodeIds);
+        });
+    }
+
+    public onNodePositionChanged(newPos: IPoint, node: NodeModel): void {
+        this.draggedNodeIds.add(node.id);
+
+        if (!this.isDragging || !this.draggingElements.has(node.id)) {
+            this.undoRedoService.stateChanged();
+            this.flowService.updateNode({ ...node, position: snapPointToGrid(newPos) });
+            this.runAfterFlowSettles(() => this.redrawFlow());
         }
     }
 }

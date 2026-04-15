@@ -59,7 +59,7 @@
                     <path d="M0,0 L6,3 0,6Z" stroke="none"></path>
                 </svg>
             </f-connection-for-create>
-            @for (node of flowService.visibleNodes(); track node.id) {
+            @for (node of flowService.nodes(); track node.id) {
                 <app-flow-base-node
                     [node]="node"
                     [showVariables]="showVariables()"
@@ -177,10 +177,6 @@
             (nodeSelected)="onZoomInNode($event)"
             (nodeDoubleClicked)="onNodeDoubleClickAndZoom($event)"
         ></app-nodes-search>
-
-        @if (flowService.vscodeNodes().length > 0) {
-            <app-flow-nodes-panel [nodeModels]="flowService.vscodeNodes()"></app-flow-nodes-panel>
-        }
     </div>
 
     <button class="show-inputs-btn standalone" [class.active]="showVariables()" (click)="toggleShowVariables()">
