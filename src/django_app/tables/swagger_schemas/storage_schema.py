@@ -14,8 +14,6 @@ from tables.serializers.storage_serializers import (
     StoragePathQuerySerializer,
     StorageRemoveFromGraphSerializer,
     StorageRenameSerializer,
-    StorageSessionOutputsQuerySerializer,
-    StorageSessionOutputsResponseSerializer,
     StorageUploadResponseSerializer,
     StorageUploadSerializer,
 )
@@ -138,13 +136,4 @@ STORAGE_GRAPH_FILES_SWAGGER = dict(
     operation_description="Returns all storage paths that have been linked to the given graph.",
     query_serializer=StorageGraphFilesQuerySerializer,
     responses={200: GraphStorageFileSerializer(many=True)},
-)
-
-STORAGE_SESSION_OUTPUTS_SWAGGER = dict(
-    operation_summary="List session output files",
-    operation_description=(
-        "Returns the list of files written to storage during a specific flow session."
-    ),
-    query_serializer=StorageSessionOutputsQuerySerializer,
-    responses={200: StorageSessionOutputsResponseSerializer},
 )

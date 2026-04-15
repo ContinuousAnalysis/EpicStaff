@@ -21,7 +21,6 @@ from tables.serializers.storage_serializers import (
     StoragePathQuerySerializer,
     StorageRemoveFromGraphSerializer,
     StorageRenameSerializer,
-    StorageSessionOutputsQuerySerializer,
     StorageUploadSerializer,
 )
 from tables.services.storage_service import get_storage_manager
@@ -40,7 +39,6 @@ from tables.swagger_schemas.storage_schema import (
     STORAGE_MOVE_SWAGGER,
     STORAGE_REMOVE_FROM_GRAPH_SWAGGER,
     STORAGE_RENAME_SWAGGER,
-    STORAGE_SESSION_OUTPUTS_SWAGGER,
     STORAGE_UPLOAD_SWAGGER,
 )
 
@@ -306,14 +304,3 @@ class StorageAPIView(ViewSet):
             .order_by("added_at")
         )
         return Response(GraphStorageFileSerializer(qs, many=True).data)
-
-    @action(detail=False, methods=["get"], url_path="session-outputs")
-    @swagger_auto_schema(**STORAGE_SESSION_OUTPUTS_SWAGGER)
-    def session_outputs(self, request):
-        user_name, org_id = self._resolve_context(request)
-        params = StorageSessionOutputsQuerySerializer(data=request.query_params)
-        params.is_valid(raise_exception=True)
-        session_id = params.validated_data["session_id"]
-        prefix = f"sessions/{session_id}" if session_id else "sessions/"
-        items = self.manager.list_(user_name, org_id, prefix)
-        return Response({"items": [i.to_dict() for i in items]})

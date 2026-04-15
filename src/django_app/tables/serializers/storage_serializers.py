@@ -21,13 +21,6 @@ class StoragePathQuerySerializer(serializers.Serializer):
         return _normalize_path(value)
 
 
-class StorageSessionOutputsQuerySerializer(serializers.Serializer):
-    session_id = serializers.CharField(
-        required=True,
-        help_text="Session ID to retrieve output files for",
-    )
-
-
 class StorageUploadSerializer(serializers.Serializer):
     path = serializers.CharField(
         required=False,
@@ -241,6 +234,16 @@ class GraphStorageFileSerializer(serializers.Serializer):
     added_at = serializers.DateTimeField(read_only=True)
 
 
+class SessionOutputFileSerializer(serializers.Serializer):
+    id = serializers.IntegerField(source="storage_file.id", read_only=True)
+    path = serializers.CharField(source="storage_file.path", read_only=True)
+    name = serializers.SerializerMethodField()
+    added_at = serializers.DateTimeField(read_only=True)
+
+    def get_name(self, obj):
+        return obj.storage_file.path.rsplit("/", 1)[-1]
+
+
 class StorageRemoveFromGraphSerializer(serializers.Serializer):
     path = serializers.CharField(
         required=True,
@@ -261,7 +264,3 @@ class StorageGraphFilesQuerySerializer(serializers.Serializer):
         required=True,
         help_text="Graph ID to list attached files for",
     )
-
-
-class StorageSessionOutputsResponseSerializer(serializers.Serializer):
-    items = FileItemSerializer(many=True, help_text="Session output files")
