@@ -116,7 +116,7 @@ export class RagTabComponent implements OnInit {
         const configs = this.searchConfigs();
         if (ragType === 'naive') {
             this.searchConfigsFormGroup = this.fb.group({
-                search_limit: [configs?.naive?.search_limit ?? 3, [Validators.min(0), Validators.max(1000)]],
+                search_limit: [configs?.naive?.search_limit ?? 3, [Validators.min(1), Validators.max(1000)]],
                 similarity_threshold: [
                     configs?.naive?.similarity_threshold ?? 0.2,
                     [Validators.min(0.0), Validators.max(1.0)],

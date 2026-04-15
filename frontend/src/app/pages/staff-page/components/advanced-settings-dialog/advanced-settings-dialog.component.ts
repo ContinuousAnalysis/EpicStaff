@@ -71,6 +71,7 @@ export class AdvancedSettingsDialogComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
 
     activeTab = signal<TabId>(TabId.GENERAL);
+    loadingLLMs = signal(true);
     loadingKnowledgeSources = signal(true);
     loadingRags = signal(false);
 
@@ -113,12 +114,14 @@ export class AdvancedSettingsDialogComponent implements OnInit {
                     this.agentRags = rags;
                     this.combinedLLMs = llmConfigs;
                     this.allKnowledgeSources = knowledgeSources;
+                    this.loadingLLMs.set(false);
                     this.loadingKnowledgeSources.set(false);
                     this.loadingRags.set(false);
                     this.cdr.markForCheck();
                 },
                 error: (err) => {
                     console.error('Error fetching data:', err);
+                    this.loadingLLMs.set(false);
                     this.loadingKnowledgeSources.set(false);
                     this.loadingRags.set(false);
                     this.cdr.markForCheck();

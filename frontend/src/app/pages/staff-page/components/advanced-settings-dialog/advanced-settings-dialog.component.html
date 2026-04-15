@@ -24,6 +24,7 @@
             [class.visible-tab]="activeTab() === TabId.GENERAL"
             [form]="form"
             [combinedLLMs]="combinedLLMs"
+            [loadingLLMs]="loadingLLMs()"
         />
         <app-rag-tab
             class="tab-content"

@@ -24,6 +24,7 @@ import { FullLLMConfig } from '@shared/services';
 export class GeneralTabComponent {
     form = input.required<FormGroup>();
     combinedLLMs = input.required<FullLLMConfig[]>();
+    loadingLLMs = input<boolean>(false);
 
     public onConfiguredToolsChange(toolConfigIds: number[]): void {
         this.form().patchValue({ configured_tools: toolConfigIds });

@@ -62,6 +62,7 @@
                 [class.visible-tab]="activeTab() === TabId.GENERAL"
                 [form]="agentForm"
                 [combinedLLMs]="llmConfigs"
+                [loadingLLMs]="isLoadingLLMs"
             />
             <app-rag-tab
                 class="tab-content"

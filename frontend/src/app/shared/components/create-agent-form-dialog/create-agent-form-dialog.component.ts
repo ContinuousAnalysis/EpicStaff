@@ -80,6 +80,7 @@ export class CreateAgentFormComponent implements OnInit {
 
     // LLM configurations
     public llmConfigs: FullLLMConfig[] = [];
+    public isLoadingLLMs = true;
 
     // Knowledge sources
     public allKnowledgeSources: GetCollectionRequest[] = [];
@@ -201,9 +202,16 @@ export class CreateAgentFormComponent implements OnInit {
         this.fullLLMConfigService
             .getFullLLMConfigs()
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((configs: FullLLMConfig[]) => {
-                this.llmConfigs = configs;
-                this.cdr.markForCheck();
+            .subscribe({
+                next: (configs: FullLLMConfig[]) => {
+                    this.llmConfigs = configs;
+                    this.isLoadingLLMs = false;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.isLoadingLLMs = false;
+                    this.cdr.markForCheck();
+                },
             });
     }
 
