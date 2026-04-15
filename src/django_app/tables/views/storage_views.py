@@ -82,9 +82,14 @@ class StorageAPIView(ViewSet):
             raise ValidationError({"path": f"File does not exist: {path}"})
 
         response = data.to_dict()
+
+        graph_path = path
+        if isinstance(data, FolderInfo) and not graph_path.endswith("/"):
+            graph_path = graph_path + "/"
+
         response["graphs"] = list(
             Graph.objects.filter(
-                storage_files__storage_file__path=path,
+                storage_files__storage_file__path=graph_path,
                 storage_files__storage_file__org_id=org_id,
             ).values("id", "name")
         )
