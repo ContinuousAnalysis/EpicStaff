@@ -22,7 +22,7 @@ class TranscriptionClientFactory(ITranscriptionClientFactory):
         on_server_event: Callable[[dict], Awaitable[None]],
         buffer: ChatSummarizedBuffer,
     ) -> Optional[ITranscriptionClient]:
-        if config.rt_provider == "elevenlabs":
+        if config.rt_provider in ("elevenlabs", "gemini"):
             return None
         if not config.transcript_api_key:
             return None
