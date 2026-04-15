@@ -1,3 +1,4 @@
+import dataclasses
 import io
 import os
 import tarfile
@@ -176,7 +177,10 @@ class StorageManager:
 
     @check_permission
     def info(self, user_name: str, org_id: int, path: str) -> FileInfo | FolderInfo:
-        return self._backend.info(self._build_storage_key(org_id, path))
+        result = self._backend.info(self._build_storage_key(org_id, path))
+        return dataclasses.replace(
+            result, path=self._strip_org_prefix(org_id, result.path)
+        )
 
     @check_permission
     def exists(self, user_name: str, org_id: int, path: str) -> bool:
