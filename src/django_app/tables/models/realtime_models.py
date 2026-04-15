@@ -1,7 +1,7 @@
-from django.utils import timezone
 from django.db import models
+from django.utils import timezone
 
-from tables.models import DefaultBaseModel, AbstractDefaultFillableModel
+from tables.models import AbstractDefaultFillableModel, DefaultBaseModel
 
 
 class VoiceChoices(models.TextChoices):

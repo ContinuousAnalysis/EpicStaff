@@ -11,13 +11,12 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ClickOutsideDirective } from '../../../../shared/directives/click-outside.directive';
 import { NodeGroup } from 'src/app/shared/models/node-group.model';
 
 @Component({
   selector: 'app-flow-session-node-filter-dropdown',
   standalone: true,
-  imports: [CommonModule, FormsModule, ClickOutsideDirective],
+  imports: [CommonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div
