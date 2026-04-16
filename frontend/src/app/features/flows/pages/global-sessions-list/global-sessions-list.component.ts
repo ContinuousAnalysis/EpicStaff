@@ -21,10 +21,7 @@ import { GraphSessionLight, GraphSessionService } from '../../services/flows-ses
         </div>
         <div class="global-sessions-content">
             <div class="filter-controls">
-                <app-flow-session-status-filter-dropdown
-                    [value]="statusFilter()"
-                    (valueChange)="onStatusFilterChange($event)"
-                ></app-flow-session-status-filter-dropdown>
+                
             </div>
             <div class="table-container">
                 <app-flow-sessions-table
@@ -36,7 +33,6 @@ import { GraphSessionLight, GraphSessionService } from '../../services/flows-ses
                     [isLoading]="!isLoaded()"
                     [showEmptyState]="isLoaded() && sessions().length === 0"
                     (deleteSelected)="onDeleteSelected($event)"
-                    (viewSession)="onViewSessions($event)"
                     (sortChange)="onSortChange($event)"
                 ></app-flow-sessions-table>
             </div>

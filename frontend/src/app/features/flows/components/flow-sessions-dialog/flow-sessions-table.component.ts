@@ -2,10 +2,12 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CheckboxComponent, IconButtonComponent, LoadingSpinnerComponent } from '@shared/components';
+import { GraphMessagesComponent } from 'src/app/pages/running-graph/components/graph-messages/graph-messages.component';
 
 import { GraphDto } from '../../models/graph.model';
 import { GraphSessionLight, GraphSessionStatus } from '../../services/flows-sessions.service';
 import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.component';
+import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-filter-dropdown.component';
 @Component({
     selector: 'app-flow-sessions-table',
     standalone: true,
@@ -15,21 +17,15 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
         FlowSessionStatusBadgeComponent,
         LoadingSpinnerComponent,
         IconButtonComponent,
+        GraphMessagesComponent,
+        FlowSessionStatusFilterDropdownComponent,
     ],
     template: `
-        <div class="table-header">
-            <div class="search-section"></div>
-            <div class="bulk-actions-section">
-                <div *ngIf="selectedIds().size > 0 && !isLoading && sessions.length > 0" class="bulk-actions">
-                    <button class="delete-btn" (click)="bulkDelete()">Delete Selected</button>
-                </div>
-            </div>
-        </div>
         <div class="sessions-table-wrapper">
             <table>
                 <thead>
                     <tr>
-                        <th>
+                        <th style="width: 5%">
                             <app-checkbox
                                 [checked]="areAllSelected()"
                                 [disabled]="isLoading || sessions.length === 0"
@@ -37,16 +33,22 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                                 id="select-all-checkbox"
                             ></app-checkbox>
                         </th>
-                        <th>ID</th>
-                        <th>Status</th>
+                        <th style="width: 10%">ID</th>
+                        <th style="width: 17%">
+                            <app-flow-session-status-filter-dropdown
+                                [value]="statusFilter"
+                                (valueChange)="statusFilterChange.emit($event)"
+                            >
+                            </app-flow-session-status-filter-dropdown>
+                        </th>
                         <th *ngIf="showFlowName">Flow</th>
-                        <th [class.sortable]="sortable" (click)="sortable && toggleSort()">
+                        <th [class.sortable]="sortable" (click)="sortable && toggleSort()" style="width: 25%">
                             Created At
                             @if (sortable) {
                                 <span class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                             }
                         </th>
-                        <th>{{ showDuration ? 'Duration' : 'Finished At' }}</th>
+                        <th style="width: 25%">{{ showDuration ? 'Duration' : 'Finished At' }}</th>
                         <th>Actions</th>
                         <th></th>
                     </tr>
@@ -68,25 +70,27 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                             </td>
                         </tr>
                     } @else {
-                        <tr *ngFor="let session of sessions; trackBy: trackById">
-                            <td>
-                                <app-checkbox
-                                    [checked]="isSelected(session.id)"
-                                    (changed)="toggleSelection(session.id, $event)"
-                                    [id]="'session-checkbox-' + session.id"
-                                ></app-checkbox>
-                            </td>
-                            <td>{{ session.id }}</td>
-                            <td>
-                                <app-flow-session-status-badge
-                                    [status]="session.status"
-                                ></app-flow-session-status-badge>
-                            </td>
-                            <td *ngIf="showFlowName">
+                        <ng-container *ngFor="let session of sessions; trackBy: trackById">
+                            <tr [class.row-expanded]="expandedSessionId() === session.id">
+                                <td>
+                                    <app-checkbox
+                                        [checked]="isSelected(session.id)"
+                                        (changed)="toggleSelection(session.id, $event)"
+                                        [id]="'session-checkbox-' + session.id"
+                                    ></app-checkbox>
+                                </td>
+                                <td>{{ session.id }}</td>
+                                <td>
+                                    <app-flow-session-status-badge
+                                        [status]="session.status"
+                                    ></app-flow-session-status-badge>
+                                </td>
+                                <td *ngIf="showFlowName">
                                 <a class="flow-link" (click)="navigateToFlow(session.graph_id)">
                                     {{ session.graph_name }}
                                 </a>
-                            </td>
+                                </td>
+
                             <td>{{ session.created_at | date: 'medium' }}</td>
                             <td>
                                 @if (showDuration) {
@@ -97,27 +101,51 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                             </td>
                             <td>
                                 <div class="actions-container">
-                                    <button class="view-btn" (click)="viewSession.emit(session.id)">View</button>
-                                    <button
-                                        *ngIf="canStop(session.status)"
-                                        class="stop-btn"
-                                        (click)="stopSession.emit(session.id)"
-                                        title="Stop session"
-                                        style="margin-left: 8px;"
-                                    >
-                                        Stop
-                                    </button>
-                                </div>
-                            </td>
-                            <td>
-                                <app-icon-button
-                                    icon="x"
-                                    size="1.5rem"
-                                    ariaLabel="Delete session"
-                                    (onClick)="deleteSelected.emit([session.id])"
-                                ></app-icon-button>
-                            </td>
-                        </tr>
+                                        <button
+                                            class="view-btn"
+                                            [class.view-btn--active]="expandedSessionId() === session.id"
+                                            (click)="togglePreview(session.id)"
+                                        >
+                                            {{ expandedSessionId() === session.id ? 'Hide' : 'Preview' }}
+                                        </button>
+                                        <img
+                                            src="assets/icons/ui/session-arrow.svg"
+                                            alt="arrow-icon"
+                                            class="arrow-icon"
+                                            (click)="viewSession.emit(session.id)"
+                                        />
+                                        <img
+                                            src="assets/icons/ui/stop-session.svg"
+                                            alt="arrow-icon"
+                                            *ngIf="canStop(session.status)"
+                                            (click)="stopSession.emit(session.id)"
+                                            title="Stop session"
+                                            style="margin-left: 8px;"
+                                            class="arrow-icon"
+                                        />
+                                        <app-icon-button
+                                            *ngIf="!canStop(session.status)"
+                                            icon="ui/x"
+                                            size="1.5rem"
+                                            ariaLabel="Delete session"
+                                            (onClick)="deleteSelected.emit([session.id])"
+                                        ></app-icon-button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr *ngIf="expandedSessionId() === session.id" class="preview-row">
+                                <td colspan="6" class="preview-cell">
+                                    <div class="preview-content">
+                                        <app-graph-messages
+                                            [graphId]="flow?.id ?? session.graph_id"
+                                            [sessionId]="session.id.toString()"
+                                            [compact]="true"
+                                        ></app-graph-messages>
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-container>
                     }
                 </tbody>
             </table>
@@ -134,13 +162,17 @@ export class FlowSessionsTableComponent {
     @Input() showDuration: boolean = false;
     @Input() sortable: boolean = false;
     @Input() sortOrder: 'asc' | 'desc' = 'desc';
+    @Input() statusFilter: string[] = ['all'];
 
     @Output() deleteSelected = new EventEmitter<number[]>();
     @Output() viewSession = new EventEmitter<number>();
     @Output() stopSession = new EventEmitter<number>();
     @Output() sortChange = new EventEmitter<'asc' | 'desc'>();
+    @Output() statusFilterChange = new EventEmitter<string[]>();
+    @Output() selectedIdsChange = new EventEmitter<Set<number>>();
 
     public selectedIds = signal<Set<number>>(new Set());
+    public expandedSessionId = signal<number | null>(null);
 
     public readonly GraphSessionStatus = GraphSessionStatus;
 
@@ -153,6 +185,11 @@ export class FlowSessionsTableComponent {
         this.router.navigate(['/flows', graphId]);
     }
 
+    public togglePreview(sessionId: number): void {
+        this.expandedSessionId.update((current) => (current === sessionId ? null : sessionId));
+        this.cdr.markForCheck();
+    }
+
     isSelected(id: number) {
         return this.selectedIds().has(id);
     }
@@ -163,6 +200,7 @@ export class FlowSessionsTableComponent {
             checked ? s.add(id) : s.delete(id);
             return s;
         });
+        this.selectedIdsChange.emit(this.selectedIds());
         this.cdr.markForCheck();
     }
 
@@ -178,6 +216,7 @@ export class FlowSessionsTableComponent {
     bulkDelete() {
         this.deleteSelected.emit(Array.from(this.selectedIds()));
         this.selectedIds.set(new Set());
+        this.selectedIdsChange.emit(this.selectedIds());
         this.cdr.markForCheck();
     }
 

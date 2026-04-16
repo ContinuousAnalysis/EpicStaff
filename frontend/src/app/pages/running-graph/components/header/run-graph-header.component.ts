@@ -30,7 +30,7 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
         <div class="header">
             <div class="breadcrumbs">
                 <div class="flows-prefix" routerLink="/flows">
-                    <app-svg-icon icon="arrow-left" size="20" class="back-arrow" />
+                    <app-svg-icon icon="arrow-left" size="20px" class="back-arrow" />
                     <span>Flows</span>
                 </div>
                 <span class="slash">/</span>

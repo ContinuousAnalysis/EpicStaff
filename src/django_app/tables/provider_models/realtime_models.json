@@ -8,5 +8,8 @@
     "eleven_turbo_v2_5",
     "eleven_turbo_v2",
     "eleven_flash_v2"
+  ],
+  "gemini": [
+    "gemini-3.1-flash-live-preview"
   ]
 }

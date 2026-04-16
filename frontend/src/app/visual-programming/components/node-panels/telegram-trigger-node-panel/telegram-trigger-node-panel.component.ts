@@ -56,7 +56,7 @@ export class TelegramTriggerNodePanelComponent
     extends BaseSidePanel<TelegramTriggerNodeModel>
     implements OnInit, OnChanges
 {
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
 
     private dialog = inject(Dialog);
     private destroyRef = inject(DestroyRef);

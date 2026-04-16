@@ -88,6 +88,14 @@ class IRealtimeAgentClient(ABC):
         """Execute a tool and send the result back to the provider."""
         ...
 
+    @abstractmethod
+    async def replay_audio_buffer(self) -> None:
+        """
+        Replay any buffered user audio to the provider after a reconnect.
+        Providers that do not buffer audio should implement this as a no-op.
+        """
+        ...
+
     # ------------------------------------------------------------------
     # State properties (Twilio bridge support)
     # ------------------------------------------------------------------
