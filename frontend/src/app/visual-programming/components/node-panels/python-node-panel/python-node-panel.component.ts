@@ -38,112 +38,21 @@ interface InputMapPair {
         CodeEditorComponent,
         CommonModule,
         PythonTerminalComponent,
-        AppSvgIconComponent],
+        AppSvgIconComponent,
+    ],
     animations: [expandCollapseAnimation],
     template: `
         <div class="panel-container">
             <div class="panel-content">
                 <form [formGroup]="form" class="form-container">
-                    @if (isExpanded()) {
-                        <!-- Expanded Mode: Two Column Layout or Full Width -->
-                        <div class="form-layout expanded" [class.code-editor-fullwidth]="isCodeEditorFullWidth()">
-                            <!-- Left Column - Form Fields -->
-                            @if (!isCodeEditorFullWidth()) {
-                                <div class="form-fields">
-                                    <!-- Node Name Field -->
-                                    <app-custom-input
-                                        label="Node Name"
-                                        tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
-                                        formControlName="node_name"
-                                        placeholder="Enter node name"
-                                        [activeColor]="activeColor"
-                                        [errorMessage]="getNodeNameErrorMessage()"
-                                    ></app-custom-input>
-
-                                    <!-- Input Map Key-Value Pairs -->
-                                    <div class="input-map">
-                                        <app-input-map
-                                            [activeColor]="activeColor"
-                                            [testMode]="isOpenTestMode()"
-                                            (testModeChange)="isOpenTestMode.set($event)"
-                                            (runTest)="onRunTest($event)"
-                                        ></app-input-map>
-                                    </div>
-
-                                    <!-- Output Variable Path -->
-                                    <app-custom-input
-                                        label="Output Variable Path"
-                                        tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
-                                        formControlName="output_variable_path"
-                                        placeholder="Enter output variable path (leave empty for null)"
-                                        [activeColor]="activeColor"
-                                    ></app-custom-input>
-
-                                    <!-- Libraries Input -->
-                                    <app-custom-input
-                                        label="Libraries"
-                                        tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
-                                        formControlName="libraries"
-                                        placeholder="Enter libraries (e.g., requests, pandas, numpy)"
-                                        [activeColor]="activeColor"
-                                    ></app-custom-input>
-
-                                    <div class="stream-config-section" formGroupName="stream_config">
-                                        <span class="section-label">Streaming to EpicChat</span>
-                                        <div class="checkbox-list">
-                                            <label class="checkbox-item">
-                                                <input
-                                                    type="checkbox"
-                                                    formControlName="execution_status"
-                                                    [style.accent-color]="activeColor"
-                                                />
-                                                <span>Execution status</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-
-                            <!-- Code Editor Section with Toggle Arrow -->
-                            <div class="code-editor-wrapper">
-                                <button
-                                    type="button"
-                                    class="toggle-icon-button"
-                                    (click)="toggleCodeEditorFullWidth()"
-                                    [attr.aria-label]="
-                                        isCodeEditorFullWidth() ? 'Collapse code editor' : 'Expand code editor'
-                                    "
-                                >
-                                    <app-svg-icon
-                                        [icon]="isCodeEditorFullWidth() ? 'chevron-left' : 'chevron-right'"
-                                        size="1rem"
-                                    ></app-svg-icon>
-                                </button>
-
-                                <div class="code-editor-column">
-                                    <app-code-editor
-                                        class="code-editor-section"
-                                        [class.no-bottom-radius]="isOpenTestMode()"
-                                        [pythonCode]="pythonCode"
-                                        (pythonCodeChange)="onPythonCodeChange($event)"
-                                        (errorChange)="onCodeErrorChange($event)"
-                                    ></app-code-editor>
-
-                                    @if (isOpenTestMode()) {
-                                        <app-python-terminal
-                                            [logs]="terminalLogs()"
-                                            [terminalHeight]="terminalHeight()"
-                                            (heightChange)="onTerminalHeightChange($event)"
-                                            (clearLogs)="onClearLogs()"
-                                        />
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    } @else {
-                        <!-- Collapsed Mode: Single Column Layout -->
-                        <div class="form-layout collapsed">
-                            <!-- Node Name Field -->
+                    <div
+                        class="form-layout"
+                        [class.expanded]="isExpanded()"
+                        [class.collapsed]="!isExpanded()"
+                        [class.code-editor-fullwidth]="isExpanded() && isCodeEditorFullWidth()"
+                    >
+                        <!-- Form Fields (stable single instance) -->
+                        <div class="form-fields">
                             <app-custom-input
                                 label="Node Name"
                                 tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
@@ -153,18 +62,16 @@ interface InputMapPair {
                                 [errorMessage]="getNodeNameErrorMessage()"
                             ></app-custom-input>
 
-                            <!-- Input Map Key-Value Pairs -->
                             <div class="input-map">
                                 <app-input-map
-                                    (expand)="(toggleCodeEditorFullWidth)"
                                     [activeColor]="activeColor"
                                     [testMode]="isOpenTestMode()"
+                                    [pythonNodeId]="node().backendId"
                                     (testModeChange)="isOpenTestMode.set($event)"
                                     (runTest)="onRunTest($event)"
                                 ></app-input-map>
                             </div>
 
-                            <!-- Output Variable Path -->
                             <app-custom-input
                                 label="Output Variable Path"
                                 tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
@@ -173,7 +80,6 @@ interface InputMapPair {
                                 [activeColor]="activeColor"
                             ></app-custom-input>
 
-                            <!-- Libraries Input -->
                             <app-custom-input
                                 label="Libraries"
                                 tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
@@ -195,26 +101,46 @@ interface InputMapPair {
                                     </label>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Code Editor Section -->
-                            <div class="code-editor-section" [class.no-bottom-radius]="isOpenTestMode()">
+                        <!-- Code editor area: toggle button only present in expanded mode -->
+                        <div class="code-editor-wrapper">
+                            @if (isExpanded()) {
+                                <button
+                                    type="button"
+                                    class="toggle-icon-button"
+                                    (click)="toggleCodeEditorFullWidth()"
+                                    [attr.aria-label]="
+                                        isCodeEditorFullWidth() ? 'Collapse code editor' : 'Expand code editor'
+                                    "
+                                >
+                                    <app-svg-icon
+                                        [icon]="isCodeEditorFullWidth() ? 'chevron-left' : 'chevron-right'"
+                                        size="1rem"
+                                    ></app-svg-icon>
+                                </button>
+                            }
+
+                            <div class="code-editor-column">
                                 <app-code-editor
+                                    class="code-editor-section"
+                                    [class.no-bottom-radius]="isOpenTestMode()"
                                     [pythonCode]="pythonCode"
                                     (pythonCodeChange)="onPythonCodeChange($event)"
                                     (errorChange)="onCodeErrorChange($event)"
                                 ></app-code-editor>
-                            </div>
 
-                            @if (isOpenTestMode()) {
-                                <app-python-terminal
-                                    [logs]="terminalLogs()"
-                                    [terminalHeight]="terminalHeight()"
-                                    (heightChange)="onTerminalHeightChange($event)"
-                                    (clearLogs)="onClearLogs()"
-                                />
-                            }
+                                @if (isOpenTestMode()) {
+                                    <app-python-terminal
+                                        [logs]="terminalLogs()"
+                                        [terminalHeight]="terminalHeight()"
+                                        (heightChange)="onTerminalHeightChange($event)"
+                                        (clearLogs)="onClearLogs()"
+                                    />
+                                }
+                            </div>
                         </div>
-                    }
+                    </div>
                 </form>
             </div>
         </div>
@@ -290,6 +216,20 @@ interface InputMapPair {
                     flex-direction: column;
                     gap: 1rem;
                     overflow: visible;
+
+                    .form-fields {
+                        flex: 1 1 auto;
+                        max-width: none;
+                        height: auto;
+                        overflow-y: visible;
+                    }
+
+                    .code-editor-wrapper {
+                        flex: 0 0 auto;
+                        height: auto;
+                        display: block;
+                        transition: none;
+                    }
                 }
             }
 
@@ -596,7 +536,15 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
         this.terminalLogs.update((logs) => [...logs, { timestamp: new Date(), type, message }]);
     }
 
-    onRunTest(inputs: Record<string, string>): void {
+    private parseVariableValue(raw: string): unknown {
+        try {
+            return JSON.parse(raw);
+        } catch {
+            return raw;
+        }
+    }
+
+    onRunTest(variables: Record<string, string>): void {
         this.testRunning.set(true);
         this.testResult.set(null);
         this.testError.set(null);
@@ -611,15 +559,19 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
                   .filter((lib: string) => lib.length > 0)
             : [];
 
+        const parsedVariables = Object.fromEntries(
+            Object.entries(variables).map(([k, v]) => [k, this.parseVariableValue(v)])
+        );
+
         const payload: RunPythonCodeRequest = {
             python_code_id: this.node().data.id ?? null,
             code: this.pythonCode,
             entrypoint: 'main',
             libraries,
-            inputs,
+            variables: parsedVariables,
         };
 
-        this.addLog('info', `Parameters: ${JSON.stringify(inputs)}`);
+        this.addLog('info', `Parameters: ${JSON.stringify(parsedVariables)}`);
 
         this.pythonCodeRunService
             .runPythonCode(payload)

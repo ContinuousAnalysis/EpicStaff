@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnInit, Output, signal } from '@angular/core';
+import { Component, inject, Input, OnInit, Output, signal } from '@angular/core';
 import { EventEmitter } from '@angular/core';
 import {
     AbstractControl,
@@ -10,10 +10,12 @@ import {
     FormGroupDirective,
     ReactiveFormsModule,
 } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
 
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToggleSwitchComponent } from '../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
+import { PythonCodeRunService } from '../../services/python-code-run.service';
 import { SidePanelService } from '../../services/side-panel.service';
 
 interface TestVariable {
@@ -73,20 +75,18 @@ interface TestVariable {
                                     />
                                 </div>
                                 <app-svg-icon
-                                icon="trash"
-                                size="1rem"
-                                class="delete-icon"
-                                (click)="removePair(i)"
-                            ></app-svg-icon>
+                                    icon="trash"
+                                    size="1rem"
+                                    class="delete-icon"
+                                    (click)="removePair(i)"
+                                ></app-svg-icon>
                             </div>
                         </div>
                     }
                 </div>
                 <button type="button" class="add-pair-btn" (click)="addPair()">
-                    
-                <app-svg-icon icon="plus" size="16px"></app-svg-icon> Add Input
-                
-            </button>
+                    <app-svg-icon icon="plus" size="16px"></app-svg-icon> Add Input
+                </button>
             } @else {
                 <!-- Test mode: editable test variables -->
                 <div class="input-map-list">
@@ -123,6 +123,15 @@ interface TestVariable {
                     <i class="ti ti-plus"></i> Add Input
                 </button>
                 <div class="test-mode-actions">
+                    <button type="button" class="btn-secondary" (click)="onClearAll()">Clear All</button>
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        [disabled]="fillLoading() || !pythonNodeId"
+                        (click)="onFillVariables()"
+                    >
+                        {{ fillLoading() ? 'Loading...' : 'Fill Variables' }}
+                    </button>
                     <button type="button" class="btn-primary" [disabled]="!canRunTest()" (click)="onRunTest()">
                         Run Test
                     </button>
@@ -378,12 +387,16 @@ interface TestVariable {
 export class InputMapComponent implements OnInit {
     @Input() activeColor: string = '#685fff';
     @Input() testMode: boolean = false;
+    @Input() pythonNodeId: number | null = null;
     @Output() testModeChange = new EventEmitter<boolean>();
     @Output() runTest = new EventEmitter<Record<string, string>>();
 
     showTestInputs = signal(false);
     testValues = signal<TestVariable[]>([]);
+    fillLoading = signal(false);
     private normalModeSnapshot = signal<{ key: string; value: string }[]>([]);
+
+    private readonly pythonCodeRunService = inject(PythonCodeRunService);
 
     constructor(
         private controlContainer: ControlContainer,
@@ -448,19 +461,26 @@ export class InputMapComponent implements OnInit {
 
     onTestModeToggle(value: boolean): void {
         if (value) {
-            const snapshot = this.pairs.controls
-                .map((c) => ({ key: c.value.key as string, value: c.value.value as string }))
-                .filter((item) => item.key?.trim() !== '');
+            const snapshot = this.pairs.controls.map((c) => ({
+                key: c.value.key as string,
+                value: c.value.value as string,
+            }));
             this.normalModeSnapshot.set(snapshot);
 
-            const testVars = snapshot.map((item) => ({ key: item.key, value: '' }));
+            const testVars = snapshot
+                .filter((item) => item.key?.trim() !== '')
+                .map((item) => ({ key: item.key, value: '' }));
             this.testValues.set(testVars);
             this.showTestInputs.set(true);
         } else {
-            this.syncTestKeysToNormalMode();
+            const changed = this.syncTestKeysToNormalMode();
+            // ВАЖНО: сигналы очищаем ПОСЛЕ sync — иначе diff-логика потеряет snapshot.
             this.showTestInputs.set(false);
             this.testValues.set([]);
             this.normalModeSnapshot.set([]);
+            if (changed) {
+                this.sidePanelService.triggerAutosave();
+            }
         }
         this.testMode = value;
         this.testModeChange.emit(value);
@@ -479,6 +499,34 @@ export class InputMapComponent implements OnInit {
         this.runTest.emit(inputs);
     }
 
+    onFillVariables(): void {
+        if (!this.pythonNodeId) return;
+        this.fillLoading.set(true);
+        this.pythonCodeRunService
+            .getLastTestInput(this.pythonNodeId)
+            .pipe(finalize(() => this.fillLoading.set(false)))
+            .subscribe({
+                next: ({ input }) => {
+                    const current = [...this.testValues()];
+                    for (const [key, value] of Object.entries(input)) {
+                        const existing = current.find((v) => v.key === key);
+                        if (existing) {
+                            if (!existing.value) {
+                                existing.value = String(value);
+                            }
+                        } else {
+                            current.push({ key, value: String(value) });
+                        }
+                    }
+                    this.testValues.set(current);
+                },
+            });
+    }
+
+    onClearAll(): void {
+        this.testValues.update((vars) => vars.map((v) => ({ ...v, value: '' })));
+    }
+
     addTestVariable(): void {
         this.testValues.update((vars) => [...vars, { key: '', value: '' }]);
     }
@@ -495,32 +543,56 @@ export class InputMapComponent implements OnInit {
         this.testValues.update((vars) => vars.map((v, i) => (i === index ? { ...v, value: newValue } : v)));
     }
 
-    private syncTestKeysToNormalMode(): void {
+    private syncTestKeysToNormalMode(): boolean {
         const snapshot = this.normalModeSnapshot();
-        const snapshotMap = new Map(snapshot.map((item) => [item.key, item.value]));
-        const currentTestKeys = this.testValues().filter((tv) => tv.key?.trim() !== '');
+        const testValues = this.testValues();
 
-        while (this.pairs.length > 0) {
-            this.pairs.removeAt(0);
+        if (snapshot.length === 0 && testValues.length === 0) {
+            return false;
         }
 
-        for (const testItem of currentTestKeys) {
-            const trimmedKey = testItem.key.trim();
-            const restoredValue = snapshotMap.has(trimmedKey) ? snapshotMap.get(trimmedKey)! : 'variables.';
+        const snapshotKeys = new Set(snapshot.map((item) => item.key?.trim() ?? '').filter((k) => k !== ''));
+        const currentTestKeys = new Set(testValues.map((item) => item.key?.trim() ?? '').filter((k) => k !== ''));
 
+        const removedKeys = new Set<string>();
+        snapshotKeys.forEach((k) => {
+            if (!currentTestKeys.has(k)) removedKeys.add(k);
+        });
+        const addedKeys = new Set<string>();
+        currentTestKeys.forEach((k) => {
+            if (!snapshotKeys.has(k)) addedKeys.add(k);
+        });
+
+        let changed = false;
+
+        for (let i = this.pairs.length - 1; i >= 0; i--) {
+            const key = ((this.pairs.at(i).value.key as string | undefined) ?? '').trim();
+            if (key !== '' && removedKeys.has(key)) {
+                this.pairs.removeAt(i);
+                changed = true;
+            }
+        }
+
+        for (const newKey of addedKeys) {
             this.pairs.push(
                 this.fb.group({
-                    key: [trimmedKey],
-                    value: [restoredValue],
+                    key: [newKey],
+                    value: ['variables.'],
                 })
             );
+            changed = true;
         }
 
+        // UX: always keep at least one (possibly empty) row visible.
         if (this.pairs.length === 0) {
             this.addPair();
         }
 
-        this.sidePanelService.triggerAutosave();
+        if (changed) {
+            this.pairs.markAsDirty();
+        }
+
+        return changed;
     }
 
     private getValidInputPairs(): AbstractControl[] {

@@ -10,7 +10,7 @@ export interface RunPythonCodeRequest {
     code: string;
     entrypoint: string;
     libraries: string[];
-    inputs: Record<string, string>;
+    variables: Record<string, unknown>;
 }
 
 export interface PythonCodeResult {
@@ -58,6 +58,12 @@ export class PythonCodeRunService {
             filter((result): result is PythonCodeResult => result !== null),
             take(1),
             timeout(60000)
+        );
+    }
+
+    getLastTestInput(pythonNodeId: number): Observable<{ detail: string; input: Record<string, string> }> {
+        return this.http.get<{ detail: string; input: Record<string, string> }>(
+            `${this.apiUrl}pythonnodes/${pythonNodeId}/last-test-input/`
         );
     }
 
