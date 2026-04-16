@@ -919,15 +919,6 @@ class PythonNodeViewSet(
     queryset = PythonNode.objects.all()
     serializer_class = PythonNodeSerializer
 
-    @action(detail=True, methods=["post"], url_path="save-test-input")
-    def save_test_input(self, request, pk=None):
-        node = self.get_object()
-        node.test_input = request.data.get("test_input", {})
-        node.save(update_fields=["test_input"])
-        return Response(
-            {"detail": "Test input saved successfully."}, status=status.HTTP_200_OK
-        )
-
 
 class FileExtractorNodeViewSet(
     IdempotentNodeCreateMixin, ContentHashPreconditionMixin, viewsets.ModelViewSet
