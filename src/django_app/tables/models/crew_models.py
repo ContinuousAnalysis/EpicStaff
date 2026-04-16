@@ -140,17 +140,13 @@ class Agent(AbstractDefaultFillableModel):
         """
         Get assigned RAG type and ID in format "rag_type:id".
         """
-        try:
-            agent_naive_rag = self.agent_naive_rags.select_related("naive_rag").get()
+        agent_naive_rag = self.agent_naive_rags.select_related("naive_rag").first()
+        if agent_naive_rag:
             return f"naive:{agent_naive_rag.naive_rag.naive_rag_id}"
-        except Exception:
-            pass
 
-        try:
-            agent_graph_rag = self.agent_graph_rags.select_related("graph_rag").get()
+        agent_graph_rag = self.agent_graph_rags.select_related("graph_rag").first()
+        if agent_graph_rag:
             return f"graph:{agent_graph_rag.graph_rag.graph_rag_id}"
-        except Exception:
-            pass
 
         return None
 

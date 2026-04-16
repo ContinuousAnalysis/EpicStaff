@@ -297,7 +297,7 @@ class ConverterService(metaclass=SingletonMeta):
                 knowledge_collection_id = agent.knowledge_collection.pk
 
             rag_type_id = agent.get_rag_type_and_id()
-            all_search_configs = agent.get_search_configs()
+            all_search_configs = SearchConfigService.get_search_configs(agent)
             rag_search_config = self.build_rag_search_config(
                 rag_type_id, all_search_configs
             )
