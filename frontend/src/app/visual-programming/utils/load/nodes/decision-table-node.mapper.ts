@@ -6,7 +6,7 @@ import { DecisionTableNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapDecisionTableNodeToModel(dn: GetDecisionTableNodeRequest): DecisionTableNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(dn.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(dn.metadata, NodeType.TABLE);
     return {
         id: uuidv4(),
         backendId: dn.id,

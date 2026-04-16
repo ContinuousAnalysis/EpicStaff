@@ -1,12 +1,12 @@
+import { NODE_COLORS, NODE_ICONS } from '../../core/enums/node-config';
+import { NodeType } from '../../core/enums/node-type';
 import { NodeDtoMetadata } from '../../core/models/node-metadata.model';
 
-const DEFAULT_POSITION = { x: 0, y: 0 };
-const DEFAULT_COLOR = '#685fff';
-const DEFAULT_ICON = 'ti ti-code';
 const DEFAULT_SIZE = { width: 330, height: 60 };
 
 export function mapNodeDtoMetadataToFlowNodeMetadata(
-    metadata: Record<string, unknown> | undefined | null
+    metadata: Record<string, unknown> | undefined | null,
+    nodeType: NodeType
 ): NodeDtoMetadata {
     const m = metadata ?? {};
     const position = m['position'] as { x?: number; y?: number } | undefined;
@@ -14,11 +14,11 @@ export function mapNodeDtoMetadataToFlowNodeMetadata(
 
     return {
         position: {
-            x: position?.x ?? DEFAULT_POSITION.x,
-            y: position?.y ?? DEFAULT_POSITION.y,
+            x: position?.x ?? 0,
+            y: position?.y ?? 0,
         },
-        color: typeof m['color'] === 'string' ? m['color'] : DEFAULT_COLOR,
-        icon: typeof m['icon'] === 'string' ? m['icon'] : DEFAULT_ICON,
+        color: typeof m['color'] === 'string' ? m['color'] : NODE_COLORS[nodeType],
+        icon: typeof m['icon'] === 'string' ? m['icon'] : NODE_ICONS[nodeType],
         size: {
             width: size?.width ?? DEFAULT_SIZE.width,
             height: size?.height ?? DEFAULT_SIZE.height,

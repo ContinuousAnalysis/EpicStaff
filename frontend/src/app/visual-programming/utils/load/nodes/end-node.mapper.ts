@@ -6,7 +6,7 @@ import { EndNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapEndNodeToModel(en: EndNode): EndNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(en.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(en.metadata, NodeType.END);
     return {
         id: uuidv4(),
         backendId: en.id,

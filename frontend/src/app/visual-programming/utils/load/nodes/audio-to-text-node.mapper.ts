@@ -6,7 +6,7 @@ import { AudioToTextNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapAudioToTextNodeToModel(n: GetAudioToTextNodeRequest): AudioToTextNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(n.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(n.metadata, NodeType.AUDIO_TO_TEXT);
     return {
         id: uuidv4(),
         backendId: n.id,

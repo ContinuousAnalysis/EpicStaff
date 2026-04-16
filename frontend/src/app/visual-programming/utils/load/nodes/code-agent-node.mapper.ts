@@ -6,7 +6,7 @@ import { CodeAgentNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapCodeAgentNodeToModel(ca: GetCodeAgentNodeRequest): CodeAgentNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(ca.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(ca.metadata, NodeType.CODE_AGENT);
     return {
         id: uuidv4(),
         backendId: ca.id,

@@ -6,7 +6,7 @@ import { WebhookTriggerNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapWebhookTriggerNodeToModel(wn: GetWebhookTriggerNodeRequest): WebhookTriggerNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(wn.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(wn.metadata, NodeType.WEBHOOK_TRIGGER);
     return {
         id: uuidv4(),
         backendId: wn.id,

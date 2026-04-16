@@ -6,7 +6,7 @@ import { FileExtractorNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapFileExtractorNodeToModel(n: GetFileExtractorNodeRequest): FileExtractorNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(n.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(n.metadata, NodeType.FILE_EXTRACTOR);
     return {
         id: uuidv4(),
         backendId: n.id,

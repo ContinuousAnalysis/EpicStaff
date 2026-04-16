@@ -6,7 +6,7 @@ import { ProjectNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapCrewNodeToModel(cn: CrewNode): ProjectNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(cn.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(cn.metadata, NodeType.PROJECT);
     return {
         id: uuidv4(),
         backendId: cn.id,

@@ -6,7 +6,7 @@ import { StartNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapStartNodeToModel(sn: StartNode): StartNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(sn.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(sn.metadata, NodeType.START);
     return {
         id: uuidv4(),
         backendId: sn.id,

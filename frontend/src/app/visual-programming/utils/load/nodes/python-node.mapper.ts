@@ -6,7 +6,7 @@ import { PythonNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapPythonNodeToModel(pn: PythonNode): PythonNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(pn.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(pn.metadata, NodeType.PYTHON);
     return {
         id: uuidv4(),
         backendId: pn.id,

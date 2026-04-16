@@ -6,7 +6,7 @@ import { GraphNoteModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapGraphNoteToModel(nn: GraphNote): GraphNoteModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(nn.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(nn.metadata, NodeType.NOTE);
     return {
         id: uuidv4(),
         backendId: nn.id,

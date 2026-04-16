@@ -6,7 +6,7 @@ import { SubGraphNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapSubGraphNodeToModel(sn: SubGraphNode): SubGraphNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(sn.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(sn.metadata, NodeType.SUBGRAPH);
     const subgraphDetail = sn.subgraph_detail ?? {
         id: sn.subgraph,
         uuid: '',

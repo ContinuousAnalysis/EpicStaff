@@ -6,7 +6,7 @@ import { TelegramTriggerNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapTelegramTriggerNodeToModel(tn: GetTelegramTriggerNodeRequest): TelegramTriggerNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(tn.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(tn.metadata, NodeType.TELEGRAM_TRIGGER);
     return {
         id: uuidv4(),
         backendId: tn.id,

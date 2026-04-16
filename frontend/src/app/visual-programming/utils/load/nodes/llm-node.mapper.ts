@@ -6,7 +6,7 @@ import { LLMNodeModel } from '../../../core/models/node.model';
 import { mapNodeDtoMetadataToFlowNodeMetadata } from '../node-dto-metadata-to-flow-metadata.mapper';
 
 export function mapLLMNodeToModel(ln: GetLLMNodeRequest): LLMNodeModel {
-    const ui = mapNodeDtoMetadataToFlowNodeMetadata(ln.metadata);
+    const ui = mapNodeDtoMetadataToFlowNodeMetadata(ln.metadata, NodeType.LLM);
     const configDetail = ln.llm_config_detail ?? {
         id: ln.llm_config,
         custom_name: ln.node_name,
