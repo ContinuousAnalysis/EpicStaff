@@ -74,7 +74,6 @@ from tables.serializers.serializers import (
     RegisterTelegramTriggerSerializer,
 )
 
-# from tables.serializers.knowledge_serializers import CollectionStatusSerializer
 from tables.serializers.quickstart_serializers import (
     QuickstartSerializer,
     QuickstartConfigSerializer,

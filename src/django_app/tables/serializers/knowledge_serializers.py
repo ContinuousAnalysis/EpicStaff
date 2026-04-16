@@ -356,31 +356,3 @@ class NestedSearchConfigSerializer(serializers.Serializer):
                 "At least one RAG type must be provided (e.g., 'naive', 'graph')"
             )
         return attrs
-
-
-# class CollectionStatusSerializer(serializers.ModelSerializer):
-
-#     class Meta:
-#         model = SourceCollection
-#         fields = ["collection_id", "collection_name", "status"]
-
-#     def to_representation(self, obj):
-#         """Custom representation to control response structure"""
-#         return {
-#             "collection_id": obj.collection_id,
-#             "collection_name": obj.collection_name,
-#             "collection_status": obj.status,
-#             "total_documents": obj.total_documents,
-#             "new_documents": obj.new_documents,
-#             "completed_documents": obj.completed_documents,
-#             "processing_documents": obj.processing_documents,
-#             "failed_documents": obj.failed_documents,
-#             "documents": [
-#                 {
-#                     "document_id": doc.document_id,
-#                     "file_name": doc.file_name,
-#                     "status": doc.status,
-#                 }
-#                 for doc in obj.document_metadata.all()
-#             ],
-#         }
