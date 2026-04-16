@@ -118,7 +118,7 @@ STORAGE_COPY_SWAGGER = dict(
 STORAGE_ADD_TO_GRAPH_SWAGGER = dict(
     operation_summary="Add a storage file reference to graphs",
     operation_description=(
-        "Creates a database reference linking a storage file or folder to one or more graphs."
+        "Creates database references linking one or more storage files or folders to one or more graphs."
     ),
     request_body=StorageAddToGraphSerializer,
     responses={201: GraphStorageFileSerializer(many=True)},
@@ -126,7 +126,7 @@ STORAGE_ADD_TO_GRAPH_SWAGGER = dict(
 
 STORAGE_REMOVE_FROM_GRAPH_SWAGGER = dict(
     operation_summary="Remove a storage file reference from graphs",
-    operation_description="Removes the database link between a storage path and the given graphs.",
+    operation_description="Removes the database links between one or more storage paths and the given graphs.",
     request_body=StorageRemoveFromGraphSerializer,
     responses={204: "Removed successfully"},
 )

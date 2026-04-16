@@ -359,29 +359,31 @@ Copies a file or folder to a new location. Supports cross-organization copies. I
 
 **POST** `/api/storage/add-to-graph/`
 
-Links an existing storage path to one or more graphs. Creates a `StorageFile` record if one does not exist for the path.
+Links one or more existing storage paths to one or more graphs. Creates `StorageFile` records as needed.
 
 **Request:**
 ```json
-{"path": "reports/data.csv", "graph_ids": [1, 2]}
+{"paths": ["reports/data.csv", "images/logo.png"], "graph_ids": [1, 2]}
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `path` | string | Yes | Path to the file or folder |
+| `paths` | string[] | Yes | Paths to the files or folders |
 | `graph_ids` | integer[] | Yes | Graph IDs to link |
 
 **Response:** `201 Created`
 ```json
 [
     {"id": 10, "graph_id": 1, "path": "reports/data.csv", "added_at": "2026-04-15T10:30:00Z"},
-    {"id": 11, "graph_id": 2, "path": "reports/data.csv", "added_at": "2026-04-15T10:30:00Z"}
+    {"id": 11, "graph_id": 2, "path": "reports/data.csv", "added_at": "2026-04-15T10:30:00Z"},
+    {"id": 12, "graph_id": 1, "path": "images/logo.png", "added_at": "2026-04-15T10:30:00Z"},
+    {"id": 13, "graph_id": 2, "path": "images/logo.png", "added_at": "2026-04-15T10:30:00Z"}
 ]
 ```
 
 **Error:** `400 Bad Request`
 ```json
-{"path": "Path does not exist: ..."}
+{"paths": ["Path does not exist: bad/path.txt"]}
 ```
 
 ---
@@ -390,16 +392,16 @@ Links an existing storage path to one or more graphs. Creates a `StorageFile` re
 
 **DELETE** `/api/storage/remove-from-graph/`
 
-Unlinks a storage path from one or more graphs.
+Unlinks one or more storage paths from one or more graphs.
 
 **Request:**
 ```json
-{"path": "reports/data.csv", "graph_ids": [1]}
+{"paths": ["reports/data.csv"], "graph_ids": [1]}
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `path` | string | Yes | Path to the file or folder |
+| `paths` | string[] | Yes | Paths to the files or folders |
 | `graph_ids` | integer[] | Yes | Graph IDs to unlink |
 
 **Response:** `204 No Content`

@@ -206,8 +206,8 @@ Base path: `/api/storage/`
 | POST | `/rename/` | Rename file/folder | `from`, `to` (body) |
 | POST | `/move/` | Move (same-org + cross-org) | `from`, `to`, `source_org_id`, `destination_org_id` (body) |
 | POST | `/copy/` | Copy (same-org + cross-org) | `from`, `to`, `source_org_id`, `destination_org_id` (body) |
-| POST | `/add-to-graph/` | Link storage file to graphs | `path`, `graph_ids` (body) |
-| DELETE | `/remove-from-graph/` | Unlink storage file from graphs | `path`, `graph_ids` (body) |
+| POST | `/add-to-graph/` | Link storage files to graphs | `paths`, `graph_ids` (body) |
+| DELETE | `/remove-from-graph/` | Unlink storage files from graphs | `paths`, `graph_ids` (body) |
 | GET | `/graph-files/` | List files attached to a graph | `graph_id` (query) |
 
 `GET /api/sessions/{id}/output-files/` lives on the `SessionViewSet` and returns files tracked during session execution.

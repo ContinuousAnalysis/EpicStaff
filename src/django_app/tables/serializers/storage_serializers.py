@@ -136,9 +136,10 @@ class StorageCopySerializer(serializers.Serializer):
 
 
 class StorageAddToGraphSerializer(serializers.Serializer):
-    path = serializers.CharField(
-        required=True,
-        help_text="Storage path to link",
+    paths = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=False,
+        help_text="Storage paths to link",
     )
     graph_ids = serializers.ListField(
         child=serializers.IntegerField(),
@@ -146,8 +147,8 @@ class StorageAddToGraphSerializer(serializers.Serializer):
         help_text="Target graph IDs",
     )
 
-    def validate_path(self, value: str) -> str:
-        return _normalize_path(value)
+    def validate_paths(self, value: list[str]) -> list[str]:
+        return [_normalize_path(path) for path in value]
 
 
 class FileItemSerializer(serializers.Serializer):
@@ -245,9 +246,10 @@ class SessionOutputFileSerializer(serializers.Serializer):
 
 
 class StorageRemoveFromGraphSerializer(serializers.Serializer):
-    path = serializers.CharField(
-        required=True,
-        help_text="Storage path to unlink",
+    paths = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=False,
+        help_text="Storage paths to unlink",
     )
     graph_ids = serializers.ListField(
         child=serializers.IntegerField(),
@@ -255,8 +257,8 @@ class StorageRemoveFromGraphSerializer(serializers.Serializer):
         help_text="Graph IDs to unlink from",
     )
 
-    def validate_path(self, value: str) -> str:
-        return _normalize_path(value)
+    def validate_paths(self, value: list[str]) -> list[str]:
+        return [_normalize_path(path) for path in value]
 
 
 class StorageGraphFilesQuerySerializer(serializers.Serializer):

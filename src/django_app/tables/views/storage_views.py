@@ -252,25 +252,27 @@ class StorageAPIView(ViewSet):
         user_name, org_id = self._resolve_context(request)
         serializer = StorageAddToGraphSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        path = serializer.validated_data["path"]
+        paths = serializer.validated_data["paths"]
         graph_ids = serializer.validated_data["graph_ids"]
 
-        try:
-            path_info = self.manager.info(user_name, org_id, path)
-        except FileNotFoundError:
-            raise ValidationError({"path": f"Path does not exist: {path}"})
-
-        if isinstance(path_info, FolderInfo) and not path.endswith("/"):
-            path = path + "/"
-
         results = []
-        sf, _ = StorageFile.objects.get_or_create(org_id=org_id, path=path)
 
-        for graph_id in graph_ids:
-            obj, _ = GraphStorageFile.objects.get_or_create(
-                graph_id=graph_id, storage_file=sf
-            )
-            results.append(obj)
+        for path in paths:
+            try:
+                path_info = self.manager.info(user_name, org_id, path)
+            except FileNotFoundError:
+                raise ValidationError({"paths": f"Path does not exist: {path}"})
+
+            if isinstance(path_info, FolderInfo) and not path.endswith("/"):
+                path = path + "/"
+
+            sf, _ = StorageFile.objects.get_or_create(org_id=org_id, path=path)
+
+            for graph_id in graph_ids:
+                obj, _ = GraphStorageFile.objects.get_or_create(
+                    graph_id=graph_id, storage_file=sf
+                )
+                results.append(obj)
 
         return Response(
             GraphStorageFileSerializer(results, many=True).data,
@@ -283,11 +285,11 @@ class StorageAPIView(ViewSet):
         _, org_id = self._resolve_context(request)
         serializer = StorageRemoveFromGraphSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        path = serializer.validated_data["path"]
+        paths = serializer.validated_data["paths"]
         graph_ids = serializer.validated_data["graph_ids"]
         GraphStorageFile.objects.filter(
             graph_id__in=graph_ids,
-            storage_file__path=path,
+            storage_file__path__in=paths,
             storage_file__org_id=org_id,
         ).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
