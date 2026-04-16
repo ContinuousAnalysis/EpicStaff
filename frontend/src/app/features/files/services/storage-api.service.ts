@@ -6,6 +6,7 @@ import { map } from 'rxjs/operators';
 import { ConfigService } from '../../../services/config/config.service';
 import { AddFilesPayload } from '../components/create-folder-dialog/create-folder-dialog.component';
 import {
+    GraphFileRecord,
     StorageItem,
     StorageItemInfo,
     StorageSessionOutputItem,
@@ -151,12 +152,10 @@ export class StorageApiService {
         });
     }
 
-    getGraphFiles(path: string): Observable<number[]> {
-        return this.http
-            .get<{ graph_ids: number[] }>(`${this.apiUrl}graph-files/`, {
-                params: { path },
-            })
-            .pipe(map((res) => res.graph_ids ?? []));
+    getGraphFiles(graphId: number): Observable<GraphFileRecord[]> {
+        return this.http.get<GraphFileRecord[]>(`${this.apiUrl}graph-files/`, {
+            params: { graph_id: graphId.toString() },
+        });
     }
 
     getSessionOutputs(sessionId: string): Observable<StorageSessionOutputItem[]> {

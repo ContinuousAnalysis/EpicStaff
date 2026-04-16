@@ -45,6 +45,13 @@ export interface StorageSessionOutputItem {
     modified?: string;
 }
 
+export interface GraphFileRecord {
+    id: number;
+    graph_id: number;
+    path: string;
+    added_at: string;
+}
+
 export type StorageAction = 'read' | 'write' | 'read_write';
 
 export interface ProjectStorageConfig {
