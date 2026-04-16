@@ -87,12 +87,20 @@
                     [fConnectionId]="connection.id"
                     [class.dashed-connection]="connection.category === 'virtual'"
                     [class.is-backward]="backwardConnectionIds().has(connection.id)"
-                    [style.--marker-start-color]="smartRoutingEnabled() ? (nodeColorMap().get(connection.sourceNodeId) || '#555') : '#555'"
-                    [style.--marker-end-color]="smartRoutingEnabled() ? (nodeColorMap().get(connection.targetNodeId) || '#555') : '#555'"
+                    [style.--marker-start-color]="
+                        smartRoutingEnabled() ? nodeColorMap().get(connection.sourceNodeId) || '#555' : '#555'
+                    "
+                    [style.--marker-end-color]="
+                        smartRoutingEnabled() ? nodeColorMap().get(connection.targetNodeId) || '#555' : '#555'
+                    "
                 >
                     <f-connection-gradient
-                        [fStartColor]="smartRoutingEnabled() ? (nodeColorMap().get(connection.sourceNodeId) || '#555') : '#555'"
-                        [fEndColor]="smartRoutingEnabled() ? (nodeColorMap().get(connection.targetNodeId) || '#555') : '#555'"
+                        [fStartColor]="
+                            smartRoutingEnabled() ? nodeColorMap().get(connection.sourceNodeId) || '#555' : '#555'
+                        "
+                        [fEndColor]="
+                            smartRoutingEnabled() ? nodeColorMap().get(connection.targetNodeId) || '#555' : '#555'
+                        "
                     ></f-connection-gradient>
                     <svg
                         class="start-marker"
@@ -140,7 +148,7 @@
                     >
                         <path d="M0,0 L6,3 0,6Z" stroke="none"></path>
                     </svg>
-                    <div fConnectionContent class="connection-center" [position]="0.5">
+                    <div fConnectionContent class="connection-center" [position]="0.3">
                         <button
                             type="button"
                             class="icon-button delete-icon"
@@ -151,6 +159,13 @@
                             <i class="ti ti-trash"></i>
                         </button>
                     </div>
+                    <f-connection-waypoints
+                        appWaypointTooltip
+                        [waypoints]="connection.waypoints ?? []"
+                        (waypointsChange)="onWaypointsChanged(connection.id, $event)"
+                        [radius]="5"
+                        [visibility]="true"
+                    ></f-connection-waypoints>
                 </f-connection>
             }
         </f-canvas>

@@ -25,6 +25,7 @@ import {
     FCanvasComponent,
     FConnectionContent,
     FConnectionGradient,
+    FConnectionWaypoints,
     FCreateConnectionEvent,
     FCreateNodeEvent,
     FDragNodeStartEventData,
@@ -54,6 +55,7 @@ import { NoteEditDialogComponent } from '../components/note-edit-dialog/note-edi
 import { ProjectDialogComponent } from '../components/project-dialog/project-dialog.component';
 import { MouseTrackerDirective } from '../core/directives/mouse-tracker.directive';
 import { ShortcutListenerDirective } from '../core/directives/shortcut-listener.directive';
+import { WaypointTooltipDirective } from '../core/directives/waypoint-tooltip.directive';
 import { NODE_COLORS, NODE_ICONS } from '../core/enums/node-config';
 import { NodeType } from '../core/enums/node-type';
 import { BackwardArcPathBuilder } from '../core/helpers/backward-arc.path-builder';
@@ -66,14 +68,21 @@ import {
     isBackwardConnection,
     isConnectionValid,
 } from '../core/helpers/helpers';
+import { computeSegmentAvoidanceWaypoints } from '../core/helpers/segment-avoidance.helper';
 import { ConnectionModel } from '../core/models/connection.model';
 import { FlowModel } from '../core/models/flow.model';
 import { GraphNoteModel, NodeModel, ProjectNodeModel, StartNodeModel } from '../core/models/node.model';
+import { CreateNodeRequest } from '../core/models/node-creation.types';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
 import { ClipboardService } from '../services/clipboard.service';
 import { FlowService } from '../services/flow.service';
 import { SidePanelService } from '../services/side-panel.service';
 import { UndoRedoService } from '../services/undo-redo.service';
+
+function waypointsEqual(a: IPoint[], b: IPoint[]): boolean {
+    if (a.length !== b.length) return false;
+    return a.every((p, i) => p.x === b[i].x && p.y === b[i].y);
+}
 
 @Component({
     selector: 'app-flow-graph',
@@ -82,7 +91,13 @@ import { UndoRedoService } from '../services/undo-redo.service';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [
-        { provide: F_CONNECTION_BUILDERS, useValue: { 'backward-arc': new BackwardArcPathBuilder() } },
+        {
+            provide: F_CONNECTION_BUILDERS,
+            useFactory: (flowService: FlowService) => ({
+                'backward-arc': new BackwardArcPathBuilder(() => flowService.visibleNodes()),
+            }),
+            deps: [FlowService],
+        },
     ],
     imports: [
         FFlowModule,
@@ -103,11 +118,14 @@ import { UndoRedoService } from '../services/undo-redo.service';
         FMagneticLines,
         FConnectionGradient,
         FConnectionContent,
+        FConnectionWaypoints,
+        WaypointTooltipDirective,
     ],
 })
 export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     public readonly GRID_CELL_SIZE = 20;
     private readonly draggedNodeIds = new Set<string>();
+    private readonly userAdjustedConnectionIds = new Set<string>();
 
     @Input() flowState!: FlowModel;
     @Input() nodesMode!: 'project-graph' | 'flow-graph';
@@ -411,6 +429,12 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         };
         // Add the new connection to the flow service
         this.flowService.addConnection(newConnection);
+
+        // Immediately compute avoidance waypoints if any node blocks the path
+        const avoidWaypoints = computeSegmentAvoidanceWaypoints(newConnection, this.flowService.nodes());
+        if (avoidWaypoints) {
+            this.flowService.updateConnectionWaypoints(newConnection.id, avoidWaypoints);
+        }
     }
 
     public onCopy(): void {
@@ -532,6 +556,15 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         });
     }
 
+    protected onWaypointsChanged(connectionId: string, waypoints: IPoint[]): void {
+        if (waypoints.length > 0) {
+            this.userAdjustedConnectionIds.add(connectionId);
+        } else {
+            this.userAdjustedConnectionIds.delete(connectionId);
+        }
+        this.flowService.updateConnectionWaypoints(connectionId, waypoints);
+    }
+
     public onNodeDroppedFromPanel(event: FCreateNodeEvent): void {
         if (!event.data || typeof event.data !== 'object') {
             return;
@@ -562,7 +595,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     public onCloseContextMenu(): void {
         this.showContextMenu.set(false);
     }
-    public onAddNodeFromContextMenu(event: { type: NodeType; data?: unknown }): void {
+    public onAddNodeFromContextMenu(event: CreateNodeRequest): void {
         this.undoRedoService.stateChanged();
         this.showContextMenu.set(false);
 
@@ -570,6 +603,8 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             this.toastService.warning('Only one End node is allowed', 4000, 'bottom-right');
             return;
         }
+
+        const data = event.overrides?.data;
 
         // Generate common values
         const newNodeId = uuidv4();
@@ -596,7 +631,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
                     ports: [],
                     type: NodeType.TABLE as NodeModel['type'],
                     node_name: '',
-                    data: event.data as never,
+                    data: data as never,
                     color: nodeColor,
                     icon: nodeIcon,
                     input_map: {},
@@ -614,21 +649,20 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         }
 
         // Generate ports for non-note nodes
-        const ports: ViewPort[] =
-            event.type === NodeType.NOTE ? [] : generatePortsForNode(newNodeId, event.type, event.data);
+        const ports: ViewPort[] = event.type === NodeType.NOTE ? [] : generatePortsForNode(newNodeId, event.type, data);
 
         // Assign sequential badge number first so the name and badge always match
         const nodeNumber = this.flowService.getNextNodeNumber();
 
         // Build the display name using the same nodeNumber as the badge
-        const newNodeName = generateNodeDisplayName(event.type, event.data, nodeNumber);
+        const newNodeName = generateNodeDisplayName(event.type, data, nodeNumber);
 
         // Create and add a regular node
-        let nodeData = event.data as NodeModel['data'];
+        let nodeData = data as NodeModel['data'];
 
         // Add default output_map for end nodes
         if (event.type === NodeType.END) {
-            const baseData = event.data && typeof event.data === 'object' ? event.data : {};
+            const baseData = data && typeof data === 'object' ? data : {};
             nodeData = {
                 ...baseData,
                 output_map: {
@@ -817,6 +851,25 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.undoRedoService.stateChanged();
     }
 
+    private rerouteSegmentConnections(): void {
+        const nodes = this.flowService.nodes();
+        const connections = this.flowService.connections();
+        const backwardIds = this.backwardConnectionIds();
+
+        for (const conn of connections) {
+            if (backwardIds.has(conn.id)) continue;
+            if (this.userAdjustedConnectionIds.has(conn.id)) continue;
+
+            const waypoints = computeSegmentAvoidanceWaypoints(conn, nodes);
+            const newWaypoints = waypoints ?? [];
+            const existing = conn.waypoints ?? [];
+
+            if (!waypointsEqual(existing, newWaypoints)) {
+                this.flowService.updateConnectionWaypoints(conn.id, newWaypoints);
+            }
+        }
+    }
+
     /**
      * Handles the end of a drag operation
      */
@@ -836,6 +889,9 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             }
         }
         this.draggedNodeIds.clear();
+
+        // Recompute avoidance waypoints for all auto-routed segment connections
+        this.rerouteSegmentConnections();
 
         // Reset all tracking
         setTimeout(() => {

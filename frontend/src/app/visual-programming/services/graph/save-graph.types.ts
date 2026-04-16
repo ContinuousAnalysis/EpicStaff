@@ -1,3 +1,5 @@
+import { IPoint } from '@foblex/2d';
+
 import { GetAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
 import { GetCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { ConditionalEdge } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
@@ -95,12 +97,14 @@ export interface UiEdge {
     targetNodeUuid: string;
     sourceBackendId: number | null;
     targetBackendId: number | null;
+    waypoints?: IPoint[];
 }
 
 /** An edge fully resolved to backend IDs, ready for API payload. */
 export interface ResolvedUiEdge {
     start_node_id: number;
     end_node_id: number;
+    waypoints?: IPoint[];
 }
 
 // ---- Previous state (what the backend currently has) ----
@@ -166,7 +170,7 @@ export interface NodeOnlyDiff {
 
 export interface ConnectionDiff {
     conditionalEdges: NodeDiff<ConditionalEdge, ResolvedConditionalEdge>;
-    edges: { toDelete: Edge[]; toCreate: ResolvedUiEdge[] };
+    edges: { toDelete: Edge[]; toCreate: ResolvedUiEdge[]; toUpdate: Array<{ backend: Edge; ui: ResolvedUiEdge }> };
 }
 
 // ---- Full graph diff (combined) ----

@@ -9,6 +9,7 @@
  *   5. Payload builders      — convert UI nodes into API request bodies
  */
 
+import { IPoint } from '@foblex/2d';
 import { isEqual } from 'lodash-es';
 
 import { GraphDto } from '../../../features/flows/models/graph.model';
@@ -21,7 +22,10 @@ import {
     CreateConditionGroupRequest,
     CreateDecisionTableNodeRequest,
 } from '../../../pages/flows-page/components/flow-visual-programming/models/decision-table-node.model';
-import { CreateEdgeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
+import {
+    CreateEdgeRequest,
+    Edge,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { CreateEndNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/end-node.model';
 import { CreateFileExtractorNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/file-extractor.model';
 import { CreateGraphNoteRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
@@ -228,6 +232,7 @@ function resolveEdges(connections: ConnectionModel[], allNodes: NodeModel[]): Ui
             targetNodeUuid: target.id,
             sourceBackendId: source.backendId,
             targetBackendId: target.backendId,
+            waypoints: conn.waypoints,
         });
     }
 
@@ -438,18 +443,30 @@ export function getConnectionDiff(
     idMap: Map<string, number>
 ): ConnectionDiff {
     // ── Resolve UI edge backend IDs ──
-    const resolvedUiEdges: ResolvedUiEdge[] = currentEdges
-        .map((e) => ({
-            start_node_id: idMap.get(e.sourceNodeUuid) ?? e.sourceBackendId,
-            end_node_id: idMap.get(e.targetNodeUuid) ?? e.targetBackendId,
-        }))
-        .filter((e): e is ResolvedUiEdge => e.start_node_id != null && e.end_node_id != null);
+    const resolvedUiEdges: ResolvedUiEdge[] = [];
+    for (const e of currentEdges) {
+        const start_node_id = idMap.get(e.sourceNodeUuid) ?? e.sourceBackendId;
+        const end_node_id = idMap.get(e.targetNodeUuid) ?? e.targetBackendId;
+        if (start_node_id == null || end_node_id == null) continue;
+        resolvedUiEdges.push({ start_node_id, end_node_id, waypoints: e.waypoints });
+    }
 
     // ── Edge diff (create/delete only, no update) ──
     const backendEdgeMap = new Map(previousEdges.map((e) => [`${e.start_node_id}__${e.end_node_id}`, e]));
     const uiEdgeKeys = new Set(resolvedUiEdges.map((e) => `${e.start_node_id}__${e.end_node_id}`));
     const edgesToDelete = previousEdges.filter((e) => !uiEdgeKeys.has(`${e.start_node_id}__${e.end_node_id}`));
     const edgesToCreate = resolvedUiEdges.filter((e) => !backendEdgeMap.has(`${e.start_node_id}__${e.end_node_id}`));
+
+    const edgesToUpdate: Array<{ backend: Edge; ui: ResolvedUiEdge }> = [];
+    for (const e of resolvedUiEdges) {
+        const backendEdge = backendEdgeMap.get(`${e.start_node_id}__${e.end_node_id}`);
+        if (!backendEdge) continue;
+        const backendWaypoints = (backendEdge.metadata?.['waypoints'] ?? []) as IPoint[];
+        const uiWaypoints = e.waypoints ?? [];
+        if (!isEqual(backendWaypoints, uiWaypoints)) {
+            edgesToUpdate.push({ backend: backendEdge, ui: e });
+        }
+    }
 
     // ── Conditional edge diff ──
     const resolvedCondEdges = resolveConditionalEdgeIds(currentCondEdges, idMap);
@@ -465,7 +482,7 @@ export function getConnectionDiff(
 
     return {
         conditionalEdges,
-        edges: { toDelete: edgesToDelete, toCreate: edgesToCreate },
+        edges: { toDelete: edgesToDelete, toCreate: edgesToCreate, toUpdate: edgesToUpdate },
     };
 }
 
@@ -577,7 +594,12 @@ export function buildCondEdgePayload(re: ResolvedConditionalEdge, graphId: numbe
 }
 
 export function buildEdgePayload(e: ResolvedUiEdge, graphId: number): CreateEdgeRequest {
-    return { start_node_id: e.start_node_id, end_node_id: e.end_node_id, graph: graphId };
+    return {
+        start_node_id: e.start_node_id,
+        end_node_id: e.end_node_id,
+        graph: graphId,
+        metadata: { waypoints: e.waypoints ?? [] },
+    };
 }
 
 export function buildEndNodePayload(n: EndNodeModel, graphId: number): CreateEndNodeRequest {

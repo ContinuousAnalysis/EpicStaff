@@ -144,6 +144,11 @@ export class GraphUpdateService {
                     .createEdge(buildEdgePayload(e, graphId))
                     .pipe(catchError((err) => throwError(() => err)))
             ),
+            ...diff.toUpdate.map((item) =>
+                this.edgeService
+                    .updateEdge(item.backend.id, buildEdgePayload(item.ui, graphId))
+                    .pipe(catchError((err) => throwError(() => err)))
+            ),
         ];
         return ops.length ? forkJoin(ops) : of([]);
     }

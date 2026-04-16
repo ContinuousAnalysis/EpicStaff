@@ -1,3 +1,5 @@
+import { IPoint } from '@foblex/2d';
+
 import { CustomPortId } from './port.model';
 
 export interface ConnectionModel {
@@ -11,4 +13,5 @@ export interface ConnectionModel {
     endColor?: string;
     behavior: 'floating' | 'fixed';
     type: 'straight' | 'segment' | 'bezier';
+    waypoints?: IPoint[];
 }

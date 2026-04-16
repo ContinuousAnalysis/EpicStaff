@@ -9,6 +9,7 @@
  * node names, so connections are resolved via a backendId → UUID map.
  */
 
+import { IPoint } from '@foblex/2d';
 import { v4 as uuidv4 } from 'uuid';
 
 import { GraphDto } from '../../../features/flows/models/graph.model';
@@ -109,7 +110,8 @@ function makeConnection(
     sourcePortId: CustomPortId,
     targetPortId: CustomPortId,
     startColor?: string,
-    endColor?: string
+    endColor?: string,
+    waypoints?: IPoint[]
 ): ConnectionModel {
     return {
         id: uuidv4(),
@@ -122,6 +124,7 @@ function makeConnection(
         endColor,
         behavior: 'fixed',
         type: 'segment',
+        waypoints,
     };
 }
 
@@ -616,7 +619,10 @@ function buildEdgeConnections(
                 sourceUuid,
                 targetUuid,
                 `${sourceUuid}_${sourcePortRole}` as CustomPortId,
-                `${targetUuid}_${targetPortRole}` as CustomPortId
+                `${targetUuid}_${targetPortRole}` as CustomPortId,
+                undefined,
+                undefined,
+                Array.isArray(edge.metadata?.['waypoints']) ? (edge.metadata['waypoints'] as IPoint[]) : undefined
             )
         );
     }

@@ -1,7 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { IPoint, IRect } from '@foblex/2d';
-import { Observable, of } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { IPoint } from '@foblex/2d';
 
 import { NodeType } from '../core/enums/node-type';
 import { generatePortsForDecisionTableNode } from '../core/helpers/helpers';
@@ -142,6 +140,13 @@ export class FlowService {
         if (removedConnection) {
             this.clearDecisionTableNextNodeForConnection(removedConnection.id, this.connections());
         }
+    }
+
+    public updateConnectionWaypoints(id: string, waypoints: IPoint[]): void {
+        this.flowSignal.update((flow) => ({
+            ...flow,
+            connections: flow.connections.map((c) => (c.id === id ? { ...c, waypoints } : c)),
+        }));
     }
 
     public resetDecisionTableConnections(
