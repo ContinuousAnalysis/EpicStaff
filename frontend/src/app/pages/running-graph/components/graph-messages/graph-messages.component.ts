@@ -35,6 +35,7 @@ import { GetAgentRequest } from '../../../../features/staff/models/agent.model';
 import { AgentsService } from '../../../../features/staff/services/staff.service';
 import { GetTaskRequest } from '../../../../features/tasks/models/task.model';
 import { TasksService } from '../../../../features/tasks/services/tasks.service';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CodeAgentStreamMessageData, GraphMessage, MessageType } from '../../models/graph-session-message.model';
 import { SessionStatusMessageData } from '../../models/update-session-status.model';
 import { AnswerToLLMService } from '../../services/answer-to-llm.service';
@@ -117,6 +118,7 @@ interface RootDrilldownView {
         SubgraphStartMessageComponent,
         SubgraphFinishMessageComponent,
         CodeAgentStreamMessageComponent,
+        AppSvgIconComponent,
     ],
     templateUrl: './graph-messages.component.html',
     styleUrls: ['./graph-messages.component.scss'],
@@ -126,6 +128,7 @@ interface RootDrilldownView {
 export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
     @Input() graphId: number | null = null;
     @Input() sessionId: string | null = null;
+    @Input() compact: boolean = false;
     @Output() sessionStatusChanged = new EventEmitter<GraphSessionStatus>();
     @Output() messagesChanged = new EventEmitter<GraphMessage[]>();
 

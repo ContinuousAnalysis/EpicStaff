@@ -1,13 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, forwardRef, input, model, output, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    forwardRef,
+    input,
+    model,
+    output,
+    signal,
+} from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-import { FormFieldLabelComponent } from '../form-field-label/form-field-label.component';
+import { TooltipComponent } from "../tooltip/tooltip.component";
 
 @Component({
     selector: 'app-slider-with-stepper',
-    standalone: true,
-    imports: [CommonModule, FormsModule, FormFieldLabelComponent],
+    imports: [CommonModule, FormsModule, TooltipComponent],
     templateUrl: './slider-with-stepper.component.html',
     styleUrls: ['./slider-with-stepper.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,6 +28,8 @@ import { FormFieldLabelComponent } from '../form-field-label/form-field-label.co
     ],
 })
 export class SliderWithStepperComponent implements ControlValueAccessor {
+    icon = input<string>('help_outline');
+    required = input<boolean>(false);
     label = input<string>('');
     tooltipText = input<string>('');
     min = input<number>(0);

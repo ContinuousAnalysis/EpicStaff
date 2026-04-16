@@ -1,3 +1,9 @@
+import base64
+import json
+import urllib.error
+import urllib.parse
+import urllib.request
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import NOT_PROVIDED, IntegerField, Prefetch
@@ -10,7 +16,7 @@ from django_filters.rest_framework import (
     NumberFilter,
 )
 from rest_framework import filters as drf_filters
-from rest_framework import mixins, status, viewsets
+from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import (
     PermissionDenied,
@@ -64,6 +70,7 @@ from tables.models.crew_models import (
     AgentConfiguredTools,
     AgentMcpTools,
     AgentPythonCodeTools,
+    AgentPythonCodeToolConfigs,
     TaskMcpTools,
     TaskPythonCodeToolConfigs,
 )
@@ -76,8 +83,7 @@ from tables.models.llm_models import (
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
 )
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from tables.swagger_schemas.graph_bulk_save_schema import (
     SAVE_FLOW_SWAGGER as _SAVE_FLOW_SWAGGER,
 )
@@ -115,6 +121,7 @@ from tables.models.llm_models import (
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
 )
+from tables.models.knowledge_models.naive_rag_models import AgentNaiveRag
 from tables.models.mcp_models import McpTool
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.realtime_models import (
@@ -132,7 +139,11 @@ from tables.utils.helpers import natural_sort_key
 from tables.models.tag_models import AgentTag, CrewTag, GraphTag
 from tables.models.label_models import Label
 from tables.models.vector_models import MemoryDatabase
-from tables.models.webhook_models import NgrokWebhookConfig, WebhookTrigger
+from tables.models.webhook_models import (
+    NgrokWebhookConfig,
+    VoiceSettings,
+    WebhookTrigger,
+)
 from tables.services.copy_services import (
     AgentCopyService,
     CrewCopyService,
@@ -198,6 +209,7 @@ from tables.serializers.model_serializers import (
     TaskWriteSerializer,
     TemplateAgentSerializer,
     ToolConfigSerializer,
+    VoiceSettingsSerializer,
     WebhookTriggerNodeSerializer,
     WebhookTriggerSerializer,
 )
@@ -309,14 +321,16 @@ class ProviderReadWriteViewSet(ModelViewSet):
 
 
 class LLMModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
-    queryset = LLMModel.objects.all()
+    queryset = LLMModel.objects.select_related("llm_provider").prefetch_related("tags")
     serializer_class = LLMModelSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = LLMModelFilter
 
 
 class EmbeddingModelReadWriteViewSet(BasePredefinedRestrictedViewSet):
-    queryset = EmbeddingModel.objects.all()
+    queryset = EmbeddingModel.objects.select_related(
+        "embedding_provider"
+    ).prefetch_related("tags")
     serializer_class = EmbeddingModelSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = EmbeddingModelFilter
@@ -346,13 +360,28 @@ class AgentViewSet(CopyActionMixin, ModelViewSet):
     copy_service_class = AgentCopyService
     copy_serializer_class = AgentReadSerializer
 
-    queryset = Agent.objects.select_related("realtime_agent").prefetch_related(
+    queryset = Agent.objects.select_related(
+        "realtime_agent",
+        "naive_search_config",
+    ).prefetch_related(
         Prefetch(
             "python_code_tools",
             queryset=AgentPythonCodeTools.objects.select_related(
                 "pythoncodetool__python_code"
+            ).prefetch_related(
+                Prefetch(
+                    "pythoncodetool__tool_fields",
+                    queryset=PythonCodeToolConfigField.objects.all(),
+                )
             ),
             to_attr="prefetched_python_code_tools",
+        ),
+        Prefetch(
+            "python_code_tool_configs",
+            queryset=AgentPythonCodeToolConfigs.objects.select_related(
+                "pythoncodetoolconfig__tool__python_code"
+            ),
+            to_attr="prefetched_python_code_tool_configs",
         ),
         Prefetch(
             "configured_tools",
@@ -371,6 +400,11 @@ class AgentViewSet(CopyActionMixin, ModelViewSet):
             "mcp_tools",
             queryset=AgentMcpTools.objects.select_related("mcptool"),
             to_attr="prefetched_mcp_tools",
+        ),
+        Prefetch(
+            "agent_naive_rags",
+            queryset=AgentNaiveRag.objects.select_related("naive_rag"),
+            to_attr="prefetched_agent_naive_rags",
         ),
     )
     filter_backends = [DjangoFilterBackend]
@@ -398,6 +432,12 @@ class AgentViewSet(CopyActionMixin, ModelViewSet):
 
         if crew_id is not None:
             queryset = queryset.filter(crew__id=crew_id)
+
+        if self.request.query_params.get("has_realtime_config") == "true":
+            queryset = queryset.filter(
+                realtime_agent__isnull=False,
+                realtime_agent__realtime_config__isnull=False,
+            )
 
         return queryset
 
@@ -509,38 +549,29 @@ class TaskReadWriteViewSet(ModelViewSet):
     queryset = Task.objects.prefetch_related(
         Prefetch(
             "task_python_code_tool_list",
-            queryset=TaskPythonCodeTools.objects.select_related("tool__python_code"),
-            to_attr="prefetched_python_code_tools",
+            queryset=TaskPythonCodeTools.objects.select_related(
+                "tool__python_code"
+            ).prefetch_related("tool__tool_fields"),
         ),
         Prefetch(
             "task_python_code_tool_config_list",
             queryset=TaskPythonCodeToolConfigs.objects.select_related(
                 "tool__tool__python_code"
             ),
-            to_attr="prefetched_python_code_tool_configs",
         ),
         Prefetch(
             "task_context_list",
             queryset=TaskContext.objects.select_related("context"),
-            to_attr="prefetched_contexts",
         ),
         Prefetch(
             "task_configured_tool_list",
             queryset=TaskConfiguredTools.objects.select_related(
                 "tool__tool"
-            ).prefetch_related(
-                Prefetch(
-                    "tool__tool__tool_fields",
-                    queryset=ToolConfigField.objects.all(),
-                    to_attr="prefetched_config_fields",
-                )
-            ),
-            to_attr="prefetched_configured_tools",
+            ).prefetch_related("tool__tool__tool_fields"),
         ),
         Prefetch(
             "task_mcp_tool_list",
             queryset=TaskMcpTools.objects.select_related("tool"),
-            to_attr="prefetched_mcp_tools",
         ),
     )
     filter_backends = [DjangoFilterBackend]
@@ -650,13 +681,7 @@ class PythonCodeToolViewSet(CopyActionMixin, viewsets.ModelViewSet):
     queryset = (
         PythonCodeTool.objects.all()
         .select_related("python_code")
-        .prefetch_related(
-            Prefetch(
-                "tool_fields",
-                queryset=PythonCodeToolConfigField.objects.all(),
-                to_attr="prefetched_config_fields",
-            )
-        )
+        .prefetch_related("tool_fields")
     )
     serializer_class = PythonCodeToolSerializer
     filter_backends = [DjangoFilterBackend]
@@ -717,7 +742,10 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
             Graph.objects.defer("metadata", "tags")
             .prefetch_related(
                 Prefetch(
-                    "crew_node_list", queryset=CrewNode.objects.select_related("crew")
+                    "crew_node_list",
+                    queryset=CrewNode.objects.select_related("crew").prefetch_related(
+                        "crew__task_set"
+                    ),
                 ),
                 Prefetch(
                     "python_node_list",
@@ -746,7 +774,12 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
                 Prefetch(
                     "decision_table_node_list", queryset=DecisionTableNode.objects.all()
                 ),
-                Prefetch("subgraph_node_list", queryset=SubGraphNode.objects.all()),
+                Prefetch(
+                    "subgraph_node_list",
+                    queryset=SubGraphNode.objects.select_related(
+                        "subgraph"
+                    ).prefetch_related("subgraph__tags"),
+                ),
                 Prefetch(
                     "code_agent_node_list",
                     queryset=CodeAgentNode.objects.select_related("llm_config"),
@@ -756,6 +789,7 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
                     "telegram_trigger_node_list",
                     queryset=TelegramTriggerNode.objects.all(),
                 ),
+                "start_node_list",
                 Prefetch("graph_note_list", queryset=GraphNote.objects.all()),
             )
             .all()
@@ -806,13 +840,12 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
 
         data = self.import_export_service.import_entity(
             file_serializer.validated_data["file"],
-            Graph,
             preserve_uuids=file_serializer.validated_data["preserve_uuids"],
         )
         return Response(data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"], url_path="save")
-    @swagger_auto_schema(**_SAVE_FLOW_SWAGGER)
+    @extend_schema(**_SAVE_FLOW_SWAGGER)
     def save_flow(self, request, pk=None):
         input_serializer = GraphBulkSaveInputSerializer(data=request.data)
         if not input_serializer.is_valid():
@@ -1391,3 +1424,112 @@ class LabelViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         return Response(self.get_serializer(labels, many=True).data)
+
+
+class VoiceSettingsView(generics.RetrieveUpdateAPIView):
+    serializer_class = VoiceSettingsSerializer
+
+    def get_object(self):
+        return VoiceSettings.load()
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        redis_service.redis_client.publish("voice_settings:invalidate", "{}")
+        return response
+
+
+def _twilio_request(
+    account_sid: str, auth_token: str, url: str, method: str = "GET", data: dict = None
+):
+    """Make an authenticated request to the Twilio REST API."""
+    credentials = base64.b64encode(f"{account_sid}:{auth_token}".encode()).decode()
+    headers = {"Authorization": f"Basic {credentials}", "Accept": "application/json"}
+    body = None
+    if data:
+        encoded = urllib.parse.urlencode(data).encode()
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        body = encoded
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode())
+
+
+class TwilioPhoneNumbersView(generics.GenericAPIView):
+    """Return the list of incoming phone numbers from Twilio."""
+
+    def get(self, request):
+        vs = VoiceSettings.load()
+        if not vs.twilio_account_sid or not vs.twilio_auth_token:
+            return Response(
+                {"error": "Twilio Account SID and Auth Token are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{vs.twilio_account_sid}/IncomingPhoneNumbers.json?PageSize=100"
+            data = _twilio_request(vs.twilio_account_sid, vs.twilio_auth_token, url)
+            numbers = [
+                {
+                    "sid": n["sid"],
+                    "phone_number": n["phone_number"],
+                    "friendly_name": n["friendly_name"],
+                    "voice_url": n.get("voice_url") or "",
+                }
+                for n in data.get("incoming_phone_numbers", [])
+            ]
+            return Response(numbers)
+        except urllib.error.HTTPError as e:
+            return Response({"error": e.read().decode()}, status=e.code)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+
+class TwilioConfigureWebhookView(generics.GenericAPIView):
+    """Set the VoiceUrl on a Twilio phone number to the configured voice stream URL."""
+
+    def post(self, request):
+        phone_sid = request.data.get("phone_sid")
+        if not phone_sid:
+            return Response(
+                {"error": "phone_sid is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        vs = VoiceSettings.load()
+        if not vs.twilio_account_sid or not vs.twilio_auth_token:
+            return Response(
+                {"error": "Twilio Account SID and Auth Token are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from tables.serializers.model_serializers import VoiceSettingsSerializer
+
+        voice_stream_url = VoiceSettingsSerializer(vs).data.get("voice_stream_url")
+        if not voice_stream_url:
+            return Response(
+                {
+                    "error": "No voice stream URL configured — set up an ngrok tunnel first"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Twilio expects the webhook as an HTTP/HTTPS URL not WSS
+        # voice_stream_url is wss://host/voice/stream → https://host/voice
+        webhook_url = (
+            voice_stream_url.replace("wss://", "https://")
+            .replace("/stream", "")
+            .rstrip("/")
+        )
+
+        try:
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{vs.twilio_account_sid}/IncomingPhoneNumbers/{phone_sid}.json"
+            _twilio_request(
+                vs.twilio_account_sid,
+                vs.twilio_auth_token,
+                url,
+                method="POST",
+                data={"VoiceUrl": webhook_url, "VoiceMethod": "POST"},
+            )
+            return Response({"webhook_url": webhook_url})
+        except urllib.error.HTTPError as e:
+            return Response({"error": e.read().decode()}, status=e.code)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)

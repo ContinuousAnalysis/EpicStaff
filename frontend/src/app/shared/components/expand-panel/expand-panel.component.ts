@@ -1,14 +1,16 @@
-import { NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { expandCollapseAnimation } from '@shared/animations';
-import { TooltipComponent } from '@shared/components';
+
+import { TooltipComponent } from '../tooltip/tooltip.component';
+
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-expand-panel',
     templateUrl: './expand-panel.component.html',
     styleUrls: ['./expand-panel.component.scss'],
     animations: [expandCollapseAnimation],
-    imports: [TooltipComponent, NgClass],
+    imports: [TooltipComponent, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExpandPanelComponent {

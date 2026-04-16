@@ -2,6 +2,7 @@ from typing import Literal
 from itertools import chain
 
 from django.db import transaction
+from django.db.models import Prefetch
 from loguru import logger
 
 from tables.serializers.base_serializer import (
@@ -15,7 +16,11 @@ from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
-from tables.models.webhook_models import WebhookTrigger, NgrokWebhookConfig
+from tables.models.webhook_models import (
+    WebhookTrigger,
+    NgrokWebhookConfig,
+    VoiceSettings,
+)
 from tables.models.graph_models import GraphNote, WebhookTriggerNode
 from tables.models.mcp_models import McpTool
 from tables.serializers.serializers import BaseToolSerializer
@@ -92,8 +97,10 @@ from tables.models.realtime_models import (
 from tables.models.tag_models import (
     AgentTag,
     CrewTag,
+    EmbeddingConfigTag,
     EmbeddingModelTag,
     GraphTag,
+    LLMConfigTag,
     LLMModelTag,
 )
 from tables.models.vector_models import MemoryDatabase
@@ -119,19 +126,13 @@ from tables.services.rag_assignment_service import (
     RagAssignmentService,
     SearchConfigService,
 )
-from tables.serializers.naive_rag_serializers import (
+from tables.serializers.knowledge_serializers import (
     RagInputSerializer,
     NestedSearchConfigSerializer,
 )
 from tables.serializers.base_serializers import WebhookTriggerNestedSerializer
 from django.core.exceptions import ValidationError
 from tables.exceptions import InvalidTaskOrderError
-
-
-class LLMConfigSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = LLMConfig
-        fields = "__all__"
 
 
 class DefaultLLMConfigSerializer(serializers.ModelSerializer):
@@ -156,6 +157,13 @@ class LLMModelTagSerializer(serializers.ModelSerializer):
 class EmbeddingTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmbeddingModelTag
+        fields = ("id", "name", "predefined")
+        read_only_fields = ("predefined",)
+
+
+class LLMConfigTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LLMConfigTag
         fields = ("id", "name", "predefined")
         read_only_fields = ("predefined",)
 
@@ -219,8 +227,34 @@ class TagHandlingMixin:
                 )
 
 
+class LLMConfigSerializer(TagHandlingMixin, serializers.ModelSerializer):
+    tags = LLMConfigTagSerializer(many=True, required=False)
+    tag_model = LLMConfigTag
+
+    class Meta:
+        model = LLMConfig
+        fields = "__all__"
+
+    def create(self, validated_data):
+        tags_data = validated_data.pop("tags", [])
+        instance = super().create(validated_data)
+        if tags_data:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_create(resolved_tags)
+            instance.tags.set(resolved_tags)
+        return instance
+
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop("tags", None)
+        if tags_data is not None:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_update(instance, resolved_tags)
+            instance.tags.set(resolved_tags)
+        return super().update(instance, validated_data)
+
+
 class LLMModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
-    tags = LLMModelTagSerializer(many=True, required=False)
+    capabilities = LLMModelTagSerializer(source="tags", many=True, required=False)
     tag_model = LLMModelTag
 
     class Meta:
@@ -281,10 +315,37 @@ class EmbeddingModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class EmbeddingConfigSerializer(serializers.ModelSerializer):
+class EmbeddingConfigTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmbeddingConfigTag
+        fields = ("id", "name", "predefined")
+        read_only_fields = ("predefined",)
+
+
+class EmbeddingConfigSerializer(TagHandlingMixin, serializers.ModelSerializer):
+    tags = EmbeddingConfigTagSerializer(many=True, required=False)
+    tag_model = EmbeddingConfigTag
+
     class Meta:
         model = EmbeddingConfig
         fields = "__all__"
+
+    def create(self, validated_data):
+        tags_data = validated_data.pop("tags", [])
+        instance = super().create(validated_data)
+        if tags_data:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_create(resolved_tags)
+            instance.tags.set(resolved_tags)
+        return instance
+
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop("tags", None)
+        if tags_data is not None:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_update(instance, resolved_tags)
+            instance.tags.set(resolved_tags)
+        return super().update(instance, validated_data)
 
 
 class DefaultEmbeddingConfigSerializer(serializers.ModelSerializer):
@@ -504,50 +565,83 @@ class AgentReadSerializer(serializers.ModelSerializer):
     def get_tools(self, agent: Agent) -> list[dict]:
         tools = []
 
-        python_code_tools = PythonCodeTool.objects.filter(
-            id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id).values_list(
-                "pythoncodetool_id", flat=True
-            )
-        )
-        for tool in python_code_tools:
-            tools.append(BaseToolSerializer(tool).data)
+        # Use prefetched data when available (from AgentViewSet queryset),
+        # fall back to direct queries for non-prefetched contexts (e.g. create/update responses).
+        if hasattr(agent, "prefetched_python_code_tools"):
+            for link in agent.prefetched_python_code_tools:
+                tools.append(BaseToolSerializer(link.pythoncodetool).data)
+        else:
+            for tool in PythonCodeTool.objects.filter(
+                id__in=AgentPythonCodeTools.objects.filter(
+                    agent_id=agent.id
+                ).values_list("pythoncodetool_id", flat=True)
+            ).select_related("python_code"):
+                tools.append(BaseToolSerializer(tool).data)
 
-        python_code_tool_configs = PythonCodeToolConfig.objects.filter(
-            id__in=AgentPythonCodeToolConfigs.objects.filter(
-                agent_id=agent.id
-            ).values_list("pythoncodetoolconfig_id", flat=True)
-        )
-        for tool in python_code_tool_configs:
-            tools.append(BaseToolSerializer(tool).data)
+        if hasattr(agent, "prefetched_python_code_tool_configs"):
+            for link in agent.prefetched_python_code_tool_configs:
+                tools.append(BaseToolSerializer(link.pythoncodetoolconfig).data)
+        else:
+            for tool in PythonCodeToolConfig.objects.filter(
+                id__in=AgentPythonCodeToolConfigs.objects.filter(
+                    agent_id=agent.id
+                ).values_list("pythoncodetoolconfig_id", flat=True)
+            ).select_related("tool__python_code"):
+                tools.append(BaseToolSerializer(tool).data)
 
-        configured_tools = ToolConfig.objects.filter(
-            id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id).values_list(
-                "toolconfig_id", flat=True
-            )
-        )
-        for tool in configured_tools:
-            tools.append(BaseToolSerializer(tool).data)
+        if hasattr(agent, "prefetched_configured_tools"):
+            for link in agent.prefetched_configured_tools:
+                tools.append(BaseToolSerializer(link.toolconfig).data)
+        else:
+            for tool in (
+                ToolConfig.objects.filter(
+                    id__in=AgentConfiguredTools.objects.filter(
+                        agent_id=agent.id
+                    ).values_list("toolconfig_id", flat=True)
+                )
+                .select_related("tool")
+                .prefetch_related(
+                    Prefetch(
+                        "tool__tool_fields",
+                        queryset=ToolConfigField.objects.all(),
+                        to_attr="prefetched_config_fields",
+                    )
+                )
+            ):
+                tools.append(BaseToolSerializer(tool).data)
 
-        mcp_tools = McpTool.objects.filter(
-            id__in=AgentMcpTools.objects.filter(agent_id=agent.id).values_list(
-                "mcptool_id", flat=True
-            )
-        )
-        for tool in mcp_tools:
-            tools.append(BaseToolSerializer(tool).data)
+        if hasattr(agent, "prefetched_mcp_tools"):
+            for link in agent.prefetched_mcp_tools:
+                tools.append(BaseToolSerializer(link.mcptool).data)
+        else:
+            for tool in McpTool.objects.filter(
+                id__in=AgentMcpTools.objects.filter(agent_id=agent.id).values_list(
+                    "mcptool_id", flat=True
+                )
+            ):
+                tools.append(BaseToolSerializer(tool).data)
 
         return tools
 
     def get_rag(self, agent: Agent) -> dict | None:
+        if hasattr(agent, "prefetched_agent_naive_rags"):
+            naive_rag_links = agent.prefetched_agent_naive_rags
+            if naive_rag_links:
+                link = naive_rag_links[0]
+                return {
+                    "rag_type": "naive",
+                    "rag_id": link.naive_rag_id,
+                    "rag_status": link.naive_rag.rag_status,
+                }
+            return None
         return RagAssignmentService.get_assigned_rag_info(agent)
 
     def get_search_configs(self, agent: Agent) -> dict | None:
         """
-        Get all RAG search configurations in nested format.
-        Returns: {"naive": {"search_limit": 3, "similarity_threshold": 0.2}, "graph": {...}}
-        Returns None if no configs exist.
+        Get all RAG search configurations in unified nested format
+        Delegates to SearchConfigService for business logic
         """
-        return agent.get_search_configs()
+        return SearchConfigService.get_search_configs(agent)
 
 
 class AgentWriteSerializer(serializers.ModelSerializer):
@@ -683,14 +777,13 @@ class AgentWriteSerializer(serializers.ModelSerializer):
 
         # Handle search configs
         if search_configs_data:
-            for rag_type, config in search_configs_data.items():
-                if rag_type == "naive":
-                    SearchConfigService.update_search_config(agent, **config)
-                # Future: elif rag_type == "graph": ...
+            SearchConfigService.apply_search_configs(agent, search_configs_data)
         elif rag_data:
             # RAG assigned but no config provided - create defaults
             if rag_data["rag_type"] == "naive":
                 SearchConfigService.create_default_search_config(agent)
+            elif rag_data["rag_type"] == "graph":
+                SearchConfigService.create_default_graph_search_configs(agent)
 
         # Handle realtime agent
         if realtime_agent_data:
@@ -783,10 +876,7 @@ class AgentWriteSerializer(serializers.ModelSerializer):
 
         # Handle search configs (independent from RAG assignment)
         if search_configs_data:
-            for rag_type, config in search_configs_data.items():
-                if rag_type == "naive":
-                    SearchConfigService.update_search_config(instance, **config)
-                # Future: elif rag_type == "graph": ...
+            SearchConfigService.apply_search_configs(instance, search_configs_data)
 
         # Handle realtime agent
         if realtime_agent_data:
@@ -1554,6 +1644,10 @@ class RealtimeModelSerializer(serializers.ModelSerializer):
 
 
 class RealtimeConfigSerializer(serializers.ModelSerializer):
+    provider_name = serializers.CharField(
+        source="realtime_model.provider.name", read_only=True
+    )
+
     class Meta:
         model = RealtimeConfig
         fields = "__all__"
@@ -1909,7 +2003,7 @@ class LabelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Label
-        fields = ["id", "name", "parent", "created_at", "full_path"]
+        fields = ["id", "name", "parent", "created_at", "metadata", "full_path"]
         read_only_fields = ["id", "created_at", "full_path"]
         extra_kwargs = {
             "name": {"validators": []},
@@ -1931,3 +2025,39 @@ class LabelSerializer(serializers.ModelSerializer):
                 )
 
         return attrs
+
+
+class VoiceSettingsSerializer(serializers.ModelSerializer):
+    voice_stream_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = VoiceSettings
+        fields = [
+            "twilio_account_sid",
+            "twilio_auth_token",
+            "voice_agent",
+            "ngrok_config",
+            "voice_stream_url",
+        ]
+
+    def get_voice_stream_url(self, obj):
+        if not obj.ngrok_config:
+            return None
+        from tables.services.webhook_trigger_service import WebhookTriggerService
+
+        try:
+            base = WebhookTriggerService().get_tunnel_url(
+                ngrok_webhook_config=obj.ngrok_config
+            )
+        except Exception:
+            base = None
+        if not base and obj.ngrok_config.domain:
+            base = f"https://{obj.ngrok_config.domain}"
+        if base:
+            return (
+                base.rstrip("/")
+                .replace("https://", "wss://")
+                .replace("http://", "wss://")
+                + "/voice/stream"
+            )
+        return None

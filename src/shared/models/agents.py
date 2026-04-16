@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Literal, List, Any
 from pydantic import ConfigDict
 from .ai_providers import LLMData, EmbedderData
-from .tools import ConfiguredToolData, PythonCodeToolData, BaseToolData
+from .tools import PythonCodeToolData, BaseToolData
 from .knowledge import RagSearchConfig
 
 
@@ -34,20 +34,6 @@ class AgentData(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class RealtimeAgentData(BaseModel):
-    role: str
-    goal: str
-    backstory: str
-    knowledge_collection_id: int | None
-    llm: LLMData | None = None
-    memory: bool
-    tools: list[ConfiguredToolData] = []
-    python_code_tools: list[PythonCodeToolData] = []
-    connection_key: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class RealtimeAgentChatData(BaseModel):
     role: str
     goal: str
@@ -58,8 +44,8 @@ class RealtimeAgentChatData(BaseModel):
     llm: LLMData | None = None
     rt_model_name: str
     rt_api_key: str
-    transcript_model_name: str
-    transcript_api_key: str
+    transcript_model_name: str | None = None
+    transcript_api_key: str | None = None
     temperature: float | None
     memory: bool
     tools: list[BaseToolData] = []
@@ -71,6 +57,8 @@ class RealtimeAgentChatData(BaseModel):
     voice: str
     input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
     output_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"] = "pcm16"
+    rt_provider: str = "openai"  # "openai" | "elevenlabs" | "gemini"
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CrewData(BaseModel):

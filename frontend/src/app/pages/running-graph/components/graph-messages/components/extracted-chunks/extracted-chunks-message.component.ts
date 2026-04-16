@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { expandCollapseAnimation } from '@shared/animations';
 
+import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import {
     ExtractedChunk,
     ExtractedChunksMessageData,
@@ -11,7 +12,7 @@ import {
 @Component({
     selector: 'app-extracted-chunks-message',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, AppSvgIconComponent],
     templateUrl: './extracted-chunks-message.component.html',
     styleUrls: ['./extracted-chunks-message.component.scss'],
     animations: [expandCollapseAnimation],

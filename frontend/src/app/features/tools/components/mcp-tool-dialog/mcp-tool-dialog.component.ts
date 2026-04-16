@@ -1,6 +1,15 @@
 import { DIALOG_DATA, DialogModule, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnInit } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    DestroyRef,
+    Inject,
+    inject,
+    OnInit,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
     AbstractControl,
     AsyncValidatorFn,
@@ -10,11 +19,13 @@ import {
     ValidationErrors,
     Validators,
 } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import {
+    ButtonComponent,
+    CustomInputComponent,
+    IconButtonComponent,
+    InputNumberComponent,
+    ValidationErrorsComponent,
+} from '@shared/components';
 import { Observable, of, timer } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 
@@ -29,17 +40,16 @@ interface DialogData {
 
 @Component({
     selector: 'app-mcp-tool-dialog',
-    standalone: true,
     imports: [
         ReactiveFormsModule,
         CommonModule,
         DialogModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatButtonModule,
-        MatIconModule,
-        MatTooltipModule,
         AppSvgIconComponent,
+        CustomInputComponent,
+        ValidationErrorsComponent,
+        InputNumberComponent,
+        ButtonComponent,
+        IconButtonComponent,
     ],
     templateUrl: './mcp-tool-dialog.component.html',
     styleUrls: ['./mcp-tool-dialog.component.scss'],
@@ -50,6 +60,7 @@ export class McpToolDialogComponent implements OnInit {
     public selectedTool?: GetMcpToolRequest;
     public isEditMode: boolean = false;
     public backendErrorMessage: string | null = null;
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private dialogRef: DialogRef<GetMcpToolRequest>,
@@ -66,6 +77,13 @@ export class McpToolDialogComponent implements OnInit {
 
     ngOnInit(): void {
         this.initializeForm();
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                if (this.form.status === 'PENDING') return;
+                event.preventDefault();
+                this.onSave();
+            }
+        });
     }
 
     private uniqueNameValidator(): AsyncValidatorFn {
@@ -109,9 +127,12 @@ export class McpToolDialogComponent implements OnInit {
                 Validators.required,
                 Validators.maxLength(255),
             ]),
-            timeout: new FormControl(this.selectedTool?.timeout ?? 30),
+            timeout: new FormControl(this.selectedTool?.timeout ?? 30, [Validators.min(1), Validators.max(2147483647)]),
             auth: new FormControl(this.selectedTool?.auth || ''),
-            init_timeout: new FormControl(this.selectedTool?.init_timeout ?? 10),
+            init_timeout: new FormControl(this.selectedTool?.init_timeout ?? 10, [
+                Validators.min(1),
+                Validators.max(2147483647),
+            ]),
         });
     }
 

@@ -17,7 +17,7 @@
                 <!-- `title` attribute shows the full name on hover -->
                 <span class="library-name" [title]="lib">{{ lib }}</span>
                 <button class="delete-library-btn" (click)="removeLibrary(i); $event.preventDefault()">
-                    <app-icon icon="ui/x" size="1rem"></app-icon>
+                    <app-svg-icon icon="x" size="1rem"></app-svg-icon>
                 </button>
             </div>
 
@@ -30,7 +30,7 @@
                     class="library-input"
                 />
                 <button class="add-library-btn" (click)="addLibrary(); $event.preventDefault()">
-                    <app-icon icon="ui/plus" size="1rem"></app-icon>
+                    <app-svg-icon icon="plus" size="1rem"></app-svg-icon>
                 </button>
             </div>
         </div>

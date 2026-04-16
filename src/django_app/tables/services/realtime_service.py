@@ -28,7 +28,13 @@ class RealtimeService(metaclass=SingletonMeta):
         if rt_agent.realtime_config is None:
             missing_fields.append("realtime_config")
 
-        if rt_agent.realtime_transcription_config is None:
+        # ElevenLabs handles STT internally — transcription config not required
+        provider = (
+            rt_agent.realtime_config.realtime_model.provider.name
+            if rt_agent.realtime_config
+            else None
+        )
+        if provider not in ("elevenlabs", "gemini") and rt_agent.realtime_transcription_config is None:
             missing_fields.append("realtime_transcription_config")
 
         if missing_fields:

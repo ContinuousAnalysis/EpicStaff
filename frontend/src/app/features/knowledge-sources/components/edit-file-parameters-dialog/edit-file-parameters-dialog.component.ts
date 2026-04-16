@@ -2,19 +2,20 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AppIconComponent, ButtonComponent } from '@shared/components';
+import { ButtonComponent } from '@shared/components';
 
 import { ToastService } from '../../../../services/notifications';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { NaiveRagDocumentsStorageService } from '../../services/naive-rag-documents-storage.service';
 import { DocumentChunksSectionComponent } from '../document-chunks-section/document-chunks-section.component';
-import { TableDocument } from '../rag-configuration/configuration-table/configuration-table.interface';
+import { TableDocument } from '../naive-rag-configuration/configuration-table/configuration-table.interface';
 import { DocumentConfigComponent } from './document-config/document-config.component';
 
 @Component({
     selector: 'app-edit-file-parameters-dialog',
     templateUrl: './edit-file-parameters-dialog.component.html',
     styleUrls: ['./edit-file-parameters-dialog.component.scss'],
-    imports: [AppIconComponent, DocumentConfigComponent, DocumentChunksSectionComponent, ButtonComponent],
+    imports: [AppSvgIconComponent, DocumentConfigComponent, DocumentChunksSectionComponent, ButtonComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EditFileParametersDialogComponent {

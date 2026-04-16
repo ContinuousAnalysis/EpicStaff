@@ -24,6 +24,7 @@ import { RunGraphService } from '../../../../features/flows/services/run-graph-s
 import { FlowMessagesPanelComponent } from '../../../../pages/running-graph/components/flow-messages-panel/flow-messages-panel.component';
 import { ConfigService } from '../../../../services/config/config.service';
 import { ToastService } from '../../../../services/notifications/toast.service';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
 import { UnsavedChangesDialogService } from '../../../../shared/components/unsaved-changes-dialog';
 import { NodeType } from '../../../../visual-programming/core/enums/node-type';
@@ -44,10 +45,12 @@ import { ShortcutsModalComponent } from './components/shortcuts-modal/shortcuts-
 import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 import { StartNodeService } from './services/start-node.service';
 
+//.
 @Component({
     selector: 'app-flow-visual-programming',
     standalone: true,
     imports: [
+        AppSvgIconComponent,
         FlowHeaderComponent,
         FlowGraphComponent,
         SpinnerComponent,
@@ -74,7 +77,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     public currentSessionId: string | null = null;
     public panelWidthPx = 450;
     public isDragging = false;
-    private readonly MIN_PANEL_WIDTH = 300;
+    private readonly MIN_PANEL_WIDTH = 430;
     private readonly MAX_PANEL_WIDTH_RATIO = 0.7;
 
     private initialState: FlowModel | undefined;
@@ -207,6 +210,12 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                     return this.saveGraphDirectly(flowState, showNotif);
                 }
                 return this.saveGraphWithStartNode(flowState, startNodeInFlow, showNotif);
+            }),
+            finalize(() => {
+                if (this.isSaving) {
+                    this.isSaving = false;
+                    this.cdr.markForCheck();
+                }
             })
         );
     }
@@ -470,6 +479,14 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         if (this.hasUnsavedChanges()) {
             event.preventDefault();
             return (event.returnValue = '');
+        }
+    }
+
+    @HostListener('document:keydown', ['$event'])
+    public handleCtrlS(event: KeyboardEvent): void {
+        if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+            event.preventDefault();
+            this.handleSaveFlow(true).subscribe();
         }
     }
 

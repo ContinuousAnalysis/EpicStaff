@@ -81,7 +81,7 @@ export class MyFlowsComponent implements AfterViewChecked {
         return this.allRecentFlows().slice(0, max);
     });
 
-    constructor() {
+    constructor(private flowApiService: FlowsApiService) {
         effect(() => {
             const filter = this.labelsStorage.activeLabelFilter();
             this.flowsService.getFlows(true, filter).subscribe({
@@ -170,10 +170,18 @@ export class MyFlowsComponent implements AfterViewChecked {
                 break;
 
             case 'viewSessions':
-                this.dialog.open(FlowSessionsListComponent, {
-                    data: { flow },
-                    panelClass: 'custom-dialog-panel',
+                this.flowApiService.getGraphById(event.flow.id, false).subscribe({
+                    next: (graph) => {
+                        this.dialog.open(FlowSessionsListComponent, {
+                            data: { flow: graph },
+                            panelClass: 'custom-dialog-panel',
+                        });
+                    },
+                    error: () => {
+                        this.toastService.error('Failed to load graph');
+                    },
                 });
+
                 break;
 
             case 'rename':

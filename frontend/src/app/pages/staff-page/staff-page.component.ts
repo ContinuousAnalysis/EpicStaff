@@ -47,8 +47,7 @@ export class StaffPageComponent implements CanComponentDeactivate {
             maxHeight: '90vh',
             autoFocus: true,
             data: {
-                toolConfigs: [],
-                toolsData: [],
+                isEditMode: false,
             },
         });
 
@@ -131,6 +130,16 @@ export class StaffPageComponent implements CanComponentDeactivate {
                 }),
                 map((result) => result === 'save' || result === 'dont-save')
             );
+    }
+
+    @HostListener('document:keydown', ['$event'])
+    public handleCtrlS(event: KeyboardEvent): void {
+        if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+            event.preventDefault();
+            this.agentsTable?.commitPopupIfOpen();
+            this.agentsTable?.stopEditing();
+            this.onSave();
+        }
     }
 
     @HostListener('window:beforeunload', ['$event'])

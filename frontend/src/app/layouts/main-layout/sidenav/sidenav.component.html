@@ -1,10 +1,15 @@
 <nav class="sidenav">
     <div class="logo-container">
-        <div class="app-logo">
+        <a
+            class="app-logo"
+            routerLink="/projects"
+            (mouseenter)="showLogoTooltip = true"
+            (mouseleave)="showLogoTooltip = false"
+        >
             <img src="assets/icons/llm-providers-logos/logo.svg" alt="AI" class="logo-svg static-logo" />
             <img src="assets/gifs/logo.gif" alt="AI" class="logo-svg gif-logo" />
-            <div class="logo-text">EpicStaff.ai</div>
-        </div>
+            <app-tooltip text="EpicStaff.ai" [visible]="showLogoTooltip"></app-tooltip>
+        </a>
     </div>
 
     <ul class="sidenav-nav main-nav">
@@ -19,7 +24,11 @@
                         (click)="item.action ? handleItemClick(item, $event) : null"
                         [attr.href]="item.routeLink || (item.action ? '#' : null)"
                     >
-                        <div class="sidenav-link-icon" [innerHTML]="item.svgIcon"></div>
+                        <div class="sidenav-link-icon">
+                            @if (item.icon) {
+                                <app-svg-icon [icon]="item.icon" size="1.4rem" />
+                            }
+                        </div>
                     </a>
                     <app-tooltip [text]="item.label" [visible]="item.showTooltip"></app-tooltip>
                 </div>
@@ -39,7 +48,11 @@
                         (click)="handleItemClick(item, $event)"
                         [attr.href]="item.routeLink || (item.action ? '#' : null)"
                     >
-                        <div class="sidenav-link-icon" [innerHTML]="item.svgIcon"></div>
+                        <div class="sidenav-link-icon">
+                            @if (item.icon) {
+                                <app-svg-icon [icon]="item.icon" size="1.4rem" />
+                            }
+                        </div>
                     </a>
                     <app-tooltip
                         [text]="item.label"

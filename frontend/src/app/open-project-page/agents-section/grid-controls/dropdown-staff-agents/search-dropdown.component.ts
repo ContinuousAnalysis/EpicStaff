@@ -18,13 +18,14 @@ import { FormsModule } from '@angular/forms';
 import { combineLatest } from 'rxjs';
 
 import { FullAgent, FullAgentService } from '../../../../features/staff/services/full-agent.service';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ProjectStateService } from '../../../services/project-state.service';
 import { StaffAgentCardComponent } from './staff-agent-card/staff-agent-card.component';
 
 @Component({
     selector: 'app-search-dropdown',
     standalone: true,
-    imports: [CommonModule, FormsModule, StaffAgentCardComponent],
+    imports: [CommonModule, FormsModule, StaffAgentCardComponent, AppSvgIconComponent],
     templateUrl: './search-dropdown.component.html',
     styleUrls: ['./search-dropdown.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

@@ -37,6 +37,7 @@ import { ConditionalEdgeNodeComponent } from '../nodes-components/conditional-ed
 import { DecisionTableNodeComponent } from '../nodes-components/decision-table-node/decision-table-node.component';
 import { GraphNoteComponent } from '../nodes-components/graph-note/graph-note.component';
 import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay.component';
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-flow-base-node',
@@ -54,6 +55,7 @@ import { FlowNodeVariablesOverlayComponent } from './flow-node-variables-overlay
         GraphNoteComponent,
         FlowNodeVariablesOverlayComponent,
         GoToButtonComponent,
+        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: {

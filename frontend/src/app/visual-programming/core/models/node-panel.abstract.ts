@@ -15,6 +15,7 @@ export abstract class BaseSidePanel<T extends NodeModel> {
     private lastInitializedNodeId: string | null = null;
 
     node = input.required<T>();
+    isExpanded = input<boolean>(false);
 
     public form!: FormGroup;
 

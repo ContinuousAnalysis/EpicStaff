@@ -15,20 +15,25 @@ export class RunSessionSSEService {
     private currentSessionId: string | null = null;
     private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    // Signals
-    private messagesSignal = signal<GraphMessage[]>([]);
-    private statusSignal = signal<GraphSessionStatus>(GraphSessionStatus.RUNNING);
-    private memoriesSignal = signal<Memory[]>([]);
-    private streamOpen = signal(false);
-    private connectionStatusSignal = signal<
-        'connected' | 'connecting' | 'disconnected' | 'reconnecting' | 'manually_disconnected'
-    >('disconnected');
-
-    public readonly isStreaming = this.streamOpen.asReadonly();
-    public readonly messages = this.messagesSignal.asReadonly();
-    public readonly status = this.statusSignal.asReadonly();
-    public readonly memories = this.memoriesSignal.asReadonly();
-    public readonly connectionStatus = this.connectionStatusSignal.asReadonly();
+  // Signals
+  private messagesSignal = signal<GraphMessage[]>([]);
+  private statusSignal = signal<GraphSessionStatus>(GraphSessionStatus.RUNNING);
+  private memoriesSignal = signal<Memory[]>([]);
+  private streamOpen = signal(false);
+  private connectionStatusSignal = signal<
+    | 'connected'
+    | 'connecting'
+    | 'disconnected'
+    | 'reconnecting'
+    | 'manually_disconnected'
+  >('disconnected');
+  private nodeNameFilterSignal = signal<string | null>(null);
+  public readonly nodeNameFilter = this.nodeNameFilterSignal.asReadonly();
+  public readonly isStreaming = this.streamOpen.asReadonly();
+  public readonly messages = this.messagesSignal.asReadonly();
+  public readonly status = this.statusSignal.asReadonly();
+  public readonly memories = this.memoriesSignal.asReadonly();
+  public readonly connectionStatus = this.connectionStatusSignal.asReadonly();
 
     public setStatus(status: GraphSessionStatus): void {
         this.statusSignal.set(status);
@@ -41,19 +46,25 @@ export class RunSessionSSEService {
     private readonly maxReconnectDelayMs = 30000;
     private isManualDisconnect = false;
 
-    private get apiUrl(): string {
-        const baseUrl = this.configService.apiUrl;
-        const url = `${baseUrl}run-session/subscribe/${this.currentSessionId}/`;
-        return url;
-    }
+  private get apiUrl(): string {
+    const baseUrl = this.configService.apiUrl;
+    
+    const url = `${baseUrl}run-session/subscribe/${this.currentSessionId}/`;
+    
+    return url;
+  }
 
-    public startStream(sessionId: string): void {
-        if (this.currentSessionId === sessionId && this.eventSource) return;
-        this.cleanup();
-        this.currentSessionId = sessionId;
-        this.isManualDisconnect = false;
-        this.connect(sessionId);
-    }
+  public setNodeNameFilter(nodeName: string | null): void {
+    this.nodeNameFilterSignal.set(nodeName);
+  }
+  
+  public startStream(sessionId: string): void {
+    if (this.currentSessionId === sessionId && this.eventSource) return;
+    this.cleanup();
+    this.currentSessionId = sessionId;
+    this.isManualDisconnect = false;
+    this.connect(sessionId);
+  }
 
     public resumeStream(): void {
         if (!this.currentSessionId) return;
@@ -89,8 +100,13 @@ export class RunSessionSSEService {
             console.warn('Unnamed event received:', event.data);
         };
 
-        this.eventSource.addEventListener('messages', (event: MessageEvent) => {
-            const raw = JSON.parse(event.data);
+    this.eventSource.addEventListener('messages', (event: MessageEvent) => {
+      const raw = JSON.parse(event.data);
+
+      const activeFilter = this.nodeNameFilterSignal();
+      if (activeFilter && raw.name !== activeFilter) {
+        return;
+      }
 
             const msg: GraphMessage = {
                 id: raw.id,

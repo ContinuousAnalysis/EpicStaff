@@ -1,7 +1,9 @@
 import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, Inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RealtimeModelConfigsService } from '@shared/services';
 import { finalize } from 'rxjs';
 
 import { PartialUpdateAgentRequest, RealtimeAgentConfig } from '../../../../../../features/staff/models/agent.model';
@@ -40,6 +42,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     errorMessage: string | null = null;
     transcriptionConfigs: EnhancedTranscriptionConfig[] = [];
     loadingConfigs = false;
+    isElevenLabs = false;
 
     // Language options from constants
     languages = AVAILABLE_LANGUAGES;
@@ -52,13 +55,16 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         @Inject(DIALOG_DATA) public data: { agent: FullAgent },
         private agentsService: AgentsService,
         private transcriptionConfigsService: TranscriptionConfigsService,
+        private realtimeModelConfigsService: RealtimeModelConfigsService,
         private fb: FormBuilder,
         private toastService: ToastService,
-        private dialog: Dialog
+        private dialog: Dialog,
+        private destroyRef: DestroyRef
     ) {}
 
     ngOnInit(): void {
         this.loadTranscriptionConfigs();
+        this.loadRealtimeConfig();
 
         this.settingsForm = this.fb.group({
             voice: [this.data.agent.realtime_agent.voice, Validators.required],
@@ -67,7 +73,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                 [Validators.required, Validators.min(0), Validators.max(1)],
             ],
             searchLimit: [
-                this.data.agent.search_configs.naive.search_limit,
+                this.data.agent.search_configs?.naive?.search_limit || 3,
                 [Validators.required, Validators.min(0), Validators.max(1000)],
             ],
             wakeword: [this.data.agent.realtime_agent.wake_word],
@@ -76,6 +82,33 @@ export class RealtimeSettingsDialogComponent implements OnInit {
             voice_recognition_prompt: [this.data.agent.realtime_agent.voice_recognition_prompt],
             realtime_transcription_config: [this.data.agent.realtime_agent.realtime_transcription_config],
         });
+
+        this.dialogRef.keydownEvents
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((event: KeyboardEvent) => {
+                if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                    event.preventDefault();
+                    this.onConfirm();
+                }
+            });
+    }
+
+    loadRealtimeConfig(): void {
+        const configId = this.data.agent.realtime_agent.realtime_config;
+        if (configId == null) {
+            return;
+        }
+        this.realtimeModelConfigsService
+            .getConfigById(configId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (config) => {
+                    this.isElevenLabs = config.provider_name === 'elevenlabs';
+                },
+                error: () => {
+                    // Non-critical — voice dropdown remains as default
+                },
+            });
     }
 
     loadTranscriptionConfigs(): void {
@@ -232,6 +265,8 @@ export class RealtimeSettingsDialogComponent implements OnInit {
                         this.toastService.error('Failed to update settings. Please try again.');
                     },
                 });
+        } else {
+            this.settingsForm.markAllAsTouched();
         }
     }
 }

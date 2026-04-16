@@ -25,15 +25,20 @@ sqlalchemy = "2.0.39"
 psycopg2 = "2.9.10"
 alembic = "1.15.1"
 asyncpg = "0.30.0"
-litellm = "1.55.0"
 tiktoken = "0.9.0"
 pydantic-settings = "^2.12.0"
+twilio = "^9.9.1"
+google-genai = ">=1.7.0,<1.20.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "7.4.0"
 pytest-asyncio = "0.23.0"
-httpx = "0.25.2"
 pytest-cov = "4.1.0"
+
+[tool.pytest.ini_options]
+# "." = src/realtime (resolves api, services, ai, ...)
+# "../.." = project root crewai-sheetsui (resolves src.shared)
+pythonpath = [".", "../.."]
 
 [build-system]
 requires = ["poetry-core"]
