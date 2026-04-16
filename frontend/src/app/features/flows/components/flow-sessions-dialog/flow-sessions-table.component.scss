@@ -91,7 +91,8 @@ table {
         padding: 12px 8px;
     }
 
-    td[colspan='7'] {
+    td[colspan='7'],
+    td[colspan='8'] {
         border-bottom: none;
     }
 
@@ -124,7 +125,8 @@ table {
         display: table-row;
     }
 
-    td[colspan='7'] {
+    td[colspan='7'],
+    td[colspan='8'] {
         padding: 40px;
         vertical-align: middle;
     }
@@ -133,6 +135,28 @@ table {
         background-color: var(--color-sidenav-background);
         color: var(--color-text-primary);
         font-weight: 600;
+
+        &.sortable {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+
+            &:hover {
+                color: var(--accent-color);
+            }
+
+            .sort-icon {
+                margin-left: 4px;
+                font-size: 0.85em;
+                opacity: 0.8;
+                position: relative;
+                top: -2px;
+            }
+        }
+    }
+
+    .flow-link {
+        cursor: pointer;
     }
 
     td {

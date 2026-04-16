@@ -191,13 +191,15 @@ export class GraphSessionService {
     getGlobalSessions(
         limit?: number,
         offset?: number,
-        status?: string[]
+        status?: string[],
+        ordering?: string
     ): Observable<ApiGetRequest<GraphSessionLight>> {
         let params = new HttpParams();
         params = params.set('detailed', 'false');
         if (limit !== undefined) params = params.set('limit', limit.toString());
         if (offset !== undefined) params = params.set('offset', offset.toString());
         if (status && !status.includes('all')) params = params.set('status', status.join(','));
+        if (ordering) params = params.set('ordering', ordering);
 
         return this.http.get<ApiGetRequest<GraphSessionLight>>(this.apiUrl, { params });
     }

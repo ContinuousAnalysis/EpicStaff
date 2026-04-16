@@ -29,10 +29,15 @@ import { GraphSessionLight, GraphSessionService } from '../../services/flows-ses
             <div class="table-container">
                 <app-flow-sessions-table
                     [sessions]="sessions()"
+                    [showFlowName]="true"
+                    [showDuration]="true"
+                    [sortable]="true"
+                    [sortOrder]="sortOrder()"
                     [isLoading]="!isLoaded()"
                     [showEmptyState]="isLoaded() && sessions().length === 0"
                     (deleteSelected)="onDeleteSelected($event)"
                     (viewSession)="onViewSessions($event)"
+                    (sortChange)="onSortChange($event)"
                 ></app-flow-sessions-table>
             </div>
 
@@ -57,6 +62,7 @@ export class GlobalSessionsListComponent {
     public currentPage = signal(1);
     public pageSize = signal(10);
     public statusFilter = signal<string[]>(['all']);
+    public sortOrder = signal<'asc' | 'desc'>('desc');
     public totalCount = 0;
     private reloadTrigger = signal(0);
 
@@ -65,8 +71,9 @@ export class GlobalSessionsListComponent {
             const page = this.currentPage();
             const size = this.pageSize();
             const status = this.statusFilter();
+            const sort = this.sortOrder();
             this.reloadTrigger();
-            this.loadGlobalSessions(size, (page - 1) * size, status);
+            this.loadGlobalSessions(size, (page - 1) * size, status, sort);
         });
     }
 
@@ -76,6 +83,12 @@ export class GlobalSessionsListComponent {
 
     public onStatusFilterChange(values: string[]): void {
         this.statusFilter.set(values);
+        this.currentPage.set(1);
+    }
+
+    public onSortChange(order: 'asc' | 'desc'): void {
+        this.sortOrder.set(order);
+        this.currentPage.set(1);
     }
 
     public onDeleteSelected(ids: number[]): void {
@@ -96,9 +109,10 @@ export class GlobalSessionsListComponent {
         });
     }
 
-    private loadGlobalSessions(limit: number, offset: number, status: string[]): void {
+    private loadGlobalSessions(limit: number, offset: number, status: string[], sort: 'asc' | 'desc' = 'desc'): void {
         this.isLoaded.set(false);
-        this.graphSessionService.getGlobalSessions(limit, offset, status).subscribe({
+        const ordering = sort === 'asc' ? 'created_at' : '-created_at';
+        this.graphSessionService.getGlobalSessions(limit, offset, status, ordering).subscribe({
             next: (response) => {
                 this.sessions.set(response.results);
                 this.totalCount = response.count;

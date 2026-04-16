@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { CheckboxComponent, IconButtonComponent, LoadingSpinnerComponent } from '@shared/components';
 
 import { GraphDto } from '../../models/graph.model';
@@ -38,8 +39,14 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                         </th>
                         <th>ID</th>
                         <th>Status</th>
-                        <th>Created At</th>
-                        <th>Finished At</th>
+                        <th *ngIf="showFlowName">Flow</th>
+                        <th [class.sortable]="sortable" (click)="sortable && toggleSort()">
+                            Created At
+                            @if (sortable) {
+                                <span class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                            }
+                        </th>
+                        <th>{{ showDuration ? 'Duration' : 'Finished At' }}</th>
                         <th>Actions</th>
                         <th></th>
                     </tr>
@@ -47,13 +54,13 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                 <tbody>
                     @if (isLoading) {
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px;">
+                            <td [attr.colspan]="showFlowName ? 8 : 7" style="text-align: center; padding: 40px;">
                                 <app-loading-spinner size="md" message="Loading sessions..." />
                             </td>
                         </tr>
                     } @else if (showEmptyState) {
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px;">
+                            <td [attr.colspan]="showFlowName ? 8 : 7" style="text-align: center; padding: 40px;">
                                 <div class="no-sessions-message">
                                     <p>No sessions found for the selected filters.</p>
                                     <small>Try adjusting your filter criteria or create a new session.</small>
@@ -75,9 +82,18 @@ import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.com
                                     [status]="session.status"
                                 ></app-flow-session-status-badge>
                             </td>
+                            <td *ngIf="showFlowName">
+                                <a class="flow-link" (click)="navigateToFlow(session.graph_id)">
+                                    {{ session.graph_name }}
+                                </a>
+                            </td>
                             <td>{{ session.created_at | date: 'medium' }}</td>
                             <td>
-                                {{ session.finished_at ? (session.finished_at | date: 'medium') : 'Active' }}
+                                @if (showDuration) {
+                                    {{ getDuration(session) }}
+                                } @else {
+                                    {{ session.finished_at ? (session.finished_at | date: 'medium') : 'Active' }}
+                                }
                             </td>
                             <td>
                                 <div class="actions-container">
@@ -114,16 +130,28 @@ export class FlowSessionsTableComponent {
     @Input() flow?: GraphDto;
     @Input() isLoading: boolean = false;
     @Input() showEmptyState: boolean = false;
+    @Input() showFlowName: boolean = false;
+    @Input() showDuration: boolean = false;
+    @Input() sortable: boolean = false;
+    @Input() sortOrder: 'asc' | 'desc' = 'desc';
 
     @Output() deleteSelected = new EventEmitter<number[]>();
     @Output() viewSession = new EventEmitter<number>();
     @Output() stopSession = new EventEmitter<number>();
+    @Output() sortChange = new EventEmitter<'asc' | 'desc'>();
 
     public selectedIds = signal<Set<number>>(new Set());
 
     public readonly GraphSessionStatus = GraphSessionStatus;
 
-    constructor(private readonly cdr: ChangeDetectorRef) {}
+    constructor(
+        private readonly cdr: ChangeDetectorRef,
+        private router: Router
+    ) {}
+
+    public navigateToFlow(graphId: number): void {
+        this.router.navigate(['/flows', graphId]);
+    }
 
     isSelected(id: number) {
         return this.selectedIds().has(id);
@@ -161,5 +189,22 @@ export class FlowSessionsTableComponent {
 
     trackById(_: number, item: GraphSessionLight) {
         return item.id;
+    }
+
+    public toggleSort(): void {
+        this.sortChange.emit(this.sortOrder === 'desc' ? 'asc' : 'desc');
+    }
+
+    public getDuration(session: GraphSessionLight): string {
+        const start = new Date(session.created_at).getTime();
+        const end = session.finished_at ? new Date(session.finished_at).getTime() : Date.now();
+        const diffMs = Math.max(0, end - start);
+        const totalSeconds = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        if (minutes > 0) return `${minutes}m ${seconds}s`;
+        return `${seconds}s`;
     }
 }
