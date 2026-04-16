@@ -2,6 +2,7 @@ from typing import Literal
 from itertools import chain
 
 from django.db import transaction
+from django.db.models import Prefetch
 from loguru import logger
 
 from tables.serializers.base_serializer import (
@@ -564,41 +565,75 @@ class AgentReadSerializer(serializers.ModelSerializer):
     def get_tools(self, agent: Agent) -> list[dict]:
         tools = []
 
-        python_code_tools = PythonCodeTool.objects.filter(
-            id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id).values_list(
-                "pythoncodetool_id", flat=True
-            )
-        )
-        for tool in python_code_tools:
-            tools.append(BaseToolSerializer(tool).data)
+        # Use prefetched data when available (from AgentViewSet queryset),
+        # fall back to direct queries for non-prefetched contexts (e.g. create/update responses).
+        if hasattr(agent, "prefetched_python_code_tools"):
+            for link in agent.prefetched_python_code_tools:
+                tools.append(BaseToolSerializer(link.pythoncodetool).data)
+        else:
+            for tool in PythonCodeTool.objects.filter(
+                id__in=AgentPythonCodeTools.objects.filter(
+                    agent_id=agent.id
+                ).values_list("pythoncodetool_id", flat=True)
+            ).select_related("python_code"):
+                tools.append(BaseToolSerializer(tool).data)
 
-        python_code_tool_configs = PythonCodeToolConfig.objects.filter(
-            id__in=AgentPythonCodeToolConfigs.objects.filter(
-                agent_id=agent.id
-            ).values_list("pythoncodetoolconfig_id", flat=True)
-        )
-        for tool in python_code_tool_configs:
-            tools.append(BaseToolSerializer(tool).data)
+        if hasattr(agent, "prefetched_python_code_tool_configs"):
+            for link in agent.prefetched_python_code_tool_configs:
+                tools.append(BaseToolSerializer(link.pythoncodetoolconfig).data)
+        else:
+            for tool in PythonCodeToolConfig.objects.filter(
+                id__in=AgentPythonCodeToolConfigs.objects.filter(
+                    agent_id=agent.id
+                ).values_list("pythoncodetoolconfig_id", flat=True)
+            ).select_related("tool__python_code"):
+                tools.append(BaseToolSerializer(tool).data)
 
-        configured_tools = ToolConfig.objects.filter(
-            id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id).values_list(
-                "toolconfig_id", flat=True
-            )
-        )
-        for tool in configured_tools:
-            tools.append(BaseToolSerializer(tool).data)
+        if hasattr(agent, "prefetched_configured_tools"):
+            for link in agent.prefetched_configured_tools:
+                tools.append(BaseToolSerializer(link.toolconfig).data)
+        else:
+            for tool in (
+                ToolConfig.objects.filter(
+                    id__in=AgentConfiguredTools.objects.filter(
+                        agent_id=agent.id
+                    ).values_list("toolconfig_id", flat=True)
+                )
+                .select_related("tool")
+                .prefetch_related(
+                    Prefetch(
+                        "tool__tool_fields",
+                        queryset=ToolConfigField.objects.all(),
+                        to_attr="prefetched_config_fields",
+                    )
+                )
+            ):
+                tools.append(BaseToolSerializer(tool).data)
 
-        mcp_tools = McpTool.objects.filter(
-            id__in=AgentMcpTools.objects.filter(agent_id=agent.id).values_list(
-                "mcptool_id", flat=True
-            )
-        )
-        for tool in mcp_tools:
-            tools.append(BaseToolSerializer(tool).data)
+        if hasattr(agent, "prefetched_mcp_tools"):
+            for link in agent.prefetched_mcp_tools:
+                tools.append(BaseToolSerializer(link.mcptool).data)
+        else:
+            for tool in McpTool.objects.filter(
+                id__in=AgentMcpTools.objects.filter(agent_id=agent.id).values_list(
+                    "mcptool_id", flat=True
+                )
+            ):
+                tools.append(BaseToolSerializer(tool).data)
 
         return tools
 
     def get_rag(self, agent: Agent) -> dict | None:
+        if hasattr(agent, "prefetched_agent_naive_rags"):
+            naive_rag_links = agent.prefetched_agent_naive_rags
+            if naive_rag_links:
+                link = naive_rag_links[0]
+                return {
+                    "rag_type": "naive",
+                    "rag_id": link.naive_rag_id,
+                    "rag_status": link.naive_rag.rag_status,
+                }
+            return None
         return RagAssignmentService.get_assigned_rag_info(agent)
 
     def get_search_configs(self, agent: Agent) -> dict | None:
@@ -1962,6 +1997,7 @@ class GraphOrganizationUserSerializer(serializers.ModelSerializer):
         fields = ["id", "graph", "user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
 
+
 class LabelSerializer(serializers.ModelSerializer):
     full_path = serializers.CharField(read_only=True)
 
@@ -2008,12 +2044,20 @@ class VoiceSettingsSerializer(serializers.ModelSerializer):
         if not obj.ngrok_config:
             return None
         from tables.services.webhook_trigger_service import WebhookTriggerService
+
         try:
-            base = WebhookTriggerService().get_tunnel_url(ngrok_webhook_config=obj.ngrok_config)
+            base = WebhookTriggerService().get_tunnel_url(
+                ngrok_webhook_config=obj.ngrok_config
+            )
         except Exception:
             base = None
         if not base and obj.ngrok_config.domain:
             base = f"https://{obj.ngrok_config.domain}"
         if base:
-            return base.rstrip("/").replace("https://", "wss://").replace("http://", "wss://") + "/voice/stream"
+            return (
+                base.rstrip("/")
+                .replace("https://", "wss://")
+                .replace("http://", "wss://")
+                + "/voice/stream"
+            )
         return None

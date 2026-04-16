@@ -128,6 +128,7 @@ interface RootDrilldownView {
 export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
     @Input() graphId: number | null = null;
     @Input() sessionId: string | null = null;
+    @Input() compact: boolean = false;
     @Output() sessionStatusChanged = new EventEmitter<GraphSessionStatus>();
     @Output() messagesChanged = new EventEmitter<GraphMessage[]>();
 

@@ -2,7 +2,7 @@
     <div class="title-search">
         <h2 class="title">
             <div class="flows-prefix" routerLink="/flows">
-                <app-svg-icon icon="arrow-left" size="20" class="back-arrow" />
+                <app-svg-icon icon="arrow-left" size="20px" class="back-arrow" />
                 <span>Flows</span>
             </div>
             <span class="slash">/</span>
@@ -23,7 +23,9 @@
         </h2>
     </div>
     <div class="header-actions">
-        <button class="sessions-button" (click)="onViewSessions()"><app-svg-icon icon="history" size="1.25rem" /> Sessions</button>
+        <button class="sessions-button" (click)="onViewSessions()">
+            <app-svg-icon icon="history" size="1.25rem" /> Sessions
+        </button>
         <button class="get-curl-button" (click)="onGetCurl()">Get CURL</button>
         @if (isEpicChatEnabled) {
             <button class="connect-chat-button" (click)="onConnectChat()">Connect chat</button>

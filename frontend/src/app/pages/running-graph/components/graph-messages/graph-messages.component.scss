@@ -77,6 +77,9 @@
             &.animate-message {
                 animation: messageAppear 0.5s forwards;
             }
+            &:empty {
+                display: none;
+            }
 
             // Subflow grouping styles - Tree-like visualization with connecting lines
             &.inside-subflow {
@@ -622,4 +625,24 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.messages-container--compact {
+    --message-padding: 0.5rem 1rem;
+
+    .messages-list {
+        max-width: 100%;
+        padding: 0 1rem;
+        gap: 0.5rem;
+    }
+
+    .connection-status {
+        max-width: 100%;
+    }
+}
+
+.empty-list {
+    font-weight: 600;
+    color: #c69999;
+    margin: 10px;
 }

@@ -1,13 +1,13 @@
 from loguru import logger
 
-import litellm
+from openai import AsyncOpenAI
 
 from domain.ports.i_summarization_client import ISummarizationClient
 
 
 class OpenaiSummarizationClient(ISummarizationClient):
     """
-    A client for summarizing text using OpenAI's API via the litellm library.
+    A client for summarizing text using OpenAI's API.
     """
 
     def __init__(
@@ -20,13 +20,13 @@ class OpenaiSummarizationClient(ISummarizationClient):
 
     async def _summarize(self, messages: list[dict]) -> str:
         try:
-            response = await litellm.acompletion(
+            client = AsyncOpenAI(api_key=self.__api_key)
+            response = await client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                api_key=self.__api_key,
             )
 
-            summarized_text = response["choices"][0]["message"]["content"]
+            summarized_text = response.choices[0].message.content
             logger.debug(f"Text was successfully summarized:\n\n{summarized_text}\n")
 
             return summarized_text

@@ -34,7 +34,7 @@ class RealtimeService(metaclass=SingletonMeta):
             if rt_agent.realtime_config
             else None
         )
-        if provider != "elevenlabs" and rt_agent.realtime_transcription_config is None:
+        if provider not in ("elevenlabs", "gemini") and rt_agent.realtime_transcription_config is None:
             missing_fields.append("realtime_transcription_config")
 
         if missing_fields:
