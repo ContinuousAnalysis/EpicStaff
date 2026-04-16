@@ -48,6 +48,12 @@ from tables.views.model_view_sets import (
     RealtimeModelViewSet,
     RealtimeAgentViewSet,
     RealtimeAgentChatViewSet,
+    OpenAIRealtimeConfigViewSet,
+    ElevenLabsRealtimeConfigViewSet,
+    GeminiRealtimeConfigViewSet,
+    RealtimeChannelViewSet,
+    TwilioChannelViewSet,
+    ConversationRecordingViewSet,
     GraphFileViewSet,
     OrganizationViewSet,
     OrganizationUserViewSet,
@@ -172,6 +178,12 @@ router.register(
 router.register(r"realtime-session-items", RealtimeSessionItemViewSet)
 router.register(r"realtime-agents", RealtimeAgentViewSet)
 router.register(r"realtime-agent-chats", RealtimeAgentChatViewSet)
+router.register(r"openai-realtime-configs", OpenAIRealtimeConfigViewSet)
+router.register(r"elevenlabs-realtime-configs", ElevenLabsRealtimeConfigViewSet)
+router.register(r"gemini-realtime-configs", GeminiRealtimeConfigViewSet)
+router.register(r"realtime-channels", RealtimeChannelViewSet)
+router.register(r"twilio-channels", TwilioChannelViewSet)
+router.register(r"conversation-recordings", ConversationRecordingViewSet)
 router.register(r"decision-table-node", DecisionTableNodeModelViewSet)
 
 router.register(r"sessions", SessionViewSet, basename="session")

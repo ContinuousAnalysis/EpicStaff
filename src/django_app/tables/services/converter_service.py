@@ -74,14 +74,15 @@ from tables.models.graph_models import (
     TelegramTriggerNode,
     WebhookTriggerNode,
 )
-from tables.models.llm_models import (
-    LLMConfig,
-    RealtimeConfig,
-    RealtimeTranscriptionConfig,
-)
+from tables.models.llm_models import LLMConfig
 from tables.models.mcp_models import McpTool
 from tables.models.python_models import PythonCodeToolConfig
-from tables.models.realtime_models import RealtimeAgentChat
+from tables.models.realtime_models import (
+    RealtimeAgentChat,
+    OpenAIRealtimeConfig,
+    ElevenLabsRealtimeConfig,
+    GeminiRealtimeConfig,
+)
 from tables.models.webhook_models import NgrokWebhookConfig
 from tables.serializers.model_serializers import ToolConfigSerializer
 from tables.validators.crew_memory_validator import CrewMemoryValidator
@@ -439,11 +440,6 @@ class ConverterService(metaclass=SingletonMeta):
     ) -> RealtimeAgentChatData:
         agent: Agent = rt_agent_chat.rt_agent.agent.fill_with_defaults(crew_id=None)
 
-        rt_config: RealtimeConfig = rt_agent_chat.realtime_config
-        rt_transcription_config: RealtimeTranscriptionConfig = (
-            rt_agent_chat.realtime_transcription_config
-        )
-
         knowledge_collection_id = None
         if agent.knowledge_collection is not None:
             knowledge_collection_id = agent.knowledge_collection.pk
@@ -455,6 +451,31 @@ class ConverterService(metaclass=SingletonMeta):
             rag_type_id, all_search_configs
         )
 
+        # Resolve provider-specific fields from the active config FK snapshot
+        rt_model_name = None
+        rt_api_key = None
+        rt_provider = None
+        transcript_model_name = None
+        transcript_api_key = None
+
+        if rt_agent_chat.openai_config_id is not None:
+            cfg: OpenAIRealtimeConfig = rt_agent_chat.openai_config
+            rt_provider = "openai"
+            rt_model_name = cfg.model_name
+            rt_api_key = cfg.api_key
+            transcript_model_name = cfg.transcription_model_name
+            transcript_api_key = cfg.transcription_api_key
+        elif rt_agent_chat.elevenlabs_config_id is not None:
+            cfg: ElevenLabsRealtimeConfig = rt_agent_chat.elevenlabs_config
+            rt_provider = "elevenlabs"
+            rt_model_name = cfg.model_name
+            rt_api_key = cfg.api_key
+        elif rt_agent_chat.gemini_config_id is not None:
+            cfg: GeminiRealtimeConfig = rt_agent_chat.gemini_config
+            rt_provider = "gemini"
+            rt_model_name = cfg.model_name
+            rt_api_key = cfg.api_key
+
         rt_agent_chat_data = RealtimeAgentChatData(
             role=agent.role,
             goal=agent.goal,
@@ -465,14 +486,10 @@ class ConverterService(metaclass=SingletonMeta):
             llm=self.convert_llm_config_to_pydantic(agent.llm_config),
             memory=agent.memory,
             tools=self._get_agent_base_tools(agent=agent),
-            rt_model_name=rt_config.realtime_model.name,
-            rt_api_key=rt_config.api_key,
-            transcript_model_name=rt_transcription_config.realtime_transcription_model.name
-            if rt_transcription_config
-            else None,
-            transcript_api_key=rt_transcription_config.api_key
-            if rt_transcription_config
-            else None,
+            rt_model_name=rt_model_name,
+            rt_api_key=rt_api_key,
+            transcript_model_name=transcript_model_name,
+            transcript_api_key=transcript_api_key,
             temperature=agent.default_temperature,
             connection_key=rt_agent_chat.connection_key,
             wake_word=rt_agent_chat.wake_word,
@@ -480,11 +497,9 @@ class ConverterService(metaclass=SingletonMeta):
             language=rt_agent_chat.language,
             voice_recognition_prompt=rt_agent_chat.voice_recognition_prompt,
             voice=rt_agent_chat.voice,
-            input_audio_format=rt_agent_chat.input_audio_format.value,
-            output_audio_format=rt_agent_chat.output_audio_format.value,
-            rt_provider=rt_config.realtime_model.provider.name
-            if rt_config.realtime_model.provider
-            else "openai",
+            input_audio_format=rt_agent_chat.input_audio_format,
+            output_audio_format=rt_agent_chat.output_audio_format,
+            rt_provider=rt_provider,
         )
 
         return rt_agent_chat_data

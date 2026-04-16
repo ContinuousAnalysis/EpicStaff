@@ -49,8 +49,12 @@ class Settings(BaseSettings):
     DJANGO_PORT: int = 8000
 
     @property
+    def DJANGO_API_BASE_URL(self) -> str:
+        return f"http://{self.DJANGO_HOST}:{self.DJANGO_PORT}/api"
+
+    @property
     def INIT_API_URL(self) -> str:
-        return f"http://{self.DJANGO_HOST}:{self.DJANGO_PORT}/api/init-realtime/"
+        return f"{self.DJANGO_API_BASE_URL}/init-realtime/"
 
     @property
     def DATABASE_URL(self) -> str:
