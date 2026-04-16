@@ -50,12 +50,7 @@ import { MouseTrackerDirective } from '../core/directives/mouse-tracker.directiv
 import { ShortcutListenerDirective } from '../core/directives/shortcut-listener.directive';
 import { NodeType } from '../core/enums/node-type';
 import { getMinimapClassForNode } from '../core/helpers/get-minimap-class.util';
-import {
-    defineSourceTargetPair,
-    generatePortsForDecisionTableNode,
-    generatePortsForNode,
-    isConnectionValid,
-} from '../core/helpers/helpers';
+import { defineSourceTargetPair, isConnectionValid } from '../core/helpers/helpers';
 import {
     findNearestFreePosition,
     getCollisionBounds,
@@ -75,6 +70,7 @@ import { NodeFactoryService } from '../services/node-factory.service';
 import { SidePanelService } from '../services/side-panel.service';
 import { UndoRedoService } from '../services/undo-redo.service';
 import { createFlowConnection } from '../utils/connection.factory';
+import { normalizeFlowPorts } from '../utils/load';
 
 @Component({
     selector: 'app-flow-graph',
@@ -547,34 +543,8 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     private applyIncomingFlowState(flowState: FlowModel): void {
-        const normalizedFlowState = this.generatePortsForNodesIfNeeded(flowState);
+        const normalizedFlowState = normalizeFlowPorts(flowState);
         this.flowService.setFlow(normalizedFlowState);
-    }
-
-    private generatePortsForNodesIfNeeded(flowState: FlowModel): FlowModel {
-        let hasChanges = false;
-        const nodes = flowState.nodes.map((node) => {
-            if (node.ports === null) {
-                hasChanges = true;
-                return { ...node, ports: generatePortsForNode(node.id, node.type, node.data) };
-            } else if (node.type === NodeType.TABLE) {
-                const tableData = node.data.table;
-                const conditionGroups = tableData?.condition_groups ?? [];
-                const validGroups = conditionGroups.filter((group) => group?.valid === true);
-                const expectedPortCount = 1 + validGroups.length + 2;
-
-                if (node.ports.length !== expectedPortCount) {
-                    hasChanges = true;
-                    return {
-                        ...node,
-                        ports: generatePortsForDecisionTableNode(node.id, conditionGroups),
-                    };
-                }
-            }
-            return node;
-        });
-
-        return hasChanges ? { ...flowState, nodes } : flowState;
     }
 
     private isDialogOpen(): boolean {

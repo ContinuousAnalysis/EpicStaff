@@ -35,7 +35,12 @@ import { NodeType } from '../../../../visual-programming/core/enums/node-type';
 import { FlowModel } from '../../../../visual-programming/core/models/flow.model';
 import { FlowGraphComponent } from '../../../../visual-programming/flow-graph/flow-graph.component';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
-import { createStartNode, hasStartNode, mapGraphDtoToFlowModel } from '../../../../visual-programming/utils/load';
+import {
+    createStartNode,
+    hasStartNode,
+    mapGraphDtoToFlowModel,
+    normalizeFlowPorts,
+} from '../../../../visual-programming/utils/load';
 import {
     buildBulkSavePayload,
     buildUuidToBackendIdMap,
@@ -526,8 +531,9 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     private applyLoadedGraphState(graph: GraphDto, flows: GetGraphLightRequest[], showRefreshToast: boolean): void {
         this.graphState.set(graph);
         this.availableFlowLights.set(flows);
-        this.flowService.setFlow(this.loadedFlowState());
-        this.savedFlowState.set(cloneFlowState(this.loadedFlowState()));
+        const normalizedFlow = normalizeFlowPorts(this.loadedFlowState());
+        this.flowService.setFlow(normalizedFlow);
+        this.savedFlowState.set(cloneFlowState(normalizedFlow));
 
         this.isLoaded.set(true);
 
