@@ -1,8 +1,12 @@
 import asyncio
 import base64
+import io
 import json
+import struct
+import time
 from typing import Optional
 
+import httpx
 from fastapi import WebSocket, WebSocketDisconnect
 from loguru import logger
 
@@ -20,6 +24,35 @@ from application.tool_manager_service import ToolManagerService
 MIN_CHUNK_SIZE = 2000
 
 
+def _build_ulaw_wav(raw_ulaw: bytes, sample_rate: int = 8000) -> bytes:
+    """Wrap raw µ-law bytes in a WAVE container (no re-encoding)."""
+    num_channels = 1
+    bits_per_sample = 8
+    audio_format = 7  # WAVE_FORMAT_MULAW
+    byte_rate = sample_rate * num_channels * bits_per_sample // 8
+    block_align = num_channels * bits_per_sample // 8
+    data_size = len(raw_ulaw)
+    chunk_size = 36 + data_size
+
+    header = struct.pack(
+        "<4sI4s4sIHHIIHH4sI",
+        b"RIFF",
+        chunk_size,
+        b"WAVE",
+        b"fmt ",
+        16,  # PCM chunk size (16 for standard WAV)
+        audio_format,
+        num_channels,
+        sample_rate,
+        byte_rate,
+        block_align,
+        bits_per_sample,
+        b"data",
+        data_size,
+    )
+    return header + raw_ulaw
+
+
 class VoiceCallService:
     """
     Use case: bridges a Twilio MediaStream WebSocket to a realtime AI provider.
@@ -35,6 +68,7 @@ class VoiceCallService:
         tool_manager_service: ToolManagerService,
         connections: dict,
         factory: RealtimeAgentClientFactory,
+        django_api_base_url: str,
         initial_message: Optional[dict] = None,
     ):
         self.twilio_ws = twilio_ws
@@ -43,10 +77,16 @@ class VoiceCallService:
         self.tool_manager_service = tool_manager_service
         self.connections = connections
         self.factory = factory
+        self.django_api_base_url = django_api_base_url
         self.initial_message = initial_message
 
         self.stream_sid: Optional[str] = None
         self.audio_accumulator = bytearray()
+
+        self._start_time: float = time.monotonic()
+        self._end_reason: str = "completed"
+        self._inbound_chunks: list[bytes] = []   # user audio (µ-law 8kHz from Twilio)
+        self._outbound_chunks: list[bytes] = []  # agent audio (µ-law 8kHz to Twilio)
 
     async def execute(self):
         self.tool_manager_service.register_tools_from_rt_agent_chat_data(
@@ -71,6 +111,7 @@ class VoiceCallService:
             f"Voice stream connected to provider: {self.realtime_agent_chat_data.rt_provider}"
         )
 
+        self._start_time = time.monotonic()
         message_task = asyncio.create_task(rt_agent_client.handle_messages())
         try:
             if self.initial_message:
@@ -82,11 +123,13 @@ class VoiceCallService:
                 logger.info("Twilio WebSocket closed normally (call ended)")
             else:
                 logger.warning(f"Twilio WebSocket disconnected: code={e.code}")
+                self._end_reason = "cancelled"
         except Exception as e:
             if _WsClosedOK and isinstance(e, _WsClosedOK):
                 logger.info("Twilio WebSocket closed normally (call ended)")
             else:
                 logger.error(f"Twilio WebSocket Error: {e}")
+                self._end_reason = "error"
         finally:
             message_task.cancel()
             try:
@@ -94,6 +137,9 @@ class VoiceCallService:
             except asyncio.CancelledError:
                 pass
             await rt_agent_client.close()
+
+            duration = time.monotonic() - self._start_time
+            asyncio.create_task(self._save_recordings(duration))
 
     async def _handle_twilio_message(
         self, data: dict, client: IRealtimeAgentClient
@@ -108,6 +154,7 @@ class VoiceCallService:
         elif event == "media":
             payload = data["media"]["payload"]
             chunk = base64.b64decode(payload)
+            self._inbound_chunks.append(chunk)
             self.audio_accumulator.extend(chunk)
 
             if len(self.audio_accumulator) >= MIN_CHUNK_SIZE:
@@ -135,6 +182,7 @@ class VoiceCallService:
         if event_type == "response.audio.delta":
             try:
                 audio_bytes = base64.b64decode(data["delta"])
+                self._outbound_chunks.append(audio_bytes)
                 await self._send_audio_to_twilio(audio_bytes)
             except Exception as e:
                 logger.error(f"Error processing audio delta: {e}")
@@ -167,3 +215,81 @@ class VoiceCallService:
                     "streamSid": self.stream_sid,
                 }
             )
+
+    async def _save_recordings(self, duration: float) -> None:
+        """Write WAV files and POST metadata to the Django API."""
+        connection_key = self.realtime_agent_chat_data.connection_key
+
+        for recording_type, chunks in [
+            ("inbound", self._inbound_chunks),
+            ("outbound", self._outbound_chunks),
+        ]:
+            if not chunks:
+                continue
+            raw = b"".join(chunks)
+            wav_bytes = _build_ulaw_wav(raw)
+            await self._post_recording(
+                connection_key=connection_key,
+                recording_type=recording_type,
+                wav_bytes=wav_bytes,
+                duration=duration,
+            )
+
+        await self._patch_agent_chat(
+            connection_key=connection_key,
+            duration=duration,
+            end_reason=self._end_reason,
+        )
+
+    async def _post_recording(
+        self,
+        connection_key: str,
+        recording_type: str,
+        wav_bytes: bytes,
+        duration: float,
+    ) -> None:
+        url = f"{self.django_api_base_url}/conversation-recordings/"
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    url,
+                    headers={"Host": "localhost"},
+                    data={
+                        "connection_key": connection_key,
+                        "recording_type": recording_type,
+                        "duration_seconds": str(round(duration, 2)),
+                    },
+                    files={"file": (f"{connection_key}_{recording_type}.wav", io.BytesIO(wav_bytes), "audio/wav")},
+                    timeout=30.0,
+                )
+                if not resp.is_success:
+                    logger.warning(
+                        f"Failed to save {recording_type} recording: {resp.status_code} {resp.text}"
+                    )
+                else:
+                    logger.info(f"Saved {recording_type} recording for {connection_key}")
+        except Exception as e:
+            logger.error(f"Error posting {recording_type} recording: {e}")
+
+    async def _patch_agent_chat(
+        self, connection_key: str, duration: float, end_reason: str
+    ) -> None:
+        url = f"{self.django_api_base_url}/realtime-agent-chats/end/"
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    url,
+                    headers={"Host": "localhost"},
+                    json={
+                        "connection_key": connection_key,
+                        "duration_seconds": round(duration, 2),
+                        "end_reason": end_reason,
+                    },
+                    timeout=10.0,
+                )
+                if not resp.is_success:
+                    logger.warning(
+                        f"Failed to update agent chat metadata: {resp.status_code} {resp.text}"
+                    )
+        except Exception as e:
+            logger.error(f"Error updating agent chat metadata: {e}")

@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.validators import RegexValidator
 from django.db import models
 
@@ -55,7 +57,104 @@ class WebhookTrigger(models.Model):
         return self.path
 
 
+# ---------------------------------------------------------------------------
+# Generic communication channel models
+# ---------------------------------------------------------------------------
+
+class RealtimeChannel(models.Model):
+    """
+    A named, typed communication channel linked to a RealtimeAgent.
+
+    The `token` (UUID) uniquely identifies this channel and is used in
+    webhook URLs (e.g. /voice/{token}/) so that incoming calls can be
+    routed to the correct agent without enumeration risk.
+
+    Designed to be extensible: add a new ChannelType and a corresponding
+    detail model (e.g. WhatsAppChannel, TelegramChannel) following the
+    same OneToOneField pattern as TwilioChannel.
+    """
+
+    class ChannelType(models.TextChoices):
+        TWILIO = "twilio", "Twilio"
+        # future: WHATSAPP = "whatsapp", "WhatsApp"
+        # future: TELEGRAM = "telegram", "Telegram"
+
+    class Meta:
+        db_table = "realtime_channel"
+
+    name = models.CharField(max_length=250)
+    channel_type = models.CharField(
+        max_length=50, choices=ChannelType.choices, default=ChannelType.TWILIO
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    realtime_agent = models.ForeignKey(
+        "RealtimeAgent",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="channels",
+    )
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.channel_type})"
+
+    @property
+    def webhook_token(self) -> str:
+        return str(self.token)
+
+
+class TwilioChannel(models.Model):
+    """
+    Twilio-specific settings for a RealtimeChannel.
+
+    One TwilioChannel per RealtimeChannel (OneToOneField).
+    The Twilio webhook URL should be configured as:
+        POST  /voice/{channel.token}/
+        WS    /voice/{channel.token}/stream
+    """
+
+    class Meta:
+        db_table = "twilio_channel"
+
+    channel = models.OneToOneField(
+        RealtimeChannel,
+        on_delete=models.CASCADE,
+        related_name="twilio",
+        primary_key=True,
+    )
+    account_sid = models.CharField(max_length=255)
+    auth_token = models.CharField(max_length=255)
+    phone_number = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="E.164 format, e.g. +15551234567",
+    )
+    ngrok_config = models.ForeignKey(
+        NgrokWebhookConfig,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return f"Twilio/{self.phone_number or self.account_sid}"
+
+
+# ---------------------------------------------------------------------------
+# VoiceSettings — DEPRECATED
+# Superseded by RealtimeChannel + TwilioChannel.
+# Kept temporarily for backward compatibility; remove after full migration.
+# ---------------------------------------------------------------------------
+
 class VoiceSettings(DefaultBaseModel):
+    """
+    DEPRECATED: global singleton Twilio config.
+    Use RealtimeChannel + TwilioChannel instead.
+    """
+
     class Meta:
         db_table = "voice_settings"
 

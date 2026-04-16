@@ -3,13 +3,16 @@ from copy import deepcopy
 from tables.models import (
     Agent,
     RealtimeAgent,
-    RealtimeConfig,
-    RealtimeTranscriptionConfig,
     LLMConfig,
     AgentPythonCodeTools,
     AgentMcpTools,
     PythonCodeTool,
     McpTool,
+)
+from tables.models.realtime_models import (
+    OpenAIRealtimeConfig,
+    ElevenLabsRealtimeConfig,
+    GeminiRealtimeConfig,
 )
 from tables.models.knowledge_models.naive_rag_models import NaiveRagSearchConfig
 from tables.import_export.strategies.base import EntityImportExportStrategy
@@ -49,17 +52,17 @@ class AgentStrategy(EntityImportExportStrategy):
             "mcptool_id", flat=True
         )
 
-        realtime_config = instance.realtime_agent.realtime_config
-        realtime_transcription_config = (
-            instance.realtime_agent.realtime_transcription_config
-        )
-
-        if realtime_config:
-            deps[EntityType.REALTIME_CONFIG] = [realtime_config.id]
-        if realtime_transcription_config:
-            deps[EntityType.REALTIME_TRANSCRIPTION_CONFIG] = [
-                realtime_transcription_config.id
-            ]
+        # Provider config dependencies (new architecture)
+        try:
+            rt_agent = instance.realtime_agent
+            if rt_agent.openai_config_id:
+                deps[EntityType.OPENAI_REALTIME_CONFIG] = [rt_agent.openai_config_id]
+            if rt_agent.elevenlabs_config_id:
+                deps[EntityType.ELEVENLABS_REALTIME_CONFIG] = [rt_agent.elevenlabs_config_id]
+            if rt_agent.gemini_config_id:
+                deps[EntityType.GEMINI_REALTIME_CONFIG] = [rt_agent.gemini_config_id]
+        except RealtimeAgent.DoesNotExist:
+            pass
 
         return deps
 
@@ -215,26 +218,34 @@ class AgentStrategy(EntityImportExportStrategy):
         if not data:
             return
 
-        old_realtime_config_id = data.pop("realtime_config", None)
-        old_realtime_transcription_config_id = data.pop(
-            "realtime_transcription_config", None
-        )
-        realtime_cofig_id = id_mapper.get_or_none(
-            EntityType.REALTIME_CONFIG, old_realtime_config_id
-        )
-        realtime_transcription_config_id = id_mapper.get_or_none(
-            EntityType.REALTIME_TRANSCRIPTION_CONFIG,
-            old_realtime_transcription_config_id,
-        )
-        realtime_config = RealtimeConfig.objects.filter(id=realtime_cofig_id).first()
-        realtime_transcription_config = RealtimeTranscriptionConfig.objects.filter(
-            id=realtime_transcription_config_id
-        ).first()
+        # Strip any legacy fields from old exports that no longer exist on the model
+        data.pop("realtime_config", None)
+        data.pop("realtime_transcription_config", None)
+        data.pop("language", None)
+        data.pop("voice_recognition_prompt", None)
+
+        # Resolve new provider config FKs
+        old_openai_id = data.pop("openai_config", None)
+        old_elevenlabs_id = data.pop("elevenlabs_config", None)
+        old_gemini_id = data.pop("gemini_config", None)
+
+        openai_config = OpenAIRealtimeConfig.objects.filter(
+            id=id_mapper.get_or_none(EntityType.OPENAI_REALTIME_CONFIG, old_openai_id)
+        ).first() if old_openai_id else None
+
+        elevenlabs_config = ElevenLabsRealtimeConfig.objects.filter(
+            id=id_mapper.get_or_none(EntityType.ELEVENLABS_REALTIME_CONFIG, old_elevenlabs_id)
+        ).first() if old_elevenlabs_id else None
+
+        gemini_config = GeminiRealtimeConfig.objects.filter(
+            id=id_mapper.get_or_none(EntityType.GEMINI_REALTIME_CONFIG, old_gemini_id)
+        ).first() if old_gemini_id else None
 
         realtime_agent = RealtimeAgent.objects.create(
             agent=agent,
-            realtime_config=realtime_config,
-            realtime_transcription_config=realtime_transcription_config,
+            openai_config=openai_config,
+            elevenlabs_config=elevenlabs_config,
+            gemini_config=gemini_config,
             **data,
         )
         return realtime_agent

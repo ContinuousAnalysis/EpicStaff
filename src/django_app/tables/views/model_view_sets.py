@@ -129,6 +129,10 @@ from tables.models.realtime_models import (
     RealtimeAgent,
     RealtimeAgentChat,
     RealtimeSessionItem,
+    OpenAIRealtimeConfig,
+    ElevenLabsRealtimeConfig,
+    GeminiRealtimeConfig,
+    ConversationRecording,
 )
 from tables.filters import (
     EmbeddingModelFilter,
@@ -144,6 +148,8 @@ from tables.models.webhook_models import (
     NgrokWebhookConfig,
     VoiceSettings,
     WebhookTrigger,
+    RealtimeChannel,
+    TwilioChannel,
 )
 from tables.services.copy_services import (
     AgentCopyService,
@@ -195,13 +201,19 @@ from tables.serializers.model_serializers import (
     PythonCodeToolConfigSerializer,
     PythonCodeToolSerializer,
     PythonNodeSerializer,
+    ConversationRecordingSerializer,
+    ElevenLabsRealtimeConfigSerializer,
+    GeminiRealtimeConfigSerializer,
+    OpenAIRealtimeConfigSerializer,
     RealtimeAgentChatSerializer,
     RealtimeAgentSerializer,
+    RealtimeChannelSerializer,
     RealtimeConfigSerializer,
     RealtimeModelSerializer,
     RealtimeSessionItemSerializer,
     RealtimeTranscriptionConfigSerializer,
     RealtimeTranscriptionModelSerializer,
+    TwilioChannelSerializer,
     StartNodeSerializer,
     SubGraphNodeSerializer,
     TaskConfiguredTools,
@@ -435,9 +447,13 @@ class AgentViewSet(CopyActionMixin, ModelViewSet):
             queryset = queryset.filter(crew__id=crew_id)
 
         if self.request.query_params.get("has_realtime_config") == "true":
+            from django.db.models import Q
             queryset = queryset.filter(
                 realtime_agent__isnull=False,
-                realtime_agent__realtime_config__isnull=False,
+            ).filter(
+                Q(realtime_agent__openai_config__isnull=False)
+                | Q(realtime_agent__elevenlabs_config__isnull=False)
+                | Q(realtime_agent__gemini_config__isnull=False)
             )
 
         return queryset
@@ -1081,6 +1097,82 @@ class RealtimeAgentChatViewSet(ReadOnlyModelViewSet):
         instance.delete()
         return Response(
             {"detail": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(detail=False, methods=["post"], url_path="end")
+    def end(self, request):
+        """Mark a RealtimeAgentChat as ended (called by the realtime service after a call)."""
+        from django.utils import timezone
+
+        connection_key = request.data.get("connection_key")
+        if not connection_key:
+            return Response({"detail": "connection_key required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            chat = RealtimeAgentChat.objects.get(connection_key=connection_key)
+        except RealtimeAgentChat.DoesNotExist:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        chat.ended_at = timezone.now()
+        chat.duration_seconds = request.data.get("duration_seconds")
+        chat.end_reason = request.data.get("end_reason", "completed")
+        chat.save(update_fields=["ended_at", "duration_seconds", "end_reason"])
+        return Response({"detail": "Updated"})
+
+
+class OpenAIRealtimeConfigViewSet(viewsets.ModelViewSet):
+    queryset = OpenAIRealtimeConfig.objects.all()
+    serializer_class = OpenAIRealtimeConfigSerializer
+
+
+class ElevenLabsRealtimeConfigViewSet(viewsets.ModelViewSet):
+    queryset = ElevenLabsRealtimeConfig.objects.all()
+    serializer_class = ElevenLabsRealtimeConfigSerializer
+
+
+class GeminiRealtimeConfigViewSet(viewsets.ModelViewSet):
+    queryset = GeminiRealtimeConfig.objects.all()
+    serializer_class = GeminiRealtimeConfigSerializer
+
+
+class RealtimeChannelViewSet(viewsets.ModelViewSet):
+    queryset = RealtimeChannel.objects.select_related("twilio").all()
+    serializer_class = RealtimeChannelSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["realtime_agent", "channel_type", "is_active", "token"]
+
+
+class TwilioChannelViewSet(viewsets.ModelViewSet):
+    queryset = TwilioChannel.objects.all()
+    serializer_class = TwilioChannelSerializer
+
+
+class ConversationRecordingViewSet(viewsets.ModelViewSet):
+    queryset = ConversationRecording.objects.all()
+    serializer_class = ConversationRecordingSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["rt_agent_chat", "recording_type"]
+
+    def perform_create(self, serializer):
+        file = self.request.FILES.get("file")
+        file_size = file.size if file else None
+        audio_format = "wav"
+
+        # Allow creating by connection_key (used by the realtime service)
+        connection_key = self.request.data.get("connection_key")
+        rt_agent_chat = None
+        if connection_key:
+            try:
+                rt_agent_chat = RealtimeAgentChat.objects.get(connection_key=connection_key)
+            except RealtimeAgentChat.DoesNotExist:
+                from rest_framework.exceptions import ValidationError as DRFValidationError
+                raise DRFValidationError({"connection_key": "No matching RealtimeAgentChat found"})
+
+        serializer.save(
+            file_size=file_size,
+            audio_format=audio_format,
+            **({"rt_agent_chat": rt_agent_chat} if rt_agent_chat is not None else {}),
         )
 
 
