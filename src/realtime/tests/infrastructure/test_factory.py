@@ -162,3 +162,68 @@ def test_elevenlabs_non_twilio_is_twilio_false(
         is_twilio=False,
     )
     assert client_mock.is_twilio is False
+
+
+# ---------------------------------------------------------------------------
+# Gemini provider
+# ---------------------------------------------------------------------------
+
+_GEMINI_GENAI = "infrastructure.providers.gemini.gemini_realtime_agent_client.genai"
+
+
+@patch(_GEMINI_GENAI)
+def test_create_gemini_when_provider_gemini(mock_genai, factory, rt_tools, on_server_event):
+    mock_genai.Client.return_value = MagicMock()
+    config = _make_config(rt_provider="gemini", rt_model_name="gemini-2.0-flash-live-001")
+    result = factory.create(
+        config=config,
+        rt_tools=rt_tools,
+        instructions="hi",
+        tool_manager_service=MagicMock(),
+        on_server_event=on_server_event,
+    )
+    assert type(result).__name__ == "GeminiRealtimeAgentClient"
+
+
+@patch(_GEMINI_GENAI)
+def test_gemini_twilio_sets_is_twilio_flag(mock_genai, factory, rt_tools, on_server_event):
+    mock_genai.Client.return_value = MagicMock()
+    config = _make_config(rt_provider="gemini")
+    result = factory.create(
+        config=config,
+        rt_tools=rt_tools,
+        instructions="hi",
+        tool_manager_service=MagicMock(),
+        on_server_event=on_server_event,
+        is_twilio=True,
+    )
+    assert result.is_twilio is True
+
+
+@patch(_GEMINI_GENAI)
+def test_gemini_non_twilio_is_twilio_false(mock_genai, factory, rt_tools, on_server_event):
+    mock_genai.Client.return_value = MagicMock()
+    config = _make_config(rt_provider="gemini")
+    result = factory.create(
+        config=config,
+        rt_tools=rt_tools,
+        instructions="hi",
+        tool_manager_service=MagicMock(),
+        on_server_event=on_server_event,
+        is_twilio=False,
+    )
+    assert result.is_twilio is False
+
+
+@patch(_GEMINI_GENAI)
+def test_gemini_passes_model_name(mock_genai, factory, rt_tools, on_server_event):
+    mock_genai.Client.return_value = MagicMock()
+    config = _make_config(rt_provider="gemini", rt_model_name="gemini-3.1-flash-live-preview")
+    result = factory.create(
+        config=config,
+        rt_tools=rt_tools,
+        instructions="hi",
+        tool_manager_service=MagicMock(),
+        on_server_event=on_server_event,
+    )
+    assert result.model == "gemini-3.1-flash-live-preview"

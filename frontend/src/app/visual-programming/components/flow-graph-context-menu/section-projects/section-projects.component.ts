@@ -1,28 +1,22 @@
-import { CommonModule, NgFor } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    Component,
-    EventEmitter,
-    Input,
-    OnInit,
-    Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 import { GetProjectRequest } from '../../../../features/projects/models/project.model';
 import { ProjectsStorageService } from '../../../../features/projects/services/projects-storage.service';
 import { NodeType } from '../../../core/enums/node-type';
+import { CreateNodeRequest } from '../../../core/models/node-creation.types';
 
 @Component({
     selector: 'app-flow-projects-context-menu',
-    imports: [CommonModule, NgFor],
     standalone: true,
     template: `
         <ul>
-            <li *ngFor="let project of filteredProjects" (click)="onProjectClicked(project)">
-                <i class="ti ti-folder"></i>
-                <span class="project-name">{{ project.name }}</span>
-            </li>
+            @for (project of filteredProjects(); track project.id) {
+                <li (click)="onProjectClicked(project)">
+                    <i class="ti ti-folder"></i>
+                    <span class="project-name">{{ project.name }}</span>
+                </li>
+            }
         </ul>
     `,
     styles: [
@@ -61,35 +55,20 @@ import { NodeType } from '../../../core/enums/node-type';
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FlowProjectsContextMenuComponent implements OnInit {
-    @Input() public searchTerm: string = '';
-    @Output() public nodeSelected: EventEmitter<{
-        type: NodeType;
-        data: GetProjectRequest;
-    }> = new EventEmitter();
-    public projects: GetProjectRequest[] = [];
+export class FlowProjectsContextMenuComponent {
+    public readonly searchTerm = input('');
+    public readonly nodeSelected = output<CreateNodeRequest>();
 
-    constructor(
-        private projectsService: ProjectsStorageService,
-        private cdr: ChangeDetectorRef
-    ) {}
+    private readonly projectsService = inject(ProjectsStorageService);
 
-    ngOnInit(): void {
-        this.projectsService.getProjects().subscribe({
-            next: (projects: GetProjectRequest[]) => {
-                this.projects = projects;
-
-                this.cdr.markForCheck();
-            },
-            error: (err) => console.error('Error fetching projects:', err),
-        });
-    }
-
-    public get filteredProjects(): GetProjectRequest[] {
-        return this.projects.filter((project) => project.name.toLowerCase().includes(this.searchTerm.toLowerCase()));
-    }
+    public readonly projects = toSignal(this.projectsService.getProjects(), {
+        initialValue: [] as GetProjectRequest[],
+    });
+    public readonly filteredProjects = computed(() =>
+        this.projects().filter((p) => p.name.toLowerCase().includes(this.searchTerm().toLowerCase()))
+    );
 
     public onProjectClicked(project: GetProjectRequest): void {
-        this.nodeSelected.emit({ type: NodeType.PROJECT, data: project });
+        this.nodeSelected.emit({ type: NodeType.PROJECT, overrides: { data: project } });
     }
 }

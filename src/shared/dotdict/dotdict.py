@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass
 import ast
 from typing import Any, Mapping
@@ -88,6 +89,16 @@ class DotDict(dict):
     def model_dump(self):
         return dict(self)
 
+    def deep_dump(self):
+        """Recursively convert to plain dict — single-pass replacement for deepcopy(model_dump())."""
+        result = {}
+        for key, value in self.items():
+            if isinstance(value, (DotDict, DotList)):
+                result[key] = value.deep_dump()
+            else:
+                result[key] = copy.deepcopy(value)
+        return result
+
 
 class DotList(list):
     def __init__(self, iterable=None):
@@ -111,6 +122,15 @@ class DotList(list):
 
     def model_dump(self):
         return [v.model_dump() if hasattr(v, "model_dump") else v for v in self]
+
+    def deep_dump(self):
+        """Recursively convert to plain list — single-pass replacement for deepcopy(model_dump())."""
+        return [
+            item.deep_dump()
+            if isinstance(item, (DotDict, DotList))
+            else copy.deepcopy(item)
+            for item in self
+        ]
 
 
 def DotObject(data):

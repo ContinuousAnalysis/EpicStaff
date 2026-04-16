@@ -102,6 +102,7 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
                 "state_history": [],
                 "variables": DotDict(initial_state),
                 "system_variables": {"nodes": {}},
+                "execution_counts": {},
             }
 
             # Add shared variables to state

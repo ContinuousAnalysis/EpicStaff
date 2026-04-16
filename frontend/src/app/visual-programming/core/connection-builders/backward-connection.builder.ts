@@ -30,17 +30,12 @@ export class BackwardConnectionBuilder implements IFConnectionBuilder {
         // Create SVG path
         const path = `M ${point1.x} ${point1.y} L ${point2.x} ${point2.y} L ${point3.x} ${point3.y} L ${point4.x} ${point4.y} L ${point5.x} ${point5.y} L ${point6.x} ${point6.y}`;
 
-        // Calculate connection center (midpoint of horizontal segment)
-        const connectionCenter = PointExtensions.initialize(
-            (point3.x + point4.x) / 2,
-            horizontalY
-        );
-
         return {
             path,
             penultimatePoint: point5,
             secondPoint: point2,
-            connectionCenter,
+            points: [],
+            candidates: [],
         };
     }
 }

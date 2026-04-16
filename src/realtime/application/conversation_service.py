@@ -155,6 +155,19 @@ class ConversationService(IChatModeController):
                 else:
                     client = rt_agent_client
 
+                if rt_agent_client_task is not None and rt_agent_client_task.done():
+                    logger.info(f"RT agent session closed — reconnecting ({self.realtime_agent_chat_data.rt_provider})...")
+                    try:
+                        rt_agent_client.server_event_handler.reset()
+                        await rt_agent_client.connect()
+                        rt_agent_client_task = asyncio.create_task(
+                            rt_agent_client.handle_messages()
+                        )
+                        await rt_agent_client.replay_audio_buffer()
+                    except Exception as e:
+                        logger.error(f"RT agent reconnect failed: {e}")
+                        break
+
                 try:
                     message: dict = await self.client_websocket.receive_json()
                     logger.debug(f"Received message: {shorten_dict(message)}")

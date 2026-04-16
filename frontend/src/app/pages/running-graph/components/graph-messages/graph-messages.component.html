@@ -1,5 +1,10 @@
 <!-- graph-messages.component.html -->
-<div class="messages-container" #messagesContainer (scroll)="onMessagesScroll()">
+<div
+    class="messages-container"
+    [class.messages-container--compact]="compact"
+    #messagesContainer
+    (scroll)="onMessagesScroll()"
+>
     <!-- Connection status indicator -->
     <div class="connection-status" *ngIf="connectionStatus === 'reconnecting' || connectionStatus === 'disconnected'">
         <div class="status-indicator" [class]="connectionStatus">
@@ -77,7 +82,7 @@
                         ></app-code-agent-stream-message>
                     }
                     @case ('subgraph_start') {
-                        <ng-container *ngIf="entry.rootView as rootView; else rootSubgraphMessage">
+                        <ng-container *ngIf="entry.rootView as rootView">
                             <div class="subgraph-drilldown" [class.is-closing]="rootView.isClosing">
                                 <div class="subgraph-drilldown__breadcrumbs">
                                     <div class="breadcrumbs-control breadcrumbs-control--left">
@@ -268,7 +273,7 @@
                             </div>
                         </ng-container>
 
-                        <ng-template #rootSubgraphMessage>
+                        <ng-container *ngIf="!entry.rootView">
                             <app-subgraph-start-message
                                 [message]="entry.message"
                                 [subgraphName]="entry.subgraphName"
@@ -276,7 +281,7 @@
                                 [isNestedMessagesOpen]="entry.isNestedMessagesOpen"
                                 (viewNestedMessages)="onViewNestedMessages(entry.message)"
                             ></app-subgraph-start-message>
-                        </ng-template>
+                        </ng-container>
                     }
                     @case ('subgraph_finish') {
                         <app-subgraph-finish-message [message]="entry.message"></app-subgraph-finish-message>
@@ -285,6 +290,8 @@
             </div>
         }
     </div>
+
+    <div class="empty-list" *ngIf="messages.length === 0">No messages to show</div>
 
     <!-- Loading dots for running session -->
     <app-loading-dots *ngIf="isProcessing" class="loading-indicator"></app-loading-dots>

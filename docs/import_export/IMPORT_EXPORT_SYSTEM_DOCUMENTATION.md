@@ -14,6 +14,7 @@ This document provides detailed technical documentation for the Import/Export sy
 4. [Adding New Entities](#adding-new-entities)
 5. [Adding New Nodes](#adding-new-nodes)
 6. [IDMapper Functionality](#idmapper-functionality)
+7. [Version Conversion](#version-conversion)
 
 ---
 
@@ -32,6 +33,7 @@ The `import_export` module is responsible for handling the import and export of 
 | Strategies  | Define specific behaviors for importing and exporting entities.         |
 | Utilities   | Helper functions and constants to support import/export operations.     |
 | Registry    | Maintains a registry of all entities that can be imported or exported.  |
+| Version Conversion | Migrates export JSON files from older versions to the current `IMPORT_VERSION` on import.  |
 
 ---
 
@@ -97,6 +99,26 @@ To add a new node to the import/export system, follow these steps:
 ## IDMapper Functionality
 
 The `IDMapper` class tracks all entities created during the import/export process. Its primary functionality is to map the ID of an entity from the export file to the ID of the newly created entity. This ensures that relationships between objects in the original system are accurately recreated in the new system.
+
+---
+
+## Version Conversion
+
+The version conversion system allows import JSON files created with older versions of the export format to be automatically migrated to the current version before processing.
+
+The current supported version is defined by `IMPORT_VERSION` in `tables/import_export/constants.py`. When an import file is read, `VersionConverter.convert()` checks its `"version"` field and applies registered migration functions in order until the data matches `IMPORT_VERSION`. Files without a `"version"` field are treated as version 1.
+
+> **Note:** This mechanism operates exclusively on JSON export files. It does not apply to any other import sources.
+
+### When to add a new converter
+
+After a breaking change to the import/export format (e.g. renamed fields, restructured entities, or removed data), increment `IMPORT_VERSION` and register a converter that transforms data from the previous version.
+
+### How to register a converter
+
+Add a function to `tables/import_export/version_conversions/convertions.py` decorated with `@VersionConverter.register(from_version=N)`, where `N` is the version the function converts **from**. The function receives the current data dict and must return the updated dict. *Initial example is already in the that file*. 
+
+The `convertions.py` module is auto-imported in `tables/apps.py`, so any decorator-registered function there is picked up at startup with no additional wiring required.
 
 ---
 

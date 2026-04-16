@@ -34,7 +34,6 @@ import { debounceTime } from 'rxjs/operators';
 type TabType = 'table' | 'precomputation' | 'postcomputation' | 'prompts';
 
 @Component({
-    standalone: true,
     selector: 'app-classification-decision-table-node-panel',
     imports: [
         ReactiveFormsModule,
@@ -52,7 +51,7 @@ type TabType = 'table' | 'precomputation' | 'postcomputation' | 'prompts';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel<ClassificationDecisionTableNodeModel> {
-    public readonly isExpanded = input<boolean>(true);
+    public override readonly isExpanded = input<boolean>(true);
 
     private flowService = inject(FlowService);
     private cdr = inject(ChangeDetectorRef);
