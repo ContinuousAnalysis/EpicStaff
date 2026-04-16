@@ -91,8 +91,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    # TODO: test API without second CommonMiddleware and get rid of it if possible
-    "django.middleware.common.CommonMiddleware",
 ]
 
 

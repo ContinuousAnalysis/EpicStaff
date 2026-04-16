@@ -110,15 +110,17 @@ class Agent(AbstractDefaultFillableModel):
             return crew_temperature
         return None
 
-    def fill_with_defaults(self, crew_id: int | None):
-        if self.llm_config is not None:
-            if self.default_temperature is not None:
-                self.llm_config.temperature = self.default_temperature
-            else:
-                crew_temperature = self.get_crew_temperature(crew_id=crew_id)
-                if crew_temperature is not None:
-                    self.llm_config.temperature = crew_temperature
-                # else uses llm temperature
+    def fill_with_defaults(
+        self, crew_id: int | None, crew_temperature: float | None = None
+    ):
+        if self.llm_config is not None and self.llm_config.temperature is None:
+            fallback = self.default_temperature
+            if fallback is None:
+                fallback = crew_temperature or self.get_crew_temperature(
+                    crew_id=crew_id
+                )
+            if fallback is not None:
+                self.llm_config.temperature = fallback
 
         super().fill_with_defaults()
 
@@ -138,41 +140,15 @@ class Agent(AbstractDefaultFillableModel):
         """
         Get assigned RAG type and ID in format "rag_type:id".
         """
-        try:
-            # Get the AgentNaiveRag link (currently only one due to unique=True constraint)
-            agent_naive_rag = self.agent_naive_rags.select_related("naive_rag").get()
-            naive_rag = agent_naive_rag.naive_rag
-            return f"naive:{naive_rag.naive_rag_id}"
-        except Exception:
-            return None
+        agent_naive_rag = self.agent_naive_rags.select_related("naive_rag").first()
+        if agent_naive_rag:
+            return f"naive:{agent_naive_rag.naive_rag.naive_rag_id}"
 
-    def get_search_configs(self) -> dict | None:
-        """
-        Get all RAG search configurations as nested dictionary.
-        """
-        configs = {}
+        agent_graph_rag = self.agent_graph_rags.select_related("graph_rag").first()
+        if agent_graph_rag:
+            return f"graph:{agent_graph_rag.graph_rag.graph_rag_id}"
 
-        # Collect NaiveRag search config
-        try:
-            naive_config = self.naive_search_config
-            configs["naive"] = {
-                "search_limit": naive_config.search_limit,
-                "similarity_threshold": round(
-                    float(naive_config.similarity_threshold), 2
-                ),
-            }
-        except Exception:
-            pass
-
-        # Collect GraphRag search config
-        # try:
-        #     graph_config = self.graph_search_config
-        #     configs["graph"] ={...}}
-        # except Exception:
-        #     pass
-
-        # Return None if no configs found, otherwise return dict
-        return configs if configs else None
+        return None
 
     def __str__(self):
         return self.role
@@ -291,7 +267,6 @@ class Crew(AbstractDefaultFillableModel):
             if self.planning_llm_config.temperature is None:
                 self.planning_llm_config.temperature = self.default_temperature
 
-        self.agents.set(self.get_agents())
         return self
 
     def get_agents(self):

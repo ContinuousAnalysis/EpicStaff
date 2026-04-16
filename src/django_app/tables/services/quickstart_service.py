@@ -32,10 +32,10 @@ class QuickstartService(metaclass=SingletonMeta):
             "realtime_model": "gpt-4o-mini-realtime-preview-2024-12-17",
             "realtime_transcription_model": "whisper-1",
         },
-        # TODO: need to test models
         "gemini": {
             "llm_model": "gemini-1.5-pro",
             "embedding_model": "text-embedding-004",
+            "realtime_model": "gemini-2.0-flash-live-001",
         },
         "cohere": {
             "llm_model": "command-r-plus",
@@ -77,6 +77,11 @@ class QuickstartService(metaclass=SingletonMeta):
                             provider_obj, api_key, config_name
                         )
                     )
+
+                elif provider == "gemini":
+                    self._create_realtime_config(provider_obj, api_key, config_name)
+
+                    
                 self._apply_quickstart_tag(
                     llm_config,
                     embedding_config,
