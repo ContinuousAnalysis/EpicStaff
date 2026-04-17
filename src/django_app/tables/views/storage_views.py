@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action, parser_classes
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
@@ -63,6 +63,13 @@ class StorageAPIView(ViewSet):
         params = StoragePathQuerySerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
         prefix = params.validated_data["path"]
+
+        if prefix:
+            try:
+                self.manager.info(user_name, org_id, prefix)
+            except FileNotFoundError:
+                raise NotFound({"path": f"Path does not exist: {prefix}"})
+
         items = self.manager.list_(user_name, org_id, prefix)
         return Response({"path": prefix, "items": [i.to_dict() for i in items]})
 
@@ -77,7 +84,7 @@ class StorageAPIView(ViewSet):
         try:
             data = self.manager.info(user_name, org_id, path)
         except FileNotFoundError:
-            raise ValidationError({"path": f"File does not exist: {path}"})
+            raise NotFound({"path": f"File does not exist: {path}"})
 
         response = data.to_dict()
 
@@ -164,6 +171,16 @@ class StorageAPIView(ViewSet):
         serializer = StorageMkdirSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         path = serializer.validated_data["path"]
+
+        try:
+            self.manager.info(user_name, org_id, path)
+            return Response(
+                {"detail": f"Path already exists: {path}"},
+                status=status.HTTP_409_CONFLICT,
+            )
+        except FileNotFoundError:
+            pass
+
         self.manager.mkdir(user_name, org_id, path)
         return Response({"path": path, "created": True}, status=status.HTTP_201_CREATED)
 
@@ -308,6 +325,10 @@ class StorageAPIView(ViewSet):
         params = StorageGraphFilesQuerySerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
         graph_id = params.validated_data["graph_id"]
+
+        if not Graph.objects.filter(id=graph_id).exists():
+            raise NotFound({"graph_id": f"Graph not found: {graph_id}"})
+
         qs = (
             GraphStorageFile.objects.filter(graph_id=graph_id)
             .select_related("storage_file")

@@ -25,7 +25,7 @@ STORAGE_LIST_SWAGGER = dict(
         "(files and subfolders with name, type, size, modified)."
     ),
     query_serializer=StoragePathQuerySerializer,
-    responses={200: StorageListResponseSerializer},
+    responses={200: StorageListResponseSerializer, 404: "Path does not exist"},
 )
 
 STORAGE_INFO_SWAGGER = dict(
@@ -35,7 +35,7 @@ STORAGE_INFO_SWAGGER = dict(
         "(name, size, content_type, modified, created, etag)."
     ),
     query_serializer=StoragePathQuerySerializer,
-    responses={200: StorageInfoResponseSerializer},
+    responses={200: StorageInfoResponseSerializer, 404: "File does not exist"},
 )
 
 STORAGE_DOWNLOAD_SWAGGER = dict(
@@ -57,7 +57,10 @@ STORAGE_UPLOAD_SWAGGER = dict(
         "extracted. Executable files are rejected."
     ),
     request_body=StorageUploadSerializer,
-    responses={201: StorageUploadResponseSerializer},
+    responses={
+        201: StorageUploadResponseSerializer,
+        400: "Validation error (missing files or blocked extension)",
+    },
 )
 
 STORAGE_DOWNLOAD_ZIP_SWAGGER = dict(
@@ -74,7 +77,7 @@ STORAGE_MKDIR_SWAGGER = dict(
     operation_summary="Create a folder",
     operation_description="Creates a new folder at the specified path.",
     request_body=StorageMkdirSerializer,
-    responses={201: StorageMkdirResponseSerializer},
+    responses={201: StorageMkdirResponseSerializer, 409: "Path already exists"},
 )
 
 STORAGE_DELETE_SWAGGER = dict(
@@ -121,7 +124,10 @@ STORAGE_ADD_TO_GRAPH_SWAGGER = dict(
         "Creates database references linking one or more storage files or folders to one or more graphs."
     ),
     request_body=StorageAddToGraphSerializer,
-    responses={201: GraphStorageFileSerializer(many=True)},
+    responses={
+        201: GraphStorageFileSerializer(many=True),
+        400: "Validation error (invalid graph IDs or non-existing paths)",
+    },
 )
 
 STORAGE_REMOVE_FROM_GRAPH_SWAGGER = dict(
@@ -135,5 +141,5 @@ STORAGE_GRAPH_FILES_SWAGGER = dict(
     operation_summary="List storage files attached to a graph",
     operation_description="Returns all storage paths that have been linked to the given graph.",
     query_serializer=StorageGraphFilesQuerySerializer,
-    responses={200: GraphStorageFileSerializer(many=True)},
+    responses={200: GraphStorageFileSerializer(many=True), 404: "Graph not found"},
 )
