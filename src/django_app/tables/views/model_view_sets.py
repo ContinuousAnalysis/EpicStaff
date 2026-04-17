@@ -34,6 +34,11 @@ from tables.exceptions import (
 )
 from tables.serializers.graph_bulk_save_serializers import GraphBulkSaveInputSerializer
 from tables.services.graph_bulk_save_service import GraphBulkSaveService
+from tables.graph_versioning.services import GraphVersioningService
+from tables.graph_versioning.serializers import (
+    GraphVersionCreateSerializer,
+    GraphVersionReadSerializer,
+)
 
 from tables.import_export.enums import EntityType
 from tables.models import (
@@ -861,6 +866,23 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
 
         refreshed = self.get_queryset().get(pk=pk)
         return Response(GraphSerializer(refreshed).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="save-version")
+    def save_version(self, request, pk=None):
+        graph = self.get_object()
+        serializer = GraphVersionCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        version = GraphVersioningService().save_version(
+            graph=graph,
+            name=serializer.validated_data["name"],
+            description=serializer.validated_data.get("description", ""),
+        )
+
+        return Response(
+            GraphVersionReadSerializer(version).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
