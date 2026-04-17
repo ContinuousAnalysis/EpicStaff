@@ -87,8 +87,7 @@ import {
 
                                     <app-node-storage-section
                                         [useStorage]="useStorage()"
-                                        [activeColor]="activeColor"
-                                        (onToggleChange)="useStorage.set($event)"
+                                        (onToggleChange)="onStorageToggle($event)"
                                         (onInsertCode)="insertStorageCode($event)"
                                     ></app-node-storage-section>
                                 </div>
@@ -164,8 +163,7 @@ import {
 
                             <app-node-storage-section
                                 [useStorage]="useStorage()"
-                                [activeColor]="activeColor"
-                                (onToggleChange)="useStorage.set($event)"
+                                (onToggleChange)="onStorageToggle($event)"
                                 (onInsertCode)="insertStorageCode($event)"
                             ></app-node-storage-section>
 
@@ -425,8 +423,15 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
         this.codeEditorHasError = hasError;
     }
 
+    onStorageToggle(value: boolean): void {
+        this.useStorage.set(value);
+        this.sidePanelService.triggerAutosave();
+    }
+
     insertStorageCode(code: string): void {
-        this.pythonCode = code + '\n\n' + this.pythonCode;
+        if (!this.pythonCode.includes('epicstaff_storage')) {
+            this.pythonCode = code + '\n\n' + this.pythonCode;
+        }
         this.sidePanelService.triggerAutosave();
     }
 

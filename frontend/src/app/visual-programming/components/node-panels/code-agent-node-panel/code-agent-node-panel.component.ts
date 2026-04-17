@@ -184,8 +184,7 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
 
                                     <app-node-storage-section
                                         [useStorage]="useStorage()"
-                                        [activeColor]="activeColor"
-                                        (onToggleChange)="useStorage.set($event)"
+                                        (onToggleChange)="onStorageToggle($event)"
                                         (onInsertCode)="insertStorageCode($event)"
                                     ></app-node-storage-section>
                                 </div>
@@ -360,8 +359,7 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
 
                             <app-node-storage-section
                                 [useStorage]="useStorage()"
-                                [activeColor]="activeColor"
-                                (onToggleChange)="useStorage.set($event)"
+                                (onToggleChange)="onStorageToggle($event)"
                                 (onInsertCode)="insertStorageCode($event)"
                             ></app-node-storage-section>
                         </div>
@@ -747,8 +745,15 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
         this.outputSchemaError = isValid ? '' : 'Invalid JSON';
     }
 
+    onStorageToggle(value: boolean): void {
+        this.useStorage.set(value);
+        this.sidePanelService.triggerAutosave();
+    }
+
     insertStorageCode(code: string): void {
-        this.streamHandlerCode = code + '\n\n' + this.streamHandlerCode;
+        if (!this.streamHandlerCode.includes('epicstaff_storage')) {
+            this.streamHandlerCode = code + '\n\n' + this.streamHandlerCode;
+        }
         this.sidePanelService.triggerAutosave();
     }
 

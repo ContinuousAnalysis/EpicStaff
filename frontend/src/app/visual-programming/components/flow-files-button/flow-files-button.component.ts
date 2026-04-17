@@ -112,7 +112,7 @@ export class FlowFilesButtonComponent implements OnInit {
         const opening = !this.dropdownOpen();
         this.dropdownOpen.set(opening);
         if (opening && !this.treeLoaded) {
-            this.loadLevel('', null);
+            this.loadLevel('', null, () => this.expandToAttachedPaths());
             this.treeLoaded = true;
         }
         if (!opening) {
@@ -315,7 +315,7 @@ export class FlowFilesButtonComponent implements OnInit {
             });
     }
 
-    private loadLevel(path: string, parent: TreeNode | null): void {
+    private loadLevel(path: string, parent: TreeNode | null, onDone?: () => void): void {
         this.storageApiService
             .list(path)
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -346,6 +346,7 @@ export class FlowFilesButtonComponent implements OnInit {
 
                     this.rebuildAllNodes();
                     this.rootNodes.update((n) => [...n]);
+                    onDone?.();
                 },
                 error: () => {
                     if (parent) {
@@ -355,8 +356,49 @@ export class FlowFilesButtonComponent implements OnInit {
                         this.isLoadingRoot.set(false);
                     }
                     this.rootNodes.update((n) => [...n]);
+                    onDone?.();
                 },
             });
+    }
+
+    private expandToAttachedPaths(): void {
+        const ancestorPaths = new Set<string>();
+        for (const file of this.attachedFiles()) {
+            const parts = file.path.split('/').filter(Boolean);
+            for (let i = 1; i < parts.length; i++) {
+                ancestorPaths.add(parts.slice(0, i).join('/'));
+            }
+        }
+
+        const findNode = (nodes: TreeNode[], path: string): TreeNode | null => {
+            for (const n of nodes) {
+                if (n.path === path) return n;
+                if (n.children.length > 0) {
+                    const found = findNode(n.children, path);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+
+        const tryExpand = (): void => {
+            for (const path of ancestorPaths) {
+                const node = findNode(this.rootNodes(), path);
+                if (!node || node.type !== 'folder') continue;
+                if (node.isExpanded && node.isLoaded) continue;
+
+                node.isExpanded = true;
+
+                if (!node.isLoaded && node.hasChildren) {
+                    node.isLoading = true;
+                    this.loadLevel(node.path, node, () => tryExpand());
+                }
+            }
+            this.rootNodes.update((n) => [...n]);
+            this.rebuildAllNodes();
+        };
+
+        tryExpand();
     }
 
     private buildVisible(nodes: TreeNode[]): TreeNode[] {
