@@ -139,16 +139,16 @@ export class StorageApiService {
         });
     }
 
-    addToGraph(path: string, graphIds: number[]): Observable<void> {
+    addToGraph(paths: string[], graphIds: number[]): Observable<void> {
         return this.http.post<void>(`${this.apiUrl}add-to-graph/`, {
-            path,
+            paths,
             graph_ids: graphIds,
         });
     }
 
-    removeFromGraph(path: string, graphIds: number[]): Observable<void> {
+    removeFromGraph(paths: string[], graphIds: number[]): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}remove-from-graph/`, {
-            body: { path, graph_ids: graphIds },
+            body: { paths, graph_ids: graphIds },
         });
     }
 

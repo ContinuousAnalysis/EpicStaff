@@ -271,10 +271,10 @@ export class StoragePageComponent {
             const path = item.type === 'folder' && !item.path.endsWith('/') ? `${item.path}/` : item.path;
             const requests = [];
             if (result.addGraphIds.length) {
-                requests.push(this.storageApiService.addToGraph(path, result.addGraphIds));
+                requests.push(this.storageApiService.addToGraph([path], result.addGraphIds));
             }
             if (result.removeGraphIds.length) {
-                requests.push(this.storageApiService.removeFromGraph(path, result.removeGraphIds));
+                requests.push(this.storageApiService.removeFromGraph([path], result.removeGraphIds));
             }
             if (!requests.length) return;
             forkJoin(requests)

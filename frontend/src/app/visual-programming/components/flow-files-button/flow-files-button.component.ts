@@ -230,8 +230,8 @@ export class FlowFilesButtonComponent implements OnInit {
         const unchecks = Array.from(this.pendingUnchecks());
 
         const requests = [
-            ...checks.map((path) => this.storageApiService.addToGraph(path, [flowId])),
-            ...unchecks.map((path) => this.storageApiService.removeFromGraph(path, [flowId])),
+            ...(checks.length ? [this.storageApiService.addToGraph(checks, [flowId])] : []),
+            ...(unchecks.length ? [this.storageApiService.removeFromGraph(unchecks, [flowId])] : []),
         ];
 
         if (requests.length === 0) {

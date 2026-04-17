@@ -97,7 +97,7 @@ export class StorageDetailsDialogComponent {
                 }
 
                 this.storageApiService
-                    .removeFromGraph(this.data.path ?? '', [graph.id])
+                    .removeFromGraph([this.data.path ?? ''], [graph.id])
                     .pipe(takeUntilDestroyed(this.destroyRef))
                     .subscribe({
                         next: () => {
