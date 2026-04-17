@@ -584,7 +584,7 @@ class TelegramTriggerNodeField(ContentHashMixin, models.Model):
         ]
 
 
-class ClassificationDecisionTableNode(models.Model):
+class ClassificationDecisionTableNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph",
         on_delete=models.CASCADE,
@@ -616,7 +616,7 @@ class ClassificationDecisionTableNode(models.Model):
         ]
 
 
-class ClassificationConditionGroup(models.Model):
+class ClassificationConditionGroup(BaseGraphEntity, models.Model):
     classification_decision_table_node = models.ForeignKey(
         "ClassificationDecisionTableNode",
         on_delete=models.CASCADE,
