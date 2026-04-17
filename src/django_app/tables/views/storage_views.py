@@ -116,8 +116,11 @@ class StorageAPIView(ViewSet):
     @parser_classes([MultiPartParser])
     def upload(self, request):
         user_name, org_id = self._resolve_context(request)
+        raw = (
+            request.data.dict() if hasattr(request.data, "dict") else dict(request.data)
+        )
         serializer = StorageUploadSerializer(
-            data={**request.data.dict(), "files": request.FILES.getlist("files")}
+            data={**raw, "files": request.FILES.getlist("files")}
         )
         serializer.is_valid(raise_exception=True)
         path = serializer.validated_data["path"]
@@ -287,9 +290,14 @@ class StorageAPIView(ViewSet):
         serializer.is_valid(raise_exception=True)
         paths = serializer.validated_data["paths"]
         graph_ids = serializer.validated_data["graph_ids"]
+
+        normalized_paths = {
+            path for p in paths for path in (p, p.rstrip("/"), p.rstrip("/") + "/")
+        }
+
         GraphStorageFile.objects.filter(
             graph_id__in=graph_ids,
-            storage_file__path__in=paths,
+            storage_file__path__in=normalized_paths,
             storage_file__org_id=org_id,
         ).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
