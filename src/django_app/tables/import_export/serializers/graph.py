@@ -20,6 +20,8 @@ from tables.models import (
     ConditionGroup,
     Condition,
     SubGraphNode,
+    ClassificationDecisionTableNode,
+    ClassificationConditionGroup,
 )
 from tables.models.graph_models import CodeAgentNode, GraphNote
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
@@ -91,6 +93,31 @@ class DecisionTableNodeImportSerializer(BaseNodeImportSerializer):
 
     class Meta(BaseNodeImportSerializer.Meta):
         model = DecisionTableNode
+        exclude = ["created_at", "updated_at"]
+
+
+class ClassificationConditionGroupImportSerializer(serializers.ModelSerializer):
+    classification_decision_table_node = serializers.PrimaryKeyRelatedField(
+        read_only=True
+    )
+    classification_decision_table_node_id = serializers.PrimaryKeyRelatedField(
+        queryset=ClassificationDecisionTableNode.objects.all(),
+        source="classification_decision_table_node",
+        write_only=True,
+    )
+
+    class Meta:
+        model = ClassificationConditionGroup
+        fields = "__all__"
+
+
+class ClassificationDecisionTableNodeImportSerializer(BaseNodeImportSerializer):
+    condition_groups = ClassificationConditionGroupImportSerializer(
+        many=True, required=False, read_only=True
+    )
+
+    class Meta(BaseNodeImportSerializer.Meta):
+        model = ClassificationDecisionTableNode
         exclude = ["created_at", "updated_at"]
 
 

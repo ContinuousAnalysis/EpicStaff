@@ -8,6 +8,7 @@ from tables.models import (
     WebhookTrigger,
     DecisionTableNode,
     SubGraphNode,
+    ClassificationDecisionTableNode,
 )
 from tables.models.graph_models import GraphNote
 from tables.import_export.enums import NodeType, EntityType
@@ -31,6 +32,8 @@ from tables.import_export.serializers.graph import (
     ConditionImportSerializer,
     SubgraphNodeImportSerializer,
     GraphNoteImportSerializer,
+    ClassificationDecisionTableNodeImportSerializer,
+    ClassificationConditionGroupImportSerializer,
 )
 
 
@@ -120,6 +123,27 @@ def import_decision_table_node(
     return decision_table_node
 
 
+def import_classification_decision_table_node(
+    graph: Graph, node_data: dict, id_mapper: IDMapper
+) -> ClassificationDecisionTableNode:
+    condition_groups_data = node_data.pop("condition_groups", [])
+
+    serializer = ClassificationDecisionTableNodeImportSerializer(
+        data={**node_data, "graph": graph.id}
+    )
+    serializer.is_valid(raise_exception=True)
+    cdt_node = serializer.save()
+
+    for group_data in condition_groups_data:
+        group_data["classification_decision_table_node_id"] = cdt_node.id
+
+        group_serializer = ClassificationConditionGroupImportSerializer(data=group_data)
+        group_serializer.is_valid(raise_exception=True)
+        group_serializer.save()
+
+    return cdt_node
+
+
 def import_telegram_trigger_node(
     graph: Graph, node_data: dict, id_mapper: IDMapper
 ) -> TelegramTriggerNode:
@@ -204,6 +228,11 @@ NODE_HANDLERS = {
         "serializer": DecisionTableNodeImportSerializer,
         "relation": "decision_table_node_list",
         "import_hook": import_decision_table_node,
+    },
+    NodeType.CLASSIFICATION_DECISION_TABLE_NODE: {
+        "serializer": ClassificationDecisionTableNodeImportSerializer,
+        "relation": "classification_decision_table_node_list",
+        "import_hook": import_classification_decision_table_node,
     },
     NodeType.TELEGRAM_TRIGGER_NODE: {
         "serializer": TelegramTriggerNodeImportSerializer,
