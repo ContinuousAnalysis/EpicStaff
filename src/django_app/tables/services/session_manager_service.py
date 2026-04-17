@@ -409,6 +409,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             audio_transcription_node_list,
             llm_node_list,
             decision_table_node_list,
+            classification_decision_table_node_list,
             subgraph_node_list,
             webhook_trigger_node_list,
             telegram_trigger_node_list,
@@ -562,8 +563,12 @@ class SessionManagerService(metaclass=SingletonMeta):
         classification_dt_node_data_list = []
         for item in classification_decision_table_node_list:
             classification_dt_node_data_list.append(
-                cv.convert_classification_decision_table_node_to_pydantic(node=item)
+                cv.convert_classification_decision_table_node_to_pydantic(
+                    node=item, resolver=resolver
+                )
             )
+
+        self._build_route_maps(classification_dt_node_data_list, graph.metadata)
 
         end_node = self.end_node_validator.validate(graph_id=graph.pk)
 

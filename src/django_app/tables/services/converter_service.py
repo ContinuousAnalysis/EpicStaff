@@ -697,7 +697,9 @@ class ConverterService(metaclass=SingletonMeta):
         )
 
     def convert_classification_decision_table_node_to_pydantic(
-        self, node: ClassificationDecisionTableNode
+        self,
+        node: ClassificationDecisionTableNode,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
     ):
         from utils.logger import logger
 
@@ -736,7 +738,7 @@ class ConverterService(metaclass=SingletonMeta):
                 prompts_dict[prompt_id] = prompt_config
 
         return ClassificationDecisionTableNodeData(
-            node_name=node.node_name,
+            node_name=resolver(node.id),
             pre_computation_code=node.pre_computation_code,
             pre_input_map=node.pre_input_map or {},
             pre_output_variable_path=node.pre_output_variable_path,

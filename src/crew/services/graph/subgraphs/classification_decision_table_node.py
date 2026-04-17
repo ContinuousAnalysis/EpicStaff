@@ -1,5 +1,4 @@
 from dataclasses import asdict
-from datetime import datetime
 import json
 import re
 import uuid
@@ -8,14 +7,15 @@ from loguru import logger
 import litellm
 from src.crew.services.graph.events import StopEvent
 from src.crew.services.graph.custom_message_writer import CustomSessionMessageWriter
-from src.crew.models.graph_models import FinishMessageData, GraphMessage, StartMessageData
+from src.crew.models.graph_models import (
+    GraphMessage,
+)
 from src.shared.models import LLMData, PythonCodeData
 from src.shared.models.graph_nodes import (
-    ClassificationConditionGroupData,
     ClassificationDecisionTableNodeData,
     PromptConfigData,
 )
-from src.crew.models.state import *
+from src.crew.models.state import State
 from langgraph.types import StreamWriter
 from src.crew.services.run_python_code_service import RunPythonCodeService
 
@@ -90,8 +90,12 @@ class ClassificationDecisionTableNodeSubgraph:
                 "name": graph_message.name,
                 "execution_order": graph_message.execution_order,
                 "message_data": graph_message.message_data
-                    if isinstance(graph_message.message_data, dict)
-                    else {"message_type": getattr(graph_message.message_data, "message_type", "unknown")},
+                if isinstance(graph_message.message_data, dict)
+                else {
+                    "message_type": getattr(
+                        graph_message.message_data, "message_type", "unknown"
+                    )
+                },
                 "timestamp": graph_message.timestamp,
             }
         data["uuid"] = str(uuid.uuid4())
@@ -109,13 +113,14 @@ class ClassificationDecisionTableNodeSubgraph:
         No eval() is used.
         """
         import re
+
         # Tokenise into dot-segments and bracket-segments
         # e.g. "variables.shared[variables.chat_id].lease_holder"
         #   → ["variables", "shared", "[variables.chat_id]", "lease_holder"]
         tokens: list[str] = []
-        for part in re.split(r'\.(?![^\[]*\])', path_expr):
+        for part in re.split(r"\.(?![^\[]*\])", path_expr):
             # Split bracket sub-expressions within each part
-            sub = re.split(r'(\[[^\]]+\])', part)
+            sub = re.split(r"(\[[^\]]+\])", part)
             for s in sub:
                 if s:
                     tokens.append(s)
@@ -141,7 +146,9 @@ class ClassificationDecisionTableNodeSubgraph:
                     value = value[token]
         return value
 
-    def _build_exec_namespace(self, state: State, input_map: dict[str, str] | None = None) -> dict:
+    def _build_exec_namespace(
+        self, state: State, input_map: dict[str, str] | None = None
+    ) -> dict:
         """Build a namespace dict for in-process exec().
 
         Only input map entries are injected into the namespace.
@@ -175,7 +182,9 @@ class ClassificationDecisionTableNodeSubgraph:
                 try:
                     namespace[local_name] = self._resolve_path(path_expr, resolve_ctx)
                 except Exception as e:
-                    logger.warning(f"Input map resolve failed for '{local_name}' = '{path_expr}': {e}")
+                    logger.warning(
+                        f"Input map resolve failed for '{local_name}' = '{path_expr}': {e}"
+                    )
                     namespace[local_name] = None
 
         return namespace
@@ -212,14 +221,14 @@ class ClassificationDecisionTableNodeSubgraph:
             return
 
         # Only pass input map entries to main(), not exec artifacts
-        call_kwargs = {k: namespace[k] for k in (input_map or {}).keys() if k in namespace}
+        call_kwargs = {
+            k: namespace[k] for k in (input_map or {}).keys() if k in namespace
+        }
 
         try:
             result = main_fn(**call_kwargs)
         except Exception as e:
-            raise ClassificationDecisionTableNodeError(
-                f"{label} main() failed: {e}"
-            )
+            raise ClassificationDecisionTableNodeError(f"{label} main() failed: {e}")
 
         if result is not None:
             # Handle atomic list appends before normal output.
@@ -235,9 +244,13 @@ class ClassificationDecisionTableNodeSubgraph:
                             for var_name, items in updates.items():
                                 if isinstance(items, list):
                                     updated = scope.atomic_list_append(var_name, items)
-                                    logger.info(f"{label} shared_append: {access_key}.{var_name} now has {len(updated)} items")
+                                    logger.info(
+                                        f"{label} shared_append: {access_key}.{var_name} now has {len(updated)} items"
+                                    )
                 else:
-                    logger.warning(f"{label} shared_append requested but no shared proxy available")
+                    logger.warning(
+                        f"{label} shared_append requested but no shared proxy available"
+                    )
 
             # Handle atomic claims (SETNX). Returns claim results into the result dict.
             # Format: {"shared_claim": {access_key: {"var_name": value_or_dict}}}
@@ -261,7 +274,9 @@ class ClassificationDecisionTableNodeSubgraph:
                                     ttl = None
                                 claimed = scope.claim(var_name, value, ttl=ttl)
                                 claim_results[var_name] = claimed
-                                logger.info(f"{label} shared_claim: {access_key}.{var_name} = {claimed}")
+                                logger.info(
+                                    f"{label} shared_claim: {access_key}.{var_name} = {claimed}"
+                                )
                     result["claim_results"] = claim_results
 
             # Handle shared variable releases (key deletion).
@@ -276,10 +291,13 @@ class ClassificationDecisionTableNodeSubgraph:
                             scope = shared[access_key]
                             for var_name in var_names:
                                 released = scope.release(var_name)
-                                logger.info(f"{label} shared_release: {access_key}.{var_name} = {released}")
+                                logger.info(
+                                    f"{label} shared_release: {access_key}.{var_name} = {released}"
+                                )
 
             if output_variable_path:
                 from utils.set_output_variables import set_output_variables
+
                 set_output_variables(
                     state=state,
                     output_variable_path=output_variable_path,
@@ -449,7 +467,9 @@ def main(**kwargs) -> dict:
         variables = json.loads(result["result_data"])
         state["variables"].update(variables)
 
-    async def _run_json_llm(self, prompt: str, llm: LLMData) -> tuple[Any, dict[str, int]]:
+    async def _run_json_llm(
+        self, prompt: str, llm: LLMData
+    ) -> tuple[Any, dict[str, int]]:
         """Call LLM via litellm and parse JSON response."""
         llm_config = llm.config
         litellm.drop_params = True
@@ -458,7 +478,6 @@ def main(**kwargs) -> dict:
             "timeout": llm_config.timeout,
             "temperature": llm_config.temperature,
             "top_p": llm_config.top_p,
-            "n": llm_config.n,
             "stop": llm_config.stop,
             "max_tokens": llm_config.max_tokens,
             "presence_penalty": llm_config.presence_penalty,
@@ -466,8 +485,6 @@ def main(**kwargs) -> dict:
             "logit_bias": llm_config.logit_bias,
             "response_format": llm_config.response_format,
             "seed": llm_config.seed,
-            "logprobs": llm_config.logprobs,
-            "top_logprobs": llm_config.top_logprobs,
             "base_url": llm_config.base_url,
             "api_version": llm_config.api_version,
             "api_key": llm_config.api_key,
@@ -478,9 +495,15 @@ def main(**kwargs) -> dict:
         )
 
         usage = {
-            "total_tokens": getattr(resp.usage, "total_tokens", 0) if hasattr(resp, "usage") else 0,
-            "prompt_tokens": getattr(resp.usage, "prompt_tokens", 0) if hasattr(resp, "usage") else 0,
-            "completion_tokens": getattr(resp.usage, "completion_tokens", 0) if hasattr(resp, "usage") else 0,
+            "total_tokens": getattr(resp.usage, "total_tokens", 0)
+            if hasattr(resp, "usage")
+            else 0,
+            "prompt_tokens": getattr(resp.usage, "prompt_tokens", 0)
+            if hasattr(resp, "usage")
+            else 0,
+            "completion_tokens": getattr(resp.usage, "completion_tokens", 0)
+            if hasattr(resp, "usage")
+            else 0,
             "successful_requests": 1,
         }
 
@@ -502,7 +525,9 @@ def main(**kwargs) -> dict:
         Returns dict with prompt_text, raw_response, parsed_result, result_variable, usage."""
         prompt_config: PromptConfigData | None = self.node_data.prompts.get(prompt_id)
         if prompt_config is None:
-            logger.warning(f"Prompt ID '{prompt_id}' not found in prompt library, skipping.")
+            logger.warning(
+                f"Prompt ID '{prompt_id}' not found in prompt library, skipping."
+            )
             return {}
 
         llm_data = prompt_config.llm_data
@@ -523,9 +548,13 @@ def main(**kwargs) -> dict:
         )
 
         try:
-            result, usage = await self._run_json_llm(prompt=rendered_prompt, llm=llm_data)
+            result, usage = await self._run_json_llm(
+                prompt=rendered_prompt, llm=llm_data
+            )
         except Exception as e:
-            error_msg = f"ERROR Prompt '{prompt_id}' LLM call failed: {type(e).__name__}: {e}"
+            error_msg = (
+                f"ERROR Prompt '{prompt_id}' LLM call failed: {type(e).__name__}: {e}"
+            )
             logger.info(error_msg)
             raise ClassificationDecisionTableNodeError(
                 f"LLM call failed for prompt '{prompt_id}': {type(e).__name__}: {e}"
@@ -549,7 +578,9 @@ def main(**kwargs) -> dict:
             for state_var, result_field in prompt_config.variable_mappings.items():
                 if result_field in result:
                     state["variables"].update({state_var: result[result_field]})
-                    logger.info(f"Mapped result.{result_field} -> variables.{state_var}")
+                    logger.info(
+                        f"Mapped result.{result_field} -> variables.{state_var}"
+                    )
 
         return {
             "prompt_text": rendered_prompt,
@@ -591,11 +622,20 @@ def main(**kwargs) -> dict:
                 state["system_variables"]["nodes"] = {}
             if state["system_variables"]["nodes"].get(self.node_name) is None:
                 state["system_variables"]["nodes"][self.node_name] = update_variables
-                state["system_variables"]["nodes"][self.node_name]["execution_order"] = 0
+                state["system_variables"]["nodes"][self.node_name][
+                    "execution_order"
+                ] = 0
             else:
-                state["system_variables"]["nodes"][self.node_name].update(update_variables)
-                state["system_variables"]["nodes"][self.node_name]["execution_order"] = (
-                    state["system_variables"]["nodes"][self.node_name]["execution_order"] + 1
+                state["system_variables"]["nodes"][self.node_name].update(
+                    update_variables
+                )
+                state["system_variables"]["nodes"][self.node_name][
+                    "execution_order"
+                ] = (
+                    state["system_variables"]["nodes"][self.node_name][
+                        "execution_order"
+                    ]
+                    + 1
                 )
 
             # Also reset route_code in state variables so stale values from
@@ -666,14 +706,40 @@ def main(**kwargs) -> dict:
                     #   - Operator prefix: `> 5`, `!= "end"`, `in ("a", "b")` → prepended with field name
                     #   - Full expression with operators: used as-is (e.g. `field > 0 and field < 10`)
                     parts = []
-                    _operator_prefixes = ('==', '!=', '>=', '<=', '>', '<', ' in ', ' not ')
+                    _operator_prefixes = (
+                        "==",
+                        "!=",
+                        ">=",
+                        "<=",
+                        ">",
+                        "<",
+                        " in ",
+                        " not ",
+                    )
                     if group.field_expressions:
                         for field_name, field_expr in group.field_expressions.items():
                             if field_expr and field_expr.strip():
                                 expr = field_expr.strip()
-                                if expr.startswith(_operator_prefixes) or expr.startswith(('in ', 'not ', 'is ')):
+                                if expr.startswith(
+                                    _operator_prefixes
+                                ) or expr.startswith(("in ", "not ", "is ")):
                                     expr = f"{field_name} {expr}"
-                                elif not any(op in expr for op in ('==', '!=', '>=', '<=', '>', '<', ' in ', ' not ', ' is ', ' and ', ' or ')):
+                                elif not any(
+                                    op in expr
+                                    for op in (
+                                        "==",
+                                        "!=",
+                                        ">=",
+                                        "<=",
+                                        ">",
+                                        "<",
+                                        " in ",
+                                        " not ",
+                                        " is ",
+                                        " and ",
+                                        " or ",
+                                    )
+                                ):
                                     expr = f"{field_name} == {expr}"
                                 parts.append(f"({expr})")
                     if group.expression and group.expression.strip():
@@ -688,14 +754,16 @@ def main(**kwargs) -> dict:
                             state=state,
                         )
 
-                    msg = self.custom_session_message_writer.add_condition_group_message(
-                        session_id=self.session_id,
-                        node_name=self.node_name,
-                        group_name=group.group_name,
-                        result=expression_result,
-                        writer=writer,
-                        execution_order=self.execution_order(state),
-                        expression=group.expression,
+                    msg = (
+                        self.custom_session_message_writer.add_condition_group_message(
+                            session_id=self.session_id,
+                            node_name=self.node_name,
+                            group_name=group.group_name,
+                            result=expression_result,
+                            writer=writer,
+                            execution_order=self.execution_order(state),
+                            expression=group.expression,
+                        )
                     )
                     self._publish_message(msg)
 
@@ -707,7 +775,9 @@ def main(**kwargs) -> dict:
 
                     # Step 2: Execute prompt (if prompt_id is set)
                     if group.prompt_id:
-                        prompt_result = await self._execute_prompt(group.prompt_id, state)
+                        prompt_result = await self._execute_prompt(
+                            group.prompt_id, state
+                        )
                         if prompt_result:
                             msg = self.custom_session_message_writer.add_classification_prompt_message(
                                 session_id=self.session_id,
@@ -718,7 +788,9 @@ def main(**kwargs) -> dict:
                                 prompt_text=prompt_result.get("prompt_text", ""),
                                 raw_response=prompt_result.get("raw_response", ""),
                                 parsed_result=prompt_result.get("parsed_result"),
-                                result_variable=prompt_result.get("result_variable", ""),
+                                result_variable=prompt_result.get(
+                                    "result_variable", ""
+                                ),
                                 usage=prompt_result.get("usage", {}),
                             )
                             self._publish_message(msg)
@@ -731,7 +803,9 @@ def main(**kwargs) -> dict:
                                 manip_parts.append(f"{var_name} = {var_expr.strip()}")
                     if group.manipulation:
                         manip_parts.append(group.manipulation)
-                    combined_manipulation = "\n".join(manip_parts) if manip_parts else None
+                    combined_manipulation = (
+                        "\n".join(manip_parts) if manip_parts else None
+                    )
 
                     if combined_manipulation:
                         vars_before = state["variables"].model_dump()
@@ -741,7 +815,11 @@ def main(**kwargs) -> dict:
                         vars_after = state["variables"].model_dump()
                         if "shared" in vars_after:
                             del vars_after["shared"]
-                        changed = {k: v for k, v in vars_after.items() if vars_before.get(k) != v}
+                        changed = {
+                            k: v
+                            for k, v in vars_after.items()
+                            if vars_before.get(k) != v
+                        }
                         msg = self.custom_session_message_writer.add_condition_group_manipulation_message(
                             session_id=self.session_id,
                             node_name=self.node_name,
@@ -756,7 +834,9 @@ def main(**kwargs) -> dict:
                     # Step 4: Capture route_code from this row and sync to state variables
                     if group.route_code:
                         matched_route_code = group.route_code
-                        state["variables"].update({self.node_data.route_variable_name: group.route_code})
+                        state["variables"].update(
+                            {self.node_data.route_variable_name: group.route_code}
+                        )
 
                     # Step 5: Check continue flag
                     if not group.continue_flag:
@@ -766,7 +846,9 @@ def main(**kwargs) -> dict:
                 except ClassificationDecisionTableNodeError as e:
                     error = f"Error in condition '{group.group_name}': {e}"
                     if self.node_data.expression_errors_as_false:
-                        logger.warning(f"{error} — treating as false (expression_errors_as_false=True)")
+                        logger.warning(
+                            f"{error} — treating as false (expression_errors_as_false=True)"
+                        )
                         msg = self.custom_session_message_writer.add_condition_group_message(
                             session_id=self.session_id,
                             node_name=self.node_name,
