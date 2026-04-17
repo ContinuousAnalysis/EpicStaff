@@ -125,7 +125,11 @@ export class CreateFolderDialogComponent {
     }
 
     readonly isUploading = signal(false);
-    readonly hasBlockedFiles = computed(() => this.files().some((f) => this.isBlocked(f)));
+    /** Maps filename → error label returned by the server (e.g. archive contains executables) */
+    readonly fileServerErrors = signal<Map<string, string>>(new Map());
+    readonly hasBlockedFiles = computed(
+        () => this.files().some((f) => this.isBlocked(f) || this.isZeroSize(f)) || this.fileServerErrors().size > 0
+    );
     readonly isValid = computed(
         () => !this.hasBlockedFiles() && (this.files().length > 0 || this.folderName().trim().length > 0)
     );
@@ -212,7 +216,15 @@ export class CreateFolderDialogComponent {
     }
 
     removeFile(index: number): void {
+        const removed = this.files()[index];
         this.files.update((list) => list.filter((_, i) => i !== index));
+        if (removed && this.fileServerErrors().has(removed.name)) {
+            this.fileServerErrors.update((m) => {
+                const next = new Map(m);
+                next.delete(removed.name);
+                return next;
+            });
+        }
     }
 
     isArchive(file: File): boolean {
@@ -224,6 +236,14 @@ export class CreateFolderDialogComponent {
     isBlocked(file: File): boolean {
         const ext = file.name.toLowerCase().split('.').pop() ?? '';
         return CreateFolderDialogComponent.BLOCKED_EXTENSIONS.has(ext);
+    }
+
+    isZeroSize(file: File): boolean {
+        return file.size === 0;
+    }
+
+    getFileError(file: File): string | null {
+        return this.fileServerErrors().get(file.name) ?? null;
     }
 
     formatSize(bytes: number): string {
@@ -240,6 +260,7 @@ export class CreateFolderDialogComponent {
         const files = this.files();
 
         this.isUploading.set(true);
+        this.fileServerErrors.set(new Map());
         this.storageApiService
             .handleAddFilesResult({ targetPath, files, mkdirOnly: files.length === 0 })
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -247,7 +268,12 @@ export class CreateFolderDialogComponent {
                 next: (res) => this.dialogRef.close(res),
                 error: (error: unknown) => {
                     this.isUploading.set(false);
-                    this.toastService.error(this.getUploadErrorMessage(error));
+                    const perFileErrors = this.extractPerFileErrors(error);
+                    if (perFileErrors.size > 0) {
+                        this.fileServerErrors.set(perFileErrors);
+                    } else {
+                        this.toastService.error(this.getUploadErrorMessage(error));
+                    }
                 },
             });
     }
@@ -323,6 +349,51 @@ export class CreateFolderDialogComponent {
             const names = new Set(existing.map((f) => f.name));
             return [...existing, ...newFiles.filter((f) => !names.has(f.name))];
         });
+    }
+
+    private extractPerFileErrors(error: unknown): Map<string, string> {
+        const result = new Map<string, string>();
+        if (!(error instanceof HttpErrorResponse) || error.status !== 400) return result;
+
+        const message = this.getFullRawErrorText(error);
+        if (!message) return result;
+
+        // Matches both "contains executable files" and "contains protected files"
+        const re = /Archive '([^']+)' contains (?:executable|protected) files/g;
+        let match: RegExpExecArray | null;
+        while ((match = re.exec(message)) !== null) {
+            result.set(match[1], 'Contains restricted files');
+        }
+
+        return result;
+    }
+
+    /** Returns the widest possible string from the error body for regex scanning. */
+    private getFullRawErrorText(error: HttpErrorResponse): string {
+        const r = error.error;
+        if (typeof r === 'string') return r;
+        if (r && typeof r === 'object') {
+            // Serialize the whole object so nested Python-dict strings are also scanned
+            try {
+                return JSON.stringify(r);
+            } catch {
+                const p = r as { detail?: unknown; message?: unknown; error?: unknown; reason?: unknown };
+                const v = p.detail ?? p.message ?? p.error ?? p.reason;
+                if (typeof v === 'string') return v;
+            }
+        }
+        return '';
+    }
+
+    private getRawErrorMessage(error: HttpErrorResponse): string {
+        const r = error.error;
+        if (typeof r === 'string') return r;
+        if (r && typeof r === 'object') {
+            const p = r as { detail?: unknown; message?: unknown; error?: unknown; reason?: unknown };
+            const v = p.detail ?? p.message ?? p.error ?? p.reason;
+            if (typeof v === 'string') return v;
+        }
+        return '';
     }
 
     private getUploadErrorMessage(error: unknown): string {

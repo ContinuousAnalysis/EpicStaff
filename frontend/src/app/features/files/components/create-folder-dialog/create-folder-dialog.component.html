@@ -162,7 +162,17 @@
                             ></app-svg-icon>
                             <div class="create-folder-dialog__file-info">
                                 <span class="create-folder-dialog__file-name" [title]="file.name">{{ file.name }}</span>
-                                @if (isArchive(file)) {
+                                @if (getFileError(file); as serverError) {
+                                    <span
+                                        class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
+                                        >{{ serverError }}</span
+                                    >
+                                } @else if (isZeroSize(file)) {
+                                    <span
+                                        class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
+                                        >Empty file</span
+                                    >
+                                } @else if (isArchive(file)) {
                                     <span
                                         class="create-folder-dialog__file-badge create-folder-dialog__file-badge--unpack"
                                         >Will be unpacked</span
