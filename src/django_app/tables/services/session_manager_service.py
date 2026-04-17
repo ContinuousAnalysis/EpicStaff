@@ -383,7 +383,9 @@ class SessionManagerService(metaclass=SingletonMeta):
         telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
         code_agent_node_list = CodeAgentNode.objects.filter(graph=graph.pk)
         classification_decision_table_node_list = (
-            ClassificationDecisionTableNode.objects.filter(graph=graph.pk)
+            ClassificationDecisionTableNode.objects.filter(
+                graph=graph.pk
+            ).prefetch_related("condition_groups")
         )
 
         if file_extractor_node_list:
@@ -560,9 +562,7 @@ class SessionManagerService(metaclass=SingletonMeta):
         classification_dt_node_data_list = []
         for item in classification_decision_table_node_list:
             classification_dt_node_data_list.append(
-                self.converter_service.convert_classification_decision_table_node_to_pydantic(
-                    node=item
-                )
+                cv.convert_classification_decision_table_node_to_pydantic(node=item)
             )
 
         end_node = self.end_node_validator.validate(graph_id=graph.pk)

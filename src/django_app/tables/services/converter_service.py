@@ -735,70 +735,14 @@ class ConverterService(metaclass=SingletonMeta):
                         )
                 prompts_dict[prompt_id] = prompt_config
 
-        # Fallback: if DB fields are empty, read from graph metadata
-        pre_input_map = node.pre_input_map or {}
-        post_input_map = node.post_input_map or {}
-        pre_computation_code = node.pre_computation_code
-        post_computation_code = node.post_computation_code
-        pre_output_variable_path = node.pre_output_variable_path
-        post_output_variable_path = node.post_output_variable_path
-
-        if not pre_input_map or not post_input_map or not pre_computation_code:
-            try:
-                metadata = node.graph.metadata or {}
-                for mn in metadata.get("nodes", []):
-                    mn_name = mn.get("data", {}).get("node_name") or mn.get("node_name")
-                    if (
-                        mn_name == node.node_name
-                        and mn.get("type") == "classification-decision-table"
-                    ):
-                        table = mn.get("data", {}).get("table", {})
-                        pre_comp = table.get("pre_computation", {})
-                        post_comp = table.get("post_computation", {})
-                        if not pre_input_map:
-                            pre_input_map = (
-                                pre_comp.get("input_map")
-                                or table.get("pre_input_map")
-                                or {}
-                            )
-                        if not post_input_map:
-                            post_input_map = (
-                                post_comp.get("input_map")
-                                or table.get("post_input_map")
-                                or {}
-                            )
-                        if not pre_computation_code:
-                            pre_computation_code = pre_comp.get("code") or table.get(
-                                "pre_computation_code"
-                            )
-                        if not post_computation_code:
-                            post_computation_code = post_comp.get("code") or table.get(
-                                "post_computation_code"
-                            )
-                        if not pre_output_variable_path:
-                            pre_output_variable_path = pre_comp.get(
-                                "output_variable_path"
-                            )
-                        if not post_output_variable_path:
-                            post_output_variable_path = post_comp.get(
-                                "output_variable_path"
-                            )
-                        if pre_input_map:
-                            logger.info(
-                                f"CDT '{node.node_name}': loaded input maps from graph metadata fallback"
-                            )
-                        break
-            except Exception as e:
-                logger.warning(f"CDT '{node.node_name}': metadata fallback failed: {e}")
-
         return ClassificationDecisionTableNodeData(
             node_name=node.node_name,
-            pre_computation_code=pre_computation_code,
-            pre_input_map=pre_input_map,
-            pre_output_variable_path=pre_output_variable_path,
-            post_computation_code=post_computation_code,
-            post_input_map=post_input_map,
-            post_output_variable_path=post_output_variable_path,
+            pre_computation_code=node.pre_computation_code,
+            pre_input_map=node.pre_input_map or {},
+            pre_output_variable_path=node.pre_output_variable_path,
+            post_computation_code=node.post_computation_code,
+            post_input_map=node.post_input_map or {},
+            post_output_variable_path=node.post_output_variable_path,
             condition_groups=condition_groups,
             prompts=prompts_dict,
             route_variable_name=node.route_variable_name,
