@@ -34,6 +34,7 @@
     @for (node of asStorageItems(nodes); track node.path || node.name + '-' + $index) {
         <div
             class="storage-tree__item"
+            [attr.data-path]="node.path"
             [class.storage-tree__item--selected]="isItemSelected(node)"
             [class.storage-tree__item--non-empty]="node.type === 'folder' && !node.is_empty"
             [class.storage-tree__item--hovered]="hoveredItem() === node"

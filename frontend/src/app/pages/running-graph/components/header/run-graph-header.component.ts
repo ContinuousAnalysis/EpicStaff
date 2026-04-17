@@ -13,6 +13,7 @@ import { StatusBadgeComponent } from '../../../../shared/components/status-badge
 import { RunGraphPageService } from '../../services/run-graph-page.service';
 import { MemoriesSidebarComponent } from '../memory-sidebar/components/memory-sidebar/memory-sidebar.component';
 import { MemoryService } from '../memory-sidebar/service/memory.service';
+import { SessionFilesButtonComponent } from './session-files-button/session-files-button.component';
 
 @Component({
     selector: 'app-running-graph-header',
@@ -25,6 +26,7 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
         AppSvgIconComponent,
         StatusBadgeComponent,
         MemoriesSidebarComponent,
+        SessionFilesButtonComponent,
     ],
     template: `
         <div class="header">
@@ -40,6 +42,9 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
             </div>
             <div class="view-options"></div>
             <div class="actions">
+                @if (sessionId) {
+                    <app-session-files-button [sessionId]="sessionId"></app-session-files-button>
+                }
                 <button mat-button class="sessions-button" (click)="openSessionsDialog()" [disabled]="!graphData">
                     <span>Sessions</span>
                 </button>

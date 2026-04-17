@@ -38,11 +38,11 @@ export interface StorageUploadResponse {
     uploaded: StorageUploadResult[];
 }
 
-export interface StorageSessionOutputItem {
+export interface SessionOutputFile {
+    id: number;
+    path: string;
     name: string;
-    type: 'file' | 'folder';
-    size?: number;
-    modified?: string;
+    added_at: string;
 }
 
 export interface GraphFileRecord {

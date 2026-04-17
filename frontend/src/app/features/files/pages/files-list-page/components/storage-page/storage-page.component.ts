@@ -10,6 +10,7 @@ import {
     ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
@@ -55,6 +56,9 @@ export class StoragePageComponent {
     private confirmationDialogService = inject(ConfirmationDialogService);
     private dialog = inject(Dialog);
     private filesSearchService = inject(FilesSearchService);
+    private route = inject(ActivatedRoute);
+
+    private pendingDeepLinkPath: string | null = null;
 
     readonly isLoading = signal<boolean>(true);
     readonly treeData = signal<StorageItem[]>([]);
@@ -113,6 +117,8 @@ export class StoragePageComponent {
     }
 
     constructor() {
+        this.pendingDeepLinkPath = this.route.snapshot.queryParamMap.get('path');
+
         effect(() => {
             this.storageApiService.refreshTick();
             this.loadTree();
@@ -128,9 +134,58 @@ export class StoragePageComponent {
                 finalize(() => this.isLoading.set(false))
             )
             .subscribe({
-                next: (items) => this.treeData.set(this.withPaths(Array.isArray(items) ? items : [], '')),
+                next: (items) => {
+                    this.treeData.set(this.withPaths(Array.isArray(items) ? items : [], ''));
+                    if (this.pendingDeepLinkPath) {
+                        const path = this.pendingDeepLinkPath;
+                        this.pendingDeepLinkPath = null;
+                        this.expandAndSelectPath(path);
+                    }
+                },
                 error: () => this.toastService.error('Failed to load storage files'),
             });
+    }
+
+    private expandAndSelectPath(targetPath: string): void {
+        const segments = targetPath.split('/').filter(Boolean);
+        if (segments.length === 0) return;
+
+        const walk = (index: number, nodes: StorageItem[], currentPath: string): void => {
+            const segment = segments[index];
+            const nextPath = currentPath ? `${currentPath}/${segment}` : segment;
+            const match = nodes.find((n) => n.name === segment);
+            if (!match) return;
+
+            const isLast = index === segments.length - 1;
+
+            if (isLast) {
+                this.setSelectedItem(match);
+                setTimeout(() => this.storageTree?.selectItemExternally(match));
+                return;
+            }
+
+            if (match.type !== 'folder') return;
+
+            match.isExpanded = true;
+
+            if (!match.children || match.children.length === 0) {
+                this.storageApiService
+                    .list(nextPath)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: (children) => {
+                            match.children = this.withPaths(Array.isArray(children) ? children : [], nextPath);
+                            this.treeData.update((data) => [...data]);
+                            walk(index + 1, match.children ?? [], nextPath);
+                        },
+                    });
+            } else {
+                this.treeData.update((data) => [...data]);
+                walk(index + 1, match.children, nextPath);
+            }
+        };
+
+        walk(0, this.treeData(), '');
     }
 
     private withPaths(items: StorageItem[], parentPath: string): StorageItem[] {

@@ -56,7 +56,7 @@ export class FlowFilesButtonComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
 
     readonly attachedFiles = signal<GraphFileRecord[]>([]);
-    readonly attachedPaths = computed(() => new Set(this.attachedFiles().map((f) => f.path)));
+    readonly attachedPaths = computed(() => new Set(this.attachedFiles().map((f) => f.path.replace(/\/+$/, ''))));
     readonly dropdownOpen = signal(false);
     readonly searchQuery = signal('');
     readonly rootNodes = signal<TreeNode[]>([]);

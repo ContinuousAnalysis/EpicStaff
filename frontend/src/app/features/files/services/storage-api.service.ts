@@ -7,9 +7,9 @@ import { ConfigService } from '../../../services/config/config.service';
 import { AddFilesPayload } from '../components/create-folder-dialog/create-folder-dialog.component';
 import {
     GraphFileRecord,
+    SessionOutputFile,
     StorageItem,
     StorageItemInfo,
-    StorageSessionOutputItem,
     StorageUploadResponse,
 } from '../models/storage.models';
 
@@ -158,12 +158,8 @@ export class StorageApiService {
         });
     }
 
-    getSessionOutputs(sessionId: string): Observable<StorageSessionOutputItem[]> {
-        return this.http
-            .get<{ items: StorageSessionOutputItem[] }>(`${this.apiUrl}session-outputs/`, {
-                params: { session_id: sessionId },
-            })
-            .pipe(map((res) => res.items ?? []));
+    getSessionOutputFiles(sessionId: string): Observable<SessionOutputFile[]> {
+        return this.http.get<SessionOutputFile[]>(`${this.configService.apiUrl}sessions/${sessionId}/output-files/`);
     }
 
     private normalizePath(path: string): string {

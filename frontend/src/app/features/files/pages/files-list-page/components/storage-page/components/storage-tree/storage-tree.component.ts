@@ -120,6 +120,20 @@ export class StorageTreeComponent {
         this.contextMenuItem.set(null);
     }
 
+    selectItemExternally(item: StorageItem): void {
+        this.setSelectedPaths(new Set([item.path]));
+        this.selectedItem.set(item);
+        this.selectionAnchorPath = item.path;
+        setTimeout(() => this.scrollItemIntoView(item));
+    }
+
+    private scrollItemIntoView(item: StorageItem): void {
+        const listEl = this.listElRef?.nativeElement;
+        if (!listEl) return;
+        const el = listEl.querySelector(`[data-path="${CSS.escape(item.path)}"]`) as HTMLElement | null;
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     startRename(item: StorageItem): void {
         this.renamingFromPath = item.path || item.name;
         this.renameValue = item.name;
