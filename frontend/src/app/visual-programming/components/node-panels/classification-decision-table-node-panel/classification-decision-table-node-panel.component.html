@@ -1,265 +1,312 @@
 <div class="panel-container">
     <div class="panel-content">
         @if (form) {
-        <form [formGroup]="form" class="form-container">
-            <!-- Tabs + compact config -->
-            <div class="tabs-header">
-                <div class="tabs-left">
-                    <app-tab-button
-                        [active]="activeTab() === 'table'"
-                        (action)="setActiveTab('table')"
-                    >
-                        Decision Table
-                    </app-tab-button>
-                    <app-tab-button
-                        [active]="activeTab() === 'precomputation'"
-                        (action)="setActiveTab('precomputation')"
-                    >
-                        Pre-computation
-                    </app-tab-button>
-                    <app-tab-button
-                        [active]="activeTab() === 'postcomputation'"
-                        (action)="setActiveTab('postcomputation')"
-                    >
-                        Post-computation
-                    </app-tab-button>
-                    <app-tab-button
-                        [active]="activeTab() === 'prompts'"
-                        (action)="setActiveTab('prompts')"
-                    >
-                        Prompt Library
-                    </app-tab-button>
+            <form [formGroup]="form" class="form-container">
+                <!-- Sticky header: node fields + tab row -->
+                <div class="panel-sticky-header">
+                    <!-- Header fields row -->
+                    <div class="panel-node-header">
+                        <div class="header-field">
+                            <label class="header-label"
+                                >Name
+                                <span class="help-icon" title="The unique identifier for this node"
+                                    ><i class="ti ti-help-circle"></i></span
+                            ></label>
+                            <input
+                                type="text"
+                                formControlName="node_name"
+                                class="header-input"
+                                placeholder="Node name"
+                            />
+                        </div>
+
+                        <div class="header-field">
+                            <label class="header-label"
+                                >Default Next Node
+                                <span class="help-icon" title="Fallback route when no condition matches"
+                                    ><i class="ti ti-help-circle"></i></span
+                            ></label>
+                            <select formControlName="default_next_node" class="header-select">
+                                <option value="">Select Node</option>
+                                @for (node of availableNodes(); track node.value) {
+                                    <option [value]="node.value">{{ node.label }}</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="header-field">
+                            <label class="header-label"
+                                >Error Next Node
+                                <span class="help-icon" title="Route taken if evaluation fails"
+                                    ><i class="ti ti-help-circle"></i></span
+                            ></label>
+                            <select formControlName="next_error_node" class="header-select">
+                                <option value="">Select Node</option>
+                                @for (node of availableNodes(); track node.value) {
+                                    <option [value]="node.value">{{ node.label }}</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="header-field header-field--toggle">
+                            <label class="header-label"
+                                >Classification Dec Table
+                                <span class="help-icon" title="This node operates as a Classification Decision Table"
+                                    ><i class="ti ti-help-circle"></i></span
+                            ></label>
+                            <div
+                                class="cdt-toggle cdt-toggle--on"
+                                aria-label="Classification Decision Table (always enabled)"
+                            >
+                                <span class="toggle-thumb"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs row -->
+                    <div class="tabs-row">
+                        <div class="tabs-row__left">
+                            <button
+                                class="tab-btn"
+                                [class.tab-btn--active]="activeTab() === 'table'"
+                                (click)="setActiveTab('table')"
+                                type="button"
+                            >
+                                Decision Table
+                            </button>
+                        </div>
+                        <div class="tabs-row__right">
+                            <button
+                                class="tab-link"
+                                [class.tab-link--active]="activeTab() === 'precomputation'"
+                                (click)="setActiveTab('precomputation')"
+                                type="button"
+                            >
+                                Pre-computation
+                            </button>
+                            <span class="tab-separator">/</span>
+                            <button
+                                class="tab-link"
+                                [class.tab-link--active]="activeTab() === 'postcomputation'"
+                                (click)="setActiveTab('postcomputation')"
+                                type="button"
+                            >
+                                Post-computation
+                            </button>
+                            <span class="tab-separator">/</span>
+                            <button
+                                class="tab-link"
+                                [class.tab-link--active]="activeTab() === 'prompts'"
+                                (click)="setActiveTab('prompts')"
+                                type="button"
+                            >
+                                Prompt library
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="tabs-right">
-                    <div class="inline-field">
-                        <label title="The unique identifier used to reference this decision table node.">Name</label>
-                        <input type="text" formControlName="node_name" placeholder="node name" class="inline-input" />
-                    </div>
-                    <div class="inline-field">
-                        <label title="Variable name in scope that holds the route code after evaluation.">Route Var</label>
-                        <input type="text" formControlName="route_variable_name" placeholder="route_code" class="inline-input" />
-                    </div>
-                    <div class="inline-field">
-                        <label title="Fallback route when no condition matches">Default</label>
-                        <select formControlName="default_next_node" class="inline-select">
-                            <option value="">—</option>
-                            @for (node of availableNodes(); track node.value) {
-                            <option [value]="node.value">{{ node.label }}</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="inline-field">
-                        <label title="Route taken if decision evaluation fails">Error</label>
-                        <select formControlName="next_error_node" class="inline-select">
-                            <option value="">—</option>
-                            @for (node of availableNodes(); track node.value) {
-                            <option [value]="node.value">{{ node.label }}</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="inline-field inline-checkbox">
-                        <label title="When enabled, expression errors are treated as false instead of aborting">
-                            <input type="checkbox" formControlName="expression_errors_as_false" />
-                            Errors → false
-                        </label>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Decision Table Tab -->
-            @if (activeTab() === 'table') {
-
-            <div class="grid-section">
-                <app-classification-decision-table-grid
-                    [conditionGroups]="conditionGroups()"
-                    [activeColor]="activeColor"
-                    [currentNodeId]="node().id"
-                    [prompts]="prompts()"
-                    [defaultLlmId]="form.value.default_llm_id ? '' + form.value.default_llm_id : ''"
-                    [llmConfigs]="llmConfigOptions"
-                    [preInputMapKeys]="inputMapVariableNames()"
-                    [domainKeys]="domainKeys()"
-                    (conditionGroupsChange)="onConditionGroupsChange($event)"
-                    (promptChange)="updatePrompt($event.promptId, $event.field, $event.value)"
-                    (promptAdd)="onPromptAdd($event.id, $event.config)"
-                />
-            </div>
-            }
-
-            <!-- Pre-computation Tab -->
-            @if (activeTab() === 'precomputation') {
-            <div class="computation-section">
-                <div class="computation-sidebar">
-                    <h4 class="section-label">Input Map</h4>
-                    <div class="input-map">
-                        <app-input-map
+                <!-- Decision Table Tab -->
+                @if (activeTab() === 'table') {
+                    <div class="grid-section">
+                        <app-classification-decision-table-grid
+                            [conditionGroups]="conditionGroups()"
                             [activeColor]="activeColor"
-                            arrayName="pre_input_map"
-                        ></app-input-map>
+                            [currentNodeId]="node().id"
+                            [prompts]="prompts()"
+                            [defaultLlmId]="form.value.default_llm_id ? '' + form.value.default_llm_id : ''"
+                            [llmConfigs]="llmConfigOptions"
+                            [preInputMapKeys]="inputMapVariableNames()"
+                            [domainKeys]="domainKeys()"
+                            (conditionGroupsChange)="onConditionGroupsChange($event)"
+                            (promptChange)="updatePrompt($event.promptId, $event.field, $event.value)"
+                            (promptAdd)="onPromptAdd($event.id, $event.config)"
+                        />
                     </div>
-                    <app-custom-input
-                        label="Output Variable Path"
-                        tooltipText="The path where the output of this code will be stored in your flow variables. Leave empty if you don't need to store the output."
-                        formControlName="pre_output_variable_path"
-                        placeholder="Enter output variable path (leave empty for null)"
-                        [activeColor]="activeColor"
-                    ></app-custom-input>
-                </div>
-                <div class="code-editor-section">
-                    <app-code-editor
-                        [pythonCode]="preCode"
-                        (pythonCodeChange)="onPreCodeChange($event)"
-                    ></app-code-editor>
-                </div>
-            </div>
-            }
+                }
 
-            <!-- Post-computation Tab -->
-            @if (activeTab() === 'postcomputation') {
-            <div class="computation-section">
-                <div class="computation-sidebar">
-                    <app-custom-input
-                        label="Output Variable Path"
-                        tooltipText="The path where the output of this code will be stored in your flow variables. Leave empty if you don't need to store the output."
-                        formControlName="post_output_variable_path"
-                        placeholder="Enter output variable path (leave empty for null)"
-                        [activeColor]="activeColor"
-                    ></app-custom-input>
-                </div>
-                <div class="code-editor-section">
-                    <app-code-editor
-                        [pythonCode]="postCode"
-                        (pythonCodeChange)="onPostCodeChange($event)"
-                    ></app-code-editor>
-                </div>
-            </div>
-            }
-
-            <!-- Prompt Library Tab -->
-            @if (activeTab() === 'prompts') {
-            <div class="prompts-section">
-                <div class="section-header">
-                    <h3>Prompt Library</h3>
-                    <p class="help-text">
-                        Define reusable prompts that can be referenced in decision table rules via Prompt ID.
-                    </p>
-                </div>
-
-                <!-- Default LLM -->
-                <div class="default-llm-section">
-                    <label class="field-label">
-                        Default LLM
-                        <span class="tooltip-icon" title="Default LLM used by new prompts. Each prompt can override.">
-                            <i class="ti ti-help-circle"></i>
-                        </span>
-                    </label>
-                    <app-llm-model-selector
-                        [llmConfigs]="llmConfigs"
-                        formControlName="default_llm_id"
-                        placeholder="Select default LLM..."
-                    ></app-llm-model-selector>
-                </div>
-
-                <!-- Add Prompt -->
-                <div class="add-prompt-row">
-                    <input
-                        type="text"
-                        class="prompt-id-input"
-                        [(ngModel)]="newPromptId"
-                        [ngModelOptions]="{ standalone: true }"
-                        placeholder="Enter prompt ID (e.g. classify_intent)"
-                        (keydown.enter)="addPrompt()"
-                    />
-                    <button type="button" class="add-prompt-btn" (click)="addPrompt()" [disabled]="!newPromptId.trim()">
-                        <i class="ti ti-plus"></i> Add Prompt
-                    </button>
-                </div>
-
-                <!-- Prompt List -->
-                <div class="prompts-list">
-                    @if (promptEntries().length === 0) {
-                        <p class="empty-state">No prompts defined yet. Add a prompt above to get started.</p>
-                    } @else {
-                        @for (prompt of promptEntries(); track prompt.id) {
-                        <div class="prompt-card" [class.expanded]="editingPromptId() === prompt.id">
-                            <div class="prompt-card-header" (click)="toggleEditPrompt(prompt.id)">
-                                <div class="prompt-card-title">
-                                    <i class="ti ti-message-chatbot"></i>
-                                    <span class="prompt-id">{{ prompt.id }}</span>
-                                    @if (prompt.result_variable) {
-                                        <span class="result-badge">→ {{ prompt.result_variable }}</span>
-                                    }
-                                </div>
-                                <div class="prompt-card-actions">
-                                    <button type="button" class="icon-btn" title="Delete prompt" (click)="deletePrompt(prompt.id); $event.stopPropagation()">
-                                        <i class="ti ti-trash"></i>
-                                    </button>
-                                    <i class="ti" [class.ti-chevron-down]="editingPromptId() !== prompt.id" [class.ti-chevron-up]="editingPromptId() === prompt.id"></i>
-                                </div>
+                <!-- Pre-computation Tab -->
+                @if (activeTab() === 'precomputation') {
+                    <div class="computation-section">
+                        <div class="computation-sidebar">
+                            <h4 class="section-label">Input Map</h4>
+                            <div class="input-map">
+                                <app-input-map [activeColor]="activeColor" arrayName="pre_input_map"></app-input-map>
                             </div>
+                            <app-custom-input
+                                label="Output Variable Path"
+                                tooltipText="The path where the output of this code will be stored in your flow variables. Leave empty if you don't need to store the output."
+                                formControlName="pre_output_variable_path"
+                                placeholder="Enter output variable path (leave empty for null)"
+                                [activeColor]="activeColor"
+                            ></app-custom-input>
+                        </div>
+                        <div class="code-editor-section">
+                            <app-code-editor
+                                [pythonCode]="preCode"
+                                (pythonCodeChange)="onPreCodeChange($event)"
+                            ></app-code-editor>
+                        </div>
+                    </div>
+                }
 
-                            @if (editingPromptId() === prompt.id) {
-                            <div class="prompt-card-body">
-                                <div class="prompt-field">
-                                    <label class="field-label">LLM Override</label>
-                                    <app-llm-model-selector
-                                        [llmConfigs]="llmConfigs"
-                                        [ngModel]="getLlmIdAsNumber(prompt.llm_id)"
-                                        [ngModelOptions]="{ standalone: true }"
-                                        (modelSelected)="onPromptLlmChange(prompt.id, $event)"
-                                        placeholder="Inherit default LLM"
-                                    ></app-llm-model-selector>
-                                </div>
+                <!-- Post-computation Tab -->
+                @if (activeTab() === 'postcomputation') {
+                    <div class="computation-section">
+                        <div class="computation-sidebar">
+                            <app-custom-input
+                                label="Output Variable Path"
+                                tooltipText="The path where the output of this code will be stored in your flow variables. Leave empty if you don't need to store the output."
+                                formControlName="post_output_variable_path"
+                                placeholder="Enter output variable path (leave empty for null)"
+                                [activeColor]="activeColor"
+                            ></app-custom-input>
+                        </div>
+                        <div class="code-editor-section">
+                            <app-code-editor
+                                [pythonCode]="postCode"
+                                (pythonCodeChange)="onPostCodeChange($event)"
+                            ></app-code-editor>
+                        </div>
+                    </div>
+                }
 
-                                <div class="prompt-field">
-                                    <label class="field-label">Result Variable</label>
-                                    <input
-                                        type="text"
-                                        class="field-input"
-                                        [ngModel]="prompt.result_variable"
-                                        [ngModelOptions]="{ standalone: true }"
-                                        (ngModelChange)="updatePrompt(prompt.id, 'result_variable', $event)"
-                                        placeholder="e.g. classification"
-                                    />
-                                </div>
+                <!-- Prompt Library Tab -->
+                @if (activeTab() === 'prompts') {
+                    <div class="prompts-section">
+                        <div class="prompt-section-header">
+                            <span class="prompt-section-title">
+                                Prompt Library
+                                <i
+                                    class="ti ti-help-circle"
+                                    title="Define reusable prompts referenced in decision table rules."
+                                ></i>
+                            </span>
+                            <button type="button" class="add-prompt-header-btn" (click)="addPrompt()">
+                                <i class="ti ti-plus"></i> Add Prompt
+                            </button>
+                        </div>
 
-                                <div class="prompt-field">
-                                    <label class="field-label">Prompt Text</label>
-                                    <textarea
-                                        class="prompt-textarea"
-                                        rows="8"
-                                        [ngModel]="prompt.prompt_text"
-                                        [ngModelOptions]="{ standalone: true }"
-                                        (ngModelChange)="updatePrompt(prompt.id, 'prompt_text', $event)"
-                                        placeholder="Enter prompt template. Use curly braces for variable interpolation."
-                                    ></textarea>
-                                </div>
+                        <!-- Prompt List -->
+                        <div class="prompts-list">
+                            @if (promptEntries().length === 0) {
+                                <p class="empty-state">No prompts defined yet. Add a prompt above to get started.</p>
+                            } @else {
+                                @for (prompt of promptEntries(); track prompt.id) {
+                                    <div class="prompt-card" [class.expanded]="editingPromptId() === prompt.id">
+                                        <div class="prompt-card-header" (click)="toggleEditPrompt(prompt.id)">
+                                            <div class="prompt-card-title">
+                                                <i class="ti ti-message-chatbot"></i>
+                                                <span class="prompt-id">{{ prompt.id }}</span>
+                                                @if (prompt.result_variable) {
+                                                    <span class="result-badge">→ {{ prompt.result_variable }}</span>
+                                                }
+                                            </div>
+                                            <div class="prompt-card-actions">
+                                                <button
+                                                    type="button"
+                                                    class="icon-btn"
+                                                    title="Delete prompt"
+                                                    (click)="deletePrompt(prompt.id); $event.stopPropagation()"
+                                                >
+                                                    <i class="ti ti-trash"></i>
+                                                </button>
+                                                <i
+                                                    class="ti"
+                                                    [class.ti-chevron-down]="editingPromptId() !== prompt.id"
+                                                    [class.ti-chevron-up]="editingPromptId() === prompt.id"
+                                                ></i>
+                                            </div>
+                                        </div>
 
-                                <div class="prompt-field">
-                                    <label class="field-label">Output Schema (JSON)</label>
-                                    <textarea
-                                        class="schema-textarea"
-                                        rows="4"
-                                        [ngModel]="prompt.output_schema"
-                                        [ngModelOptions]="{ standalone: true }"
-                                        (ngModelChange)="updatePrompt(prompt.id, 'output_schema', $event)"
-                                        placeholder='{"route_label": "string", "confidence": 0.0}'
-                                    ></textarea>
-                                </div>
-                            </div>
+                                        @if (editingPromptId() === prompt.id) {
+                                            <div class="prompt-card-body">
+                                                <div class="prompt-field">
+                                                    <label class="field-label"
+                                                        >Name <span class="required-star">*</span></label
+                                                    >
+                                                    <input
+                                                        type="text"
+                                                        class="field-input"
+                                                        [ngModel]="prompt.id"
+                                                        [ngModelOptions]="{ standalone: true }"
+                                                        (ngModelChange)="renamePrompt(prompt.id, $event)"
+                                                        placeholder="Enter prompt name..."
+                                                    />
+                                                </div>
+
+                                                <div class="prompt-field">
+                                                    <label class="field-label">LLM Override</label>
+                                                    <app-llm-model-selector
+                                                        [llmConfigs]="llmConfigs"
+                                                        [ngModel]="getLlmIdAsNumber(prompt.llm_id)"
+                                                        [ngModelOptions]="{ standalone: true }"
+                                                        (modelSelected)="onPromptLlmChange(prompt.id, $event)"
+                                                        placeholder="Inherit default LLM"
+                                                    ></app-llm-model-selector>
+                                                </div>
+
+                                                <div class="prompt-field">
+                                                    <label class="field-label">Result Variable</label>
+                                                    <input
+                                                        type="text"
+                                                        class="field-input"
+                                                        [ngModel]="prompt.result_variable"
+                                                        [ngModelOptions]="{ standalone: true }"
+                                                        (ngModelChange)="
+                                                            updatePrompt(prompt.id, 'result_variable', $event)
+                                                        "
+                                                        placeholder="e.g. classification"
+                                                    />
+                                                </div>
+
+                                                <div class="prompt-field">
+                                                    <label class="field-label">Prompt Text</label>
+                                                    <div class="prompt-textarea-wrapper">
+                                                        <div
+                                                            class="prompt-highlight-overlay"
+                                                            aria-hidden="true"
+                                                            [innerHTML]="getHighlightedPromptText(prompt.prompt_text)"
+                                                        ></div>
+                                                        <textarea
+                                                            class="prompt-textarea prompt-textarea--transparent"
+                                                            rows="8"
+                                                            [ngModel]="prompt.prompt_text"
+                                                            [ngModelOptions]="{ standalone: true }"
+                                                            (ngModelChange)="onPromptTextChange(prompt.id, $event)"
+                                                            placeholder="Enter prompt template. Use curly braces for variable interpolation."
+                                                        ></textarea>
+                                                    </div>
+                                                </div>
+
+                                                <div class="prompt-field">
+                                                    <label class="field-label">Output Schema (JSON)</label>
+                                                    <textarea
+                                                        class="schema-textarea"
+                                                        rows="4"
+                                                        [ngModel]="prompt.output_schema"
+                                                        [ngModelOptions]="{ standalone: true }"
+                                                        (ngModelChange)="
+                                                            updatePrompt(prompt.id, 'output_schema', $event)
+                                                        "
+                                                        placeholder='{"route_label": "string", "confidence": 0.0}'
+                                                    ></textarea>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
                             }
                         </div>
-                        }
-                    }
-                </div>
 
-                <div class="prompt-info">
-                    <strong>Execution order:</strong> Expression is evaluated first. If true (or empty), the prompt runs. 
-                    The LLM result is stored in <code>result_variable</code> and is then available in the Manipulation code.
-                </div>
-            </div>
-            }
-        </form>
+                        <div class="prompt-info">
+                            <strong>Execution order:</strong> Expression is evaluated first. If true (or empty), the
+                            prompt runs. The LLM result is stored in <code>result_variable</code> and is then available
+                            in the Manipulation code.
+                        </div>
+                    </div>
+                }
+            </form>
         }
     </div>
 </div>

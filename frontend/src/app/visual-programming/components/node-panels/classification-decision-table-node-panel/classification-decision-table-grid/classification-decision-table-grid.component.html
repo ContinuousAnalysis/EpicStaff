@@ -19,7 +19,11 @@
                     </span>
                 }
                 @for (field of hiddenFieldColumns(); track field) {
-                    <span class="field-chip field-chip--expr field-chip--hidden" (click)="addFieldColumn(field)" title="Hidden expression column (has data) — click to show">
+                    <span
+                        class="field-chip field-chip--expr field-chip--hidden"
+                        (click)="addFieldColumn(field)"
+                        title="Hidden expression column (has data) — click to show"
+                    >
                         <i class="ti ti-eye-off"></i>
                         {{ field }}
                     </span>
@@ -41,7 +45,10 @@
                             @if (hiddenFieldColumns().length > 0) {
                                 <div class="field-picker-group-label">Hidden</div>
                                 @for (field of hiddenFieldColumns(); track field) {
-                                    <div class="field-picker-item field-picker-item--hidden" (click)="addFieldColumn(field); $event.stopPropagation()">
+                                    <div
+                                        class="field-picker-item field-picker-item--hidden"
+                                        (click)="addFieldColumn(field); $event.stopPropagation()"
+                                    >
                                         <i class="ti ti-eye-off"></i> {{ field }}
                                     </div>
                                 }
@@ -49,7 +56,10 @@
                             @if (availableInputMapFields().length > 0) {
                                 <div class="field-picker-group-label">Input Map</div>
                                 @for (field of availableInputMapFields(); track field) {
-                                    <div class="field-picker-item" (click)="addFieldColumn(field); $event.stopPropagation()">
+                                    <div
+                                        class="field-picker-item"
+                                        (click)="addFieldColumn(field); $event.stopPropagation()"
+                                    >
                                         {{ field }}
                                     </div>
                                 }
@@ -57,7 +67,10 @@
                             @if (availableDomainFields().length > 0) {
                                 <div class="field-picker-group-label">Domain</div>
                                 @for (field of availableDomainFields(); track field) {
-                                    <div class="field-picker-item" (click)="addFieldColumn(field); $event.stopPropagation()">
+                                    <div
+                                        class="field-picker-item"
+                                        (click)="addFieldColumn(field); $event.stopPropagation()"
+                                    >
                                         {{ field }}
                                     </div>
                                 }
@@ -77,7 +90,11 @@
                     </span>
                 }
                 @for (field of hiddenManipFieldColumns(); track field) {
-                    <span class="field-chip field-chip--manip field-chip--hidden" (click)="addManipFieldColumn(field)" title="Hidden manipulation column (has data) — click to show">
+                    <span
+                        class="field-chip field-chip--manip field-chip--hidden"
+                        (click)="addManipFieldColumn(field)"
+                        title="Hidden manipulation column (has data) — click to show"
+                    >
                         <i class="ti ti-eye-off"></i>
                         {{ field }}
                     </span>
@@ -99,7 +116,10 @@
                             @if (hiddenManipFieldColumns().length > 0) {
                                 <div class="field-picker-group-label">Hidden</div>
                                 @for (field of hiddenManipFieldColumns(); track field) {
-                                    <div class="field-picker-item field-picker-item--hidden" (click)="addManipFieldColumn(field); $event.stopPropagation()">
+                                    <div
+                                        class="field-picker-item field-picker-item--hidden"
+                                        (click)="addManipFieldColumn(field); $event.stopPropagation()"
+                                    >
                                         <i class="ti ti-eye-off"></i> {{ field }}
                                     </div>
                                 }
@@ -107,7 +127,10 @@
                             @if (availableManipInputMapFields().length > 0) {
                                 <div class="field-picker-group-label">Input Map</div>
                                 @for (field of availableManipInputMapFields(); track field) {
-                                    <div class="field-picker-item" (click)="addManipFieldColumn(field); $event.stopPropagation()">
+                                    <div
+                                        class="field-picker-item"
+                                        (click)="addManipFieldColumn(field); $event.stopPropagation()"
+                                    >
                                         {{ field }}
                                     </div>
                                 }
@@ -115,7 +138,10 @@
                             @if (availableManipDomainFields().length > 0) {
                                 <div class="field-picker-group-label">Domain</div>
                                 @for (field of availableManipDomainFields(); track field) {
-                                    <div class="field-picker-item" (click)="addManipFieldColumn(field); $event.stopPropagation()">
+                                    <div
+                                        class="field-picker-item"
+                                        (click)="addManipFieldColumn(field); $event.stopPropagation()"
+                                    >
                                         {{ field }}
                                     </div>
                                 }
@@ -126,6 +152,9 @@
                         </div>
                     }
                 </div>
+                <button type="button" class="add-condition-btn" (click)="addRow()">
+                    <i class="ti ti-plus"></i> Add Condition
+                </button>
             </div>
         </div>
     </div>
@@ -133,7 +162,7 @@
     <ag-grid-angular
         class="decision-grid ag-theme-quartz-dark"
         [class.empty-state]="isEmpty()"
-        style="width: 100%;"
+        style="width: 100%"
         [rowData]="rowData()"
         [columnDefs]="columnDefs"
         [defaultColDef]="defaultColDef"
@@ -143,22 +172,8 @@
     >
     </ag-grid-angular>
 
-    <div class="grid-footer">
-        <app-button
-            type="primary"
-            [leftIcon]="'ui/plus'"
-            (click)="addRow()"
-        >
-            Add Condition
-        </app-button>
-    </div>
-
     @if (contextMenu()) {
-        <div
-            class="context-menu"
-            [style.left.px]="contextMenu()!.x"
-            [style.top.px]="contextMenu()!.y"
-        >
+        <div class="context-menu" [style.left.px]="contextMenu()!.x" [style.top.px]="contextMenu()!.y">
             <div class="context-menu-item" (click)="addRowAbove()">
                 <i class="ti ti-row-insert-top"></i> Add Row Above
             </div>

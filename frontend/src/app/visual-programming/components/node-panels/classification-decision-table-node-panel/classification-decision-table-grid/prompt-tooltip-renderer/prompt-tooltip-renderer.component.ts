@@ -1,22 +1,23 @@
+import { CommonModule } from '@angular/common';
 import {
-    Component,
     ChangeDetectionStrategy,
     ChangeDetectorRef,
+    Component,
     ElementRef,
     inject,
     OnDestroy,
     ViewEncapsulation,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
+
 import { PromptConfig } from '../../../../../core/models/classification-decision-table.model';
 import { MonacoCellRendererComponent } from '../monaco-cell-renderer/monaco-cell-renderer.component';
 
 interface PromptTooltipParams extends ICellRendererParams {
     prompts: Record<string, PromptConfig>;
-    onPromptChange: (promptId: string, field: keyof PromptConfig, value: any) => void;
+    onPromptChange: (promptId: string, field: keyof PromptConfig, value: PromptConfig[keyof PromptConfig]) => void;
 }
 
 @Component({
@@ -26,46 +27,69 @@ interface PromptTooltipParams extends ICellRendererParams {
     template: `
         <div
             class="prompt-id-cell"
-            (mouseenter)="showTooltip($event)"
+            (mouseenter)="showTooltip()"
             (mouseleave)="scheduleHide()"
             (mousedown)="removeTooltipNow()"
         >
             <span *ngIf="!value" class="placeholder">—</span>
-            <span *ngIf="value" class="prompt-id-text">{{ value }}</span>
-            <i *ngIf="value && hasPrompt" class="ti ti-eye prompt-indicator"></i>
+            <ng-container *ngIf="value">
+                <span *ngIf="!isDeleted" class="prompt-id-text">{{ value }}</span>
+                <span *ngIf="isDeleted" class="deleted-prompt-badge">
+                    <i class="ti ti-alert-triangle"></i> Deleted
+                </span>
+                <i *ngIf="hasPrompt" class="ti ti-eye prompt-indicator"></i>
+            </ng-container>
         </div>
     `,
-    styles: [`
-        :host {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        .prompt-id-cell {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            padding: 0 8px;
-            gap: 6px;
-            cursor: default;
-        }
-        .prompt-id-text {
-            color: #d4d4d4;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 14px;
-        }
-        .prompt-indicator {
-            color: rgba(104, 95, 255, 0.6);
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        .placeholder {
-            color: rgba(255, 255, 255, 0.2);
-        }
-    `],
+    styles: [
+        `
+            :host {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+            .prompt-id-cell {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                padding: 0 8px;
+                gap: 6px;
+                cursor: default;
+            }
+            .prompt-id-text {
+                color: #d4d4d4;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 14px;
+            }
+            .prompt-indicator {
+                color: rgba(104, 95, 255, 0.6);
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+            .placeholder {
+                color: rgba(255, 255, 255, 0.2);
+            }
+            .deleted-prompt-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 2px 8px;
+                background: rgba(255, 59, 48, 0.15);
+                color: var(--error-color, #ff3b30);
+                border: 1px solid rgba(255, 59, 48, 0.35);
+                border-radius: 10px;
+                font-size: 11px;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+            .deleted-prompt-badge .ti {
+                font-size: 12px;
+            }
+        `,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     encapsulation: ViewEncapsulation.None,
 })
@@ -75,10 +99,11 @@ export class PromptTooltipRendererComponent implements ICellRendererAngularComp,
 
     public value: string = '';
     public hasPrompt = false;
+    public isDeleted = false;
 
     private params!: PromptTooltipParams;
     private tooltipEl: HTMLElement | null = null;
-    private hideTimeout: any = null;
+    private hideTimeout: ReturnType<typeof setTimeout> | null = null;
     private promptConfig: PromptConfig | null = null;
     private mouseInsideTooltip = false;
     private activeTextarea: HTMLTextAreaElement | null = null;
@@ -103,12 +128,9 @@ export class PromptTooltipRendererComponent implements ICellRendererAngularComp,
 
     refresh(params: PromptTooltipParams): boolean {
         this.params = params;
-        const newValue = params.value || '';
-        if (newValue !== this.value) {
-            this.value = newValue;
-            this.resolvePrompt();
-            this.cdr.markForCheck();
-        }
+        this.value = params.value || '';
+        this.resolvePrompt();
+        this.cdr.markForCheck();
         return true;
     }
 
@@ -121,9 +143,10 @@ export class PromptTooltipRendererComponent implements ICellRendererAngularComp,
         const prompts = this.params.prompts || {};
         this.promptConfig = this.value ? prompts[this.value] || null : null;
         this.hasPrompt = !!this.promptConfig;
+        this.isDeleted = !!this.value && !this.promptConfig;
     }
 
-    showTooltip(event: MouseEvent): void {
+    showTooltip(): void {
         if (this.hideTimeout) {
             clearTimeout(this.hideTimeout);
             this.hideTimeout = null;

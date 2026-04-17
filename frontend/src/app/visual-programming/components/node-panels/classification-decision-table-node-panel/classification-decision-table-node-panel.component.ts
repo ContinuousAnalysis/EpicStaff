@@ -1,35 +1,39 @@
+import { CommonModule } from '@angular/common';
 import {
     ChangeDetectionStrategy,
-    Component,
-    input,
     ChangeDetectorRef,
-    signal,
+    Component,
     computed,
-    inject,
-    effect,
     DestroyRef,
+    inject,
+    input,
+    signal,
 } from '@angular/core';
-import { ReactiveFormsModule, FormGroup, FormArray, Validators, FormBuilder } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ClassificationDecisionTableNodeModel } from '../../../core/models/node.model';
-import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
-import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
-import { CommonModule } from '@angular/common';
-import { ClassificationDecisionTableData, PromptConfig, ComputationConfig } from '../../../core/models/classification-decision-table.model';
-import { ClassificationDecisionTableGridComponent } from './classification-decision-table-grid/classification-decision-table-grid.component';
-import { FlowService } from '../../../services/flow.service';
-import { NodeType } from '../../../core/enums/node-type';
-import { ConditionGroup } from '../../../core/models/decision-table.model';
-import { generatePortsForClassificationDecisionTableNode } from '../../../core/helpers/helpers';
-import { FullLLMConfig, FullLLMConfigService } from '../../../../shared/services/llms/full-llm-config.service';
-import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
+import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
-import { InputMapComponent } from '../../input-map/input-map.component';
-import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
-import { SidePanelService } from '../../../services/side-panel.service';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+
+import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
+import { LlmModelSelectorComponent } from '../../../../shared/components/llm-model-selector/llm-model-selector.component';
+import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
+import { FullLLMConfig, FullLLMConfigService } from '../../../../shared/services/llms/full-llm-config.service';
+import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
+import { NodeType } from '../../../core/enums/node-type';
+import { generatePortsForClassificationDecisionTableNode } from '../../../core/helpers/helpers';
+import {
+    ClassificationDecisionTableData,
+    PromptConfig,
+} from '../../../core/models/classification-decision-table.model';
+import { ConditionGroup } from '../../../core/models/decision-table.model';
+import { ClassificationDecisionTableNodeModel } from '../../../core/models/node.model';
+import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
+import { FlowService } from '../../../services/flow.service';
+import { SidePanelService } from '../../../services/side-panel.service';
+import { InputMapComponent } from '../../input-map/input-map.component';
+import { ClassificationDecisionTableGridComponent } from './classification-decision-table-grid/classification-decision-table-grid.component';
 
 type TabType = 'table' | 'precomputation' | 'postcomputation' | 'prompts';
 
@@ -57,8 +61,13 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     private cdr = inject(ChangeDetectorRef);
     private fullLlmConfigService = inject(FullLLMConfigService);
     private destroyRef = inject(DestroyRef);
+    private sanitizer = inject(DomSanitizer);
 
     public activeTab = signal<TabType>('table');
+
+    private get tabStorageKey(): string {
+        return `cdt-panel-tab-${this.node().id}`;
+    }
     public conditionGroups = signal<ConditionGroup[]>([]);
     public prompts = signal<Record<string, PromptConfig>>({});
     public llmConfigs: FullLLMConfig[] = [];
@@ -75,16 +84,18 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         return Object.entries(p).map(([id, config]) => ({ id, ...config }));
     });
 
+    private preInputMapVersion = signal(0);
+
     public preInputMapKeys = computed(() => {
+        this.preInputMapVersion();
         if (!this.form) return [];
         const arr = this.form.get('pre_input_map') as FormArray;
         if (!arr) return [];
-        return arr.controls
-            .map((ctrl) => ctrl.value?.key?.trim())
-            .filter((k: string) => !!k);
+        return arr.controls.map((ctrl) => ctrl.value?.key?.trim()).filter((k: string) => !!k);
     });
 
     public inputMapVariableNames = computed(() => {
+        this.preInputMapVersion();
         if (!this.form) return [];
         const arr = this.form.get('pre_input_map') as FormArray;
         if (!arr) return [];
@@ -106,7 +117,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     });
 
     public get llmConfigOptions(): { id: number; label: string }[] {
-        return this.llmConfigs.map(c => ({
+        return this.llmConfigs.map((c) => ({
             id: c.id,
             label: c.custom_name || `LLM #${c.id}`,
         }));
@@ -137,12 +148,13 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         const currentNodeId = this.node().id;
 
         return nodes
-            .filter((node) =>
-                node.type !== NodeType.NOTE &&
-                node.type !== NodeType.START &&
-                node.type !== NodeType.WEBHOOK_TRIGGER &&
-                node.type !== NodeType.TELEGRAM_TRIGGER &&
-                node.id !== currentNodeId
+            .filter(
+                (node) =>
+                    node.type !== NodeType.NOTE &&
+                    node.type !== NodeType.START &&
+                    node.type !== NodeType.WEBHOOK_TRIGGER &&
+                    node.type !== NodeType.TELEGRAM_TRIGGER &&
+                    node.id !== currentNodeId
             )
             .map((node) => ({
                 value: node.id,
@@ -156,13 +168,14 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
 
     protected initializeForm(): FormGroup {
         const node = this.node();
-        const tableData = (node.data as any).table as ClassificationDecisionTableData;
+        const tableData: ClassificationDecisionTableData =
+            (node.data as { table?: ClassificationDecisionTableData }).table ?? this.getDefaultTableData();
         const nodes = this.flowService.nodes();
         const connections = this.flowService.connections();
 
         const findNodeId = (value: string | null, role: 'default' | 'error'): string => {
             if (value) {
-                const foundNode = nodes.find(n => n.id === value || n.node_name === value);
+                const foundNode = nodes.find((n) => n.id === value || n.node_name === value);
                 if (foundNode) {
                     return foundNode.id;
                 }
@@ -171,9 +184,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
             const portSuffix = role === 'default' ? 'decision-default' : 'decision-error';
             const portId = `${node.id}_${portSuffix}`;
 
-            const connection = connections.find(
-                c => c.sourceNodeId === node.id && c.sourcePortId === portId
-            );
+            const connection = connections.find((c) => c.sourceNodeId === node.id && c.sourcePortId === portId);
 
             if (connection) {
                 return connection.targetNodeId;
@@ -185,7 +196,10 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         const defaultNext = findNodeId(tableData.default_next_node, 'default');
         const errorNext = findNodeId(tableData.next_error_node, 'error');
 
-        const preComp = tableData.pre_computation || { code: tableData.pre_computation_code || this.getDefaultPreComputation(), input_map: {} };
+        const preComp = tableData.pre_computation || {
+            code: tableData.pre_computation_code || this.getDefaultPreComputation(),
+            input_map: {},
+        };
         const postComp = tableData.post_computation || { code: tableData.post_computation_code || '', input_map: {} };
 
         this.preCode = preComp.code || '';
@@ -199,19 +213,26 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
             post_computation_code: [this.postCode],
             post_input_map: this.fb.array([] as FormGroup[]),
             post_output_variable_path: [postComp.output_variable_path || ''],
-            route_variable_name: [tableData.route_variable_name || 'route_code'],
             default_next_node: [defaultNext],
             next_error_node: [errorNext],
             default_llm_id: [tableData.default_llm_id || null],
-            expression_errors_as_false: [tableData.expression_errors_as_false ?? false],
         });
 
         this.initializeInputMapArray(form, 'pre_input_map', preComp.input_map || {});
         this.initializeInputMapArray(form, 'post_input_map', postComp.input_map || {});
 
+        (form.get('pre_input_map') as FormArray).valueChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.preInputMapVersion.update((v) => v + 1));
+
         const groupsCopy = this.cloneConditionGroups(tableData.condition_groups || []);
         this.conditionGroups.set(groupsCopy);
         this.prompts.set({ ...(tableData.prompts || {}) });
+
+        // Restore persisted tab for this node, defaulting to 'table'
+        const persistedTab = localStorage.getItem(this.tabStorageKey) as TabType | null;
+        const validTabs: TabType[] = ['table', 'precomputation', 'postcomputation', 'prompts'];
+        this.activeTab.set(persistedTab && validTabs.includes(persistedTab) ? persistedTab : 'table');
 
         return form;
     }
@@ -237,11 +258,10 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
                 output_variable_path: this.form.value.post_output_variable_path || undefined,
             },
             condition_groups: conditionGroups,
-            route_variable_name: this.form.value.route_variable_name,
+            route_variable_name: 'route_code',
             default_next_node: this.form.value.default_next_node,
             next_error_node: this.form.value.next_error_node,
             default_llm_id: this.form.value.default_llm_id || null,
-            expression_errors_as_false: this.form.value.expression_errors_as_false ?? false,
             prompts: { ...this.prompts() },
         };
 
@@ -285,6 +305,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
 
     public setActiveTab(tab: TabType): void {
         this.activeTab.set(tab);
+        localStorage.setItem(this.tabStorageKey, tab);
     }
 
     public onConditionGroupsChange(groups: ConditionGroup[]): void {
@@ -295,22 +316,35 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     // ── Prompt Library ──
 
     public addPrompt(): void {
-        const id = this.newPromptId.trim();
-        if (!id) return;
+        const existing = this.prompts();
+        let n = 1;
+        while (existing[`prompt_${n}`]) n++;
+        const newId = `prompt_${n}`;
+        const newConfig: PromptConfig = {
+            prompt_text: '',
+            llm_id: '',
+            output_schema: null,
+            result_variable: '',
+        };
+        this.prompts.update((p) => ({ ...p, [newId]: newConfig }));
+        this.editingPromptId.set(newId);
+        this.onSaveSilently();
+    }
+
+    public renamePrompt(oldId: string, newId: string): void {
+        if (!newId.trim() || newId === oldId) return;
+        const trimmed = newId.trim();
         const current = this.prompts();
-        if (current[id]) return; // duplicate
-        const defaultLlmId = this.form.value.default_llm_id;
-        this.prompts.set({
-            ...current,
-            [id]: {
-                prompt_text: '',
-                llm_id: defaultLlmId ? String(defaultLlmId) : '',
-                output_schema: '',
-                result_variable: '',
-            },
+        if (current[trimmed]) return; // already exists, don't overwrite
+        const config = current[oldId];
+        if (!config) return;
+        const updated: Record<string, PromptConfig> = {};
+        Object.entries(current).forEach(([k, v]) => {
+            updated[k === oldId ? trimmed : k] = v;
         });
-        this.newPromptId = '';
-        this.editingPromptId.set(id);
+        this.prompts.set(updated);
+        this.editingPromptId.set(trimmed);
+        this.onSaveSilently();
     }
 
     public onPromptAdd(id: string, config: PromptConfig): void {
@@ -319,7 +353,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         this.prompts.set({ ...current, [id]: config });
     }
 
-    public updatePrompt(id: string, field: keyof PromptConfig, value: any): void {
+    public updatePrompt(id: string, field: keyof PromptConfig, value: PromptConfig[keyof PromptConfig]): void {
         const current = { ...this.prompts() };
         if (!current[id]) return;
         current[id] = { ...current[id], [field]: value };
@@ -348,7 +382,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         return isNaN(n) || !llmId ? null : n;
     }
 
-    public getSchemaString(schema: any): string {
+    public getSchemaString(schema: PromptConfig['output_schema']): string {
         if (!schema || (typeof schema === 'object' && Object.keys(schema).length === 0)) {
             return '';
         }
@@ -366,6 +400,19 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
             // Store as string if not valid JSON yet (user still typing)
             this.updatePrompt(promptId, 'output_schema', value);
         }
+    }
+
+    public onPromptTextChange(promptId: string, value: string): void {
+        this.updatePrompt(promptId, 'prompt_text', value);
+    }
+
+    public getHighlightedPromptText(text: string): SafeHtml {
+        if (!text) {
+            return this.sanitizer.bypassSecurityTrustHtml('');
+        }
+        const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const highlighted = escaped.replace(/\{[^}]+\}/g, (match) => `<span class="var-token">${match}</span>`);
+        return this.sanitizer.bypassSecurityTrustHtml(highlighted);
     }
 
     // ── Code editor handlers ──
@@ -387,16 +434,22 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         const entries = Object.entries(map);
         if (entries.length > 0) {
             entries.forEach(([key, value]) => {
-                arr.push(this.fb.group({
-                    key: [key],
-                    value: [value],
-                }));
+                arr.push(
+                    this.fb.group({
+                        key: [key],
+                        value: [value],
+                    }),
+                    { emitEvent: false }
+                );
             });
         } else {
-            arr.push(this.fb.group({
-                key: [''],
-                value: ['variables.'],
-            }));
+            arr.push(
+                this.fb.group({
+                    key: [''],
+                    value: ['variables.'],
+                }),
+                { emitEvent: false }
+            );
         }
     }
 

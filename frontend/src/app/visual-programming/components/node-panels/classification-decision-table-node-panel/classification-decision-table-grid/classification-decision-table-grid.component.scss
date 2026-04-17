@@ -36,7 +36,9 @@
             background: rgba(255, 255, 255, 0.08);
             font-size: 0.75rem;
             cursor: help;
-            transition: background 0.2s ease, color 0.2s ease;
+            transition:
+                background 0.2s ease,
+                color 0.2s ease;
 
             &:hover {
                 color: #fff;
@@ -46,10 +48,35 @@
     }
 }
 
-.grid-header-actions {
+.grid-header-right {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+}
+
+.add-condition-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #685fff;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover {
+        background: #7a6fff;
+    }
+
+    i {
+        font-size: 0.9rem;
+    }
 }
 
 .field-column-controls {
@@ -127,7 +154,9 @@
         border-color: rgba(255, 165, 0, 0.4);
         background: rgba(255, 165, 0, 0.08);
         cursor: pointer;
-        transition: opacity 0.15s ease, background 0.15s ease;
+        transition:
+            opacity 0.15s ease,
+            background 0.15s ease;
 
         i {
             font-size: 0.75rem;
@@ -247,13 +276,6 @@
     text-align: center;
 }
 
-.grid-footer {
-    display: flex;
-    justify-content: flex-end;
-    padding: 0.25rem 0;
-    flex-shrink: 0;
-}
-
 .context-menu {
     position: fixed;
     z-index: 10000;
@@ -288,11 +310,34 @@
             color: rgba(104, 95, 255, 0.9);
         }
     }
+
+    &--danger {
+        color: var(--error-color, #ff3b30);
+
+        i {
+            color: var(--error-color, #ff3b30);
+            opacity: 0.8;
+        }
+
+        &:hover {
+            background: rgba(255, 59, 48, 0.15);
+            color: var(--error-color, #ff3b30);
+
+            i {
+                color: var(--error-color, #ff3b30);
+                opacity: 1;
+            }
+        }
+    }
 }
 
+.context-menu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 3px 0;
+}
 
 :host ::ng-deep {
-
     .decision-grid {
         flex: 1;
         min-height: 0;
@@ -340,7 +385,7 @@
                 overflow: visible !important;
                 position: relative !important;
                 box-sizing: border-box !important;
-                
+
                 .ag-overlay-no-rows-center {
                     overflow: visible !important;
                     text-overflow: unset !important;
