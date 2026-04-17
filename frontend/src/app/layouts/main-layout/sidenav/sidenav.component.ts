@@ -41,6 +41,7 @@ export class LeftSidebarComponent implements AfterViewInit {
     public bottomNavItems: NavItem[];
     public isEpicChatEnabled: boolean;
     public apiBaseUrl: string;
+    public showLogoTooltip = false;
     public readonly epicChatThemeConfig = {
         semantic: {
             surface: 'var(--color-background-body)',

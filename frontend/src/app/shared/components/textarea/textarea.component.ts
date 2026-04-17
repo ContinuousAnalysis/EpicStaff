@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, forwardRef, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { TooltipComponent } from '@shared/components';
+
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 @Component({
     selector: 'app-textarea',
@@ -43,7 +44,9 @@ export class TextareaComponent implements ControlValueAccessor {
         this.onTouched = fn;
     }
 
-    setDisabledState(): void {}
+    setDisabledState(isDisabled: boolean): void {
+        void isDisabled;
+    }
 
     handleInput(event: Event): void {
         const val = (event.target as HTMLTextAreaElement).value;

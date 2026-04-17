@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { expandCollapseAnimation } from '@shared/animations';
-import { TooltipComponent } from '@shared/components';
 
 import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
+import { TooltipComponent } from '../tooltip/tooltip.component';
 
 @Component({
     selector: 'app-expand-panel',

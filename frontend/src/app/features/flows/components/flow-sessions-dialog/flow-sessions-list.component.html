@@ -24,7 +24,9 @@
                 </div>
             </label>
         </div>
-
+        @if (selectedIds().size > 0) {
+            <button class="delete-btn" (click)="onBulkDelete()">Delete Selected</button>
+        }
         <div class="table-container">
             <app-flow-sessions-table
                 [sessions]="sessions()"
@@ -34,6 +36,9 @@
                 (deleteSelected)="onDeleteSelected($event)"
                 (viewSession)="onViewSession($event)"
                 (stopSession)="onStopSession($event)"
+                [statusFilter]="statusFilter()"
+                (statusFilterChange)="onStatusFilterChange($event)"
+                (selectedIdsChange)="onSelectedIdsChange($event)"
             >
             </app-flow-sessions-table>
         </div>

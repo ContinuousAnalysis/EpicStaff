@@ -1,3 +1,4 @@
+export * from './agent-search-config.model';
 export * from './crew_run_message.model';
 export * from './embeddings/embedding.model';
 export * from './embeddings/embedding-config.model';

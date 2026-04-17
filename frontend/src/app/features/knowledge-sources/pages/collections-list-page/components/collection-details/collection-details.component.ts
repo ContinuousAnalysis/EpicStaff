@@ -38,7 +38,6 @@ import { CollectionRagsComponent } from './collection-rags/collection-rags.compo
     styleUrls: ['./collection-details.component.scss'],
     templateUrl: './collection-details.component.html',
     imports: [
-        AppSvgIconComponent,
         FormsModule,
         ReactiveFormsModule,
         DragDropAreaComponent,
@@ -47,6 +46,7 @@ import { CollectionRagsComponent } from './collection-rags/collection-rags.compo
         CollectionInfoComponent,
         SpinnerComponent,
         ValidationErrorsComponent,
+        AppSvgIconComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

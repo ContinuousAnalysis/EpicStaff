@@ -8,7 +8,7 @@ import { ToastService } from '../../../../services/notifications';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { NaiveRagDocumentsStorageService } from '../../services/naive-rag-documents-storage.service';
 import { DocumentChunksSectionComponent } from '../document-chunks-section/document-chunks-section.component';
-import { TableDocument } from '../rag-configuration/configuration-table/configuration-table.interface';
+import { TableDocument } from '../naive-rag-configuration/configuration-table/configuration-table.interface';
 import { DocumentConfigComponent } from './document-config/document-config.component';
 
 @Component({

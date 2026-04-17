@@ -6,6 +6,7 @@
     padding: 32px;
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    margin: 0 auto;
 
     height: 90vh;
     max-height: 800px;
@@ -37,7 +38,7 @@
         flex-direction: column;
         flex: 1;
         min-height: 0;
-        overflow: hidden;
+        overflow-y: auto;
 
         .filter-controls {
             display: flex;
@@ -49,7 +50,7 @@
         .table-container {
             flex: 1;
             min-height: 0;
-            overflow: hidden;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
         }
@@ -106,4 +107,25 @@
     .toggle-switch.active & {
         transform: translateX(16px);
     }
+}
+
+.delete-btn {
+    background: #e0575b !important;
+    color: #fff !important;
+    border: none;
+    outline: none;
+    padding: 6px 14px;
+    margin-right: 8px;
+    margin-left: auto;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background 0.18s,
+        color 0.18s;
+}
+.delete-btn:hover {
+    background: #b32b36 !important;
+    color: #fff !important;
 }

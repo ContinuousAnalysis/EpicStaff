@@ -49,6 +49,7 @@ export class FlowSessionsListComponent implements OnInit {
     public isErrorCauseFilter = signal<boolean>(false);
     private reloadTrigger = signal(0);
     public availableNodeGroups = signal<NodeGroup[]>([]);
+    public selectedIds = signal<Set<number>>(new Set());
 
     @ViewChild('sessionSearchInput')
     sessionSearchInput!: ElementRef<HTMLInputElement>;
@@ -251,5 +252,14 @@ export class FlowSessionsListComponent implements OnInit {
     onNodeFilterChange(value: string | null) {
         this.currentPage.set(1);
         this.nodeFilter.set(value);
+    }
+
+    public onSelectedIdsChange(ids: Set<number>): void {
+        this.selectedIds.set(ids);
+    }
+
+    public onBulkDelete(): void {
+        this.onDeleteSelected(Array.from(this.selectedIds()));
+        this.selectedIds.set(new Set());
     }
 }
