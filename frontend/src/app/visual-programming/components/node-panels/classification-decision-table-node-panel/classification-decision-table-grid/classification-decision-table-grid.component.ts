@@ -36,6 +36,7 @@ import { NodeModel } from '../../../../core/models/node.model';
 import { FlowService } from '../../../../services/flow.service';
 import { IconHeaderComponent } from './icon-header/icon-header.component';
 import { MonacoCellRendererComponent } from './monaco-cell-renderer/monaco-cell-renderer.component';
+import { NextNodeCellEditorComponent } from './next-node-cell-editor/next-node-cell-editor.component';
 import { PromptIdCellEditorComponent } from './prompt-id-cell-editor/prompt-id-cell-editor.component';
 import { PromptTooltipRendererComponent } from './prompt-tooltip-renderer/prompt-tooltip-renderer.component';
 
@@ -75,8 +76,10 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     public rowData = signal<ConditionGroup[]>([]);
     public showFieldColumnPicker = signal(false);
     public fieldSearchQuery = signal('');
+    public fieldPickerPos = signal<{ x: number; y: number } | null>(null);
     public showManipFieldPicker = signal(false);
     public manipFieldSearchQuery = signal('');
+    public manipPickerPos = signal<{ x: number; y: number } | null>(null);
     public contextMenu = signal<{ x: number; y: number; rowIndex: number } | null>(null);
 
     // Ordered list of ALL movable colIds (field_* and expression), including hidden
@@ -464,27 +467,35 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     private buildManipulationColDef(): ColDef {
         return {
-            headerName: 'Manipulation',
             colId: 'manipulation',
             field: 'manipulation',
             editable: false,
             flex: 1,
-            cellRenderer: MonacoCellRendererComponent,
-            cellStyle: {
-                fontSize: '13px',
-                fontFamily: 'monospace',
-                color: '#d4d4d4',
+            headerComponent: IconHeaderComponent,
+            headerComponentParams: {
+                label: 'Manipulation',
+                iconClass: 'ti ti-plus',
+                tooltip: 'Add manipulation variable',
+                onIconClick: (event: MouseEvent) => this.toggleManipFieldPicker(event),
             },
+            cellRenderer: MonacoCellRendererComponent,
+            cellStyle: { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
         };
     }
 
     private buildExpressionColDef(): ColDef {
         return {
-            headerName: 'Expression',
             colId: 'expression',
             field: 'expression',
             editable: false,
             flex: 1,
+            headerComponent: IconHeaderComponent,
+            headerComponentParams: {
+                label: 'Expression',
+                iconClass: 'ti ti-plus',
+                tooltip: 'Add expression variable',
+                onIconClick: (event: MouseEvent) => this.toggleFieldPicker(event),
+            },
             cellRenderer: MonacoCellRendererComponent,
             rowSpan: (params: RowSpanParams<ConditionGroup>) =>
                 this.getRowSpan(params, 'expression', (d) => d?.expression || ''),
@@ -500,29 +511,13 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     private buildColumnDefs(): ColDef[] {
         const staticBefore: ColDef[] = [
             {
-                headerName: '#',
-                valueGetter: 'node.rowIndex + 1',
-                width: 60,
-                minWidth: 60,
-                maxWidth: 60,
-                rowDrag: true,
-                suppressMovable: true,
-                cellStyle: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: 'rgba(255, 255, 255, 0.5)',
-                },
-            },
-            {
                 headerName: '',
                 field: 'valid',
                 editable: true,
                 width: 50,
                 minWidth: 50,
                 maxWidth: 50,
+                rowDrag: true,
                 cellDataType: 'boolean',
                 headerTooltip: 'Enabled',
                 suppressMovable: true,
@@ -609,69 +604,70 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             },
         };
 
-        const staticAfter: ColDef[] = [
-            {
-                headerName: 'Route Code',
-                field: 'route_code',
-                editable: true,
-                width: 150,
-                suppressMovable: true,
-                cellStyle: {
-                    fontSize: '14px',
-                },
+        const skipCol: ColDef = {
+            headerName: 'Skip',
+            field: 'continue',
+            editable: true,
+            width: 65,
+            minWidth: 50,
+            cellDataType: 'boolean',
+            suppressMovable: true,
+            cellStyle: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
             },
-            {
-                headerComponent: IconHeaderComponent,
-                headerComponentParams: { iconClass: 'ti ti-player-skip-forward', tooltip: 'Continue' },
-                field: 'continue',
-                editable: true,
-                width: 55,
-                minWidth: 55,
-                maxWidth: 55,
-                cellDataType: 'boolean',
-                cellStyle: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                },
-            },
-            {
-                headerComponent: IconHeaderComponent,
-                headerComponentParams: { iconClass: 'ti ti-eye', tooltip: 'Dock Visible' },
-                field: 'dock_visible',
-                editable: true,
-                width: 55,
-                minWidth: 55,
-                maxWidth: 55,
-                cellDataType: 'boolean',
-                cellStyle: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                },
-            },
-            {
-                headerName: '',
-                field: 'actions',
-                cellRenderer: () => {
-                    return `<i class="ti ti-trash" style="color: #ff3b30; font-size: 1.1rem; transition: all 0.2s ease; cursor: pointer;"></i>`;
-                },
-                width: 60,
-                minWidth: 60,
-                maxWidth: 60,
-                cellStyle: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                },
-                onCellClicked: (event: CellClickedEvent) => {
-                    this.deleteRow(event.node.rowIndex!);
-                },
-            },
-        ];
+        };
 
-        return [...staticBefore, ...exprCols, promptIdCol, ...manipCols, ...staticAfter];
+        const nextNodeCol: ColDef = {
+            headerName: 'Next Node',
+            field: 'next_node',
+            suppressMovable: true,
+            editable: true,
+            flex: 1,
+            minWidth: 140,
+            cellRenderer: (params: { value: string }) => {
+                const nodeId = params.value;
+                if (!nodeId) return '<span style="color: rgba(255,255,255,0.35); font-size:13px;">Select node</span>';
+                const node = this.availableNodes().find((n) => n.value === nodeId);
+                return node
+                    ? `<span style="font-size:13px;">${node.label}</span>`
+                    : '<span style="color: rgba(255,255,255,0.35); font-size:13px;">Select node</span>';
+            },
+            cellEditor: NextNodeCellEditorComponent,
+            cellEditorParams: () => ({
+                nodes: this.availableNodes(),
+            }),
+            cellEditorPopup: true,
+            cellStyle: {
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+            },
+        };
+
+        const deleteCol: ColDef = {
+            headerName: '',
+            field: 'actions',
+            cellRenderer: () => {
+                return `<i class="ti ti-x" style="color: rgba(255,255,255,0.5); font-size: 1rem; cursor: pointer;"></i>`;
+            },
+            width: 60,
+            minWidth: 60,
+            maxWidth: 60,
+            suppressMovable: true,
+            cellStyle: {
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+            },
+            onCellClicked: (event: CellClickedEvent) => {
+                this.deleteRow(event.node.rowIndex!);
+            },
+        };
+
+        return [...staticBefore, ...exprCols, promptIdCol, ...manipCols, skipCol, nextNodeCol, deleteCol];
     }
 
     private getMergeableColIds(): string[] {
@@ -944,10 +940,14 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         }
     }
 
-    toggleFieldPicker(): void {
+    toggleFieldPicker(event?: MouseEvent): void {
         const isOpen = this.showFieldColumnPicker();
+        if (!isOpen && event) {
+            const rect = (event.target as HTMLElement).getBoundingClientRect();
+            this.fieldPickerPos.set({ x: rect.left, y: rect.bottom + 4 });
+        }
         this.showFieldColumnPicker.set(!isOpen);
-        if (!isOpen) {
+        if (isOpen) {
             this.fieldSearchQuery.set('');
         }
     }
@@ -988,10 +988,14 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         this.saveGridState();
     }
 
-    toggleManipFieldPicker(): void {
+    toggleManipFieldPicker(event?: MouseEvent): void {
         const isOpen = this.showManipFieldPicker();
+        if (!isOpen && event) {
+            const rect = (event.target as HTMLElement).getBoundingClientRect();
+            this.manipPickerPos.set({ x: rect.left, y: rect.bottom + 4 });
+        }
         this.showManipFieldPicker.set(!isOpen);
-        if (!isOpen) {
+        if (isOpen) {
             this.manipFieldSearchQuery.set('');
         }
     }

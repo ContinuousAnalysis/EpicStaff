@@ -31,7 +31,9 @@ interface PromptTooltipParams extends ICellRendererParams {
             (mouseleave)="scheduleHide()"
             (mousedown)="removeTooltipNow()"
         >
-            <span *ngIf="!value" class="placeholder">—</span>
+            <span *ngIf="!value" class="placeholder select-placeholder">
+                Select prompt <i class="ti ti-chevron-down"></i>
+            </span>
             <ng-container *ngIf="value">
                 <span *ngIf="!isDeleted" class="prompt-id-text">{{ value }}</span>
                 <span *ngIf="isDeleted" class="deleted-prompt-badge">
@@ -69,8 +71,16 @@ interface PromptTooltipParams extends ICellRendererParams {
                 font-size: 14px;
                 flex-shrink: 0;
             }
-            .placeholder {
-                color: rgba(255, 255, 255, 0.2);
+            .select-placeholder {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                color: rgba(255, 255, 255, 0.35);
+                font-size: 13px;
+            }
+            .select-placeholder .ti {
+                font-size: 11px;
+                opacity: 0.7;
             }
             .deleted-prompt-badge {
                 display: inline-flex;

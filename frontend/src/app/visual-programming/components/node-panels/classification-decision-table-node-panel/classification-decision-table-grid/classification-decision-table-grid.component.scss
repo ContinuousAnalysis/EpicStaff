@@ -214,6 +214,11 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
+.field-picker-overlay {
+    z-index: 1000;
+    min-width: 220px;
+}
+
 .field-search-input {
     width: 100%;
     padding: 0.45rem 0.6rem;
@@ -339,6 +344,27 @@
 
 :host ::ng-deep {
     .decision-grid {
+        .ag-checkbox-input-wrapper {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px !important;
+
+            &.ag-checked {
+                background-color: #685fff !important;
+                border-color: #685fff !important;
+            }
+
+            &:not(.ag-checked) {
+                background-color: transparent !important;
+                border-color: rgba(255, 255, 255, 0.3) !important;
+            }
+
+            &::after {
+                color: #ffffff !important;
+                font-size: 10px !important;
+            }
+        }
+
         flex: 1;
         min-height: 0;
         .ag-root-wrapper,
@@ -354,9 +380,8 @@
             z-index: 10;
         }
 
-        .ti-trash:hover {
-            color: #ff5449 !important;
-            transform: scale(1.1);
+        .ti-x:hover {
+            color: rgba(255, 255, 255, 0.9) !important;
         }
 
         .cell-warning {
