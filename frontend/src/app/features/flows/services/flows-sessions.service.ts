@@ -192,7 +192,9 @@ export class GraphSessionService {
         limit?: number,
         offset?: number,
         status?: string[],
-        ordering?: string
+        ordering?: string,
+        graphName?: string | null,
+        isErrorCause?: boolean
     ): Observable<ApiGetRequest<GraphSessionLight>> {
         let params = new HttpParams();
         params = params.set('detailed', 'false');
@@ -200,6 +202,8 @@ export class GraphSessionService {
         if (offset !== undefined) params = params.set('offset', offset.toString());
         if (status && !status.includes('all')) params = params.set('status', status.join(','));
         if (ordering) params = params.set('ordering', ordering);
+        if (graphName) params = params.set('graph_name', graphName);
+        if (isErrorCause) params = params.set('is_error_cause', 'true');
 
         return this.http.get<ApiGetRequest<GraphSessionLight>>(this.apiUrl, { params });
     }

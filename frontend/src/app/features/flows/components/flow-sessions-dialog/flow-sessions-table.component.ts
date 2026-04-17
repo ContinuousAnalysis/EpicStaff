@@ -33,24 +33,23 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                                 id="select-all-checkbox"
                             ></app-checkbox>
                         </th>
-                        <th style="width: 10%">ID</th>
-                        <th style="width: 17%">
+                        <th style="width: 5%">ID</th>
+                        <th style="width: 10%">
                             <app-flow-session-status-filter-dropdown
                                 [value]="statusFilter"
                                 (valueChange)="statusFilterChange.emit($event)"
                             >
                             </app-flow-session-status-filter-dropdown>
                         </th>
-                        <th *ngIf="showFlowName">Flow</th>
-                        <th [class.sortable]="sortable" (click)="sortable && toggleSort()" style="width: 25%">
+                        <th *ngIf="showFlowName" style="width: 40%">Flow Name</th>
+                        <th [class.sortable]="sortable" (click)="sortable && toggleSort()" style="width: 15%">
                             Created At
                             @if (sortable) {
                                 <span class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                             }
                         </th>
-                        <th style="width: 25%">{{ showDuration ? 'Duration' : 'Finished At' }}</th>
-                        <th>Actions</th>
-                        <th></th>
+                        <th style="width: 10%">{{ showDuration ? 'Duration' : 'Finished At' }}</th>
+                        <th style="width: 15%; text-align: center" class="actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -85,22 +84,22 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                                         [status]="session.status"
                                     ></app-flow-session-status-badge>
                                 </td>
-                                <td *ngIf="showFlowName">
-                                <a class="flow-link" (click)="navigateToFlow(session.graph_id)">
-                                    {{ session.graph_name }}
-                                </a>
+                                <td *ngIf="showFlowName" class="flow-link-td">
+                                    <a class="flow-link" (click)="navigateToFlow(session.graph_id)">
+                                        {{ session.graph_name }}
+                                    </a>
                                 </td>
 
-                            <td>{{ session.created_at | date: 'medium' }}</td>
-                            <td>
-                                @if (showDuration) {
-                                    {{ getDuration(session) }}
-                                } @else {
-                                    {{ session.finished_at ? (session.finished_at | date: 'medium') : 'Active' }}
-                                }
-                            </td>
-                            <td>
-                                <div class="actions-container">
+                                <td>{{ session.created_at | date: 'medium' }}</td>
+                                <td>
+                                    @if (showDuration) {
+                                        {{ getDuration(session) }}
+                                    } @else {
+                                        {{ session.finished_at ? (session.finished_at | date: 'medium') : 'Active' }}
+                                    }
+                                </td>
+                                <td>
+                                    <div class="actions-container">
                                         <button
                                             class="view-btn"
                                             [class.view-btn--active]="expandedSessionId() === session.id"
@@ -125,7 +124,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                                         />
                                         <app-icon-button
                                             *ngIf="!canStop(session.status)"
-                                            icon="ui/x"
+                                            icon="x"
                                             size="1.5rem"
                                             ariaLabel="Delete session"
                                             (onClick)="deleteSelected.emit([session.id])"
@@ -210,6 +209,7 @@ export class FlowSessionsTableComponent {
 
     toggleSelectAll(checked: boolean) {
         this.selectedIds.set(checked ? new Set(this.sessions.map((s) => s.id)) : new Set());
+        this.selectedIdsChange.emit(this.selectedIds());
         this.cdr.markForCheck();
     }
 
