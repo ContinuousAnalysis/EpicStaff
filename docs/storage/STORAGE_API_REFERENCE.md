@@ -54,6 +54,11 @@ Lists files and folders at the given path.
 }
 ```
 
+**Error:** `404 Not Found`
+```json
+{"path": "Path does not exist: nonexistent/folder"}
+```
+
 **Item fields:**
 
 | Field | Type | Description |
@@ -100,7 +105,7 @@ Returns metadata for a file or folder, including linked graphs.
 }
 ```
 
-**Error:** `400 Bad Request`
+**Error:** `404 Not Found`
 ```json
 {"path": "File does not exist: some/path"}
 ```
@@ -217,6 +222,11 @@ Creates a new folder at the specified path, including any intermediate directori
 **Response:** `201 Created`
 ```json
 {"path": "reports/2026", "created": true}
+```
+
+**Error:** `409 Conflict`
+```json
+{"detail": "Path already exists: reports/2026"}
 ```
 
 ---
@@ -386,6 +396,11 @@ Links one or more existing storage paths to one or more graphs. Creates `Storage
 {"paths": ["Path does not exist: bad/path.txt"]}
 ```
 
+**Error (invalid graph IDs):** `400 Bad Request`
+```json
+{"graph_ids": ["Graphs not found: [999, 1000]"]}
+```
+
 ---
 
 ## Remove from Graph
@@ -426,6 +441,11 @@ Lists all storage paths linked to a specific graph.
     {"id": 10, "graph_id": 1, "path": "reports/data.csv", "added_at": "2026-04-15T10:30:00Z"},
     {"id": 11, "graph_id": 1, "path": "reports/charts/", "added_at": "2026-04-15T10:31:00Z"}
 ]
+```
+
+**Error:** `404 Not Found`
+```json
+{"graph_id": "Graph not found: 999"}
 ```
 
 ---
@@ -499,5 +519,7 @@ All path inputs are normalized before processing:
 | 200 | OK | Successful GET, POST (non-creating), rename, move, copy |
 | 201 | Created | Successful upload, folder creation, add-to-graph |
 | 204 | No Content | Successful delete, remove-from-graph |
-| 400 | Bad Request | Validation error, path not found, blocked extension |
+| 400 | Bad Request | Validation error, blocked extension, invalid graph IDs |
+| 404 | Not Found | Non-existing path, file, or graph |
+| 409 | Conflict | Resource already exists (e.g. mkdir on existing path) |
 | 500 | Internal Server Error | Unexpected server error |
