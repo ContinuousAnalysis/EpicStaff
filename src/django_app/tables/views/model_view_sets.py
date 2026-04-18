@@ -110,12 +110,11 @@ from tables.models.graph_models import (
     GraphOrganizationUser,
     LLMNode,
     GraphNote,
-    Organization,
-    OrganizationUser,
     TelegramTriggerNode,
     TelegramTriggerNodeField,
     WebhookTriggerNode,
 )
+from tables.models.rbac_models import Organization, OrganizationUser
 from tables.models.llm_models import (
     RealtimeConfig,
     RealtimeTranscriptionConfig,

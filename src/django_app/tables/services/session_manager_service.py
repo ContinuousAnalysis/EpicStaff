@@ -102,7 +102,11 @@ class SessionManagerService(metaclass=SingletonMeta):
         variables = self._get_actual_variables(variables)
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
-        graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
+        # TODO: replace with
+        # request.user + org context instead of email lookup.
+        graph_user = GraphOrganizationUser.objects.filter(
+            organization_user__user__email=username, graph_id=graph_id
+        ).first()
         session = Session.objects.create(
             graph_id=graph_id,
             status=Session.SessionStatus.PENDING,

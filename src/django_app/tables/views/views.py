@@ -17,7 +17,12 @@ from tables.models.llm_models import DefaultLLMConfig
 from tables.services.realtime_service import RealtimeService
 from utils.logger import logger
 
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, inline_serializer
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiParameter,
+    inline_serializer,
+)
 from rest_framework import serializers as drf_serializers
 from django.db import transaction
 from django.db.models import Count
@@ -282,20 +287,28 @@ class RunSession(APIView):
             )
 
         if username and graph_organization:
-            user = OrganizationUser.objects.filter(
-                name=username, organization=graph_organization.organization
+            # NOTE (RBAC Story 0): the old graph-domain OrganizationUser was keyed by
+            # a free-form `name` string. RBAC replaces it with (User x Org x Role);
+            # the `username` request param is now interpreted as the User's email.
+            # TODO (RBAC Story 2+): drop `username` from the payload entirely and
+            # derive the membership from `request.user` + X-Organization-Id header.
+            membership = OrganizationUser.objects.filter(
+                user__email=username, org=graph_organization.organization
             ).first()
 
-            if not user and username:
+            if not membership:
                 return Response(
                     {
-                        "message": f"Provided user does not exist or does not belong to organization {graph_organization.organization.name}"
+                        "message": (
+                            f"Provided user does not exist or does not belong to "
+                            f"organization {graph_organization.organization.name}"
+                        )
                     },
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
             graph_organization_user, _ = GraphOrganizationUser.objects.get_or_create(
-                user=user,
+                organization_user=membership,
                 graph=graph,
                 defaults={"persistent_variables": graph_organization.user_variables},
             )
@@ -848,7 +861,9 @@ class ProcessRagIndexingView(APIView):
         request=ProcessRagIndexingSerializer,
         responses={
             202: OpenApiResponse(description="Indexing process accepted and queued"),
-            400: OpenApiResponse(description="Invalid request or RAG not ready for indexing"),
+            400: OpenApiResponse(
+                description="Invalid request or RAG not ready for indexing"
+            ),
             404: OpenApiResponse(description="RAG configuration not found"),
         },
     )

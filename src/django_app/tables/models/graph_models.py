@@ -438,21 +438,17 @@ class GraphFile(models.Model):
         super().delete(*args, **kwargs)
 
 
-class Organization(models.Model):
-    name = models.CharField(max_length=256, blank=False, unique=True)
-
-
-class OrganizationUser(models.Model):
-    name = models.CharField(max_length=256, blank=False)
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["name", "organization"],
-                name="unique_flow_user_for_organization",
-            )
-        ]
+# Legacy graph-domain `Organization` and `OrganizationUser` (anonymous named
+# flow end-users) were replaced by the RBAC models `Organization` and
+# `OrganizationUser` (see tables/models/rbac_models/). GraphOrganization and
+# GraphOrganizationUser below now hold per-flow persistent variables scoped to
+# those RBAC entities.
+#
+# - GraphOrganization(graph, organization)          -> org-level persistent vars
+#   .user_variables                                 -> seed template for new
+#                                                      GraphOrganizationUser rows
+# - GraphOrganizationUser(graph, organization_user) -> per-membership persistent
+#                                                      vars (one User in one Org)
 
 
 class BasePersistentEntity(models.Model):
@@ -468,11 +464,13 @@ class BasePersistentEntity(models.Model):
 
 class GraphOrganization(BasePersistentEntity):
     organization = models.ForeignKey(
-        Organization, on_delete=models.CASCADE, related_name="graph"
+        "Organization",
+        on_delete=models.CASCADE,
+        related_name="graph_persistent_states",
     )
     user_variables = models.JSONField(
         default=dict,
-        help_text="Variables that persistent for all users for specific flow",
+        help_text="Seed template of variables copied into each user's GraphOrganizationUser row",
     )
 
     class Meta:
@@ -485,14 +483,18 @@ class GraphOrganization(BasePersistentEntity):
 
 
 class GraphOrganizationUser(BasePersistentEntity):
-    user = models.ForeignKey(
-        OrganizationUser, on_delete=models.CASCADE, related_name="graph"
+    # FK points at RBAC OrganizationUser (User x Org membership), so per-user
+    # persistent state is scoped per-org as well
+    organization_user = models.ForeignKey(
+        "OrganizationUser",
+        on_delete=models.CASCADE,
+        related_name="graph_persistent_states",
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["graph", "user"],
+                fields=["graph", "organization_user"],
                 name="unique_user_per_flow",
             )
         ]
