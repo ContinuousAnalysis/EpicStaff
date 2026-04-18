@@ -198,9 +198,14 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
 
         const preComp = tableData.pre_computation || {
             code: tableData.pre_computation_code || this.getDefaultPreComputation(),
-            input_map: {},
+            input_map: tableData.pre_input_map || {},
+            output_variable_path: tableData.pre_output_variable_path,
         };
-        const postComp = tableData.post_computation || { code: tableData.post_computation_code || '', input_map: {} };
+        const postComp = tableData.post_computation || {
+            code: tableData.post_computation_code || '',
+            input_map: tableData.post_input_map || {},
+            output_variable_path: tableData.post_output_variable_path,
+        };
 
         this.preCode = preComp.code || '';
         this.postCode = postComp.code || '';
@@ -223,7 +228,16 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
 
         (form.get('pre_input_map') as FormArray).valueChanges
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(() => this.preInputMapVersion.update((v) => v + 1));
+            .subscribe(() => {
+                this.preInputMapVersion.update((v) => v + 1);
+                this.codeChange$.next();
+            });
+
+        (form.get('post_input_map') as FormArray).valueChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => {
+                this.codeChange$.next();
+            });
 
         const groupsCopy = this.cloneConditionGroups(tableData.condition_groups || []);
         this.conditionGroups.set(groupsCopy);

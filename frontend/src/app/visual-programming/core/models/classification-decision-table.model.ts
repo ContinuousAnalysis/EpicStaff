@@ -9,7 +9,11 @@ export interface ComputationConfig {
 
 export interface ClassificationDecisionTableData {
     pre_computation_code: string;
+    pre_input_map?: Record<string, string>;
+    pre_output_variable_path?: string;
     post_computation_code?: string;
+    post_input_map?: Record<string, string>;
+    post_output_variable_path?: string;
     pre_computation?: ComputationConfig;
     post_computation?: ComputationConfig;
     condition_groups: ConditionGroup[];
@@ -44,6 +48,6 @@ export interface OutputVariableMapping {
 export interface PromptConfig {
     prompt_text: string;
     llm_id: string;
-    output_schema: any;
+    output_schema: Record<string, unknown> | string | null;
     result_variable: string;
 }

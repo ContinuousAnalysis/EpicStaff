@@ -13,7 +13,8 @@ import { IHeaderParams } from 'ag-grid-community';
             }
             <i
                 [class]="iconClass"
-                [class.icon-header-clickable]="!!onIconClick"
+                [class.icon-header-clickable]="!!onIconClick && variant === 'default'"
+                [class.icon-header-delete]="!!onIconClick && variant === 'delete'"
                 (click)="onIconClick ? onIconClick($event) : null"
             ></i>
         </div>
@@ -66,6 +67,17 @@ import { IHeaderParams } from 'ag-grid-community';
                 color: #fff !important;
                 border-color: #685fff;
             }
+            .icon-header-delete {
+                cursor: pointer;
+                font-size: 0.8rem !important;
+                color: rgba(255, 255, 255, 0.4) !important;
+                flex-shrink: 0;
+                transition: color 0.15s ease;
+                padding: 2px;
+            }
+            .icon-header-delete:hover {
+                color: rgba(255, 100, 100, 0.85) !important;
+            }
         `,
     ],
 })
@@ -73,6 +85,7 @@ export class IconHeaderComponent implements IHeaderAngularComp {
     public iconClass = '';
     public tooltip = '';
     public label = '';
+    public variant: 'default' | 'delete' = 'default';
     public onIconClick: ((event: MouseEvent) => void) | undefined = undefined;
 
     agInit(
@@ -80,12 +93,14 @@ export class IconHeaderComponent implements IHeaderAngularComp {
             iconClass?: string;
             tooltip?: string;
             label?: string;
+            variant?: 'default' | 'delete';
             onIconClick?: (event: MouseEvent) => void;
         }
     ): void {
         this.iconClass = params.iconClass || '';
         this.tooltip = params.tooltip || '';
         this.label = params.label || '';
+        this.variant = params.variant || 'default';
         this.onIconClick = params.onIconClick;
     }
 

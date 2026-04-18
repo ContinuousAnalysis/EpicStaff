@@ -10,43 +10,6 @@
             </span>
         </h3>
         <div class="grid-header-actions">
-            <div class="field-column-controls">
-                @for (field of activeFieldColumns(); track field) {
-                    <span class="field-chip field-chip--expr">
-                        <span class="field-chip-prefix">E</span>
-                        {{ field }}
-                        <i class="ti ti-x field-chip-remove" (click)="removeFieldColumn(field)"></i>
-                    </span>
-                }
-                @for (field of hiddenFieldColumns(); track field) {
-                    <span
-                        class="field-chip field-chip--expr field-chip--hidden"
-                        (click)="addFieldColumn(field)"
-                        title="Hidden expression column (has data) — click to show"
-                    >
-                        <i class="ti ti-eye-off"></i>
-                        {{ field }}
-                    </span>
-                }
-                <span class="field-controls-divider"></span>
-                @for (field of activeManipFieldColumns(); track field) {
-                    <span class="field-chip field-chip--manip">
-                        <span class="field-chip-prefix">M</span>
-                        {{ field }}
-                        <i class="ti ti-x field-chip-remove" (click)="removeManipFieldColumn(field)"></i>
-                    </span>
-                }
-                @for (field of hiddenManipFieldColumns(); track field) {
-                    <span
-                        class="field-chip field-chip--manip field-chip--hidden"
-                        (click)="addManipFieldColumn(field)"
-                        title="Hidden manipulation column (has data) — click to show"
-                    >
-                        <i class="ti ti-eye-off"></i>
-                        {{ field }}
-                    </span>
-                }
-            </div>
             <app-button type="primary" leftIcon="ti ti-plus" (click)="addRow()"> Add Condition </app-button>
         </div>
     </div>
@@ -155,5 +118,28 @@
                 <div class="field-picker-empty">No fields available</div>
             }
         </div>
+    }
+
+    @if (!hasFieldCols() && exprAddPos()) {
+        <button
+            class="col-overlay-add-btn"
+            [style.left.px]="exprAddPos()!.x"
+            [style.top.px]="exprAddPos()!.y"
+            (click)="toggleFieldPicker($event)"
+            title="Add expression variable"
+        >
+            <i class="ti ti-plus"></i>
+        </button>
+    }
+    @if (!hasManipCols() && manipAddPos()) {
+        <button
+            class="col-overlay-add-btn"
+            [style.left.px]="manipAddPos()!.x"
+            [style.top.px]="manipAddPos()!.y"
+            (click)="toggleManipFieldPicker($event)"
+            title="Add manipulation variable"
+        >
+            <i class="ti ti-plus"></i>
+        </button>
     }
 </div>

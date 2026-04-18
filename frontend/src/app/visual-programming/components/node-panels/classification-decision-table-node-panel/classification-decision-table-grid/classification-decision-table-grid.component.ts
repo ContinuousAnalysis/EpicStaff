@@ -16,6 +16,7 @@ import {
     CellClickedEvent,
     CellValueChangedEvent,
     ColDef,
+    ColGroupDef,
     ColumnMovedEvent,
     ColumnResizedEvent,
     GridApi,
@@ -37,6 +38,7 @@ import { FlowService } from '../../../../services/flow.service';
 import { IconHeaderComponent } from './icon-header/icon-header.component';
 import { MonacoCellRendererComponent } from './monaco-cell-renderer/monaco-cell-renderer.component';
 import { NextNodeCellEditorComponent } from './next-node-cell-editor/next-node-cell-editor.component';
+import { ParamsGroupHeaderComponent } from './params-group-header/params-group-header.component';
 import { PromptIdCellEditorComponent } from './prompt-id-cell-editor/prompt-id-cell-editor.component';
 import { PromptTooltipRendererComponent } from './prompt-tooltip-renderer/prompt-tooltip-renderer.component';
 
@@ -195,6 +197,20 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             this.hiddenManipFieldColumns().length > 0
     );
 
+    public hasFieldCols = computed(() =>
+        this.movableColumnOrder().some((id) => id.startsWith('field_') && !this.hiddenFieldsSet().has(id.substring(6)))
+    );
+
+    public hasManipCols = computed(() =>
+        this.manipColumnOrder().some(
+            (id) => id.startsWith('manip_') && !this.hiddenManipFieldsSet().has(id.substring(6))
+        )
+    );
+
+    public exprAddPos = signal<{ x: number; y: number } | null>(null);
+    public manipAddPos = signal<{ x: number; y: number } | null>(null);
+    private positionResizeObserver: ResizeObserver | null = null;
+
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
         const currentId = this.currentNodeId();
@@ -249,8 +265,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             }
         });
         if (fieldKeys.size > 0 && this.movableColumnOrder().length <= 1) {
-            const colIds = [...fieldKeys].map((f) => `field_${f}`);
-            colIds.push('expression');
+            const colIds = ['expression', ...[...fieldKeys].map((f) => `field_${f}`)];
             this.movableColumnOrder.set(colIds);
         }
         if (manipKeys.size > 0 && this.manipColumnOrder().length <= 1) {
@@ -408,17 +423,26 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         onColumnResized: (event: ColumnResizedEvent) => {
             if (event.finished) {
                 this.saveGridState();
+                setTimeout(() => this.updateAddButtonPositions(), 0);
             }
         },
     };
 
-    public columnDefs: ColDef[] = this.buildColumnDefs();
+    public columnDefs: (ColDef | ColGroupDef)[] = this.buildColumnDefs();
 
     private buildFieldColDef(fieldName: string): ColDef {
         return {
-            headerName: `⬡ ${fieldName}`,
             colId: `field_${fieldName}`,
+            headerComponent: IconHeaderComponent,
+            headerComponentParams: {
+                label: fieldName,
+                iconClass: 'ti ti-x',
+                tooltip: `Remove variable "${fieldName}"`,
+                variant: 'delete',
+                onIconClick: () => this.removeFieldColumn(fieldName),
+            },
             editable: false,
+            minWidth: Math.max(70, fieldName.length * 9 + 52),
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
             cellRendererParams: { singleLine: true },
@@ -445,9 +469,17 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     private buildManipFieldColDef(fieldName: string): ColDef {
         return {
-            headerName: `⬢ ${fieldName}`,
             colId: `manip_${fieldName}`,
+            headerComponent: IconHeaderComponent,
+            headerComponentParams: {
+                label: fieldName,
+                iconClass: 'ti ti-x',
+                tooltip: `Remove variable "${fieldName}"`,
+                variant: 'delete',
+                onIconClick: () => this.removeManipFieldColumn(fieldName),
+            },
             editable: false,
+            minWidth: Math.max(70, fieldName.length * 9 + 52),
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
             cellRendererParams: { singleLine: true },
@@ -469,15 +501,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         return {
             colId: 'manipulation',
             field: 'manipulation',
+            headerName: 'Manipulation',
             editable: false,
             flex: 1,
-            headerComponent: IconHeaderComponent,
-            headerComponentParams: {
-                label: 'Manipulation',
-                iconClass: 'ti ti-plus',
-                tooltip: 'Add manipulation variable',
-                onIconClick: (event: MouseEvent) => this.toggleManipFieldPicker(event),
-            },
             cellRenderer: MonacoCellRendererComponent,
             cellStyle: { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
         };
@@ -487,15 +513,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         return {
             colId: 'expression',
             field: 'expression',
+            headerName: 'Expression',
             editable: false,
             flex: 1,
-            headerComponent: IconHeaderComponent,
-            headerComponentParams: {
-                label: 'Expression',
-                iconClass: 'ti ti-plus',
-                tooltip: 'Add expression variable',
-                onIconClick: (event: MouseEvent) => this.toggleFieldPicker(event),
-            },
             cellRenderer: MonacoCellRendererComponent,
             rowSpan: (params: RowSpanParams<ConditionGroup>) =>
                 this.getRowSpan(params, 'expression', (d) => d?.expression || ''),
@@ -508,7 +528,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         };
     }
 
-    private buildColumnDefs(): ColDef[] {
+    private buildColumnDefs(): (ColDef | ColGroupDef)[] {
         const staticBefore: ColDef[] = [
             {
                 headerName: '',
@@ -539,31 +559,35 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             },
         ];
 
-        // Build expression field columns from movableColumnOrder
+        // Expression section
         const hidden = this.hiddenFieldsSet();
-        const exprCols: ColDef[] = this.movableColumnOrder()
-            .filter((colId) => {
-                if (colId === 'expression') return true;
-                if (colId.startsWith('field_')) return !hidden.has(colId.substring(6));
-                return false;
-            })
-            .map((colId) => {
-                if (colId === 'expression') return this.buildExpressionColDef();
-                return this.buildFieldColDef(colId.substring(6));
-            });
+        const visibleFieldCols: ColDef[] = this.movableColumnOrder()
+            .filter((id) => id.startsWith('field_') && !hidden.has(id.substring(6)))
+            .map((id) => this.buildFieldColDef(id.substring(6)));
 
-        // Build manipulation field columns from manipColumnOrder
-        const hiddenManip = this.hiddenManipFieldsSet();
-        const manipCols: ColDef[] = this.manipColumnOrder()
-            .filter((colId) => {
-                if (colId === 'manipulation') return true;
-                if (colId.startsWith('manip_')) return !hiddenManip.has(colId.substring(6));
-                return false;
-            })
-            .map((colId) => {
-                if (colId === 'manipulation') return this.buildManipulationColDef();
-                return this.buildManipFieldColDef(colId.substring(6));
-            });
+        const hasFieldCols = visibleFieldCols.length > 0;
+        const expressionCol = this.buildExpressionColDef();
+
+        let exprSection: (ColDef | ColGroupDef)[];
+        if (hasFieldCols) {
+            exprSection = [
+                expressionCol,
+                {
+                    groupId: 'expr-params-group',
+                    marryChildren: false,
+                    headerGroupComponent: ParamsGroupHeaderComponent,
+                    headerGroupComponentParams: {
+                        mode: 'full',
+                        onAdd: (event: MouseEvent) => this.toggleFieldPicker(event),
+                        onFreeze: () => this.saveGridState(),
+                        onHide: () => this.hideAllExprParams(),
+                    },
+                    children: visibleFieldCols,
+                } as ColGroupDef,
+            ];
+        } else {
+            exprSection = [expressionCol];
+        }
 
         const promptIdCol: ColDef = {
             headerName: 'Prompt ID',
@@ -603,6 +627,36 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 fontSize: '14px',
             },
         };
+
+        // Manipulation section
+        const hiddenManip = this.hiddenManipFieldsSet();
+        const visibleManipCols: ColDef[] = this.manipColumnOrder()
+            .filter((id) => id.startsWith('manip_') && !hiddenManip.has(id.substring(6)))
+            .map((id) => this.buildManipFieldColDef(id.substring(6)));
+
+        const hasManipCols = visibleManipCols.length > 0;
+        const manipCol = this.buildManipulationColDef();
+
+        let manipSection: (ColDef | ColGroupDef)[];
+        if (hasManipCols) {
+            manipSection = [
+                manipCol,
+                {
+                    groupId: 'manip-params-group',
+                    marryChildren: false,
+                    headerGroupComponent: ParamsGroupHeaderComponent,
+                    headerGroupComponentParams: {
+                        mode: 'full',
+                        onAdd: (event: MouseEvent) => this.toggleManipFieldPicker(event),
+                        onFreeze: () => this.saveGridState(),
+                        onHide: () => this.hideAllManipParams(),
+                    },
+                    children: visibleManipCols,
+                } as ColGroupDef,
+            ];
+        } else {
+            manipSection = [manipCol];
+        }
 
         const skipCol: ColDef = {
             headerName: 'Skip',
@@ -667,7 +721,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             },
         };
 
-        return [...staticBefore, ...exprCols, promptIdCol, ...manipCols, skipCol, nextNodeCol, deleteCol];
+        return [...staticBefore, ...exprSection, promptIdCol, ...manipSection, skipCol, nextNodeCol, deleteCol];
     }
 
     private getMergeableColIds(): string[] {
@@ -913,8 +967,44 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         return { startRow: start, endRow: end };
     }
 
+    hideAllExprParams(): void {
+        const allFieldNames = this.movableColumnOrder()
+            .filter((id) => id.startsWith('field_'))
+            .map((id) => id.substring(6));
+        const newHidden = new Set(this.hiddenFieldsSet());
+        allFieldNames.forEach((name) => newHidden.add(name));
+        this.hiddenFieldsSet.set(newHidden);
+        this.saveGridState();
+    }
+
+    hideAllManipParams(): void {
+        const allManipNames = this.manipColumnOrder()
+            .filter((id) => id.startsWith('manip_'))
+            .map((id) => id.substring(6));
+        const newHidden = new Set(this.hiddenManipFieldsSet());
+        allManipNames.forEach((name) => newHidden.add(name));
+        this.hiddenManipFieldsSet.set(newHidden);
+        this.saveGridState();
+    }
+
+    private applyWidths(defs: (ColDef | ColGroupDef)[], widthMap: Map<string, number>): (ColDef | ColGroupDef)[] {
+        return defs.map((def) => {
+            if ('children' in def) {
+                return {
+                    ...def,
+                    children: this.applyWidths((def as ColGroupDef).children as (ColDef | ColGroupDef)[], widthMap),
+                };
+            }
+            const col = def as ColDef;
+            const id = col.colId || col.field;
+            if (id && widthMap.has(id)) {
+                return { ...col, flex: undefined, width: widthMap.get(id) };
+            }
+            return col;
+        });
+    }
+
     private rebuildColumnDefs(): void {
-        // Capture current column widths to prevent layout jump
         const widthMap = new Map<string, number>(this.savedColumnWidths);
         this.gridApi?.getColumnState()?.forEach((s) => {
             if (s.colId && s.width) widthMap.set(s.colId, s.width);
@@ -922,21 +1012,37 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
         this.columnDefs = this.buildColumnDefs();
 
-        // Apply captured widths, replacing flex with explicit width
         if (widthMap.size > 0) {
-            this.columnDefs = this.columnDefs.map((col) => {
-                const id = col.colId || col.field;
-                if (id && widthMap.has(id)) {
-                    return { ...col, flex: undefined, width: widthMap.get(id) };
-                }
-                return col;
-            });
+            this.columnDefs = this.applyWidths(this.columnDefs, widthMap) as (ColDef | ColGroupDef)[];
         }
 
         if (this.gridApi) {
             this.isRebuilding = true;
             this.gridApi.setGridOption('columnDefs', this.columnDefs);
             this.isRebuilding = false;
+        }
+        setTimeout(() => this.updateAddButtonPositions(), 50);
+    }
+
+    private updateAddButtonPositions(): void {
+        if (this.hasFieldCols()) {
+            this.exprAddPos.set(null);
+        } else {
+            const exprCell = this.elRef.nativeElement.querySelector('.ag-header-cell[col-id="expression"]');
+            if (exprCell) {
+                const rect = (exprCell as HTMLElement).getBoundingClientRect();
+                this.exprAddPos.set({ x: rect.right - 26, y: rect.top + rect.height / 2 - 10 });
+            }
+        }
+
+        if (this.hasManipCols()) {
+            this.manipAddPos.set(null);
+        } else {
+            const manipCell = this.elRef.nativeElement.querySelector('.ag-header-cell[col-id="manipulation"]');
+            if (manipCell) {
+                const rect = (manipCell as HTMLElement).getBoundingClientRect();
+                this.manipAddPos.set({ x: rect.right - 26, y: rect.top + rect.height / 2 - 10 });
+            }
         }
     }
 
@@ -960,13 +1066,11 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             newHidden.delete(fieldName);
             this.hiddenFieldsSet.set(newHidden);
         } else {
-            // New field - insert before expression in movableColumnOrder
+            // New field - append to end of movableColumnOrder
             const colId = `field_${fieldName}`;
             const order = this.movableColumnOrder();
             if (!order.includes(colId)) {
-                const exprIdx = order.indexOf('expression');
-                const newOrder = [...order];
-                newOrder.splice(exprIdx >= 0 ? exprIdx : newOrder.length, 0, colId);
+                const newOrder = [...order, colId];
                 this.movableColumnOrder.set(newOrder);
             }
         }
@@ -1043,6 +1147,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             });
             this.gridApi.applyColumnState({ state: colState });
         }
+        setTimeout(() => this.updateAddButtonPositions(), 100);
+        this.positionResizeObserver = new ResizeObserver(() => this.updateAddButtonPositions());
+        this.positionResizeObserver.observe(this.elRef.nativeElement);
     }
 
     private bodyClickHandler = (event: MouseEvent) => {
@@ -1110,6 +1217,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     ngOnDestroy(): void {
         document.removeEventListener('click', this.bodyClickHandler);
+        this.positionResizeObserver?.disconnect();
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
