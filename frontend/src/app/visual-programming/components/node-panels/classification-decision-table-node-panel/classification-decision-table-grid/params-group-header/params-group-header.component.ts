@@ -44,14 +44,14 @@ import { IHeaderGroupParams } from 'ag-grid-community';
                 position: relative;
             }
             .params-group-header--add-only {
-                justify-content: center;
+                justify-content: space-between;
             }
             .add-btn {
-                background: rgba(104, 95, 255, 0.25);
+                background: #27272b;
                 border: 1px solid rgba(104, 95, 255, 0.5);
-                border-radius: 50%;
-                width: 20px;
-                height: 20px;
+                border-radius: 4px;
+                width: 16px;
+                height: 16px;
                 display: flex;
                 align-items: center;
                 justify-content: center;

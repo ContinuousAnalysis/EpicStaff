@@ -32,8 +32,9 @@
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            color: rgba(255, 255, 255, 0.6);
-            background: rgba(255, 255, 255, 0.08);
+            color: #a89fff;
+            background: rgba(104, 95, 255, 0.2);
+            border: 1px solid rgba(104, 95, 255, 0.35);
             font-size: 0.75rem;
             cursor: help;
             transition:
@@ -42,7 +43,8 @@
 
             &:hover {
                 color: #fff;
-                background: rgba(104, 95, 255, 0.35);
+                background: rgba(104, 95, 255, 0.45);
+                border-color: rgba(104, 95, 255, 0.6);
             }
         }
     }
@@ -283,10 +285,10 @@
 
 .col-overlay-add-btn {
     position: fixed;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: rgba(104, 95, 255, 0.25);
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: #27272b;
     border: 1px solid rgba(104, 95, 255, 0.5);
     color: #a89fff;
     cursor: pointer;
@@ -382,18 +384,17 @@
             border-radius: 3px !important;
 
             &.ag-checked {
-                background-color: #685fff !important;
-                border-color: #685fff !important;
+                background-color: #ffffff !important;
+
+                &::after {
+                    color: #685fff !important;
+                    font-size: 10px !important;
+                }
             }
 
             &:not(.ag-checked) {
                 background-color: transparent !important;
                 border-color: rgba(255, 255, 255, 0.3) !important;
-            }
-
-            &::after {
-                color: #ffffff !important;
-                font-size: 10px !important;
             }
         }
 
@@ -414,6 +415,10 @@
 
         .ti-x:hover {
             color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        [col-id='actions'] .icon-header i {
+            color: #685fff !important;
         }
 
         .cell-warning {

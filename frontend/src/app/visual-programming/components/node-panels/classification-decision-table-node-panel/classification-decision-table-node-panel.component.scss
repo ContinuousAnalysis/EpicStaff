@@ -72,11 +72,16 @@
 }
 
 .help-icon {
-    color: rgba(255, 255, 255, 0.3);
-    font-size: 0.75rem;
+    color: rgba(104, 95, 255, 0.75);
+    font-size: 0.85rem;
     cursor: help;
     display: inline-flex;
     align-items: center;
+    transition: color 0.15s ease;
+
+    &:hover {
+        color: #a89fff;
+    }
 }
 
 .header-input {
@@ -190,7 +195,7 @@
 
     &--active {
         color: #fff;
-        border-bottom-color: #685fff;
+        border-bottom-color: #fff;
     }
 
     &:hover:not(.tab-btn--active) {
@@ -202,7 +207,7 @@
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    color: rgba(255, 255, 255, 0.55);
+    color: #685fff;
     font-size: 0.875rem;
     padding: 0.6rem 0;
     margin-bottom: -1px;
@@ -218,7 +223,7 @@
     }
 
     &:hover:not(.tab-link--active) {
-        color: rgba(255, 255, 255, 0.7);
+        color: #8b83ff;
     }
 }
 

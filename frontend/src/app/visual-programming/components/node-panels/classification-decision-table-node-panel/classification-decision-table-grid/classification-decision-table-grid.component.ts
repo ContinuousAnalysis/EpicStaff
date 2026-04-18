@@ -46,7 +46,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
     selector: 'app-classification-decision-table-grid',
-    imports: [AgGridModule, ButtonComponent],
+    imports: [AgGridModule, ButtonComponent, ParamsGroupHeaderComponent],
     templateUrl: './classification-decision-table-grid.component.html',
     styleUrls: ['./classification-decision-table-grid.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -206,6 +206,11 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             (id) => id.startsWith('manip_') && !this.hiddenManipFieldsSet().has(id.substring(6))
         )
     );
+
+    public showExprParamsMenu = signal(false);
+    public exprParamsMenuPos = signal<{ x: number; y: number } | null>(null);
+    public showManipParamsMenu = signal(false);
+    public manipParamsMenuPos = signal<{ x: number; y: number } | null>(null);
 
     public exprAddPos = signal<{ x: number; y: number } | null>(null);
     public manipAddPos = signal<{ x: number; y: number } | null>(null);
@@ -531,8 +536,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     private buildColumnDefs(): (ColDef | ColGroupDef)[] {
         const staticBefore: ColDef[] = [
             {
-                headerName: '',
-                field: 'valid',
+                headerName: 'Enabled',
+                field: 'dock_visible',
                 editable: true,
                 width: 50,
                 minWidth: 50,
@@ -579,8 +584,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     headerGroupComponentParams: {
                         mode: 'full',
                         onAdd: (event: MouseEvent) => this.toggleFieldPicker(event),
-                        onFreeze: () => this.saveGridState(),
-                        onHide: () => this.hideAllExprParams(),
+                        onChevronClick: (event: MouseEvent) => this.openExprParamsMenu(event),
                     },
                     children: visibleFieldCols,
                 } as ColGroupDef,
@@ -648,8 +652,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     headerGroupComponentParams: {
                         mode: 'full',
                         onAdd: (event: MouseEvent) => this.toggleManipFieldPicker(event),
-                        onFreeze: () => this.saveGridState(),
-                        onHide: () => this.hideAllManipParams(),
+                        onChevronClick: (event: MouseEvent) => this.openManipParamsMenu(event),
                     },
                     children: visibleManipCols,
                 } as ColGroupDef,
@@ -660,7 +663,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
         const skipCol: ColDef = {
             headerName: 'Skip',
-            field: 'continue',
+            field: 'continue_flag',
             editable: true,
             width: 65,
             minWidth: 50,
@@ -702,6 +705,12 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
         const deleteCol: ColDef = {
             headerName: '',
+            headerComponent: IconHeaderComponent,
+            headerComponentParams: {
+                iconClass: 'ti ti-trash',
+                label: '',
+                variant: 'delete',
+            },
             field: 'actions',
             cellRenderer: () => {
                 return `<i class="ti ti-x" style="color: rgba(255,255,255,0.5); font-size: 1rem; cursor: pointer;"></i>`;
@@ -1104,6 +1113,54 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         }
     }
 
+    openExprParamsMenu(event: MouseEvent): void {
+        const isOpen = this.showExprParamsMenu();
+        if (!isOpen) {
+            const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+            this.exprParamsMenuPos.set({ x: rect.left, y: rect.bottom + 4 });
+        } else {
+            this.exprParamsMenuPos.set(null);
+        }
+        this.showExprParamsMenu.set(!isOpen);
+        this.showManipParamsMenu.set(false);
+    }
+
+    openManipParamsMenu(event: MouseEvent): void {
+        const isOpen = this.showManipParamsMenu();
+        if (!isOpen) {
+            const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+            this.manipParamsMenuPos.set({ x: rect.left, y: rect.bottom + 4 });
+        } else {
+            this.manipParamsMenuPos.set(null);
+        }
+        this.showManipParamsMenu.set(!isOpen);
+        this.showExprParamsMenu.set(false);
+    }
+
+    freezeExprParams(): void {
+        this.saveGridState();
+        this.showExprParamsMenu.set(false);
+        this.exprParamsMenuPos.set(null);
+    }
+
+    hideExprParams(): void {
+        this.hideAllExprParams();
+        this.showExprParamsMenu.set(false);
+        this.exprParamsMenuPos.set(null);
+    }
+
+    freezeManipParams(): void {
+        this.saveGridState();
+        this.showManipParamsMenu.set(false);
+        this.manipParamsMenuPos.set(null);
+    }
+
+    hideManipParams(): void {
+        this.hideAllManipParams();
+        this.showManipParamsMenu.set(false);
+        this.manipParamsMenuPos.set(null);
+    }
+
     addManipFieldColumn(fieldName: string): void {
         const hidden = this.hiddenManipFieldsSet();
         if (hidden.has(fieldName)) {
@@ -1153,6 +1210,15 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     private bodyClickHandler = (event: MouseEvent) => {
+        if (this.showExprParamsMenu()) {
+            this.showExprParamsMenu.set(false);
+            this.exprParamsMenuPos.set(null);
+        }
+        if (this.showManipParamsMenu()) {
+            this.showManipParamsMenu.set(false);
+            this.manipParamsMenuPos.set(null);
+        }
+
         // Close context menu on any click
         if (this.contextMenu()) {
             this.contextMenu.set(null);
@@ -1237,12 +1303,11 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             expression: null,
             conditions: [],
             manipulation: null,
-            continue: false,
+            continue_flag: false,
             route_code: `ROUTE_${index + 1}`,
             dock_visible: true,
             next_node: null,
             order: index + 1,
-            valid: true,
             field_expressions: fieldExpressions,
         };
     }

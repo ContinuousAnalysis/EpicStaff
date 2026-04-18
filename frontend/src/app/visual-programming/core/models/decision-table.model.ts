@@ -15,6 +15,7 @@ export interface ConditionGroup {
     valid?: boolean;
     order?: number;
     continue?: boolean;
+    continue_flag?: boolean;
     route_code?: string;
     dock_visible?: boolean;
     field_expressions?: Record<string, string>;
