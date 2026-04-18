@@ -58,6 +58,18 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     public override readonly isExpanded = input<boolean>(true);
 
     private flowService = inject(FlowService);
+
+    // Extract graph ID once at construction — URL is /flows/:id and doesn't change while panel is open
+    private readonly graphIdFromUrl = (() => {
+        const match = window.location.pathname.match(/\/flows\/(\d+)/);
+        return match?.[1] ?? '0';
+    })();
+
+    // Stable storage key: graphId + nodeNumber (nodeNumber is in metadata, survives save/delete cycles)
+    readonly gridStorageId = computed(() => {
+        const nodeNum = this.node().nodeNumber ?? this.node().backendId ?? 0;
+        return `${this.graphIdFromUrl}_${nodeNum}`;
+    });
     private cdr = inject(ChangeDetectorRef);
     private fullLlmConfigService = inject(FullLLMConfigService);
     private destroyRef = inject(DestroyRef);

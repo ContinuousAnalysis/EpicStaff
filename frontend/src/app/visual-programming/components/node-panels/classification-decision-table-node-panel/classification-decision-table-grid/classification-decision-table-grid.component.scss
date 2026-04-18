@@ -426,6 +426,11 @@
             border: 1px solid #ff3b30 !important;
         }
 
+        .ag-header-cell-resize::after {
+            height: 100% !important;
+            top: 0 !important;
+        }
+
         // Fix for "No Rows To Show" message being cut off - only when empty
         &.empty-state {
             .ag-center-cols-container,

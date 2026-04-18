@@ -55,6 +55,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     public conditionGroups = input.required<ConditionGroup[]>();
     public activeColor = input<string>('#685fff');
     public currentNodeId = input.required<string>();
+    public storageNodeId = input<string>('');
     public prompts = input<Record<string, PromptConfig>>({});
     public defaultLlmId = input<string>('');
     public llmConfigs = input<{ id: number; label: string }[]>([]);
@@ -287,6 +288,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         oddRowBackgroundColor: '#252526',
         borderColor: 'rgba(255, 255, 255, 0.1)',
         rowHoverColor: 'rgba(104, 95, 255, 0.1)',
+        columnBorder: { style: 'solid', width: 1, color: 'rgba(255, 255, 255, 0.07)' },
         fontSize: 14,
     });
 
@@ -302,7 +304,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     private isRebuilding = false;
 
     private get storageKey(): string {
-        return `cdt-grid-state-${this.currentNodeId()}`;
+        const stableId = this.storageNodeId() || this.currentNodeId();
+        return `cdt-grid-state-${stableId}`;
     }
 
     private saveGridState(): void {
@@ -539,9 +542,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 headerName: 'Enabled',
                 field: 'dock_visible',
                 editable: true,
-                width: 50,
-                minWidth: 50,
-                maxWidth: 50,
+                width: 85,
+                minWidth: 75,
                 rowDrag: true,
                 cellDataType: 'boolean',
                 headerTooltip: 'Enabled',
@@ -1014,9 +1016,14 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     private rebuildColumnDefs(): void {
-        const widthMap = new Map<string, number>(this.savedColumnWidths);
+        // Start from current grid state (live resizes), then fill in saved widths for columns not yet in grid
+        const widthMap = new Map<string, number>();
         this.gridApi?.getColumnState()?.forEach((s) => {
             if (s.colId && s.width) widthMap.set(s.colId, s.width);
+        });
+        // savedColumnWidths fills in columns not yet reflected in grid state (e.g. on initial load)
+        this.savedColumnWidths.forEach((w, id) => {
+            if (!widthMap.has(id)) widthMap.set(id, w);
         });
 
         this.columnDefs = this.buildColumnDefs();
@@ -1028,6 +1035,11 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         if (this.gridApi) {
             this.isRebuilding = true;
             this.gridApi.setGridOption('columnDefs', this.columnDefs);
+            // Explicitly re-apply widths to grid state after column def update
+            if (widthMap.size > 0) {
+                const stateToApply = [...widthMap.entries()].map(([colId, width]) => ({ colId, width }));
+                this.gridApi.applyColumnState({ state: stateToApply });
+            }
             this.isRebuilding = false;
         }
         setTimeout(() => this.updateAddButtonPositions(), 50);
