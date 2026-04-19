@@ -636,7 +636,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     this.promptChange.emit({ promptId, field, value });
                 },
             }),
-            cellEditorPopup: true,
+            cellEditorPopup: false,
             cellStyle: {
                 fontSize: '14px',
             },
@@ -705,7 +705,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             cellEditorParams: () => ({
                 nodes: this.availableNodes(),
             }),
-            cellEditorPopup: true,
+            cellEditorPopup: false,
             cellStyle: {
                 display: 'flex',
                 alignItems: 'center',

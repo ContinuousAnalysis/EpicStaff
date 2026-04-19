@@ -55,6 +55,7 @@ interface NextNodeEditorParams extends ICellEditorParams {
         `
             :host {
                 display: block;
+                position: absolute;
             }
             .node-editor-popup {
                 width: 260px;
