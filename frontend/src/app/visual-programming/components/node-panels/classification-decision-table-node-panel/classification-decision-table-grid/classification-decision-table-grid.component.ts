@@ -514,6 +514,10 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
             cellStyle: { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
+            valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
+                params.data.manipulation = params.newValue || '';
+                return true;
+            },
         };
     }
 
@@ -533,6 +537,10 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     fontFamily: 'monospace',
                     color: '#d4d4d4',
                 }),
+            valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
+                params.data.expression = params.newValue || '';
+                return true;
+            },
         };
     }
 
@@ -784,6 +792,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         const ug = this.unmergedGroup();
         if (ug && ug.colId === colId && idx >= ug.startRow && idx <= ug.endRow) return 1;
         const cur = getValue(params.data) || '';
+        if (!cur) return 1;
 
         const bounds = this.getHierarchicalBounds(params, colId, idx);
 
@@ -1035,11 +1044,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         if (this.gridApi) {
             this.isRebuilding = true;
             this.gridApi.setGridOption('columnDefs', this.columnDefs);
-            // Explicitly re-apply widths to grid state after column def update
-            if (widthMap.size > 0) {
-                const stateToApply = [...widthMap.entries()].map(([colId, width]) => ({ colId, width }));
-                this.gridApi.applyColumnState({ state: stateToApply });
-            }
             this.isRebuilding = false;
         }
         setTimeout(() => this.updateAddButtonPositions(), 50);
@@ -1253,6 +1257,10 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             const isMergeableCol = clickedColId === 'expression' || clickedColId.startsWith('field_');
 
             if (isMergeableCol && (!currentUnmerged || currentUnmerged.colId !== clickedColId)) {
+                // Only unmerge if the cell is actually spanning multiple rows
+                const rowSpan = parseInt(cellEl!.getAttribute('rowspan') || '1', 10);
+                if (rowSpan <= 1) return;
+
                 // Determine which row was clicked within a spanned cell
                 const rowHeight = this.gridOptions.rowHeight || 50;
                 const cellRect = cellEl!.getBoundingClientRect();

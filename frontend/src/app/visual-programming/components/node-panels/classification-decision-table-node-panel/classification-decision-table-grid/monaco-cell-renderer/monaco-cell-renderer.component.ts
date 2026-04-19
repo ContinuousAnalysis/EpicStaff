@@ -1,30 +1,52 @@
+import { CommonModule } from '@angular/common';
 import {
-    Component,
+    AfterViewInit,
     ChangeDetectionStrategy,
     ChangeDetectorRef,
+    Component,
     ElementRef,
-    ViewChild,
-    AfterViewInit,
-    OnDestroy,
-    ViewEncapsulation,
     inject,
+    OnDestroy,
+    ViewChild,
+    ViewEncapsulation,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
+
+interface MonacoWindow extends Window {
+    monaco?: {
+        editor?: {
+            colorize?: (text: string, lang: string, opts: Record<string, unknown>) => Promise<string>;
+            create?: (container: HTMLElement, opts: Record<string, unknown>) => MonacoEditorInstance;
+            setTheme?: (theme: string) => void;
+        };
+        KeyCode?: Record<string, number>;
+    };
+    require?: { config?: (opts: Record<string, unknown>) => void } & ((deps: string[], cb: () => void) => void);
+}
+
+interface MonacoEditorInstance {
+    dispose(): void;
+    getValue(): string;
+    focus(): void;
+    setPosition(pos: unknown): void;
+    getTargetAtClientPoint(x: number, y: number): { position?: unknown } | null;
+    addCommand(keyCode: number, handler: () => void): void;
+    onDidChangeModelContent(handler: () => void): void;
+}
 
 // Shared singleton Monaco loader — ensures Monaco is loaded exactly once
 let monacoLoadPromise: Promise<void> | null = null;
 
 function ensureMonacoLoaded(): Promise<void> {
-    if ((window as any).monaco?.editor?.colorize) {
+    if ((window as unknown as MonacoWindow).monaco?.editor?.colorize) {
         return Promise.resolve();
     }
     if (monacoLoadPromise) {
         return monacoLoadPromise;
     }
     monacoLoadPromise = new Promise<void>((resolve) => {
-        const win = window as any;
+        const win = window as unknown as MonacoWindow;
         // If the AMD loader is already present (ngx-monaco-editor loaded it)
         if (win.require?.config) {
             win.require.config({ paths: { vs: 'assets/monaco/min/vs' } });
@@ -35,8 +57,8 @@ function ensureMonacoLoaded(): Promise<void> {
         const script = document.createElement('script');
         script.src = 'assets/monaco/min/vs/loader.js';
         script.onload = () => {
-            win.require.config({ paths: { vs: 'assets/monaco/min/vs' } });
-            win.require(['vs/editor/editor.main'], () => resolve());
+            win.require!.config!({ paths: { vs: 'assets/monaco/min/vs' } });
+            win.require!(['vs/editor/editor.main'], () => resolve());
         };
         script.onerror = () => {
             monacoLoadPromise = null; // allow retry
@@ -63,41 +85,43 @@ function ensureMonacoLoaded(): Promise<void> {
             <span *ngIf="value && !colorized" class="plain-text">{{ displayText }}</span>
         </div>
     `,
-    styles: [`
-        :host {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        .code-cell {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            padding: 0 8px;
-            cursor: text;
-            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #d4d4d4;
-        }
-        .plain-text {
-            color: #d4d4d4;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .placeholder {
-            color: rgba(255, 255, 255, 0.2);
-        }
-        .colorized-code {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: inline;
-        }
-    `],
+    styles: [
+        `
+            :host {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+            .code-cell {
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                padding: 0 8px;
+                cursor: text;
+                font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+                font-size: 12px;
+                line-height: 1.4;
+                color: #d4d4d4;
+            }
+            .plain-text {
+                color: #d4d4d4;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .placeholder {
+                color: rgba(255, 255, 255, 0.2);
+            }
+            .colorized-code {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: inline;
+            }
+        `,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     encapsulation: ViewEncapsulation.None,
 })
@@ -127,8 +151,8 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
     private destroyed = false;
     private params!: ICellRendererParams;
     private tooltipEl: HTMLElement | null = null;
-    private hideTimeout: any = null;
-    private editorInstance: any = null;
+    private hideTimeout: ReturnType<typeof setTimeout> | null = null;
+    private editorInstance: MonacoEditorInstance | null = null;
     private singleLine = false;
     private pendingValue: string | null = null;
     private hasPendingEdit = false;
@@ -138,8 +162,9 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
     agInit(params: ICellRendererParams): void {
         this.params = params;
         this.value = params.value || '';
-        this.singleLine = (params as any).singleLine === true;
+        this.singleLine = (params as ICellRendererParams & { singleLine?: boolean }).singleLine === true;
         this.updateDisplayText();
+        ensureMonacoLoaded();
     }
 
     refresh(params: ICellRendererParams): boolean {
@@ -198,14 +223,25 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         }
         if (this.tooltipEl) return;
         // Close any other active tooltip before opening a new one
-        if (clickOpened && MonacoCellRendererComponent.activeInstance && MonacoCellRendererComponent.activeInstance !== this) {
+        if (
+            clickOpened &&
+            MonacoCellRendererComponent.activeInstance &&
+            MonacoCellRendererComponent.activeInstance !== this
+        ) {
             MonacoCellRendererComponent.activeInstance.removeTooltipNow();
         }
         // Block new hover tooltips if any editor is actively being used
         if (!clickOpened && MonacoCellRendererComponent.isAnyEditorActive()) return;
 
-        const monaco = (window as any).monaco;
-        if (!monaco?.editor?.create) return;
+        const monaco = (window as unknown as MonacoWindow).monaco;
+        if (!monaco?.editor?.create) {
+            ensureMonacoLoaded().then(() => {
+                if (!this.destroyed && !this.tooltipEl) {
+                    this.showTooltip(event, clickOpened);
+                }
+            });
+            return;
+        }
 
         const tooltip = document.createElement('div');
         tooltip.className = 'code-tooltip-popover';
@@ -248,10 +284,14 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
 
         // Measure actual text position inside the cell
         const agCell = this.elRef.nativeElement.closest('.ag-cell');
-        const cellRect = agCell ? agCell.getBoundingClientRect() : this.codeContainer.nativeElement.getBoundingClientRect();
+        const cellRect = agCell
+            ? agCell.getBoundingClientRect()
+            : this.codeContainer.nativeElement.getBoundingClientRect();
         // Text element inside .code-cell (span.plain-text, span.colorized-code, or span.placeholder)
         const textEl = this.codeContainer.nativeElement.querySelector('span');
-        const textRect = textEl ? textEl.getBoundingClientRect() : this.codeContainer.nativeElement.getBoundingClientRect();
+        const textRect = textEl
+            ? textEl.getBoundingClientRect()
+            : this.codeContainer.nativeElement.getBoundingClientRect();
 
         // Compute offsets from .ag-cell edge to actual text start
         const leftOffset = textRect.left - cellRect.left;
@@ -266,7 +306,7 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         const maxWidth = gridEl ? gridEl.getBoundingClientRect().right - cellRect.left : 800;
         const charWidth = 7.2;
         const lines = (this.value || '').split('\n');
-        const longestLine = Math.max(...lines.map(l => l.length), 20);
+        const longestLine = Math.max(...lines.map((l) => l.length), 20);
         const contentWidth = longestLine * charWidth + leftOffset + 20;
 
         if (this.singleLine) {
@@ -274,10 +314,7 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
             editorHeight = cellRect.height;
         } else {
             editorWidth = Math.min(Math.max(contentWidth, cellRect.width), maxWidth);
-            editorHeight = Math.min(
-                Math.max(lines.length * monacoLineHeight + topOffset + 8, cellRect.height),
-                400,
-            );
+            editorHeight = Math.min(Math.max(lines.length * monacoLineHeight + topOffset + 8, cellRect.height), 400);
         }
 
         tooltip.style.left = `${cellRect.left}px`;
@@ -286,7 +323,8 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         editorContainer.style.height = `${editorHeight}px`;
 
         // Create Monaco editor
-        const editor = monaco.editor.create(editorContainer, {
+        const monacoEditor = monaco!.editor!;
+        const editor = monacoEditor.create!(editorContainer, {
             value: this.value,
             language: 'python',
             theme: 'vs-dark',
@@ -301,7 +339,13 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
             overviewRulerBorder: false,
-            scrollbar: { vertical: 'auto', horizontal: 'auto', useShadows: false, verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
+            scrollbar: {
+                vertical: 'auto',
+                horizontal: 'auto',
+                useShadows: false,
+                verticalScrollbarSize: 6,
+                horizontalScrollbarSize: 6,
+            },
             fontSize: 12,
             fontFamily: "'Menlo', 'Monaco', 'Courier New', monospace",
             lineHeight: monacoLineHeight,
@@ -314,13 +358,14 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         });
         this.editorInstance = editor;
 
+        const keyCode = monaco!.KeyCode ?? {};
         // Close tooltip on ESC (prevent it from closing the panel)
-        editor.addCommand(monaco.KeyCode.Escape, () => {
+        editor.addCommand(keyCode['Escape'], () => {
             this.removeTooltipNow();
         });
         // Enter saves and closes; Shift+Enter inserts newline (only for editable)
         if (!merged) {
-            editor.addCommand(monaco.KeyCode.Enter, () => {
+            editor.addCommand(keyCode['Enter'], () => {
                 this.removeTooltipNow();
             });
         }
@@ -446,21 +491,18 @@ export class MonacoCellRendererComponent implements ICellRendererAngularComp, Af
         ensureMonacoLoaded().then(() => {
             if (this.destroyed || this.colorized || !this.value) return;
 
-            const monaco = (window as any).monaco;
+            const monaco = (window as unknown as MonacoWindow).monaco;
             if (!monaco?.editor?.colorize) return;
 
             // Ensure vs-dark theme is active (matches the Monaco editors elsewhere)
-            monaco.editor.setTheme('vs-dark');
+            monaco.editor?.setTheme?.('vs-dark');
 
             const firstLine = this.value.split('\n')[0].trim();
-            const suffix = this.value.includes('\n')
-                ? '<span style="color:rgba(255,255,255,0.3)"> …</span>'
-                : '';
+            const suffix = this.value.includes('\n') ? '<span style="color:rgba(255,255,255,0.3)"> …</span>' : '';
 
             monaco.editor.colorize(firstLine, 'python', { tabSize: 4 }).then((html: string) => {
                 if (!this.destroyed && this.codeContainer?.nativeElement) {
-                    this.codeContainer.nativeElement.innerHTML =
-                        `<span class="colorized-code">${html}${suffix}</span>`;
+                    this.codeContainer.nativeElement.innerHTML = `<span class="colorized-code">${html}${suffix}</span>`;
                     this.colorized = true;
                     this.cdr.markForCheck();
                 }
