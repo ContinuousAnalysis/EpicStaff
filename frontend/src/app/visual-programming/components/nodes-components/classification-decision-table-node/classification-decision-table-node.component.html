@@ -25,12 +25,12 @@
     </div>
 
     <div class="decision-table__groups">
-        @if (routeDocks.length > 0) {
-            @for (dock of routeDocks; track trackRouteDock($index, dock)) {
+        @if (conditionGroups.length > 0) {
+            @for (group of conditionGroups; track trackConditionGroup($index, group)) {
                 <div class="decision-table__group">
-                    <span class="group-name">{{ dock.code }}</span>
+                    <span class="group-name">{{ group.group_name || 'Group ' + ($index + 1) }}</span>
 
-                    @if (dock.port; as port) {
+                    @if (getPortForGroup(group); as port) {
                         <div class="port-wrapper">
                             <div
                                 class="port-circle"
@@ -51,7 +51,7 @@
             }
         } @else {
             <div class="decision-table__group decision-table__empty">
-                <span class="group-name">No route codes</span>
+                <span class="group-name">No condition groups</span>
             </div>
         }
 

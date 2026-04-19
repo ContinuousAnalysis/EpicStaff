@@ -23,25 +23,35 @@ export class ClassificationDecisionTableNodeComponent {
 
     private flowService = inject(FlowService);
 
-    get routeDocks(): Array<{ code: string; port: ViewPort | undefined }> {
+    get conditionGroups(): ConditionGroup[] {
         const allGroups = this.node.data.table?.condition_groups ?? [];
-        const uniqueRouteCodes = new Map<string, ViewPort | undefined>();
-
-        // Collect unique route codes where dock_visible=true
-        allGroups.forEach((group: ConditionGroup) => {
-            if (group.route_code && group.dock_visible) {
-                if (!uniqueRouteCodes.has(group.route_code)) {
-                    const port = this.getPortForRouteCode(group.route_code);
-                    uniqueRouteCodes.set(group.route_code, port);
-                }
-            }
-        });
-
-        return Array.from(uniqueRouteCodes.entries()).map(([code, port]) => ({
-            code,
-            port,
-        }));
+        return allGroups
+            .filter((group: ConditionGroup) => group.valid !== false && group.dock_visible)
+            .sort(
+                (a: ConditionGroup, b: ConditionGroup) =>
+                    (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
+            );
     }
+
+    // get routeDocks(): Array<{ code: string; port: ViewPort | undefined }> {
+    //     const allGroups = this.node.data.table?.condition_groups ?? [];
+    //     const uniqueRouteCodes = new Map<string, ViewPort | undefined>();
+
+    //     // Collect unique route codes where dock_visible=true
+    //     allGroups.forEach((group: ConditionGroup) => {
+    //         if (group.route_code && group.dock_visible) {
+    //             if (!uniqueRouteCodes.has(group.route_code)) {
+    //                 const port = this.getPortForRouteCode(group.route_code);
+    //                 uniqueRouteCodes.set(group.route_code, port);
+    //             }
+    //         }
+    //     });
+
+    //     return Array.from(uniqueRouteCodes.entries()).map(([code, port]) => ({
+    //         code,
+    //         port,
+    //     }));
+    // }
 
     get defaultNextNode() {
         return this.node.data.table?.default_next_node;
@@ -86,6 +96,25 @@ export class ClassificationDecisionTableNodeComponent {
     getPortForRouteCode(routeCode: string) {
         const role = `decision-route-${routeCode}`;
         return this.node.ports?.find((p) => p.role === role);
+    }
+
+    trackConditionGroup(index: number, group: ConditionGroup): string {
+        const port = this.getPortForGroup(group);
+        if (port) {
+            return port.id;
+        }
+        if (group.group_name) {
+            return group.group_name;
+        }
+        return String(index);
+    }
+
+    getPortForGroup(group: ConditionGroup) {
+        const groupName = group.group_name?.trim();
+        if (!groupName) {
+            return undefined;
+        }
+        return this.node.ports?.find((p) => p.role === `decision-out-${groupName}`);
     }
 
     onEditClick() {
