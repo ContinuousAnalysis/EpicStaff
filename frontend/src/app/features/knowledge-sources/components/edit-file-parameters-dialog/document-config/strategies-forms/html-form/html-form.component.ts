@@ -10,7 +10,7 @@ import {
 import { jsonValidator } from '@shared/form-validators';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 
-import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { HelpTooltipComponent } from '../../../../../../../shared/components/help-tooltip/help-tooltip.component';
 import { HtmlStrategyModel } from '../../../../../models/strategy.model';
 import { StrategyForm } from '../strategy-config-form.abstract';
 
@@ -21,7 +21,7 @@ import { StrategyForm } from '../strategy-config-form.abstract';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         ToggleSwitchComponent,
-        AppSvgIconComponent,
+        HelpTooltipComponent,
         MATERIAL_FORMS,
         CustomInputComponent,
         ReactiveFormsModule,
