@@ -141,6 +141,13 @@
                                 placeholder="Enter output variable path (leave empty for null)"
                                 [activeColor]="activeColor"
                             ></app-custom-input>
+                            <app-custom-input
+                                label="Libraries"
+                                tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
+                                formControlName="pre_libraries"
+                                placeholder="Enter libraries (e.g., requests, pandas, numpy)"
+                                [activeColor]="activeColor"
+                            ></app-custom-input>
                         </div>
                         <div class="code-editor-section">
                             <app-code-editor
@@ -160,6 +167,13 @@
                                 tooltipText="The path where the output of this code will be stored in your flow variables. Leave empty if you don't need to store the output."
                                 formControlName="post_output_variable_path"
                                 placeholder="Enter output variable path (leave empty for null)"
+                                [activeColor]="activeColor"
+                            ></app-custom-input>
+                            <app-custom-input
+                                label="Libraries"
+                                tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
+                                formControlName="post_libraries"
+                                placeholder="Enter libraries (e.g., requests, pandas, numpy)"
                                 [activeColor]="activeColor"
                             ></app-custom-input>
                         </div>

@@ -227,9 +227,11 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
             pre_computation_code: [this.preCode],
             pre_input_map: this.fb.array([] as FormGroup[]),
             pre_output_variable_path: [preComp.output_variable_path || ''],
+            pre_libraries: [preComp.libraries?.join(', ') || ''],
             post_computation_code: [this.postCode],
             post_input_map: this.fb.array([] as FormGroup[]),
             post_output_variable_path: [postComp.output_variable_path || ''],
+            post_libraries: [postComp.libraries?.join(', ') || ''],
             default_next_node: [defaultNext],
             next_error_node: [errorNext],
             default_llm_id: [tableData.default_llm_id || null],
@@ -277,11 +279,13 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
                 code: this.preCode,
                 input_map: preInputMap,
                 output_variable_path: this.form.value.pre_output_variable_path || undefined,
+                libraries: this.parseLibraries(this.form.value.pre_libraries),
             },
             post_computation: {
                 code: this.postCode,
                 input_map: postInputMap,
                 output_variable_path: this.form.value.post_output_variable_path || undefined,
+                libraries: this.parseLibraries(this.form.value.post_libraries),
             },
             condition_groups: conditionGroups,
             route_variable_name: 'route_code',
@@ -454,6 +458,14 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     }
 
     // ── Input map helpers ──
+
+    private parseLibraries(value: string | null | undefined): string[] {
+        if (!value) return [];
+        return value
+            .split(',')
+            .map((lib: string) => lib.trim())
+            .filter((lib: string) => lib.length > 0);
+    }
 
     private initializeInputMapArray(form: FormGroup, arrayName: string, map: Record<string, string>): void {
         const arr = form.get(arrayName) as FormArray;

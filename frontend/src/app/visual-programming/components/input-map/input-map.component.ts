@@ -8,14 +8,14 @@ import {
     FormGroupDirective,
     ReactiveFormsModule,
 } from '@angular/forms';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
-import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
 
 @Component({
     selector: 'app-input-map',
     standalone: true,
-    imports: [ReactiveFormsModule, CommonModule, HelpTooltipComponent, AppSvgIconComponent],
+    imports: [ReactiveFormsModule, CommonModule, MatTooltipModule, AppSvgIconComponent],
     viewProviders: [
         {
             provide: ControlContainer,
@@ -26,10 +26,14 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
         <div class="input-map-container" [formArrayName]="arrayName">
             <div class="input-map-header">
                 <label>Input List</label>
-                <app-help-tooltip
-                    position="right"
-                    text="Maps function arguments to domain variables using key-value pairs. For example, 'project_id' = 'current_project' maps the function parameter 'project_id' to the flow variable 'current_project'."
-                ></app-help-tooltip>
+                <app-svg-icon
+                    icon="help"
+                    size="18px"
+                    matTooltip="Maps function arguments to domain variables using key-value pairs. For example, 'project_id' = 'current_project' maps the function parameter 'project_id' to the flow variable 'current_project'."
+                    matTooltipPosition="right"
+                    matTooltipClass="custom-tooltip"
+                    class="help-icon"
+                ></app-svg-icon>
             </div>
             <div class="input-map-list">
                 @for (pair of pairs.controls; let i = $index; track pair) {
@@ -173,6 +177,18 @@ import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/he
                 &:hover {
                     color: red;
                     background-color: rgba(255, 0, 0, 0.1);
+                }
+            }
+
+            .help-icon {
+                width: 18px;
+                height: 18px;
+                color: var(--accent-color);
+                cursor: help;
+                transition: color 0.2s ease;
+
+                &:hover {
+                    opacity: 0.7;
                 }
             }
 
