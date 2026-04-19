@@ -1,14 +1,21 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { IPoint, IRect } from '@foblex/2d';
-import { Observable, of, Subject } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 import { NodeType } from '../core/enums/node-type';
-import { generatePortsForDecisionTableNode, generatePortsForClassificationDecisionTableNode, parsePortId } from '../core/helpers/helpers';
+import {
+    generatePortsForClassificationDecisionTableNode,
+    generatePortsForDecisionTableNode,
+    parsePortId,
+} from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
-import { ConditionGroup,  DecisionTableNode } from '../core/models/decision-table.model';
+import { ConditionGroup, DecisionTableNode } from '../core/models/decision-table.model';
 import { FlowModel } from '../core/models/flow.model';
-import { DecisionTableNodeModel, NodeModel, StartNodeModel } from '../core/models/node.model';
+import {
+    ClassificationDecisionTableNodeModel,
+    DecisionTableNodeModel,
+    NodeModel,
+    StartNodeModel,
+} from '../core/models/node.model';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
 
 export interface FlattenedPort {
@@ -269,7 +276,7 @@ export class FlowService {
         });
 
         if (shouldResetDecisionTableConnections && !skipDecisionTableReset) {
-            if (updatedNode.type !== NodeType.TABLE) return;
+            if (updatedNode.type !== NodeType.TABLE && updatedNode.type !== NodeType.CLASSIFICATION_TABLE) return;
 
             const tableData = updatedNode.data.table;
             const conditionGroups = tableData.condition_groups || [];
@@ -395,7 +402,7 @@ export class FlowService {
             return;
         }
 
-        const tableData = (sourceNode as any).data?.table;
+        const tableData = (sourceNode as DecisionTableNodeModel | ClassificationDecisionTableNodeModel).data?.table;
         if (!tableData) {
             return;
         }
@@ -414,7 +421,7 @@ export class FlowService {
 
         const updatedTable = {
             ...tableData,
-            condition_groups: (tableData.condition_groups || []).map((group: any) => {
+            condition_groups: (tableData.condition_groups || []).map((group: ConditionGroup) => {
                 const normalizedGroupRole = group.group_name
                     ? this.normalizeDecisionPortRole(`decision-out-${group.group_name}`)
                     : null;
@@ -442,7 +449,7 @@ export class FlowService {
         const updatedNode = {
             ...sourceNode,
             data: {
-                ...(sourceNode as any).data,
+                ...(sourceNode as DecisionTableNodeModel | ClassificationDecisionTableNodeModel).data,
                 table: {
                     ...updatedTable,
                     default_next_node: defaultNextNode,
@@ -474,7 +481,7 @@ export class FlowService {
             return;
         }
 
-        const tableData = (sourceNode as any).data?.table;
+        const tableData = (sourceNode as DecisionTableNodeModel | ClassificationDecisionTableNodeModel).data?.table;
         if (!tableData) {
             return;
         }
@@ -503,7 +510,7 @@ export class FlowService {
 
         const updatedTable = {
             ...tableData,
-            condition_groups: (tableData.condition_groups || []).map((group: any) => {
+            condition_groups: (tableData.condition_groups || []).map((group: ConditionGroup) => {
                 const normalizedGroupRole = group.group_name
                     ? this.normalizeDecisionPortRole(`decision-out-${group.group_name}`)
                     : null;
@@ -529,14 +536,14 @@ export class FlowService {
         const updatedNode = {
             ...sourceNode,
             data: {
-                ...(sourceNode as any).data,
+                ...(sourceNode as DecisionTableNodeModel | ClassificationDecisionTableNodeModel).data,
                 table: {
                     ...updatedTable,
                     default_next_node: defaultNextNode,
                     next_error_node: nextErrorNode,
                 },
             },
-        };
+        } as NodeModel;
 
         this.updateNode(updatedNode, { skipDecisionTableReset: true });
     }
@@ -678,7 +685,10 @@ export class FlowService {
             removedConnections.forEach((conn) => {
                 const sourceNode = flow.nodes.find((node) => node.id === conn.sourceNodeId);
 
-                if (!sourceNode || (sourceNode.type !== NodeType.TABLE && sourceNode.type !== NodeType.CLASSIFICATION_TABLE)) {
+                if (
+                    !sourceNode ||
+                    (sourceNode.type !== NodeType.TABLE && sourceNode.type !== NodeType.CLASSIFICATION_TABLE)
+                ) {
                     return;
                 }
 
@@ -726,19 +736,20 @@ export class FlowService {
                     }
                 }
 
-                const updatedPorts = sourceNode.type === NodeType.CLASSIFICATION_TABLE
-                    ? generatePortsForClassificationDecisionTableNode(
-                        sourceNode.id,
-                        updatedTable.condition_groups,
-                        !!updatedTable.default_next_node,
-                        !!updatedTable.next_error_node
-                    )
-                    : generatePortsForDecisionTableNode(
-                        sourceNode.id,
-                        updatedTable.condition_groups,
-                        // !!updatedTable.default_next_node,
-                        // !!updatedTable.next_error_node
-                    );
+                const updatedPorts =
+                    sourceNode.type === NodeType.CLASSIFICATION_TABLE
+                        ? generatePortsForClassificationDecisionTableNode(
+                              sourceNode.id,
+                              updatedTable.condition_groups,
+                              !!updatedTable.default_next_node,
+                              !!updatedTable.next_error_node
+                          )
+                        : generatePortsForDecisionTableNode(
+                              sourceNode.id,
+                              updatedTable.condition_groups
+                              // !!updatedTable.default_next_node,
+                              // !!updatedTable.next_error_node
+                          );
 
                 decisionTableUpdates.set(sourceNode.id, {
                     table: updatedTable,

@@ -911,6 +911,77 @@ function resolveDecisionTableNodeRefs(
     }
 }
 
+function resolveClassificationDecisionTableNodeRefs(
+    cdtNodes: ClassificationDecisionTableNodeModel[],
+    allNodes: NodeModel[]
+): void {
+    const nodeByName = new Map<string, NodeModel>();
+    for (const n of allNodes) {
+        if (n.node_name) {
+            nodeByName.set(n.node_name, n);
+        }
+    }
+
+    for (const cdtNode of cdtNodes) {
+        const table = cdtNode.data.table;
+
+        if (table.default_next_node) {
+            const target = nodeByName.get(table.default_next_node);
+            table.default_next_node = target?.id ?? null;
+        }
+
+        if (table.next_error_node) {
+            const target = nodeByName.get(table.next_error_node);
+            table.next_error_node = target?.id ?? null;
+        }
+    }
+}
+
+function buildClassificationDecisionTableConnections(
+    cdtNodes: ClassificationDecisionTableNodeModel[],
+    allNodes: NodeModel[]
+): ConnectionModel[] {
+    const connections: ConnectionModel[] = [];
+    const nodeById = new Map<string, NodeModel>();
+    for (const n of allNodes) {
+        nodeById.set(n.id, n);
+    }
+
+    for (const cdtNode of cdtNodes) {
+        const table = cdtNode.data.table;
+
+        if (table.default_next_node) {
+            const targetNode = nodeById.get(table.default_next_node);
+            if (targetNode && targetNode.type !== NodeType.EDGE) {
+                connections.push(
+                    makeConnection(
+                        cdtNode.id,
+                        targetNode.id,
+                        `${cdtNode.id}_decision-default` as CustomPortId,
+                        `${targetNode.id}_${getInputPortRole(targetNode.type)}` as CustomPortId
+                    )
+                );
+            }
+        }
+
+        if (table.next_error_node) {
+            const targetNode = nodeById.get(table.next_error_node);
+            if (targetNode && targetNode.type !== NodeType.EDGE) {
+                connections.push(
+                    makeConnection(
+                        cdtNode.id,
+                        targetNode.id,
+                        `${cdtNode.id}_decision-error` as CustomPortId,
+                        `${targetNode.id}_${getInputPortRole(targetNode.type)}` as CustomPortId
+                    )
+                );
+            }
+        }
+    }
+
+    return connections;
+}
+
 /**
  * Post-process conditional edge nodes: fill in data.source and data.then
  * using the backendIdToUuid map so the UI can display connections properly.
@@ -1002,6 +1073,7 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     }
     // ── 4. Post-process: resolve backend ID refs → UUIDs in decision tables
     resolveDecisionTableNodeRefs(decisionTableNodes, graph.decision_table_node_list ?? [], backendIdToUuid);
+    resolveClassificationDecisionTableNodeRefs(classificationDecisionTableNodes, allNodes);
 
     // ── 5. Post-process: resolve conditional edge source/then names ──────
     resolveConditionalEdgeNodeRefs(
@@ -1029,11 +1101,17 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
         graph.decision_table_node_list ?? []
     );
 
+    const classificationDecisionTableConnections = buildClassificationDecisionTableConnections(
+        classificationDecisionTableNodes,
+        allNodes
+    );
+
     // ── 7. Combine all connections ───────────────────────────────────────
     const allConnections: ConnectionModel[] = [
         ...edgeConnections,
         ...conditionalEdgeConnections,
         ...decisionTableConnections,
+        ...classificationDecisionTableConnections,
     ];
 
     const badConns = allConnections.filter((c) => c.sourcePortId.includes('table-out'));
