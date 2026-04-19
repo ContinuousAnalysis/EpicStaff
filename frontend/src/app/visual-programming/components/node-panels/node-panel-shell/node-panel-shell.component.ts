@@ -84,7 +84,7 @@ export class NodePanelShellComponent {
 
     public readonly shouldShowExpandButton = computed(() => {
         const node = this.node();
-        return node && node.type !== 'table';
+        return node && node.type !== 'table' && node.type !== 'classification-decision-table';
     });
 
     protected readonly outlet = viewChild(NgComponentOutlet);
