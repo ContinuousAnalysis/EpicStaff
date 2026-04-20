@@ -1,5 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import {
+    ChangeDetectorRef,
+    Component,
+    EventEmitter,
+    Input,
+    OnChanges,
+    OnDestroy,
+    Output,
+    signal,
+    SimpleChanges,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { CheckboxComponent, IconButtonComponent, LoadingSpinnerComponent } from '@shared/components';
 import { GraphMessagesComponent } from 'src/app/pages/running-graph/components/graph-messages/graph-messages.component';
@@ -42,26 +52,34 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                             </app-flow-session-status-filter-dropdown>
                         </th>
                         <th *ngIf="showFlowName" style="width: 40%">Flow Name</th>
-                        <th [class.sortable]="sortable" (click)="sortable && toggleSort()" style="width: 15%">
+                        <th
+                            [class.sortable]="sortable"
+                            (click)="sortable && toggleSort()"
+                            [style.width]="showFlowName ? '15%' : '35%'"
+                        >
                             Created At
                             @if (sortable) {
                                 <span class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                             }
                         </th>
-                        <th style="width: 10%">{{ showDuration ? 'Duration' : 'Finished At' }}</th>
-                        <th style="width: 15%; text-align: center" class="actions">Actions</th>
+                        <th [style.width]="showFlowName ? '10%' : '20%'">
+                            {{ showDuration ? 'Duration' : 'Finished At' }}
+                        </th>
+                        <th [style.width]="showFlowName ? '15%' : '25%'" style="text-align: center" class="actions">
+                            Actions
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (isLoading) {
                         <tr>
-                            <td [attr.colspan]="showFlowName ? 8 : 7" style="text-align: center; padding: 40px;">
+                            <td [attr.colspan]="showFlowName ? 7 : 6" style="text-align: center; padding: 40px;">
                                 <app-loading-spinner size="md" message="Loading sessions..." />
                             </td>
                         </tr>
                     } @else if (showEmptyState) {
                         <tr>
-                            <td [attr.colspan]="showFlowName ? 8 : 7" style="text-align: center; padding: 40px;">
+                            <td [attr.colspan]="showFlowName ? 7 : 6" style="text-align: center; padding: 40px;">
                                 <div class="no-sessions-message">
                                     <p>No sessions found for the selected filters.</p>
                                     <small>Try adjusting your filter criteria or create a new session.</small>
@@ -134,7 +152,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                             </tr>
 
                             <tr *ngIf="expandedSessionId() === session.id" class="preview-row">
-                                <td colspan="6" class="preview-cell">
+                                <td [attr.colspan]="showFlowName ? 7 : 6" class="preview-cell">
                                     <div class="preview-content">
                                         <app-graph-messages
                                             [graphId]="flow?.id ?? session.graph_id"
@@ -152,7 +170,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
     `,
     styleUrls: ['./flow-sessions-table.component.scss'],
 })
-export class FlowSessionsTableComponent {
+export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     @Input() sessions: GraphSessionLight[] = [];
     @Input() flow?: GraphDto;
     @Input() isLoading: boolean = false;
@@ -175,10 +193,35 @@ export class FlowSessionsTableComponent {
 
     public readonly GraphSessionStatus = GraphSessionStatus;
 
+    private durationInterval: ReturnType<typeof setInterval> | null = null;
+
     constructor(
         private readonly cdr: ChangeDetectorRef,
         private router: Router
     ) {}
+
+    public ngOnChanges(changes: SimpleChanges): void {
+        if (changes['sessions'] || changes['showDuration']) {
+            this.manageDurationInterval();
+        }
+    }
+
+    public ngOnDestroy(): void {
+        if (this.durationInterval) {
+            clearInterval(this.durationInterval);
+            this.durationInterval = null;
+        }
+    }
+
+    private manageDurationInterval(): void {
+        const needsTimer = this.showDuration && this.sessions.some((s) => s.finished_at === null);
+        if (needsTimer && !this.durationInterval) {
+            this.durationInterval = setInterval(() => this.cdr.markForCheck(), 1000);
+        } else if (!needsTimer && this.durationInterval) {
+            clearInterval(this.durationInterval);
+            this.durationInterval = null;
+        }
+    }
 
     public navigateToFlow(graphId: number): void {
         this.router.navigate(['/flows', graphId]);

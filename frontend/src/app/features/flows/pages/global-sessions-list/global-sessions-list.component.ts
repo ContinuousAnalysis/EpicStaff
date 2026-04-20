@@ -1,13 +1,22 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, effect, OnInit, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    effect,
+    OnDestroy,
+    OnInit,
+    signal,
+} from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AppSvgIconComponent, PaginationControlsComponent } from '@shared/components';
+import { Subject, takeUntil } from 'rxjs';
 
 import { FlowNameFilterDropdownComponent } from '../../components/flow-sessions-dialog/flow-name-filter-dropdown.component';
 import { FlowSessionsTableComponent } from '../../components/flow-sessions-dialog/flow-sessions-table.component';
 import { GetGraphLightRequest } from '../../models/graph.model';
 import { FlowsApiService } from '../../services/flows-api.service';
-import { GraphSessionLight, GraphSessionService } from '../../services/flows-sessions.service';
+import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../../services/flows-sessions.service';
 
 @Component({
     selector: 'app-global-sessions-list',
@@ -45,7 +54,7 @@ import { GraphSessionLight, GraphSessionService } from '../../services/flows-ses
                     Delete Selected ({{ selectedIds().size }})
                 </button>
                 <span [class.invisible]="selectedIds().size > 0" class="results-length">
-                    {{ this.sessions().length }} Results
+                    {{ totalCount }} Results
                 </span>
             </div>
             <div class="table-container">
@@ -60,6 +69,7 @@ import { GraphSessionLight, GraphSessionService } from '../../services/flows-ses
                     [showEmptyState]="isLoaded() && sessions().length === 0"
                     (deleteSelected)="onDeleteSelected($event)"
                     (viewSession)="onViewSession($event)"
+                    (stopSession)="onStopSession($event)"
                     (sortChange)="onSortChange($event)"
                     (statusFilterChange)="onStatusFilterChange($event)"
                     (selectedIdsChange)="selectedIds.set($event)"
@@ -82,7 +92,7 @@ import { GraphSessionLight, GraphSessionService } from '../../services/flows-ses
     styleUrls: ['./global-sessions-list.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GlobalSessionsListComponent implements OnInit {
+export class GlobalSessionsListComponent implements OnInit, OnDestroy {
     public sessions = signal<GraphSessionLight[]>([]);
     public isLoaded = signal<boolean>(false);
     public currentPage = signal(1);
@@ -95,6 +105,7 @@ export class GlobalSessionsListComponent implements OnInit {
     public availableFlows = signal<GetGraphLightRequest[]>([]);
     public totalCount = 0;
     private reloadTrigger = signal(0);
+    private cancelLoad$ = new Subject<void>();
 
     constructor(
         private graphSessionService: GraphSessionService,
@@ -159,6 +170,24 @@ export class GlobalSessionsListComponent implements OnInit {
         this.currentPage.set(1);
     }
 
+    public onStopSession(sessionId: number): void {
+        this.graphSessionService.stopSessionById(sessionId).subscribe({
+            next: () => {
+                this.sessions.update((list) =>
+                    list.map((s) =>
+                        s.id === sessionId
+                            ? { ...s, status: GraphSessionStatus.STOP, finished_at: new Date().toISOString() }
+                            : s
+                    )
+                );
+                this.cdr.markForCheck();
+            },
+            error: (err) => {
+                console.error('Failed to stop session', err);
+            },
+        });
+    }
+
     public onDeleteSelected(ids: number[]): void {
         if (ids.length === 0) return;
 
@@ -177,6 +206,10 @@ export class GlobalSessionsListComponent implements OnInit {
         });
     }
 
+    public ngOnDestroy(): void {
+        this.cancelLoad$.complete();
+    }
+
     private loadGlobalSessions(
         limit: number,
         offset: number,
@@ -185,21 +218,25 @@ export class GlobalSessionsListComponent implements OnInit {
         graphName?: string | null,
         isErrorCause?: boolean
     ): void {
+        this.cancelLoad$.next();
         this.isLoaded.set(false);
         const ordering = sort === 'asc' ? 'created_at' : '-created_at';
-        this.graphSessionService.getGlobalSessions(limit, offset, status, ordering, graphName, isErrorCause).subscribe({
-            next: (response) => {
-                this.sessions.set(response.results);
-                this.totalCount = response.count;
-                this.isLoaded.set(true);
-            },
-            error: () => {
-                this.totalCount = 0;
-                this.sessions.set([]);
-                this.isLoaded.set(true);
-                this.pageSize.set(10);
-                this.currentPage.set(1);
-            },
-        });
+        this.graphSessionService
+            .getGlobalSessions(limit, offset, status, ordering, graphName, isErrorCause)
+            .pipe(takeUntil(this.cancelLoad$))
+            .subscribe({
+                next: (response) => {
+                    this.sessions.set(response.results);
+                    this.totalCount = response.count;
+                    this.isLoaded.set(true);
+                },
+                error: () => {
+                    this.totalCount = 0;
+                    this.sessions.set([]);
+                    this.isLoaded.set(true);
+                    this.pageSize.set(10);
+                    this.currentPage.set(1);
+                },
+            });
     }
 }
