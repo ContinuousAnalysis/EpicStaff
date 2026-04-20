@@ -89,6 +89,7 @@ import {
                                         [useStorage]="useStorage()"
                                         (onToggleChange)="onStorageToggle($event)"
                                         (onInsertCode)="insertStorageCode($event)"
+                                        (onRemoveCode)="removeStorageCode($event)"
                                     ></app-node-storage-section>
                                 </div>
                             }
@@ -165,6 +166,7 @@ import {
                                 [useStorage]="useStorage()"
                                 (onToggleChange)="onStorageToggle($event)"
                                 (onInsertCode)="insertStorageCode($event)"
+                                (onRemoveCode)="removeStorageCode($event)"
                             ></app-node-storage-section>
 
                             <div class="code-editor-section">
@@ -433,6 +435,14 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             this.pythonCode = code + '\n\n' + this.pythonCode;
         }
         this.sidePanelService.triggerAutosave();
+    }
+
+    removeStorageCode(code: string): void {
+        const prefix = code + '\n\n';
+        if (this.pythonCode.startsWith(prefix)) {
+            this.pythonCode = this.pythonCode.slice(prefix.length);
+            this.sidePanelService.triggerAutosave();
+        }
     }
 
     initializeForm(): FormGroup {

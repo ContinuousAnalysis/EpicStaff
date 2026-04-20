@@ -186,6 +186,7 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                         [useStorage]="useStorage()"
                                         (onToggleChange)="onStorageToggle($event)"
                                         (onInsertCode)="insertStorageCode($event)"
+                                        (onRemoveCode)="removeStorageCode($event)"
                                     ></app-node-storage-section>
                                 </div>
                             }
@@ -361,6 +362,7 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                 [useStorage]="useStorage()"
                                 (onToggleChange)="onStorageToggle($event)"
                                 (onInsertCode)="insertStorageCode($event)"
+                                (onRemoveCode)="removeStorageCode($event)"
                             ></app-node-storage-section>
                         </div>
                     }
@@ -755,6 +757,14 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
             this.streamHandlerCode = code + '\n\n' + this.streamHandlerCode;
         }
         this.sidePanelService.triggerAutosave();
+    }
+
+    removeStorageCode(code: string): void {
+        const prefix = code + '\n\n';
+        if (this.streamHandlerCode.startsWith(prefix)) {
+            this.streamHandlerCode = this.streamHandlerCode.slice(prefix.length);
+            this.sidePanelService.triggerAutosave();
+        }
     }
 
     initializeForm(): FormGroup {

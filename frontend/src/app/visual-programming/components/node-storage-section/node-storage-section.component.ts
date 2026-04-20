@@ -38,6 +38,7 @@ export class NodeStorageSectionComponent implements OnInit {
     readonly useStorage = input.required<boolean>();
 
     readonly onInsertCode = output<string>();
+    readonly onRemoveCode = output<string>();
     readonly onToggleChange = output<boolean>();
 
     readonly enabled = signal<boolean>(false);
@@ -51,6 +52,8 @@ export class NodeStorageSectionComponent implements OnInit {
         this.onToggleChange.emit(value);
         if (value) {
             this.onInsertCode.emit(STORAGE_HEADER_COMMENT);
+        } else {
+            this.onRemoveCode.emit(STORAGE_HEADER_COMMENT);
         }
     }
 }
