@@ -146,6 +146,85 @@ export class StoragePageComponent {
             });
     }
 
+    private reloadTreePreservingExpansion(extraPathsToExpand: string[] = []): void {
+        const expandedPaths = this.collectExpandedPaths(this.treeData());
+        const all = new Set<string>([...expandedPaths, ...extraPathsToExpand.filter(Boolean)]);
+
+        this.isLoading.set(true);
+        this.storageApiService
+            .list('')
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => this.isLoading.set(false))
+            )
+            .subscribe({
+                next: (items) => {
+                    this.treeData.set(this.withPaths(Array.isArray(items) ? items : [], ''));
+                    if (all.size) this.restoreExpandedPaths([...all]);
+                },
+                error: () => this.toastService.error('Failed to load storage files'),
+            });
+    }
+
+    private collectExpandedPaths(nodes: StorageItem[]): string[] {
+        const paths: string[] = [];
+        const walk = (list: StorageItem[]): void => {
+            for (const n of list) {
+                if (n.type === 'folder' && n.isExpanded && n.path) {
+                    paths.push(n.path);
+                    if (n.children?.length) walk(n.children);
+                }
+            }
+        };
+        walk(nodes);
+        return paths;
+    }
+
+    private restoreExpandedPaths(paths: string[]): void {
+        // Sort shallow → deep so parents are loaded before their children are requested.
+        const sorted = [...paths].sort((a, b) => a.split('/').length - b.split('/').length);
+        for (const path of sorted) {
+            this.expandPath(path);
+        }
+    }
+
+    private expandPath(targetPath: string): void {
+        const segments = targetPath.split('/').filter(Boolean);
+        if (!segments.length) return;
+
+        const walk = (index: number, nodes: StorageItem[], currentPath: string): void => {
+            const segment = segments[index];
+            const nextPath = currentPath ? `${currentPath}/${segment}` : segment;
+            const match = nodes.find((n) => n.name === segment);
+            if (!match || match.type !== 'folder') return;
+
+            match.isExpanded = true;
+            const isLast = index === segments.length - 1;
+
+            if (!match.children || match.children.length === 0) {
+                if (match.is_empty) {
+                    this.treeData.update((data) => [...data]);
+                    return;
+                }
+                this.storageApiService
+                    .list(nextPath)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: (children) => {
+                            match.children = this.withPaths(Array.isArray(children) ? children : [], nextPath);
+                            this.treeData.update((data) => [...data]);
+                            if (!isLast) walk(index + 1, match.children ?? [], nextPath);
+                        },
+                    });
+            } else {
+                this.treeData.update((data) => [...data]);
+                if (!isLast) walk(index + 1, match.children, nextPath);
+            }
+        };
+
+        walk(0, this.treeData(), '');
+    }
+
     private expandAndSelectPath(targetPath: string): void {
         const segments = targetPath.split('/').filter(Boolean);
         if (segments.length === 0) return;
@@ -295,7 +374,7 @@ export class StoragePageComponent {
             if (!result) return;
             if (result.type === 'mkdir') this.toastService.success(`Folder "${result.path}" created`);
             if (result.type === 'upload' && result.count) this.toastService.success(`${result.count} file(s) uploaded`);
-            this.loadTree();
+            this.reloadTreePreservingExpansion(result.path ? [result.path] : []);
         });
     }
 
@@ -353,7 +432,7 @@ export class StoragePageComponent {
                 .subscribe({
                     next: () => {
                         this.toastService.success(`"${item.name}" copied`);
-                        this.loadTree();
+                        this.reloadTreePreservingExpansion(result.toPath ? [result.toPath] : []);
                     },
                     error: () => this.toastService.error(`Failed to copy "${item.name}"`),
                 });
@@ -375,7 +454,9 @@ export class StoragePageComponent {
                     if (this.selectedFile()?.path === from) {
                         this.selectedFile.set(event.item);
                     }
-                    this.loadTree();
+                    // If the renamed item is itself a folder, re-expand it under its new path.
+                    const extras = event.item.type === 'folder' ? [to] : [];
+                    this.reloadTreePreservingExpansion(extras);
                 },
                 error: () => this.toastService.error('Failed to rename'),
             });
@@ -394,7 +475,9 @@ export class StoragePageComponent {
                     if (this.selectedFile()?.path === from) {
                         this.selectedFile.set({ ...event.item, path: to });
                     }
-                    this.loadTree();
+                    // Expand the destination so the moved item is visible.
+                    const destination = to === '/' ? '' : to;
+                    this.reloadTreePreservingExpansion(destination ? [destination] : []);
                 },
                 error: () => this.toastService.error(`Failed to move "${event.item.name}"`),
             });
@@ -421,7 +504,7 @@ export class StoragePageComponent {
                             if (this.selectedFile()?.path === item.path) {
                                 this.selectedFile.set(null);
                             }
-                            this.loadTree();
+                            this.reloadTreePreservingExpansion();
                         },
                         error: () => this.toastService.error(`Failed to delete "${item.name}"`),
                     });
@@ -565,7 +648,7 @@ export class StoragePageComponent {
                             ) {
                                 this.selectedFile.set(null);
                             }
-                            this.loadTree();
+                            this.reloadTreePreservingExpansion();
                         },
                         error: () => this.toastService.error(`Failed to delete item(s)`),
                     });

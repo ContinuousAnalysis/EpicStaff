@@ -64,7 +64,7 @@
                 <span class="storage-tree__chevron-placeholder"></span>
             }
 
-            <app-svg-icon class="storage-tree__icon" [icon]="getFileIcon(node)" size="13px"></app-svg-icon>
+            <app-svg-icon class="storage-tree__icon" [icon]="getFileIcon(node)" size="12px"></app-svg-icon>
 
             @if (node.type === 'folder' && node.is_empty) {
                 <div class="storage-tree__folder-meta">
@@ -121,15 +121,6 @@
             (blur)="onRenameCancel($event)"
         />
         <button
-            class="storage-tree__rename-btn storage-tree__rename-btn--confirm"
-            type="button"
-            aria-label="Confirm rename"
-            (mousedown)="$event.preventDefault()"
-            (click)="onRenameConfirm()"
-        >
-            <app-svg-icon icon="rename-confirm" size="1.75rem"></app-svg-icon>
-        </button>
-        <button
             class="storage-tree__rename-btn storage-tree__rename-btn--cancel"
             type="button"
             aria-label="Cancel rename"
@@ -137,6 +128,15 @@
             (click)="onRenameCancel($event)"
         >
             <app-svg-icon icon="rename-cancel" size="1.75rem"></app-svg-icon>
+        </button>
+        <button
+            class="storage-tree__rename-btn storage-tree__rename-btn--confirm"
+            type="button"
+            aria-label="Confirm rename"
+            (mousedown)="$event.preventDefault()"
+            (click)="onRenameConfirm()"
+        >
+            <app-svg-icon icon="rename-confirm" size="1.75rem"></app-svg-icon>
         </button>
     </div>
 }
