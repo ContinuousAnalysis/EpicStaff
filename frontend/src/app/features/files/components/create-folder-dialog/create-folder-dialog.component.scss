@@ -190,9 +190,11 @@
             align-items: center;
             gap: 1rem;
 
-            .create-folder-dialog__label {
+            .create-folder-dialog__label,
+            .create-folder-dialog__label-group {
                 flex-shrink: 0;
                 white-space: nowrap;
+                min-width: 130px;
             }
 
             .create-folder-dialog__input,
@@ -206,6 +208,24 @@
         font-size: 14px;
         font-weight: 400;
         color: var(--color-text-primary);
+    }
+
+    &__label-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    &__tooltip-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+        color: var(--accent-color);
+
+        &:hover {
+            opacity: 0.7;
+        }
     }
 
     &__count {
