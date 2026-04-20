@@ -1,0 +1,154 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+
+# ---- First-setup ----
+
+
+class FirstSetupStatusSerializer(serializers.Serializer):
+    needs_setup = serializers.BooleanField()
+
+
+class FirstSetupRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+    display_name = serializers.CharField(
+        required=False, allow_blank=True, max_length=255
+    )
+    organization_name = serializers.CharField(max_length=255)
+
+    def validate_password(self, value: str) -> str:
+        try:
+            validate_password(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages))
+        return value
+
+    def validate_organization_name(self, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Organization name cannot be empty.")
+        return value
+
+
+class _SetupUserPayload(serializers.Serializer):
+    id = serializers.IntegerField()
+    email = serializers.EmailField()
+    display_name = serializers.CharField(allow_null=True)
+    is_superadmin = serializers.BooleanField()
+
+
+class _SetupOrganizationPayload(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    is_active = serializers.BooleanField()
+
+
+class FirstSetupResponseSerializer(serializers.Serializer):
+    user = _SetupUserPayload()
+    organization = _SetupOrganizationPayload()
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+
+
+# ---- AuthMe ----
+
+
+class _MembershipOrgPayload(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+
+
+class _MembershipRolePayload(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+
+
+class _MembershipPayload(serializers.Serializer):
+    organization = _MembershipOrgPayload()
+    role = _MembershipRolePayload()
+    joined_at = serializers.DateTimeField()
+
+
+class AuthMeResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    email = serializers.EmailField()
+    display_name = serializers.CharField(allow_null=True)
+    avatar_url = serializers.CharField(allow_null=True)
+    is_superadmin = serializers.BooleanField()
+    memberships = _MembershipPayload(many=True)
+
+
+# ---- Token introspect ----
+
+
+class TokenIntrospectRequestSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
+class TokenIntrospectResponseSerializer(serializers.Serializer):
+    active = serializers.BooleanField()
+    user_id = serializers.IntegerField(required=False)
+    email = serializers.EmailField(required=False)
+    scopes = serializers.ListField(child=serializers.CharField(), required=False)
+
+
+# ---- API-key validate ----
+
+
+class ApiKeyValidateResponseSerializer(serializers.Serializer):
+    active = serializers.BooleanField()
+    name = serializers.CharField()
+    prefix = serializers.CharField()
+    scopes = serializers.ListField(child=serializers.CharField())
+    owner_user_id = serializers.IntegerField(allow_null=True)
+
+
+# ---- Reset user ----
+
+
+class ResetUserRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate_password(self, value: str) -> str:
+        try:
+            validate_password(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages))
+        return value
+
+
+class ResetUserResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+    api_key = serializers.CharField()
+
+
+# ---- Swagger token (OAuth2 password flow) ----
+
+
+class SwaggerTokenRequestSerializer(serializers.Serializer):
+    # OAuth2 password flow convention uses `username`; we interpret it as email.
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+
+class SwaggerTokenResponseSerializer(serializers.Serializer):
+    access_token = serializers.CharField()
+    token_type = serializers.CharField()
+
+
+# ---- Custom TokenObtainPair (embeds email + is_superadmin claims) ----
+
+
+class EpicStaffTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token["email"] = user.email
+        token["is_superadmin"] = user.is_superadmin
+        return token

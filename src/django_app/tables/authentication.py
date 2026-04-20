@@ -1,13 +1,13 @@
 from typing import Optional, Tuple
 
-from django.utils import timezone
+from django.contrib.auth.models import AnonymousUser
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.request import Request
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from tables.models.auth_models import ApiKey
+from tables.models.rbac_models import ApiKey
 
 
 class JwtOrApiKeyAuthenticationScheme(OpenApiAuthenticationExtension):
@@ -49,6 +49,15 @@ def _get_api_key_from_headers(request: Request) -> Optional[str]:
 
 
 class JwtOrApiKeyAuthentication(BaseAuthentication):
+    """
+    Bearer JWT or X-Api-Key / `Authorization: ApiKey ...` authentication.
+
+    For API keys, `request.user` resolves to the key's owning User (or
+    AnonymousUser for env-seeded keys with no `created_by`). `request.auth` is
+    the ApiKey instance, so downstream code can still inspect key scopes and
+    distinguish key vs. JWT callers via `isinstance(request.auth, ApiKey)`.
+    """
+
     def __init__(self) -> None:
         self.jwt_auth = JWTAuthentication()
 
@@ -63,13 +72,15 @@ class JwtOrApiKeyAuthentication(BaseAuthentication):
 
         return None
 
-    def _authenticate_api_key(self, api_key: str) -> Tuple[object, object]:
+    def _authenticate_api_key(self, api_key: str) -> Tuple[object, ApiKey]:
         prefix = api_key[:8]
-        keys = ApiKey.objects.filter(prefix=prefix, revoked_at__isnull=True)
+        keys = ApiKey.objects.filter(
+            prefix=prefix, revoked_at__isnull=True
+        ).select_related("created_by")
         for key in keys:
             if key.check_key(api_key):
-                key.last_used_at = timezone.now()
-                key.save(update_fields=["last_used_at"])
-                return key, {"scopes": key.scopes}
+                key.mark_used()
+                owner = key.created_by or AnonymousUser()
+                return owner, key
 
         raise AuthenticationFailed("Invalid API key")
