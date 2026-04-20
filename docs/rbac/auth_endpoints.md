@@ -122,6 +122,67 @@ Shape comes from `utils/exception_handler.custom_exception_handler`.
 Setup runs inside `transaction.atomic()` — user + org + membership are created
 atomically or not at all.
 
+### Bootstrapping via `entrypoint.sh` (optional, off by default)
+
+For CI, staging, or local dev you can have the container bootstrap the first
+superadmin automatically instead of going through the UI. This is **off by
+default** to avoid conflicts with the `/first-setup/` endpoint (if both
+paths ran, the endpoint would then return 409).
+
+Enable by setting in the service environment:
+
+| Env var | Required | Example | Notes |
+|---|---|---|---|
+| `DJANGO_AUTO_CREATE_ADMIN` | yes | `True` | Accepts only `True`, `true`, `False`, `false`. Anything else → entrypoint aborts (`exit 1`). |
+| `DJANGO_ADMIN_EMAIL` | when flag is `True` | `admin@acme.com` | |
+| `DJANGO_ADMIN_PASSWORD` | when flag is `True` | `StrongPass123!` | Used exactly as given. The entrypoint **never generates** or rewrites it. |
+| `DJANGO_DEFAULT_ORG_NAME` | when flag is `True` | `Acme Inc` | |
+
+`docker-compose.yaml` forwards these vars into the `django_app` container
+already. Compose does not pass arbitrary `.env` entries into services — only
+what's explicitly listed under `environment:` — so if you add new RBAC env
+vars, wire them there too.
+
+When enabled, `entrypoint.sh` calls `FirstSetupService.setup(...)` — the
+exact same code path as the endpoint — so the resulting state (User +
+Organization + OrganizationUser(Org Admin)) is identical.
+
+Behavior matrix:
+
+| Condition | Action |
+|---|---|
+| Flag is `False` / `false` | Info log, skip. Create the admin via `POST /api/auth/first-setup/`. |
+| Flag is any other non-`True`/`true` value | `exit 1` with an error naming the bad value. |
+| Flag is `True`/`true` and any required var is empty | ERROR log naming each missing var, skip bootstrap, point to `POST /api/auth/first-setup/`. Container continues to start. |
+| Flag is `True`/`true`, all vars present, **no user exists** | Run `FirstSetupService.setup(...)`. |
+| Flag is `True`/`true`, all vars present, **user already exists** | Info log "Superadmin already exists — skipping bootstrap". |
+
+### System API key (`DJANGO_API_KEY`)
+
+`entrypoint.sh` seeds a system-wide ApiKey from `DJANGO_API_KEY` and
+round-trips `check_key()` to prove the raw value actually authenticates
+against what's stored.
+
+| Env var | Required | Default | Notes |
+|---|---|---|---|
+| `DJANGO_API_KEY` | optional | unset | Raw key value. If unset, the seeding block is skipped entirely. |
+| `DJANGO_API_KEY_NAME` | optional | `system` | Display name for the created ApiKey row. |
+
+Behavior:
+
+- `DJANGO_API_KEY` unset → block skipped.
+- Key with the same 8-char prefix already exists and matches → info log
+  "already seeded and valid", skip.
+- Key with the same prefix already exists but **does not** match
+  `DJANGO_API_KEY` → `exit 1`. Env and DB are out of sync; silent auth
+  failures would follow otherwise.
+- No existing key → create, then re-fetch and `check_key()` against the raw
+  value. If the round-trip fails, `exit 1`.
+
+The seeded key has **no owner** (`created_by = NULL`). See
+[API keys — lifecycle](#api-keys) for the consequences (env-seeded keys
+resolve to `AnonymousUser` and don't pass `IsAuthenticated`).
+
 ---
 
 ## JWT login and refresh
