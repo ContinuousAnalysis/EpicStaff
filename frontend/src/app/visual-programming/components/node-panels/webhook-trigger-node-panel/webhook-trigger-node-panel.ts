@@ -103,7 +103,7 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
                                         viewBox="0 0 9 22"
                                         fill="none"
                                         xmlns="http://www.w3.org/2000/svg"
-                                        [style.transform]="isCodeEditorFullWidth() ? 'scaleX(1)' : 'scaleX(-1)'"
+                                        [style.transform]="isCodeEditorFullWidth() ? 'scaleX(-1)' : 'scaleX(1)'"
                                     >
                                         <path
                                             d="M7.16602 21.0001L1.16602 11.0001L7.16602 1.00012"

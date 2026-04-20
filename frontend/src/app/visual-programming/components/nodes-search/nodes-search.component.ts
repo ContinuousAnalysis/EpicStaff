@@ -33,7 +33,7 @@ import { SearchNodeItemComponent } from './search-node-item/search-node-item.com
                     [attr.title]="isSearchVisible() ? 'Close search' : 'Search nodes'"
                     [class.active]="isSearchVisible()"
                 >
-                    <app-svg-icon icon="search"></app-svg-icon>
+                    <app-svg-icon icon="search" size="1.1rem"></app-svg-icon>
                 </button>
 
                 <!-- Search input field (appears to the right of the icon) -->
@@ -93,9 +93,9 @@ import { SearchNodeItemComponent } from './search-node-item/search-node-item.com
             }
 
             .search-button {
-                width: 38px;
-                height: 38px;
-                min-width: 38px;
+                width: 36px;
+                height: 36px;
+                min-width: 36px;
                 padding: 8px;
                 background-color: var(--gray-800);
                 border: 1px solid var(--gray-750);

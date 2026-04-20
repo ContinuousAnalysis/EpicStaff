@@ -9,10 +9,7 @@
                     "
                 ></ng-container>
                 <div class="chunks__empty">
-                    <app-svg-icon
-                        icon="file-checked"
-                        size="3rem"
-                    />
+                    <app-svg-icon icon="file-checked" size="3rem" />
                     <span>Chunking Ready Document</span>
                 </div>
             }
@@ -57,10 +54,7 @@
     } @else {
         <div class="chunks__header"></div>
         <div class="chunks__empty">
-            <app-svg-icon
-                icon="file"
-                size="3rem"
-            />
+            <app-svg-icon icon="file" size="3rem" />
             <span>Select document for Chunk Preview</span>
         </div>
     }
@@ -78,10 +72,7 @@
         <span>Chunk Preview</span>
         @if (statusText) {
             <div class="chunks__status chunks__status--{{ statusClass }}">
-                <app-svg-icon
-                    [icon]="statusIcon"
-                    size="0.75rem"
-                />
+                <app-svg-icon [icon]="statusIcon" size="0.75rem" />
                 {{ statusText }}
             </div>
         }

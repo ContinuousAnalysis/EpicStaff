@@ -13,6 +13,7 @@ import { StatusBadgeComponent } from '../../../../shared/components/status-badge
 import { RunGraphPageService } from '../../services/run-graph-page.service';
 import { MemoriesSidebarComponent } from '../memory-sidebar/components/memory-sidebar/memory-sidebar.component';
 import { MemoryService } from '../memory-sidebar/service/memory.service';
+import { SessionFilesButtonComponent } from './session-files-button/session-files-button.component';
 
 @Component({
     selector: 'app-running-graph-header',
@@ -25,6 +26,7 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
         AppSvgIconComponent,
         StatusBadgeComponent,
         MemoriesSidebarComponent,
+        SessionFilesButtonComponent,
     ],
     template: `
         <div class="header">
@@ -40,12 +42,20 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
             </div>
             <div class="view-options"></div>
             <div class="actions">
+                @if (sessionId) {
+                    <app-session-files-button [sessionId]="sessionId"></app-session-files-button>
+                }
                 <button mat-button class="sessions-button" (click)="openSessionsDialog()" [disabled]="!graphData">
-                    <span>Sessions</span>
+                    <span class="btn-label">Sessions</span>
                 </button>
                 <button mat-button class="memories-button" (click)="toggleMemoriesSidebar()">
-                    <span>Memories</span>
-                    <span matBadge="{{ memoriesCount }}" matBadgeColor="accent" *ngIf="memoriesCount > 0"></span>
+                    <span class="btn-label">Memories</span>
+                    <span
+                        class="memories-badge"
+                        matBadge="{{ memoriesCount }}"
+                        matBadgeColor="accent"
+                        *ngIf="memoriesCount > 0"
+                    ></span>
                 </button>
             </div>
         </div>
@@ -64,9 +74,12 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+                gap: 12px;
                 height: 5rem !important;
                 width: 100%;
-                padding: 0 3rem;
+                min-width: 0;
+                overflow: hidden;
+                padding: 0 clamp(1rem, 4vw, 3rem);
                 border-bottom: 1px solid var(--color-divider-subtle);
 
                 position: relative;
@@ -75,6 +88,10 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
                 .breadcrumbs {
                     display: flex;
                     align-items: center;
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    overflow: hidden;
+                    white-space: nowrap;
 
                     .flows-prefix,
                     .flow-name,
@@ -95,6 +112,7 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
                         align-items: center;
                         gap: 0.5rem;
                         position: relative;
+                        flex-shrink: 0;
 
                         .back-arrow {
                             margin-top: 3px;
@@ -115,40 +133,70 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
                     .slash {
                         color: var(--gray-500);
                         margin: 0 0.5rem;
+                        flex-shrink: 0;
                     }
 
                     .flow-name {
                         color: var(--white);
-                        max-width: 300px;
+                        min-width: 0;
+                        flex: 0 1 auto;
                         overflow: hidden;
                         text-overflow: ellipsis;
                         white-space: nowrap;
-                        display: inline-block;
+                        display: block;
                         vertical-align: bottom;
                         &:hover {
                             text-decoration: underline;
                         }
+                    }
+
+                    app-status-badge {
+                        flex-shrink: 0;
                     }
                 }
 
                 .actions {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 16px;
+                    min-width: 0;
+                    margin-left: auto;
+                    flex: 0 1 auto;
+                    max-width: 100%;
+                    overflow: hidden;
+                }
+
+                app-session-files-button {
+                    min-width: 0;
+                    max-width: 100%;
+                    flex: 0 1 auto;
                 }
 
                 .sessions-button,
                 .memories-button {
                     display: flex;
                     align-items: center;
+                    justify-content: flex-start;
                     gap: 8px;
                     color: var(--gray-400) !important;
                     background: transparent !important;
                     border: none !important;
                     border-radius: 6px !important;
                     padding: 8px 12px !important;
-                    min-width: auto !important;
+                    min-width: 0 !important;
+                    max-width: 100%;
+                    flex: 0 1 auto;
                     line-height: 1 !important;
+                    overflow: hidden;
+
+                    .btn-label {
+                        display: block;
+                        flex: 1 1 auto;
+                        min-width: 0;
+                        overflow: hidden;
+                        white-space: nowrap;
+                        text-overflow: ellipsis;
+                    }
 
                     &:hover {
                         color: var(--white) !important;
@@ -180,6 +228,23 @@ import { MemoryService } from '../memory-sidebar/service/memory.service';
 
                 .memories-button {
                     position: relative;
+
+                    .memories-badge {
+                        flex-shrink: 0;
+                    }
+                }
+            }
+
+            @media (max-width: 1100px) {
+                .header {
+                    .actions {
+                        gap: 8px;
+                    }
+
+                    .sessions-button,
+                    .memories-button {
+                        padding: 8px 10px !important;
+                    }
                 }
             }
         `,

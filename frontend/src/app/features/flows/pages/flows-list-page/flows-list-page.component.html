@@ -47,11 +47,7 @@
             </div>
             <div class="tabs-right">
                 <div class="search-container">
-                    <app-svg-icon
-                        icon="search"
-                        class="search-icon"
-                        size="1.1rem"
-                    ></app-svg-icon>
+                    <app-svg-icon icon="search" class="search-icon" size="1.1rem"></app-svg-icon>
                     <input
                         type="text"
                         class="search-input"
@@ -60,12 +56,7 @@
                         (ngModelChange)="onSearchTermChange($event)"
                     />
                     @if (searchTerm) {
-                        <button
-                            type="button"
-                            class="clear-btn"
-                            aria-label="Clear"
-                            (click)="clearSearch()"
-                        >
+                        <button type="button" class="clear-btn" aria-label="Clear" (click)="clearSearch()">
                             <app-svg-icon icon="x" size="1.1rem"></app-svg-icon>
                         </button>
                     }
@@ -85,11 +76,11 @@
                     [class.active]="showSidebar()"
                     title="Label Branches"
                 >
-                    <app-svg-icon icon="expand-sidebar" size="0.85rem"/>
+                    <app-svg-icon icon="expand-sidebar" size="0.85rem" />
                 </button>
                 <div class="breadcrumb-path">
                     <button class="breadcrumb-home" (click)="selectAllLabels()" title="All Flows">
-                        <app-svg-icon icon="home" size="1rem"/>
+                        <app-svg-icon icon="home" size="1rem" />
                     </button>
                     @if (activeLabelFilterDisplay() !== 'all') {
                         <span class="breadcrumb-sep">/</span>

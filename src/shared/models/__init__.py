@@ -57,6 +57,8 @@ from .sessions import (
     GraphSessionMessageData,
     StopSessionMessage,
     WebhookEventData,
+    StorageMutation,
+    StorageMutationEvent,
 )
 from .tools import (
     ToolConfigData,
@@ -128,6 +130,8 @@ __all__ = [
     "GraphSessionMessageData",
     "StopSessionMessage",
     "WebhookEventData",
+    "StorageMutation",
+    "StorageMutationEvent",
     # tools
     "ToolConfigData",
     "ConfiguredToolData",

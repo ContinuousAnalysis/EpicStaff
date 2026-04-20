@@ -42,6 +42,7 @@ import { ToastService } from '../../services/notifications/toast.service';
 import { DomainDialogComponent } from '../components/domain-dialog/domain-dialog.component';
 import { FlowActionPanelComponent } from '../components/flow-action-panel/flow-action-panel.component';
 import { FlowBaseNodeComponent } from '../components/flow-base-node/flow-base-node.component';
+import { FlowFilesButtonComponent } from '../components/flow-files-button/flow-files-button.component';
 import { FlowGraphContextMenuComponent } from '../components/flow-graph-context-menu/flow-graph-context-menu.component';
 import { FlowNodePanelComponent } from '../components/flow-nodes-panel/flow-nodes-panel.component';
 import { FlowShortcutsButtonComponent } from '../components/flow-shortcuts-button/flow-shortcuts-button.component';
@@ -107,11 +108,13 @@ const connectionBuilders = {
         NodesSearchComponent,
         NodePanelShellComponent,
         FlowShortcutsButtonComponent,
+        FlowFilesButtonComponent,
     ],
 })
 export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     @Input() flowState!: FlowModel;
     @Input() currentFlowId: number | null = null;
+    @Input() flowName: string = '';
     @Input() initialNodeId: string | null = null;
 
     @Output() save = new EventEmitter<void>();

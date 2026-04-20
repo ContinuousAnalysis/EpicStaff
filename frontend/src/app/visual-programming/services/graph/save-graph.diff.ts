@@ -107,10 +107,8 @@ export function diffByKey<TBackend extends { id: number }, TUI>(
     uiNodes: TUI[],
     getUIBackendId: (node: TUI) => number | null,
     toComparableFromBackend: (node: TBackend) => unknown,
-    toComparableFromUI: (node: TUI) => unknown,
-    nodeTypeName: string = 'Node'
+    toComparableFromUI: (node: TUI) => unknown
 ): NodeDiff<TBackend, TUI> {
-    void nodeTypeName;
     const backendMap = new Map<number, TBackend>();
     for (const node of backendNodes) {
         backendMap.set(node.id, node);
@@ -280,8 +278,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.crewNodes,
         (n) => n.backendId,
         getCrewNodeForComparisonFromBackend,
-        getCrewNodeForComparisonFromUI,
-        'CrewNode'
+        getCrewNodeForComparisonFromUI
     );
 
     const pythonNodes = diffByKey(
@@ -289,8 +286,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.pythonNodes,
         (n) => n.backendId,
         getPythonNodeForComparisonFromBackend,
-        getPythonNodeForComparisonFromUI,
-        'PythonNode'
+        getPythonNodeForComparisonFromUI
     );
 
     const llmNodes = diffByKey(
@@ -298,8 +294,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.llmNodes,
         (n) => n.backendId,
         getLLMNodeForComparisonFromBackend,
-        getLLMNodeForComparisonFromUI,
-        'LLMNode'
+        getLLMNodeForComparisonFromUI
     );
 
     const fileExtractorNodes = diffByKey(
@@ -307,8 +302,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.fileExtractorNodes,
         (n) => n.backendId,
         getFileExtractorNodeForComparisonFromBackend,
-        getFileExtractorNodeForComparisonFromUI,
-        'FileExtractorNode'
+        getFileExtractorNodeForComparisonFromUI
     );
 
     const audioToTextNodes = diffByKey(
@@ -316,8 +310,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.audioToTextNodes,
         (n) => n.backendId,
         getAudioToTextNodeForComparisonFromBackend,
-        getAudioToTextNodeForComparisonFromUI,
-        'AudioToTextNode'
+        getAudioToTextNodeForComparisonFromUI
     );
 
     const subGraphNodes = diffByKey(
@@ -325,8 +318,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.subGraphNodes,
         (n) => n.backendId,
         getSubGraphNodeForComparisonFromBackend,
-        getSubGraphNodeForComparisonFromUI,
-        'SubGraphNode'
+        getSubGraphNodeForComparisonFromUI
     );
 
     const webhookTriggerNodes = diffByKey(
@@ -334,8 +326,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.webhookTriggerNodes,
         (n) => n.backendId,
         getWebhookTriggerNodeForComparisonFromBackend,
-        getWebhookTriggerNodeForComparisonFromUI,
-        'WebhookTriggerNode'
+        getWebhookTriggerNodeForComparisonFromUI
     );
 
     const telegramTriggerNodes = diffByKey(
@@ -343,8 +334,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.telegramTriggerNodes,
         (n) => n.backendId,
         getTelegramTriggerNodeForComparisonFromBackend,
-        getTelegramTriggerNodeForComparisonFromUI,
-        'TelegramTriggerNode'
+        getTelegramTriggerNodeForComparisonFromUI
     );
 
     const decisionTableNodes = diffByKey(
@@ -352,8 +342,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.decisionTableNodes,
         (n) => n.backendId,
         getDecisionTableNodeForComparisonFromBackend,
-        (n) => getDecisionTableNodeForComparisonFromUI(n, allNodes),
-        'DecisionTableNode'
+        (n) => getDecisionTableNodeForComparisonFromUI(n, allNodes)
     );
 
     const endNodes = diffByKey(
@@ -361,8 +350,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.endNodes,
         (n) => n.backendId,
         getEndNodeForComparisonFromBackend,
-        getEndNodeForComparisonFromUI,
-        'EndNode'
+        getEndNodeForComparisonFromUI
     );
 
     const graphNotes = diffByKey(
@@ -370,8 +358,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.graphNotes,
         (n) => n.backendId,
         getGraphNoteForComparisonFromBackend,
-        getGraphNoteForComparisonFromUI,
-        'GraphNote'
+        getGraphNoteForComparisonFromUI
     );
 
     const codeAgentNodes = diffByKey(
@@ -379,8 +366,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.codeAgentNodes,
         (n) => n.backendId,
         getCodeAgentNodeForComparisonFromBackend,
-        getCodeAgentNodeForComparisonFromUI,
-        'CodeAgentNode'
+        getCodeAgentNodeForComparisonFromUI
     );
 
     const classificationDecisionTableNodes = diffByKey(
@@ -388,8 +374,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.classificationDecisionTableNodes,
         (n) => n.backendId,
         getClassificationDecisionTableNodeForComparisonFromBackend,
-        getClassificationDecisionTableNodeForComparisonFromUI,
-        'ClassificationDecisionTableNode'
+        getClassificationDecisionTableNodeForComparisonFromUI
     );
 
     return {
@@ -478,8 +463,7 @@ export function getConnectionDiff(
         resolvedCondEdges,
         (n) => n.edgeNode.backendId,
         getConditionalEdgeForComparisonFromBackend,
-        getConditionalEdgeForComparisonFromUI,
-        'ConditionalEdge'
+        getConditionalEdgeForComparisonFromUI
     );
     const conditionalEdges = conditionalEdgesRaw;
 
@@ -514,6 +498,7 @@ export function buildPythonPayload(n: PythonNodeModel, graphId: number): CreateP
         output_variable_path: n.output_variable_path || null,
         stream_config: n.stream_config ?? {},
         metadata: getUIMetadataForComparison(n),
+        use_storage: n.data.use_storage,
     };
 }
 
@@ -689,6 +674,7 @@ export function buildCodeAgentPayload(node: CodeAgentNodeModel, graphId: number)
         stream_config: node.stream_config ?? {},
         output_schema: node.data?.output_schema ?? {},
         metadata: getUIMetadataForComparison(node),
+        use_storage: node.data?.use_storage,
     };
 }
 

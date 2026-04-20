@@ -183,9 +183,14 @@
         }
     </div>
 
-    <button class="show-inputs-btn standalone" [class.active]="showVariables()" (click)="toggleShowVariables()">
-        {{ showVariables() ? 'Hide Inputs/Output' : 'Show Inputs/Output' }}
-    </button>
+    <div class="top-right-actions">
+        @if (currentFlowId) {
+            <app-flow-files-button [flowId]="currentFlowId" [flowName]="flowName"></app-flow-files-button>
+        }
+        <button class="show-inputs-btn" [class.active]="showVariables()" (click)="toggleShowVariables()">
+            {{ showVariables() ? 'Hide Inputs/Output' : 'Show Inputs/Output' }}
+        </button>
+    </div>
     <app-flow-action-panel></app-flow-action-panel>
     <!-- <app-flow-zoom-controls></app-flow-zoom-controls> -->
     @if (showContextMenu()) {

@@ -4,9 +4,9 @@ import { Component, Inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { IconButtonComponent } from '../buttons/icon-button/icon-button.component';
 import { Spinner2Component } from '../spinner-type2/spinner.component';
-import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 export type UnsavedChangesDialogResult = 'save' | 'dont-save' | 'cancel' | 'close';
 

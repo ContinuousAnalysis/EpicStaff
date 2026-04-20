@@ -16,7 +16,10 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
         <div class="subgraph-start-container">
             <div class="subgraph-start-header" (click)="toggleMessage()">
                 <div class="play-arrow" *ngIf="hasContent()">
-                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                    <app-svg-icon
+                        [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                        size="1.1rem"
+                    />
                 </div>
                 <div class="icon-container">
                     <app-svg-icon icon="hierarchy-2" size="1.25rem" />
@@ -60,7 +63,10 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                     <!-- Input Parameters Section -->
                     <div class="input-container" *ngIf="hasInput()">
                         <div class="section-heading" (click)="toggleInputs($event)">
-                            <app-svg-icon [icon]="isInputsExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                            <app-svg-icon
+                                [icon]="isInputsExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Input Parameters
                         </div>
                         <div
@@ -76,7 +82,10 @@ import { GraphMessage, MessageType, StartSubflowMessageData } from '../../../../
                     <!-- Variables Section -->
                     <div class="variables-container" *ngIf="hasVariables()">
                         <div class="section-heading" (click)="toggleVariables($event)">
-                            <app-svg-icon [icon]="isVariablesExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                            <app-svg-icon
+                                [icon]="isVariablesExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Variables
                         </div>
                         <div

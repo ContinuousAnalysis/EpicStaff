@@ -1,6 +1,15 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    inject,
+    OnDestroy,
+    OnInit,
+    signal,
+    ViewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { finalize, map, switchMap } from 'rxjs/operators';
@@ -61,11 +70,12 @@ interface FlowRenameData {
             }
             <div class="dialog-actions">
                 <app-button type="ghost" (click)="cancel()" [disabled]="isSubmitting">Cancel</app-button>
-                <app-button 
-                    type="primary" 
+                <app-button
+                    type="primary"
                     [disabled]="isSubmitting || !newName || !newName.trim().length"
                     (click)="save()"
-                >Save</app-button>
+                    >Save</app-button
+                >
             </div>
         </div>
     `,

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FExternalItem, FExternalItemPlaceholder, FExternalItemPreview } from '@foblex/flow';
 
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
 import { NodeType } from '../../../core/enums/node-type';
 import {
@@ -14,7 +15,6 @@ import {
     ToolNodeModel,
 } from '../../../core/models/node.model';
 import { NodePreviewComponent } from './node-preview/node-preview.component';
-import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-node-item',

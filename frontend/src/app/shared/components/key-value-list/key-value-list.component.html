@@ -1,10 +1,5 @@
 @if (label()) {
-    <app-tooltip
-        [required]="required()"
-        [tooltipText]="tooltipText()"
-        [label]="label()"
-        [icon]="icon()"
-    />
+    <app-tooltip [required]="required()" [tooltipText]="tooltipText()" [label]="label()" [icon]="icon()" />
 }
 
 <div class="kv-list">
@@ -62,11 +57,7 @@
     @if (items().length) {
         <div class="kv-list__cards">
             @for (item of items(); track item.name + $index; let i = $index) {
-                <div
-                    class="kv-list__card"
-                    [class.kv-list__card--editing]="editingIndex() === i"
-                    (click)="editCard(i)"
-                >
+                <div class="kv-list__card" [class.kv-list__card--editing]="editingIndex() === i" (click)="editCard(i)">
                     <div class="kv-list__card-content">
                         <span class="kv-list__card-name">{{ item.name }}</span>
                         <span class="kv-list__card-value">{{ item.value }}</span>

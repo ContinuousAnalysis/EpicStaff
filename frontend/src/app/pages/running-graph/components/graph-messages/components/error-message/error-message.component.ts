@@ -28,7 +28,10 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                     <!-- Error Details Section -->
                     <div class="error-section">
                         <div class="section-heading" (click)="toggleErrorSection($event)">
-                            <app-svg-icon [icon]="isErrorExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
+                            <app-svg-icon
+                                [icon]="isErrorExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1rem"
+                            />
                             Error Details
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isErrorExpanded ? 'expanded' : 'collapsed'">
@@ -48,7 +51,10 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                     <!-- Optional Data Subsection -->
                     <div class="error-data-container" *ngIf="hasErrorData()">
                         <div class="section-heading" (click)="toggleDataSection($event)">
-                            <app-svg-icon [icon]="isDataExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
+                            <app-svg-icon
+                                [icon]="isDataExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1rem"
+                            />
                             Data
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isDataExpanded ? 'expanded' : 'collapsed'">

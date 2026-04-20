@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 
-import { StartNodeModel } from '../../../core/models/node.model';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { StartNodeModel } from '../../../core/models/node.model';
 
 @Component({
     selector: 'app-start-node',

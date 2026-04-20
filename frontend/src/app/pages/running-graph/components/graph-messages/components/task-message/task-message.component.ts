@@ -33,7 +33,10 @@ import { GraphMessage, TaskMessageData } from '../../../../models/graph-session-
                     <!-- Task Details Section -->
                     <div class="details-container" *ngIf="hasDetails()">
                         <div class="section-heading" (click)="toggleSection('details')">
-                            <app-svg-icon [icon]="isDetailsExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
+                            <app-svg-icon
+                                [icon]="isDetailsExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1rem"
+                            />
                             Task Details
                         </div>
                         <div
@@ -68,7 +71,10 @@ import { GraphMessage, TaskMessageData } from '../../../../models/graph-session-
                     <!-- Result Section -->
                     <div class="raw-container" *ngIf="hasRawData()">
                         <div class="section-heading" (click)="toggleSection('raw')">
-                            <app-svg-icon [icon]="isRawExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
+                            <app-svg-icon
+                                [icon]="isRawExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1rem"
+                            />
                             Result
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isRawExpanded ? 'expanded' : 'collapsed'">

@@ -17,7 +17,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { findNodeAtOffset, Node as JsonNode, parse as parseJsonc, parseTree } from 'jsonc-parser';
 
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
-
 import { JsonEditorComponent } from '../../../shared/components/json-editor/json-editor.component';
 import {
     EMPTY_VALIDATION_RESULT,
@@ -146,7 +145,6 @@ export const DEFAULT_INITIAL_STATE: Record<string, unknown> = {
                     background: var(--color-surface-hover, #333);
                     color: var(--color-text-primary, #fff);
                 }
-
             }
 
             .dialog-content {

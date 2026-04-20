@@ -17,7 +17,10 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
             <!-- Agent Message Header with Toggle -->
             <div class="agent-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                    <app-svg-icon
+                        [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                        size="1.1rem"
+                    />
                 </div>
                 <div class="icon-container">
                     <app-svg-icon icon="robot" size="1.25rem" />
@@ -34,7 +37,10 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
                     <!-- Thought Section -->
                     <div class="thought-container" *ngIf="hasThought()">
                         <div class="section-heading" (click)="toggleSection('thought')">
-                            <app-svg-icon [icon]="isThoughtExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                            <app-svg-icon
+                                [icon]="isThoughtExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Thought
                         </div>
                         <div
@@ -51,7 +57,10 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
                     <!-- Tool Section -->
                     <div class="tool-container" *ngIf="hasTool()">
                         <div class="section-heading" (click)="toggleSection('tool')">
-                            <app-svg-icon [icon]="isToolExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                            <app-svg-icon
+                                [icon]="isToolExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Tool
                         </div>
                         <div class="collapsible-content" [@expandCollapse]="isToolExpanded ? 'expanded' : 'collapsed'">
@@ -74,7 +83,10 @@ import { AgentMessageData, GraphMessage } from '../../../../models/graph-session
                     <!-- Tool Output Section at same level as Thought and Tool -->
                     <div class="result-container" *ngIf="getResult()">
                         <div class="section-heading" (click)="toggleSection('result')">
-                            <app-svg-icon [icon]="isResultExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                            <app-svg-icon
+                                [icon]="isResultExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Tool Output
                         </div>
                         <div

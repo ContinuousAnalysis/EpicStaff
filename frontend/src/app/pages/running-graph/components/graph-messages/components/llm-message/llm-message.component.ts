@@ -16,7 +16,10 @@ import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-m
             <!-- LLM Message Header with Toggle -->
             <div class="llm-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                    <app-svg-icon
+                        [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                        size="1.1rem"
+                    />
                 </div>
                 <div class="icon-container">
                     <app-svg-icon icon="message-circle" size="1.25rem" />
@@ -30,7 +33,10 @@ import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-m
                     <!-- Response Subsection -->
                     <div class="llm-section">
                         <div class="section-heading" (click)="toggleResponseSection()">
-                            <app-svg-icon [icon]="isResponseExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                            <app-svg-icon
+                                [icon]="isResponseExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Response
                         </div>
                         <div

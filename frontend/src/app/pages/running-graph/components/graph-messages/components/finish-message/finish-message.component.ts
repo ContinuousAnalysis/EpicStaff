@@ -36,7 +36,10 @@ import { FinishMessageData, GraphMessage } from '../../../../models/graph-sessio
                     <!-- Variables Section -->
                     <div class="variables-container" *ngIf="hasVariables()">
                         <div class="section-heading" (click)="toggleSection('variables')">
-                            <app-svg-icon [icon]="isVariablesExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
+                            <app-svg-icon
+                                [icon]="isVariablesExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1rem"
+                            />
                             Variables
                         </div>
                         <div
@@ -52,7 +55,10 @@ import { FinishMessageData, GraphMessage } from '../../../../models/graph-sessio
                     <!-- Final Output Section -->
                     <div class="output-container">
                         <div class="section-heading" (click)="toggleSection('output')">
-                            <app-svg-icon [icon]="isOutputExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
+                            <app-svg-icon
+                                [icon]="isOutputExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1rem"
+                            />
                             Final Output
                         </div>
 

@@ -46,7 +46,10 @@ interface ThinkingStep {
                 <div class="steps-container" *ngIf="thinkingSteps.length > 0">
                     <div class="step-item" *ngFor="let step of thinkingSteps; let i = index">
                         <div class="step-header" (click)="toggleStep(i)">
-                            <app-svg-icon [icon]="expandedSteps[i] ? 'caret-down-filled' : 'caret-right-filled'" size="1rem" />
+                            <app-svg-icon
+                                [icon]="expandedSteps[i] ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1rem"
+                            />
                             <span class="step-summary">{{ getStepSummary(step, i) }}</span>
                         </div>
 

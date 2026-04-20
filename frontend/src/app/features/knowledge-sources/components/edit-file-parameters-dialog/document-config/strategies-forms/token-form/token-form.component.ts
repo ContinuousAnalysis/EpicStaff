@@ -12,7 +12,13 @@ import { StrategyForm } from '../strategy-config-form.abstract';
     templateUrl: './token-form.component.html',
     styleUrls: ['../../document-config.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [InputNumberComponent, AppSvgIconComponent, MATERIAL_FORMS, ReactiveFormsModule, ValidationErrorsComponent],
+    imports: [
+        InputNumberComponent,
+        AppSvgIconComponent,
+        MATERIAL_FORMS,
+        ReactiveFormsModule,
+        ValidationErrorsComponent,
+    ],
 })
 export class TokenFormComponent extends StrategyForm<TokenStrategyModel> {
     initializeForm(config: TokenStrategyModel): FormGroup {

@@ -9,7 +9,7 @@
     </div>
     <div class="tabs">
         @for (tab of tabs; track tab.id) {
-            <app-tab-button [mod]="'sm'" [active]="tab.id === activeTab()" (click)="activeTab.set(tab.id)">
+            <app-tab-button mod="sm" [active]="tab.id === activeTab()" (click)="activeTab.set(tab.id)">
                 {{ tab.label }}
             </app-tab-button>
             @if (!$last) {
