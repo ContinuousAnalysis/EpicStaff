@@ -66,7 +66,6 @@ LOGGING = {
 
 INSTALLED_APPS = [
     "health_check",
-    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -220,6 +219,10 @@ CACHES = {
 }
 MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
 MEDIA_URL = "/media/"
+
+AUTH_USER_MODEL = "tables.User"
+
+PASSWORD_RESET_TOKEN_TTL = int(os.getenv("PASSWORD_RESET_TOKEN_TTL", "3600"))
 
 MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
