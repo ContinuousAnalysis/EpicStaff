@@ -23,28 +23,70 @@
         </h2>
     </div>
     <div class="header-actions">
-        <button class="sessions-button" (click)="onViewSessions()">
-            <app-svg-icon icon="history" size="1.25rem" /> Sessions
+        <button
+            class="sessions-button"
+            [appCollapseOnOverflow]="true"
+            collapseOnOverflowTarget=".btn-label"
+            collapseOnOverflowClass="btn--icon-only"
+            collapseOnOverflowRequireSelector="app-svg-icon"
+            (click)="onViewSessions()"
+        >
+            <app-svg-icon icon="history" size="1.25rem" />
+            <span class="btn-label">Sessions</span>
         </button>
-        <button class="get-curl-button" (click)="onGetCurl()">Get CURL</button>
+        <button
+            class="get-curl-button"
+            [appCollapseOnOverflow]="true"
+            collapseOnOverflowTarget=".btn-label"
+            collapseOnOverflowClass="btn--icon-only"
+            collapseOnOverflowRequireSelector="app-svg-icon"
+            (click)="onGetCurl()"
+        >
+            <span class="btn-label">Get CURL</span>
+        </button>
         @if (isEpicChatEnabled) {
-            <button class="connect-chat-button" (click)="onConnectChat()">Connect chat</button>
+            <button
+                class="connect-chat-button"
+                [appCollapseOnOverflow]="true"
+                collapseOnOverflowTarget=".btn-label"
+                collapseOnOverflowClass="btn--icon-only"
+                collapseOnOverflowRequireSelector="app-svg-icon"
+                (click)="onConnectChat()"
+            >
+                <span class="btn-label">Connect chat</span>
+            </button>
         }
-        <button class="save-button" [disabled]="isSaving || isRunning" (click)="onSave()">
+        <button
+            class="save-button"
+            [appCollapseOnOverflow]="true"
+            collapseOnOverflowTarget=".btn-label"
+            collapseOnOverflowClass="btn--icon-only"
+            collapseOnOverflowRequireSelector="app-svg-icon"
+            [disabled]="isSaving || isRunning"
+            (click)="onSave()"
+        >
             @if (isSaving) {
                 <app-spinner2 [size]="16"></app-spinner2>
             } @else {
                 <app-svg-icon icon="floppy" size="1.25rem" />
             }
-            Save
+            <span class="btn-label">Save</span>
         </button>
-        <button class="run-button" [disabled]="isSaving || isRunning" (click)="onRun()">
+        <button
+            class="run-button"
+            [appCollapseOnOverflow]="true"
+            collapseOnOverflowTarget=".btn-label"
+            collapseOnOverflowClass="btn--icon-only"
+            collapseOnOverflowRequireSelector="app-svg-icon"
+            [disabled]="isSaving || isRunning"
+            (click)="onRun()"
+        >
             @if (isRunning) {
                 <app-spinner2 [size]="16"></app-spinner2>
             } @else {
                 <app-svg-icon icon="player-play-filled" size="1.25rem" />
             }
-            Run
+            <span class="btn-label">Run</span>
         </button>
     </div>
 </div>

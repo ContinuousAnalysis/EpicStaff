@@ -104,7 +104,7 @@ import {
                                     "
                                 >
                                     <app-svg-icon
-                                        [icon]="isCodeEditorFullWidth() ? 'chevron-left' : 'chevron-right'"
+                                        [icon]="isCodeEditorFullWidth() ? 'chevron-right' : 'chevron-left'"
                                         size="1rem"
                                     ></app-svg-icon>
                                 </button>

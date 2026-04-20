@@ -10,11 +10,19 @@ import { GraphDto } from '../../../../../../features/flows/models/graph.model';
 // import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { Spinner2Component } from '../../../../../../shared/components/spinner-type2/spinner.component';
+import { CollapseOnOverflowDirective } from '../../../../../../shared/directives/collapse-on-overflow.directive';
 
 @Component({
     selector: 'app-flow-header',
     standalone: true,
-    imports: [CommonModule, RouterModule, Spinner2Component, AppSvgIconComponent, DialogModule],
+    imports: [
+        CommonModule,
+        RouterModule,
+        Spinner2Component,
+        AppSvgIconComponent,
+        DialogModule,
+        CollapseOnOverflowDirective,
+    ],
     templateUrl: './flow-header.component.html',
     styleUrls: ['./flow-header.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

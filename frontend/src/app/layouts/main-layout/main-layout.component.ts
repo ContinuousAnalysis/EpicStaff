@@ -51,8 +51,9 @@ const TABBED_ROUTES: Record<string, string[]> = {
             /* The main-content area flexes to fill all remaining horizontal space. */
             .main-content {
                 flex: 1;
-
+                min-width: 0;
                 overflow-y: auto;
+                overflow-x: hidden;
             }
         `,
     ],

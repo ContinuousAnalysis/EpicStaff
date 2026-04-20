@@ -20,6 +20,7 @@ import { StorageApiService } from '../../../../../features/files/services/storag
 import { getFileExtension } from '../../../../../features/files/utils/storage-file.utils';
 import { ToastService } from '../../../../../services/notifications/toast.service';
 import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { CollapseOnOverflowDirective } from '../../../../../shared/directives/collapse-on-overflow.directive';
 
 interface TreeNode {
     name: string;
@@ -34,7 +35,7 @@ interface TreeNode {
 @Component({
     selector: 'app-session-files-button',
     standalone: true,
-    imports: [FormsModule, AppSvgIconComponent],
+    imports: [FormsModule, AppSvgIconComponent, CollapseOnOverflowDirective],
     templateUrl: './session-files-button.component.html',
     styleUrls: ['./session-files-button.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
