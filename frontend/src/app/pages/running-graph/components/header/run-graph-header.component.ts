@@ -139,7 +139,7 @@ import { SessionFilesButtonComponent } from './session-files-button/session-file
                 .actions {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 16px;
                 }
 
                 .sessions-button,

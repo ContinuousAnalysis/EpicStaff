@@ -3,11 +3,13 @@ import {
     Component,
     computed,
     DestroyRef,
+    ElementRef,
     HostListener,
     inject,
     input,
     OnInit,
     signal,
+    ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -45,6 +47,8 @@ export class SessionFilesButtonComponent implements OnInit {
     private readonly toastService = inject(ToastService);
     private readonly destroyRef = inject(DestroyRef);
 
+    @ViewChild('btn', { static: false }) private readonly btnRef!: ElementRef<HTMLButtonElement>;
+
     readonly isLoaded = signal(false);
     readonly outputFiles = signal<SessionOutputFile[]>([]);
     readonly dropdownOpen = signal(false);
@@ -52,6 +56,7 @@ export class SessionFilesButtonComponent implements OnInit {
     readonly rootNodes = signal<TreeNode[]>([]);
     readonly selected = signal<Set<string>>(new Set());
     readonly isDownloading = signal(false);
+    readonly dropdownAlignRight = signal(false);
 
     readonly hasSelection = computed(() => this.selected().size > 0);
 
@@ -95,6 +100,10 @@ export class SessionFilesButtonComponent implements OnInit {
     toggleDropdown(event: MouseEvent): void {
         event.stopPropagation();
         const opening = !this.dropdownOpen();
+        if (opening && this.btnRef) {
+            const rect = this.btnRef.nativeElement.getBoundingClientRect();
+            this.dropdownAlignRight.set(rect.left + 440 > window.innerWidth);
+        }
         this.dropdownOpen.set(opening);
         if (!opening) {
             this.selected.set(new Set());

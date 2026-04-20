@@ -9,6 +9,7 @@
     gap: 6px;
     height: 28px;
     padding: 0 10px;
+    margin: 0 12px;
     border-radius: 4px;
     border: 1px solid rgba(104, 95, 255, 1);
     background: transparent;
@@ -29,6 +30,7 @@
     }
 
     &__label {
+        font-size: 12px;
         line-height: 1;
     }
 }
@@ -37,6 +39,11 @@
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
+
+    &--align-right {
+        left: auto;
+        right: 0;
+    }
     width: 440px;
     max-height: 500px;
     background-color: #212325;
@@ -203,15 +210,16 @@
         display: none;
         align-items: center;
         justify-content: center;
-        width: 20px;
-        height: 20px;
+        width: 28px;
+        height: 28px;
         background: transparent;
-        border: none;
+        border: 1px solid rgba(104, 95, 255, 1);
         cursor: pointer;
         padding: 0;
         flex-shrink: 0;
         color: rgba(104, 95, 255, 1);
-        border-radius: 3px;
+        border-radius: 4px;
+        gap: 10px;
 
         &:hover {
             background-color: rgba(104, 95, 255, 0.15);

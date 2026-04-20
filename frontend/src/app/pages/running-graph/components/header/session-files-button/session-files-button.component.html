@@ -1,11 +1,15 @@
 @if (isLoaded() && outputFiles().length > 0) {
-    <button class="session-files-btn" (click)="toggleDropdown($event)">
+    <button #btn class="session-files-btn" (click)="toggleDropdown($event)">
         <app-svg-icon icon="download" size="12px" class="session-files-btn__icon"></app-svg-icon>
         <span class="session-files-btn__label">Files</span>
     </button>
 
     @if (dropdownOpen()) {
-        <div class="session-files-dropdown" (click)="stopPropagation($event)">
+        <div
+            class="session-files-dropdown"
+            [class.session-files-dropdown--align-right]="dropdownAlignRight()"
+            (click)="stopPropagation($event)"
+        >
             <div class="session-files-dropdown__header">
                 <div class="session-files-dropdown__search">
                     <app-svg-icon
