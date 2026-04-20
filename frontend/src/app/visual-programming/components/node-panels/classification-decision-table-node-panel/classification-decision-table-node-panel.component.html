@@ -243,9 +243,11 @@
                                                     <input
                                                         type="text"
                                                         class="field-input"
-                                                        [ngModel]="prompt.id"
+                                                        [ngModel]="pendingPromptName()"
                                                         [ngModelOptions]="{ standalone: true }"
-                                                        (ngModelChange)="renamePrompt(prompt.id, $event)"
+                                                        (ngModelChange)="pendingPromptName.set($event)"
+                                                        (blur)="commitPromptRename(prompt.id)"
+                                                        (keydown.enter)="commitPromptRename(prompt.id)"
                                                         placeholder="Enter prompt name..."
                                                     />
                                                 </div>

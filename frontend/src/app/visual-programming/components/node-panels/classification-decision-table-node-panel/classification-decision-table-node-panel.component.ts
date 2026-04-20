@@ -84,6 +84,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     public prompts = signal<Record<string, PromptConfig>>({});
     public llmConfigs: FullLLMConfig[] = [];
     public editingPromptId = signal<string | null>(null);
+    public pendingPromptName = signal<string>('');
     public newPromptId = '';
 
     public preCode: string = '';
@@ -367,6 +368,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         };
         this.prompts.update((p) => ({ ...p, [newId]: newConfig }));
         this.editingPromptId.set(newId);
+        this.pendingPromptName.set(newId);
         this.sidePanelService.triggerAutosave();
     }
 
@@ -411,7 +413,18 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     }
 
     public toggleEditPrompt(id: string): void {
-        this.editingPromptId.set(this.editingPromptId() === id ? null : id);
+        const newId = this.editingPromptId() === id ? null : id;
+        this.editingPromptId.set(newId);
+        if (newId) {
+            this.pendingPromptName.set(newId);
+        }
+    }
+
+    public commitPromptRename(oldId: string): void {
+        const newName = this.pendingPromptName().trim();
+        if (newName && newName !== oldId) {
+            this.renamePrompt(oldId, newName);
+        }
     }
 
     public onPromptLlmChange(promptId: string, llmId: number): void {
