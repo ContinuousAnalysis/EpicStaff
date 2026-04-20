@@ -31,6 +31,7 @@ export * from './loading-spinner/loading-spinner.component';
 export * from './multi-select/multi-select.component';
 export * from './number-stepper/number-stepper.component';
 export * from './pagination-controls/pagination-controls.component';
+export * from './password-strength/password-strength.component';
 export * from './radio-button/radio-button.component';
 export * from './radio-button/radio-button.component';
 export * from './range-slider/range-slider.component';
