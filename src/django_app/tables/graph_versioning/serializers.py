@@ -16,6 +16,5 @@ class GraphVersionReadSerializer(serializers.ModelSerializer):
             "graph",
             "name",
             "description",
-            "dependencies",
             "created_at",
         ]

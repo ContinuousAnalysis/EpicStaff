@@ -884,6 +884,13 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=["get"], url_path="versions")
+    def list_versions(self, request, pk=None):
+        graph = self.get_object()
+        versions = GraphVersioningService().list_versions(graph)
+        serializer = GraphVersionReadSerializer(versions, many=True)
+        return Response(serializer.data)
+
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphLightSerializer
