@@ -231,69 +231,8 @@ class ClassificationDecisionTableNodeSubgraph:
             raise ClassificationDecisionTableNodeError(f"{label} main() failed: {e}")
 
         if result is not None:
-            # Handle atomic list appends before normal output.
-            # Pre/post computation can return {"shared_append": {access_key: {"var_name": [items]}}}
-            # to atomically append items to shared list variables (avoids read-modify-write races).
-            shared_append = result.pop("shared_append", None)
-            if shared_append and isinstance(shared_append, dict):
-                shared = getattr(state.get("variables", {}), "shared", None)
-                if shared is not None:
-                    for access_key, updates in shared_append.items():
-                        if isinstance(updates, dict):
-                            scope = shared[access_key]
-                            for var_name, items in updates.items():
-                                if isinstance(items, list):
-                                    updated = scope.atomic_list_append(var_name, items)
-                                    logger.info(
-                                        f"{label} shared_append: {access_key}.{var_name} now has {len(updated)} items"
-                                    )
-                else:
-                    logger.warning(
-                        f"{label} shared_append requested but no shared proxy available"
-                    )
-
-            # Handle atomic claims (SETNX). Returns claim results into the result dict.
-            # Format: {"shared_claim": {access_key: {"var_name": value_or_dict}}}
-            #   value_or_dict can be a plain value (uses default TTL)
-            #   or {"value": X, "ttl": seconds} for custom TTL.
-            # Result: {"claim_results": {"var_name": True/False}}
-            shared_claim = result.pop("shared_claim", None)
-            if shared_claim and isinstance(shared_claim, dict):
-                shared = getattr(state.get("variables", {}), "shared", None)
-                if shared is not None:
-                    claim_results = {}
-                    for access_key, claims in shared_claim.items():
-                        if isinstance(claims, dict):
-                            scope = shared[access_key]
-                            for var_name, raw_value in claims.items():
-                                if isinstance(raw_value, dict) and "value" in raw_value:
-                                    value = raw_value["value"]
-                                    ttl = raw_value.get("ttl")
-                                else:
-                                    value = raw_value
-                                    ttl = None
-                                claimed = scope.claim(var_name, value, ttl=ttl)
-                                claim_results[var_name] = claimed
-                                logger.info(
-                                    f"{label} shared_claim: {access_key}.{var_name} = {claimed}"
-                                )
-                    result["claim_results"] = claim_results
-
-            # Handle shared variable releases (key deletion).
-            # Format: {"shared_release": {access_key: ["var_name", ...]}}
-            # Deletes the Redis key so a subsequent claim() can succeed.
-            shared_release = result.pop("shared_release", None)
-            if shared_release and isinstance(shared_release, dict):
-                shared = getattr(state.get("variables", {}), "shared", None)
-                if shared is not None:
-                    for access_key, var_names in shared_release.items():
-                        if isinstance(var_names, list):
-                            scope = shared[access_key]
-                            for var_name in var_names:
-                                released = scope.release(var_name)
-                                logger.info(
-                                    f"{label} shared_release: {access_key}.{var_name} = {released}"
-                                )
+            if isinstance(result, dict):
+                self._handle_shared_protocol(result, state, label)
 
             if output_variable_path:
                 from utils.set_output_variables import set_output_variables
@@ -303,6 +242,71 @@ class ClassificationDecisionTableNodeSubgraph:
                     output_variable_path=output_variable_path,
                     output=result,
                 )
+
+    def _handle_shared_protocol(self, result: dict, state: State, label: str) -> None:
+        # Handle atomic list appends before normal output.
+        # Pre/post computation can return {"shared_append": {access_key: {"var_name": [items]}}}
+        # to atomically append items to shared list variables (avoids read-modify-write races).
+        shared_append = result.pop("shared_append", None)
+        if shared_append and isinstance(shared_append, dict):
+            shared = getattr(state.get("variables", {}), "shared", None)
+            if shared is not None:
+                for access_key, updates in shared_append.items():
+                    if isinstance(updates, dict):
+                        scope = shared[access_key]
+                        for var_name, items in updates.items():
+                            if isinstance(items, list):
+                                updated = scope.atomic_list_append(var_name, items)
+                                logger.info(
+                                    f"{label} shared_append: {access_key}.{var_name} now has {len(updated)} items"
+                                )
+            else:
+                logger.warning(
+                    f"{label} shared_append requested but no shared proxy available"
+                )
+
+        # Handle atomic claims (SETNX). Returns claim results into the result dict.
+        # Format: {"shared_claim": {access_key: {"var_name": value_or_dict}}}
+        #   value_or_dict can be a plain value (uses default TTL)
+        #   or {"value": X, "ttl": seconds} for custom TTL.
+        # Result: {"claim_results": {"var_name": True/False}}
+        shared_claim = result.pop("shared_claim", None)
+        if shared_claim and isinstance(shared_claim, dict):
+            shared = getattr(state.get("variables", {}), "shared", None)
+            if shared is not None:
+                claim_results = {}
+                for access_key, claims in shared_claim.items():
+                    if isinstance(claims, dict):
+                        scope = shared[access_key]
+                        for var_name, raw_value in claims.items():
+                            if isinstance(raw_value, dict) and "value" in raw_value:
+                                value = raw_value["value"]
+                                ttl = raw_value.get("ttl")
+                            else:
+                                value = raw_value
+                                ttl = None
+                            claimed = scope.claim(var_name, value, ttl=ttl)
+                            claim_results[var_name] = claimed
+                            logger.info(
+                                f"{label} shared_claim: {access_key}.{var_name} = {claimed}"
+                            )
+                result["claim_results"] = claim_results
+
+        # Handle shared variable releases (key deletion).
+        # Format: {"shared_release": {access_key: ["var_name", ...]}}
+        # Deletes the Redis key so a subsequent claim() can succeed.
+        shared_release = result.pop("shared_release", None)
+        if shared_release and isinstance(shared_release, dict):
+            shared = getattr(state.get("variables", {}), "shared", None)
+            if shared is not None:
+                for access_key, var_names in shared_release.items():
+                    if isinstance(var_names, list):
+                        scope = shared[access_key]
+                        for var_name in var_names:
+                            released = scope.release(var_name)
+                            logger.info(
+                                f"{label} shared_release: {access_key}.{var_name} = {released}"
+                            )
 
     async def _execute_pre_computation(self, state: State) -> None:
         """Execute pre-computation code using main() function pattern.
