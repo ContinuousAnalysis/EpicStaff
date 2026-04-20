@@ -253,6 +253,14 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
                 this.codeChange$.next();
             });
 
+        ['pre_output_variable_path', 'pre_libraries', 'post_output_variable_path', 'post_libraries'].forEach(
+            (controlName) => {
+                form.get(controlName)!
+                    .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe(() => this.codeChange$.next());
+            }
+        );
+
         const groupsCopy = this.cloneConditionGroups(tableData.condition_groups || []);
         this.conditionGroups.set(groupsCopy);
         this.prompts.set({ ...(tableData.prompts || {}) });
@@ -341,6 +349,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     public onConditionGroupsChange(groups: ConditionGroup[]): void {
         this.conditionGroups.set(this.cloneConditionGroups(groups));
         this.cdr.markForCheck();
+        this.sidePanelService.triggerAutosave();
     }
 
     // ── Prompt Library ──
@@ -358,7 +367,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         };
         this.prompts.update((p) => ({ ...p, [newId]: newConfig }));
         this.editingPromptId.set(newId);
-        this.onSaveSilently();
+        this.sidePanelService.triggerAutosave();
     }
 
     public renamePrompt(oldId: string, newId: string): void {
@@ -374,7 +383,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         });
         this.prompts.set(updated);
         this.editingPromptId.set(trimmed);
-        this.onSaveSilently();
+        this.sidePanelService.triggerAutosave();
     }
 
     public onPromptAdd(id: string, config: PromptConfig): void {
@@ -388,12 +397,14 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         if (!current[id]) return;
         current[id] = { ...current[id], [field]: value };
         this.prompts.set(current);
+        this.sidePanelService.triggerAutosave();
     }
 
     public deletePrompt(id: string): void {
         const current = { ...this.prompts() };
         delete current[id];
         this.prompts.set(current);
+        this.sidePanelService.triggerAutosave();
         if (this.editingPromptId() === id) {
             this.editingPromptId.set(null);
         }

@@ -477,6 +477,11 @@ export function getClassificationDecisionTableNodeForComparisonFromBackend(
         default_next_node: node.default_next_node,
         next_error_node: node.next_error_node,
         expression_errors_as_false: node.expression_errors_as_false,
+        pre_input_map: node.pre_input_map || {},
+        pre_output_variable_path: node.pre_output_variable_path || null,
+        post_computation_code: node.post_computation_code || null,
+        post_input_map: node.post_input_map || {},
+        post_output_variable_path: node.post_output_variable_path || null,
     };
 }
 
@@ -510,5 +515,12 @@ export function getClassificationDecisionTableNodeForComparisonFromUI(node: Clas
         default_next_node: tableData?.default_next_node || null,
         next_error_node: tableData?.next_error_node || null,
         expression_errors_as_false: tableData?.expression_errors_as_false ?? false,
+        pre_input_map: tableData?.pre_computation?.input_map || tableData?.pre_input_map || {},
+        pre_output_variable_path:
+            tableData?.pre_computation?.output_variable_path || tableData?.pre_output_variable_path || null,
+        post_computation_code: tableData?.post_computation?.code || tableData?.post_computation_code || null,
+        post_input_map: tableData?.post_computation?.input_map || tableData?.post_input_map || {},
+        post_output_variable_path:
+            tableData?.post_computation?.output_variable_path || tableData?.post_output_variable_path || null,
     };
 }
