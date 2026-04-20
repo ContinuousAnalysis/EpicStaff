@@ -114,12 +114,6 @@ export class FlowGraphCoreMenuComponent {
             color: NODE_COLORS[NodeType.END],
         },
         {
-            label: 'Conditional Edge',
-            type: NodeType.EDGE,
-            icon: NODE_ICONS[NodeType.EDGE],
-            color: NODE_COLORS[NodeType.EDGE],
-        },
-        {
             label: 'Note',
             type: NodeType.NOTE,
             icon: NODE_ICONS[NodeType.NOTE],
