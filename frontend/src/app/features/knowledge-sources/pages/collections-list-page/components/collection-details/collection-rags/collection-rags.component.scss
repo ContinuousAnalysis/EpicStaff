@@ -14,12 +14,12 @@
     }
 
     &__name {
-        font-size: 0.625rem;
+        font-size: 12px;
         color: var(--color-ks-text);
     }
 
     &__model {
-        font-size: 0.625rem;
+        font-size: 12px;
         color: var(--color-ks-transparent-text-80);
     }
 
@@ -33,7 +33,7 @@
         border-radius: 50%;
         cursor: pointer;
         &:hover {
-            transition: .3s;
+            transition: 0.3s;
             background-color: var(--color-ks-hover-row);
         }
     }

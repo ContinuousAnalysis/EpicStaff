@@ -3,9 +3,7 @@
         <div class="files-header">
             <div class="header-title">
                 Convert to Format
-                <mat-icon class="tooltip-icon" matTooltip="Select format" matTooltipPosition="above">
-                    help_outline
-                </mat-icon>
+                <app-help-tooltip class="tooltip-icon" text="Select format" position="right" />
             </div>
             <app-radio-button [(value)]="selectedFormat" [options]="formatOptions" [disabled]="true" />
         </div>

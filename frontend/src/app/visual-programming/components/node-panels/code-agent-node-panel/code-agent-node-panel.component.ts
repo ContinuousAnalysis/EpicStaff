@@ -137,35 +137,19 @@ interface InputMapPair {
                                         <span class="section-label">Streaming to EpicChat</span>
                                         <div class="checkbox-list">
                                             <label class="checkbox-item">
-                                                <input
-                                                    type="checkbox"
-                                                    formControlName="reasoning"
-                                                    [style.accent-color]="activeColor"
-                                                />
+                                                <input type="checkbox" formControlName="reasoning" />
                                                 <span>Reasoning</span>
                                             </label>
                                             <label class="checkbox-item">
-                                                <input
-                                                    type="checkbox"
-                                                    formControlName="tool_calls"
-                                                    [style.accent-color]="activeColor"
-                                                />
+                                                <input type="checkbox" formControlName="tool_calls" />
                                                 <span>Tool calls</span>
                                             </label>
                                             <label class="checkbox-item">
-                                                <input
-                                                    type="checkbox"
-                                                    formControlName="tool_results"
-                                                    [style.accent-color]="activeColor"
-                                                />
+                                                <input type="checkbox" formControlName="tool_results" />
                                                 <span>Tool results</span>
                                             </label>
                                             <label class="checkbox-item">
-                                                <input
-                                                    type="checkbox"
-                                                    formControlName="final_reply"
-                                                    [style.accent-color]="activeColor"
-                                                />
+                                                <input type="checkbox" formControlName="final_reply" />
                                                 <span>Final reply</span>
                                             </label>
                                         </div>
@@ -314,35 +298,19 @@ interface InputMapPair {
                                 <span class="section-label">Streaming to EpicChat</span>
                                 <div class="checkbox-list">
                                     <label class="checkbox-item">
-                                        <input
-                                            type="checkbox"
-                                            formControlName="reasoning"
-                                            [style.accent-color]="activeColor"
-                                        />
+                                        <input type="checkbox" formControlName="reasoning" />
                                         <span>Reasoning</span>
                                     </label>
                                     <label class="checkbox-item">
-                                        <input
-                                            type="checkbox"
-                                            formControlName="tool_calls"
-                                            [style.accent-color]="activeColor"
-                                        />
+                                        <input type="checkbox" formControlName="tool_calls" />
                                         <span>Tool calls</span>
                                     </label>
                                     <label class="checkbox-item">
-                                        <input
-                                            type="checkbox"
-                                            formControlName="tool_results"
-                                            [style.accent-color]="activeColor"
-                                        />
+                                        <input type="checkbox" formControlName="tool_results" />
                                         <span>Tool results</span>
                                     </label>
                                     <label class="checkbox-item">
-                                        <input
-                                            type="checkbox"
-                                            formControlName="final_reply"
-                                            [style.accent-color]="activeColor"
-                                        />
+                                        <input type="checkbox" formControlName="final_reply" />
                                         <span>Final reply</span>
                                     </label>
                                 </div>
