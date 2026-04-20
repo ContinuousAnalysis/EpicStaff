@@ -1729,10 +1729,90 @@ class ClassificationConditionGroupSerializer(serializers.ModelSerializer):
 
 class ClassificationDecisionTableNodeSerializer(serializers.ModelSerializer):
     condition_groups = ClassificationConditionGroupSerializer(many=True, required=False)
+    pre_python_code = PythonCodeSerializer(required=False, allow_null=True)
+    post_python_code = PythonCodeSerializer(required=False, allow_null=True)
 
     class Meta:
         model = ClassificationDecisionTableNode
         fields = "__all__"
+
+    def create(self, validated_data):
+        condition_groups_data = validated_data.pop("condition_groups", [])
+        pre_python_code_data = validated_data.pop("pre_python_code", None)
+        post_python_code_data = validated_data.pop("post_python_code", None)
+
+        pre_python_code = None
+        if pre_python_code_data is not None:
+            pre_python_code = PythonCode.objects.create(**pre_python_code_data)
+
+        post_python_code = None
+        if post_python_code_data is not None:
+            post_python_code = PythonCode.objects.create(**post_python_code_data)
+
+        node = ClassificationDecisionTableNode.objects.create(
+            pre_python_code=pre_python_code,
+            post_python_code=post_python_code,
+            **validated_data,
+        )
+
+        for group_data in condition_groups_data:
+            ClassificationConditionGroup.objects.create(
+                classification_decision_table_node=node, **group_data
+            )
+
+        return node
+
+    def update(self, instance, validated_data):
+        condition_groups_data = validated_data.pop("condition_groups", None)
+
+        if "pre_python_code" in validated_data:
+            pre_python_code_data = validated_data.pop("pre_python_code")
+
+            if pre_python_code_data is None:
+                instance.pre_python_code = None
+            elif instance.pre_python_code is not None:
+                python_code = instance.pre_python_code
+                expected_hash = pre_python_code_data.pop("content_hash", None)
+                if expected_hash is not None:
+                    python_code._expected_hash = expected_hash
+                for attr, value in pre_python_code_data.items():
+                    setattr(python_code, attr, value)
+                python_code.save()
+            else:
+                instance.pre_python_code = PythonCode.objects.create(
+                    **pre_python_code_data
+                )
+
+        if "post_python_code" in validated_data:
+            post_python_code_data = validated_data.pop("post_python_code")
+
+            if post_python_code_data is None:
+                instance.post_python_code = None
+            elif instance.post_python_code is not None:
+                python_code = instance.post_python_code
+                expected_hash = post_python_code_data.pop("content_hash", None)
+                if expected_hash is not None:
+                    python_code._expected_hash = expected_hash
+                for attr, value in post_python_code_data.items():
+                    setattr(python_code, attr, value)
+                python_code.save()
+            else:
+                instance.post_python_code = PythonCode.objects.create(
+                    **post_python_code_data
+                )
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if condition_groups_data is not None:
+            instance.condition_groups.all().delete()
+            for group_data in condition_groups_data:
+                ClassificationConditionGroup.objects.create(
+                    classification_decision_table_node=instance, **group_data
+                )
+
+        return instance
 
 
 class WebhookTriggerSerializer(serializers.ModelSerializer):

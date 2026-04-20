@@ -146,200 +146,82 @@ class ClassificationDecisionTableNodeSubgraph:
                     value = value[token]
         return value
 
-    def _build_exec_namespace(
-        self, state: State, input_map: dict[str, str] | None = None
+    def _resolve_input_map(
+        self, input_map: dict[str, str] | None, state: State
     ) -> dict:
-        """Build a namespace dict for in-process exec().
-
-        Only input map entries are injected into the namespace.
-        Each entry resolves a path expression against the state context
-        (variables, system_variables, redis_service, session_id, etc.).
-        """
-        import time as _time_mod
-        import uuid as _uuid_mod
+        """Resolve input_map path expressions against state, returning a flat dict of values."""
+        if not input_map:
+            return {}
 
         resolve_ctx: dict = {
             "variables": state["variables"],
             "system_variables": state.get("system_variables", {}),
-            "redis_service": self.redis_service,
             "session_id": self.session_id,
             "node_name": self.node_name,
-            "logger": logger,
-            "time": _time_mod,
-            "json": json,
-            "uuid": _uuid_mod,
         }
 
-        namespace: dict = {}
+        resolved: dict = {}
 
-        # Clear shared-variable caches so we always read fresh from Redis
-        shared = getattr(state["variables"], "shared", None)
-        if shared is not None and hasattr(shared, "_clear_cache"):
-            shared._clear_cache()
+        for local_name, path_expr in input_map.items():
+            try:
+                resolved[local_name] = self._resolve_path(path_expr, resolve_ctx)
+            except Exception as e:
+                logger.warning(
+                    f"Input map resolve failed for '{local_name}' = '{path_expr}': {e}"
+                )
+                resolved[local_name] = None
 
-        if input_map:
-            for local_name, path_expr in input_map.items():
-                try:
-                    namespace[local_name] = self._resolve_path(path_expr, resolve_ctx)
-                except Exception as e:
-                    logger.warning(
-                        f"Input map resolve failed for '{local_name}' = '{path_expr}': {e}"
-                    )
-                    namespace[local_name] = None
-
-        return namespace
+        return resolved
 
     async def _execute_computation(
         self,
-        code: str | None,
+        python_code: "PythonCodeData | None",
         input_map: dict[str, str] | None,
         output_variable_path: str | None,
         state: State,
         label: str,
     ) -> None:
-        """Execute computation code using the main() function pattern.
-
-        1. exec() the code to define main()
-        2. Call main(**input_map_kwargs)
-        3. Store the return value in output_variable_path (if set)
-        """
-        if not code:
+        """Execute computation via sandboxed RunPythonCodeService."""
+        if python_code is None:
             return
 
-        namespace = self._build_exec_namespace(state, input_map)
+        inputs = self._resolve_input_map(input_map, state)
 
-        try:
-            exec(code, namespace)
-        except Exception as e:
+        result = await RunPythonCodeService(redis_service=self.redis_service).run_code(
+            python_code_data=python_code,
+            inputs=inputs,
+            stop_event=self.stop_event,
+        )
+
+        if result["returncode"] != 0:
             raise ClassificationDecisionTableNodeError(
-                f"{label} failed during definition: {e}"
+                f"{label} execution failed: {result['stderr']}"
             )
 
-        main_fn = namespace.get("main")
-        if main_fn is None:
-            logger.warning(f"{label}: no main() function defined, skipping call")
-            return
+        if output_variable_path:
+            from utils.set_output_variables import set_output_variables
 
-        # Only pass input map entries to main(), not exec artifacts
-        call_kwargs = {
-            k: namespace[k] for k in (input_map or {}).keys() if k in namespace
-        }
-
-        try:
-            result = main_fn(**call_kwargs)
-        except Exception as e:
-            raise ClassificationDecisionTableNodeError(f"{label} main() failed: {e}")
-
-        if result is not None:
-            if isinstance(result, dict):
-                self._handle_shared_protocol(result, state, label)
-
-            if output_variable_path:
-                from utils.set_output_variables import set_output_variables
-
-                set_output_variables(
-                    state=state,
-                    output_variable_path=output_variable_path,
-                    output=result,
-                )
-
-    def _handle_shared_protocol(self, result: dict, state: State, label: str) -> None:
-        # Handle atomic list appends before normal output.
-        # Pre/post computation can return {"shared_append": {access_key: {"var_name": [items]}}}
-        # to atomically append items to shared list variables (avoids read-modify-write races).
-        shared_append = result.pop("shared_append", None)
-        if shared_append and isinstance(shared_append, dict):
-            shared = getattr(state.get("variables", {}), "shared", None)
-            if shared is not None:
-                for access_key, updates in shared_append.items():
-                    if isinstance(updates, dict):
-                        scope = shared[access_key]
-                        for var_name, items in updates.items():
-                            if isinstance(items, list):
-                                updated = scope.atomic_list_append(var_name, items)
-                                logger.info(
-                                    f"{label} shared_append: {access_key}.{var_name} now has {len(updated)} items"
-                                )
-            else:
-                logger.warning(
-                    f"{label} shared_append requested but no shared proxy available"
-                )
-
-        # Handle atomic claims (SETNX). Returns claim results into the result dict.
-        # Format: {"shared_claim": {access_key: {"var_name": value_or_dict}}}
-        #   value_or_dict can be a plain value (uses default TTL)
-        #   or {"value": X, "ttl": seconds} for custom TTL.
-        # Result: {"claim_results": {"var_name": True/False}}
-        shared_claim = result.pop("shared_claim", None)
-        if shared_claim and isinstance(shared_claim, dict):
-            shared = getattr(state.get("variables", {}), "shared", None)
-            if shared is not None:
-                claim_results = {}
-                for access_key, claims in shared_claim.items():
-                    if isinstance(claims, dict):
-                        scope = shared[access_key]
-                        for var_name, raw_value in claims.items():
-                            if isinstance(raw_value, dict) and "value" in raw_value:
-                                value = raw_value["value"]
-                                ttl = raw_value.get("ttl")
-                            else:
-                                value = raw_value
-                                ttl = None
-                            claimed = scope.claim(var_name, value, ttl=ttl)
-                            claim_results[var_name] = claimed
-                            logger.info(
-                                f"{label} shared_claim: {access_key}.{var_name} = {claimed}"
-                            )
-                result["claim_results"] = claim_results
-
-        # Handle shared variable releases (key deletion).
-        # Format: {"shared_release": {access_key: ["var_name", ...]}}
-        # Deletes the Redis key so a subsequent claim() can succeed.
-        shared_release = result.pop("shared_release", None)
-        if shared_release and isinstance(shared_release, dict):
-            shared = getattr(state.get("variables", {}), "shared", None)
-            if shared is not None:
-                for access_key, var_names in shared_release.items():
-                    if isinstance(var_names, list):
-                        scope = shared[access_key]
-                        for var_name in var_names:
-                            released = scope.release(var_name)
-                            logger.info(
-                                f"{label} shared_release: {access_key}.{var_name} = {released}"
-                            )
+            output = json.loads(result["result_data"])
+            set_output_variables(
+                state=state,
+                output_variable_path=output_variable_path,
+                output=output,
+            )
 
     async def _execute_pre_computation(self, state: State) -> None:
-        """Execute pre-computation code using main() function pattern.
-        Supports two-phase execution: if the computation returns needs_rerun=True
-        (e.g. after a shared_append), the shared variable cache is cleared and
-        the computation re-runs so it reads fresh data from Redis."""
+        """Execute pre-computation via sandbox."""
         await self._execute_computation(
-            code=self.node_data.pre_computation_code,
+            python_code=self.node_data.pre_python_code,
             input_map=self.node_data.pre_input_map,
             output_variable_path=self.node_data.pre_output_variable_path,
             state=state,
             label="Pre-computation",
         )
 
-        needs_rerun = getattr(state.get("variables", {}), "needs_rerun", None)
-        logger.info(f"Pre-computation phase 1 done. needs_rerun={needs_rerun}")
-        if needs_rerun:
-            state["variables"]["needs_rerun"] = None
-            shared = getattr(state.get("variables", {}), "shared", None)
-            if shared is not None:
-                shared._clear_cache()
-            await self._execute_computation(
-                code=self.node_data.pre_computation_code,
-                input_map=self.node_data.pre_input_map,
-                output_variable_path=self.node_data.pre_output_variable_path,
-                state=state,
-                label="Pre-computation (rerun)",
-            )
-
     async def _execute_post_computation(self, state: State) -> None:
-        """Execute post-computation code using main() function pattern."""
+        """Execute post-computation via sandbox."""
         await self._execute_computation(
-            code=self.node_data.post_computation_code,
+            python_code=self.node_data.post_python_code,
             input_map=self.node_data.post_input_map,
             output_variable_path=self.node_data.post_output_variable_path,
             state=state,
@@ -642,11 +524,9 @@ def main(**kwargs) -> dict:
                     + 1
                 )
 
-            # Also reset route_code in state variables so stale values from
+            # Reset route_code in state variables so stale values from
             # previous passes don't leak into condition group evaluation.
-            route_var = self.node_data.route_variable_name
-            if route_var:
-                state["variables"].update({route_var: None})
+            state["variables"].update({"route_code": None})
 
             input_vars = state["variables"].model_dump()
             if "shared" in input_vars:
@@ -838,9 +718,7 @@ def main(**kwargs) -> dict:
                     # Step 4: Capture route_code from this row and sync to state variables
                     if group.route_code:
                         matched_route_code = group.route_code
-                        state["variables"].update(
-                            {self.node_data.route_variable_name: group.route_code}
-                        )
+                        state["variables"].update({"route_code": group.route_code})
 
                     # Step 5: Check continue flag
                     if not group.continue_flag:
@@ -849,21 +727,6 @@ def main(**kwargs) -> dict:
 
                 except ClassificationDecisionTableNodeError as e:
                     error = f"Error in condition '{group.group_name}': {e}"
-                    if self.node_data.expression_errors_as_false:
-                        logger.warning(
-                            f"{error} — treating as false (expression_errors_as_false=True)"
-                        )
-                        msg = self.custom_session_message_writer.add_condition_group_message(
-                            session_id=self.session_id,
-                            node_name=self.node_name,
-                            group_name=group.group_name,
-                            result=False,
-                            writer=writer,
-                            execution_order=self.execution_order(state),
-                            expression=f"ERROR: {e}",
-                        )
-                        self._publish_message(msg)
-                        continue
                     logger.info(f"ERROR {error}")
                     decision_vars["result_node"] = self.node_data.next_error_node or END
                     msg = self.custom_session_message_writer.add_error_message(
@@ -892,8 +755,7 @@ def main(**kwargs) -> dict:
             # Determine final route
             # Check if route_code was set in variables by manipulation code
             variables_dict = state["variables"].model_dump()
-            route_var = self.node_data.route_variable_name
-            variable_route_code = variables_dict.get(route_var)
+            variable_route_code = variables_dict.get("route_code")
 
             # Priority: variable route_code > matched row route_code > default
             final_route_code = variable_route_code or matched_route_code
@@ -904,7 +766,7 @@ def main(**kwargs) -> dict:
             else:
                 decision_vars["result_node"] = self.node_data.default_next_node or END
 
-            # Execute post-computation (in-process, has access to shared variables)
+            # Execute post-computation (sandboxed via RunPythonCodeService)
             try:
                 await self._execute_post_computation(state)
             except ClassificationDecisionTableNodeError as e:

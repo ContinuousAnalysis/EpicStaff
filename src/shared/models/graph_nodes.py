@@ -101,19 +101,17 @@ class ClassificationConditionGroupData(BaseModel):
 
 class ClassificationDecisionTableNodeData(BaseModel):
     node_name: str
-    pre_computation_code: str | None = None
+    pre_python_code: PythonCodeData | None = None
     pre_input_map: dict[str, str] = {}
     pre_output_variable_path: str | None = None
-    post_computation_code: str | None = None
+    post_python_code: PythonCodeData | None = None
     post_input_map: dict[str, str] = {}
     post_output_variable_path: str | None = None
     condition_groups: list[ClassificationConditionGroupData] = []
     prompts: dict[str, PromptConfigData] = {}
-    route_variable_name: str = "route_code"
     route_map: dict[str, str] = {}
     default_next_node: str | None = None
     next_error_node: str | None = None
-    expression_errors_as_false: bool = False
 
 
 class CodeAgentNodeData(BaseModel):
@@ -206,7 +204,9 @@ class GraphData(BaseModel):
     edge_list: list[EdgeData] = []
     conditional_edge_list: list[ConditionalEdgeData] = []
     decision_table_node_list: list[DecisionTableNodeData] = []
-    classification_decision_table_node_list: list[ClassificationDecisionTableNodeData] = []
+    classification_decision_table_node_list: list[
+        ClassificationDecisionTableNodeData
+    ] = []
     entrypoint: str
     end_node: EndNodeData | None
     telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []

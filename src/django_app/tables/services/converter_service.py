@@ -772,20 +772,30 @@ class ConverterService(metaclass=SingletonMeta):
                         )
                 prompts_dict[prompt_id] = prompt_config
 
+        pre_python_code_data = None
+        if node.pre_python_code is not None:
+            pre_python_code_data = self.convert_python_code_to_pydantic(
+                node.pre_python_code
+            )
+
+        post_python_code_data = None
+        if node.post_python_code is not None:
+            post_python_code_data = self.convert_python_code_to_pydantic(
+                node.post_python_code
+            )
+
         return ClassificationDecisionTableNodeData(
             node_name=resolver(node.id),
-            pre_computation_code=node.pre_computation_code,
+            pre_python_code=pre_python_code_data,
             pre_input_map=node.pre_input_map or {},
             pre_output_variable_path=node.pre_output_variable_path,
-            post_computation_code=node.post_computation_code,
+            post_python_code=post_python_code_data,
             post_input_map=node.post_input_map or {},
             post_output_variable_path=node.post_output_variable_path,
             condition_groups=condition_groups,
             prompts=prompts_dict,
-            route_variable_name=node.route_variable_name,
             default_next_node=node.default_next_node,
             next_error_node=node.next_error_node,
-            expression_errors_as_false=node.expression_errors_as_false,
         )
 
     def convert_decision_table_node_to_pydantic(

@@ -565,21 +565,31 @@ class ClassificationDecisionTableNode(BaseGraphEntity, BaseGlobalNode):
         related_name="classification_decision_table_node_list",
     )
     node_name = models.CharField(max_length=255, blank=True)
-    pre_computation_code = models.TextField(null=True, default=None, blank=True)
+    pre_python_code = models.ForeignKey(
+        "PythonCode",
+        on_delete=models.CASCADE,
+        null=True,
+        default=None,
+        related_name="cdt_pre_nodes",
+    )
     pre_input_map = models.JSONField(default=dict, blank=True)
     pre_output_variable_path = models.CharField(
         max_length=512, null=True, default=None, blank=True
     )
-    post_computation_code = models.TextField(null=True, default=None, blank=True)
+    post_python_code = models.ForeignKey(
+        "PythonCode",
+        on_delete=models.CASCADE,
+        null=True,
+        default=None,
+        related_name="cdt_post_nodes",
+    )
     post_input_map = models.JSONField(default=dict, blank=True)
     post_output_variable_path = models.CharField(
         max_length=512, null=True, default=None, blank=True
     )
     prompts = models.JSONField(default=dict, blank=True)
-    route_variable_name = models.CharField(max_length=255, default="route_code")
     default_next_node = models.CharField(max_length=255, null=True, default=None)
     next_error_node = models.CharField(max_length=255, null=True, default=None)
-    expression_errors_as_false = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
