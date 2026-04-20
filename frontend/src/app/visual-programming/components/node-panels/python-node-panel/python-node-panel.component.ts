@@ -22,7 +22,14 @@ interface InputMapPair {
 @Component({
     standalone: true,
     selector: 'app-python-node-panel',
-    imports: [ReactiveFormsModule, CustomInputComponent, InputMapComponent, CodeEditorComponent, CommonModule, AppSvgIconComponent],
+    imports: [
+        ReactiveFormsModule,
+        CustomInputComponent,
+        InputMapComponent,
+        CodeEditorComponent,
+        CommonModule,
+        AppSvgIconComponent,
+    ],
     animations: [expandCollapseAnimation],
     template: `
         <div class="panel-container">
@@ -71,11 +78,7 @@ interface InputMapPair {
                                         <span class="section-label">Streaming to EpicChat</span>
                                         <div class="checkbox-list">
                                             <label class="checkbox-item">
-                                                <input
-                                                    type="checkbox"
-                                                    formControlName="execution_status"
-                                                    [style.accent-color]="activeColor"
-                                                />
+                                                <input type="checkbox" formControlName="execution_status" />
                                                 <span>Execution status</span>
                                             </label>
                                         </div>
@@ -147,11 +150,7 @@ interface InputMapPair {
                                 <span class="section-label">Streaming to EpicChat</span>
                                 <div class="checkbox-list">
                                     <label class="checkbox-item">
-                                        <input
-                                            type="checkbox"
-                                            formControlName="execution_status"
-                                            [style.accent-color]="activeColor"
-                                        />
+                                        <input type="checkbox" formControlName="execution_status" />
                                         <span>Execution status</span>
                                     </label>
                                 </div>
