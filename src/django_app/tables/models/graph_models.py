@@ -642,7 +642,7 @@ class ClassificationConditionGroup(BaseGraphEntity, models.Model):
     prompt_id = models.CharField(max_length=255, null=True, default=None, blank=True)
     manipulation = models.TextField(null=True, default=None, blank=True)
     continue_flag = models.BooleanField(default=False)
-    route_code = models.CharField(max_length=255, null=True, default=None, blank=True)
+    next_node_id = models.BigIntegerField(null=True, default=None)
     dock_visible = models.BooleanField(default=True)
     field_expressions = models.JSONField(default=dict, blank=True)
     field_manipulations = models.JSONField(default=dict, blank=True)

@@ -39,7 +39,6 @@ from src.crew.services.run_python_code_service import RunPythonCodeService
 from src.crew.services.knowledge_search_service import KnowledgeSearchService
 
 from src.crew.utils import map_variables_to_input
-from utils.logger import logger
 
 
 class ReturnCodeError(Exception): ...
@@ -135,9 +134,9 @@ class SessionGraphBuilder:
             source=from_node,
             path=inner_decision_function,
         )
-        
+
     def add_edge(self, start_key: str, end_key: str):
-        self._graph_builder.add_edge(start_key, end_key) 
+        self._graph_builder.add_edge(start_key, end_key)
 
     def set_entrypoint(self, node_name: str):
         self._graph_builder.set_entry_point(node_name)
@@ -195,31 +194,17 @@ class SessionGraphBuilder:
 
         self._graph_builder.add_node(node_data.node_name, subgraph)
 
-        route_map = dict(node_data.route_map or {})
         default_next_node = node_data.default_next_node
 
         async def condition(
             state: State,
             writer: StreamWriter,
-            _route_map: dict[str, str] = route_map,
             _default_next_node: str | None = default_next_node,
         ):
-            decision_node_variables = state["system_variables"]["nodes"][
-                builder.node_name
+            result_node = state["system_variables"]["nodes"][builder.node_name][
+                "result_node"
             ]
-            result_node = decision_node_variables["result_node"]
-            # Resolve route_code to actual node name via route_map
-            resolved = _route_map.get(result_node)
-            if resolved is None:
-                for key, val in _route_map.items():
-                    if key.lower() == str(result_node).lower():
-                        resolved = val
-                        break
-            if resolved is not None:
-                return resolved
-            if result_node is not None:
-                return result_node
-            return _default_next_node
+            return result_node or _default_next_node
 
         self._graph_builder.add_conditional_edges(node_data.node_name, condition)
 

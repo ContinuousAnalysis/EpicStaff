@@ -92,7 +92,7 @@ class ClassificationConditionGroupData(BaseModel):
     prompt_id: str | None = None
     manipulation: str | None = None
     continue_flag: bool = False
-    route_code: str | None = None
+    next_node: str | None = None
     dock_visible: bool = True
     order: int = 0
     field_expressions: dict[str, str] = {}
@@ -109,7 +109,6 @@ class ClassificationDecisionTableNodeData(BaseModel):
     post_output_variable_path: str | None = None
     condition_groups: list[ClassificationConditionGroupData] = []
     prompts: dict[str, PromptConfigData] = {}
-    route_map: dict[str, str] = {}
     default_next_node: str | None = None
     next_error_node: str | None = None
 

@@ -1272,10 +1272,11 @@ class ClassificationDecisionTableNodeModelViewSet(viewsets.ModelViewSet):
                 [
                     ClassificationDecisionTablePrompt(
                         cdt_node=node,
+                        llm_config_id=prompt_data.get("llm_config"),
                         **{
                             k: v
                             for k, v in prompt_data.items()
-                            if k not in ("id", "cdt_node")
+                            if k not in ("id", "cdt_node", "llm_config")
                         },
                     )
                     for prompt_data in prompt_configs_data

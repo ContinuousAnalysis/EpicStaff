@@ -501,7 +501,6 @@ def main(**kwargs) -> dict:
 
             update_variables = {
                 "result_node": None,
-                "route_code": None,
                 "default_node": self.node_data.default_next_node,
             }
             if state["system_variables"].get("nodes") is None:
@@ -523,10 +522,6 @@ def main(**kwargs) -> dict:
                     ]
                     + 1
                 )
-
-            # Reset route_code in state variables so stale values from
-            # previous passes don't leak into condition group evaluation.
-            state["variables"].update({"route_code": None})
 
             input_vars = state["variables"].model_dump()
             if "shared" in input_vars:
@@ -579,7 +574,7 @@ def main(**kwargs) -> dict:
                 self._publish_message(msg)
                 return state
 
-            matched_route_code = None
+            matched_next_node = None
             matched_condition_name = None
 
             for group in sorted_groups:
@@ -715,10 +710,9 @@ def main(**kwargs) -> dict:
                         )
                         self._publish_message(msg)
 
-                    # Step 4: Capture route_code from this row and sync to state variables
-                    if group.route_code:
-                        matched_route_code = group.route_code
-                        state["variables"].update({"route_code": group.route_code})
+                    # Step 4: Capture next_node from this row
+                    if group.next_node:
+                        matched_next_node = group.next_node
 
                     # Step 5: Check continue flag
                     if not group.continue_flag:
@@ -752,19 +746,9 @@ def main(**kwargs) -> dict:
                     self._publish_message(msg)
                     return state
 
-            # Determine final route
-            # Check if route_code was set in variables by manipulation code
-            variables_dict = state["variables"].model_dump()
-            variable_route_code = variables_dict.get("route_code")
-
-            # Priority: variable route_code > matched row route_code > default
-            final_route_code = variable_route_code or matched_route_code
-
-            if final_route_code:
-                decision_vars["route_code"] = final_route_code
-                decision_vars["result_node"] = final_route_code
-            else:
-                decision_vars["result_node"] = self.node_data.default_next_node or END
+            decision_vars["result_node"] = (
+                matched_next_node or self.node_data.default_next_node or END
+            )
 
             # Execute post-computation (sandboxed via RunPythonCodeService)
             try:
@@ -784,7 +768,7 @@ def main(**kwargs) -> dict:
 
             logger.info(
                 f"Classification table '{self.node_name}' result: "
-                f"route_code={final_route_code}, result_node={decision_vars['result_node']}"
+                f"result_node={decision_vars['result_node']}"
             )
 
             msg = self.custom_session_message_writer.add_finish_message(
@@ -795,7 +779,6 @@ def main(**kwargs) -> dict:
                 execution_order=self.execution_order(state),
                 state=state,
                 matched_condition=matched_condition_name,
-                route_code=final_route_code,
             )
             self._publish_message(msg)
 

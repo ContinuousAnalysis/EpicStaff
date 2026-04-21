@@ -135,6 +135,26 @@ class ClassificationDecisionTableNodeImportSerializer(BaseNodeImportSerializer):
     prompt_configs = ClassificationDecisionTablePromptImportSerializer(
         many=True, required=False, read_only=True
     )
+    pre_python_code = PythonCodeImportSerializer(
+        read_only=True, required=False, allow_null=True
+    )
+    pre_python_code_id = serializers.PrimaryKeyRelatedField(
+        queryset=PythonCode.objects.all(),
+        source="pre_python_code",
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    post_python_code = PythonCodeImportSerializer(
+        read_only=True, required=False, allow_null=True
+    )
+    post_python_code_id = serializers.PrimaryKeyRelatedField(
+        queryset=PythonCode.objects.all(),
+        source="post_python_code",
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
 
     class Meta(BaseNodeImportSerializer.Meta):
         model = ClassificationDecisionTableNode
