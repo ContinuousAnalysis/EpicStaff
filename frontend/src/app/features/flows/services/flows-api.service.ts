@@ -104,8 +104,8 @@ export class FlowsApiService {
         return this.http.get<Record<string, unknown>>(`${this.configService.apiUrl}graph_runs/${runId}/status/`);
     }
 
-    saveGraphVersion(graphId: number, payload: GraphVersionCreateRequest): Observable<GraphVersionDto> {
-        return this.http.post<GraphVersionDto>(`${this.apiUrl}${graphId}/save-version/`, payload, {
+    saveGraphVersion(payload: GraphVersionCreateRequest): Observable<GraphVersionDto> {
+        return this.http.post<GraphVersionDto>(`${this.configService.apiUrl}graph-versions/`, payload, {
             headers: this.httpHeaders,
         });
     }
