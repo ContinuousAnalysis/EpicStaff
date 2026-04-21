@@ -237,7 +237,7 @@ class ClassificationDecisionTableNodeSaveable:
             else s.update(s.instance, validated)
         )
 
-        if self._instance is not None:
+        if self._instance is not None and self._condition_groups_data is not None:
             ClassificationConditionGroup.objects.filter(
                 classification_decision_table_node=node
             ).delete()
