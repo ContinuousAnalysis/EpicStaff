@@ -5,13 +5,11 @@
 
         <div class="tooltip">
             <label>Chunk Strategy</label>
-            <mat-icon
+            <app-help-tooltip
                 class="icon"
-                matTooltip="Choose how to split your document into chunks. Different strategies work better for different document types."
-                matTooltipPosition="above"
-            >
-                help_outline
-            </mat-icon>
+                text="Choose how to split your document into chunks. Different strategies work better for different document types."
+                position="right"
+            />
         </div>
         <div class="control">
             <app-radio-button formControlName="chunk_strategy" [options]="chunkStrategyOptions" />
@@ -20,13 +18,11 @@
 
         <div class="tooltip">
             <label>Chunk Size</label>
-            <mat-icon
+            <app-help-tooltip
                 class="icon"
-                matTooltip="The maximum size of each document chunk. Smaller chunks are more precise but may lose context. Larger chunks preserve more context but may be less precise."
-                matTooltipPosition="above"
-            >
-                help_outline
-            </mat-icon>
+                text="The maximum size of each document chunk. Smaller chunks are more precise but may lose context. Larger chunks preserve more context but may be less precise."
+                position="right"
+            />
         </div>
         <div class="control">
             <app-input-number
@@ -41,13 +37,11 @@
 
         <div class="tooltip">
             <label>Chunk Overlap</label>
-            <mat-icon
+            <app-help-tooltip
                 class="icon"
-                matTooltip="The number of characters or tokens that overlap between chunks. Helps maintain context between chunks. Must be smaller than chunk size."
-                matTooltipPosition="above"
-            >
-                help_outline
-            </mat-icon>
+                text="The number of characters or tokens that overlap between chunks. Helps maintain context between chunks. Must be smaller than chunk size."
+                position="right"
+            />
         </div>
         <div class="control">
             <app-input-number
@@ -62,9 +56,7 @@
 
         <div class="tooltip">
             <label>Entity Types</label>
-            <mat-icon class="icon" matTooltip="The entity types to identify." matTooltipPosition="above">
-                help_outline
-            </mat-icon>
+            <app-help-tooltip class="icon" text="The entity types to identify." position="right" />
         </div>
         <div>
             <app-chips-input formControlName="entity_types" [minItemLength]="1" [maxItemLength]="20" />
@@ -73,13 +65,7 @@
 
         <div class="tooltip">
             <label>Max Gleanings</label>
-            <mat-icon
-                class="icon"
-                matTooltip="The maximum number of gleaning cycles to use."
-                matTooltipPosition="above"
-            >
-                help_outline
-            </mat-icon>
+            <app-help-tooltip class="icon" text="The maximum number of gleaning cycles to use." position="right" />
         </div>
         <div class="control">
             <app-input-number
@@ -94,9 +80,7 @@
 
         <div class="tooltip">
             <label>Max Cluster Size</label>
-            <mat-icon class="icon" matTooltip="The maximum cluster size to export." matTooltipPosition="above">
-                help_outline
-            </mat-icon>
+            <app-help-tooltip class="icon" text="The maximum cluster size to export." position="right" />
         </div>
         <div class="control">
             <app-input-number

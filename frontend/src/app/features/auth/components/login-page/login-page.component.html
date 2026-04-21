@@ -13,6 +13,7 @@
         <form
             [formGroup]="form"
             class="form"
+            (keydown.enter)="onSubmit()"
         >
             <div>
                 <app-custom-input
