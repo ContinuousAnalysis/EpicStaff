@@ -240,11 +240,13 @@
         justify-content: space-between;
         padding: 0 0.75rem;
         height: 40px;
+        min-width: 0;
+        overflow: hidden;
         background-color: var(--color-input-background);
         border: 1px solid var(--color-divider-regular);
         border-radius: 0.375rem;
         cursor: pointer;
-        flex-shrink: 0;
+        flex-shrink: 1;
         transition: border-color 0.15s ease;
 
         &:hover,
@@ -259,6 +261,8 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        min-width: 0;
+        flex: 1;
 
         .create-folder-dialog__selector--filled & {
             color: var(--color-text-primary);
