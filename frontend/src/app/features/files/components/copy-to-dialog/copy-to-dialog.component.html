@@ -10,6 +10,7 @@
         <div class="copy-to-dialog__field">
             <label class="copy-to-dialog__label">Folder <span class="copy-to-dialog__required">*</span></label>
             <div
+                #selectorEl
                 class="copy-to-dialog__selector"
                 [class.copy-to-dialog__selector--filled]="selectedPath() !== null"
                 [class.copy-to-dialog__selector--open]="dropdownOpen()"
@@ -27,7 +28,11 @@
             </div>
 
             @if (dropdownOpen()) {
-                <div class="copy-to-dialog__dropdown" (click)="stopPropagation($event)">
+                <div
+                    class="copy-to-dialog__dropdown"
+                    [style.max-height.px]="dropdownMaxHeight()"
+                    (click)="stopPropagation($event)"
+                >
                     <div class="copy-to-dialog__search">
                         <app-svg-icon icon="search" size="0.875rem" class="copy-to-dialog__search-icon"></app-svg-icon>
                         <input

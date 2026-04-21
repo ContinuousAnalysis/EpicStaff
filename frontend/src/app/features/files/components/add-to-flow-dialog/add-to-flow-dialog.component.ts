@@ -1,5 +1,15 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    ElementRef,
+    HostListener,
+    inject,
+    signal,
+    ViewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -40,10 +50,13 @@ export class AddToFlowDialogComponent {
     private confirmationDialogService = inject(ConfirmationDialogService);
     private destroyRef = inject(DestroyRef);
 
+    @ViewChild('selectorEl') selectorElRef?: ElementRef<HTMLElement>;
+
     readonly searchQuery = signal('');
     readonly flows = signal<FlowOption[]>([]);
     readonly isLoading = signal(true);
     readonly dropdownOpen = signal(false);
+    readonly dropdownMaxHeight = signal(400);
     private initialCheckedIds = new Set<number>();
 
     readonly visibleFlows = computed(() => {
@@ -97,6 +110,11 @@ export class AddToFlowDialogComponent {
 
     toggleDropdown(event: MouseEvent): void {
         event.stopPropagation();
+        const opening = !this.dropdownOpen();
+        if (opening && this.selectorElRef) {
+            const rect = this.selectorElRef.nativeElement.getBoundingClientRect();
+            this.dropdownMaxHeight.set(Math.max(120, window.innerHeight - rect.bottom - 12));
+        }
         this.dropdownOpen.update((v) => !v);
     }
 
