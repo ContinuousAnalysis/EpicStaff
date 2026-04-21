@@ -338,7 +338,7 @@ export class FlowFilesButtonComponent implements OnInit {
                         parent.children = nodes;
                         parent.isLoaded = true;
                         parent.isLoading = false;
-                        parent.hasChildren = nodes.some((n) => n.type === 'folder');
+                        parent.hasChildren = nodes.length > 0;
                     } else {
                         this.rootNodes.set(nodes);
                         this.isLoadingRoot.set(false);

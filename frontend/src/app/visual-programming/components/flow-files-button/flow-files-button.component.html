@@ -46,7 +46,7 @@
                         [style.padding-left.px]="12 + node.level * 20"
                         (click)="toggleCheck(node)"
                     >
-                        @if (node.type === 'folder' && node.hasChildren) {
+                        @if (node.type === 'folder' && (node.hasChildren || node.isExpanded)) {
                             <button
                                 class="flow-files-dropdown__chevron"
                                 [class.flow-files-dropdown__chevron--open]="node.isExpanded"
