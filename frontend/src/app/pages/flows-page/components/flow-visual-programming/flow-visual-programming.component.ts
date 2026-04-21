@@ -603,7 +603,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                 if (!result) return;
 
                 this.flowApiService
-                    .saveGraphVersion(this.graph.id, { name: result.name, description: result.description })
+                    .saveGraphVersion({ graph_id: this.graph.id, name: result.name, description: result.description })
                     .pipe(takeUntilDestroyed(this.destroyRef))
                     .subscribe({
                         next: () => this.toastService.success(`Version '${result.name}' saved`),

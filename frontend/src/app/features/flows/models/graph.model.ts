@@ -87,6 +87,7 @@ export interface UpdateGraphDtoRequest {
 }
 
 export interface GraphVersionCreateRequest {
+    graph_id: number;
     name: string;
     description?: string;
 }
