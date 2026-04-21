@@ -67,6 +67,7 @@ export class MyFlowsComponent implements AfterViewChecked {
     public readonly isFlowsLoaded = this.flowsService.isFlowsLoaded;
     public readonly selectMode = this.flowsService.selectMode;
     public readonly selectedFlowIds = this.flowsService.selectedFlowIds;
+    public readonly isMeasuring = signal(true);
     public readonly visibleCount = signal<number>(Infinity);
 
     private readonly allRecentFlows = computed(() => {
@@ -97,8 +98,17 @@ export class MyFlowsComponent implements AfterViewChecked {
             const el = this.recentSection()?.nativeElement;
             if (!el) return;
 
+            // Track flow list changes so the effect re-runs after import
+            this.allRecentFlows();
+
             this.resizeObserver?.disconnect();
-            this.recalcVisibleCount();
+            // Reset to Infinity so all cards render, then measure after DOM update
+            this.isMeasuring.set(true);
+            this.visibleCount.set(Infinity);
+            setTimeout(() => {
+                this.recalcVisibleCount();
+                this.isMeasuring.set(false);
+            });
             this.resizeObserver = new ResizeObserver(() => {
                 this.recalcVisibleCount();
             });
@@ -110,6 +120,9 @@ export class MyFlowsComponent implements AfterViewChecked {
 
     public ngAfterViewChecked(): void {
         this.recalcVisibleCount();
+        if (this.isMeasuring()) {
+            this.isMeasuring.set(false);
+        }
     }
 
     private recalcVisibleCount(): void {
@@ -130,8 +143,9 @@ export class MyFlowsComponent implements AfterViewChecked {
             count++;
         }
 
-        if (count !== this.visibleCount() && count > 0) {
-            this.visibleCount.set(count);
+        const finalCount = Math.max(count, 1);
+        if (finalCount !== this.visibleCount()) {
+            this.visibleCount.set(finalCount);
         }
     }
 
