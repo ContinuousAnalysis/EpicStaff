@@ -27,17 +27,27 @@ export class AuthService {
     private readonly refreshKey = 'auth.refresh';
 
     private refreshInProgress$: Observable<string | null> | null = null;
+    private statusCache$: Observable<FirstSetupStatus> | null = null;
 
     private get baseUrl(): string {
         return this.configService.apiUrl.replace(/\/+$/, '');
     }
 
     getStatus(): Observable<FirstSetupStatus> {
-        return this.http.get<FirstSetupStatus>(`${this.baseUrl}/auth/first-setup/`);
+        if (!this.statusCache$) {
+            this.statusCache$ = this.http
+                .get<FirstSetupStatus>(`${this.baseUrl}/auth/first-setup/`)
+                .pipe(shareReplay(1));
+        }
+        return this.statusCache$;
     }
 
     runSetup(payload: FirstSetupRequest): Observable<FirstSetupResponse> {
-        return this.http.post<FirstSetupResponse>(`${this.baseUrl}/auth/first-setup/`, payload);
+        return this.http.post<FirstSetupResponse>(`${this.baseUrl}/auth/first-setup/`, payload).pipe(
+            tap(() => {
+                this.statusCache$ = null;
+            })
+        );
     }
 
     login(email: string, password: string, rememberMe: boolean = false): Observable<boolean> {

@@ -11,6 +11,7 @@ import {
     ValidationErrorsComponent,
 } from '@shared/components';
 import { notNumericOnlyValidator, strictEmailValidator } from '@shared/form-validators';
+import { applyApiErrors } from '@shared/utils';
 import { forkJoin, timer } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
@@ -46,9 +47,7 @@ export class SignUpPageComponent {
         }),
     });
 
-    apiKey: string | null = null;
     state = signal<PageState>('form');
-    serverError = signal<string | null>(null);
 
     get password(): string {
         return this.form.get('password')!.value;
@@ -58,7 +57,6 @@ export class SignUpPageComponent {
         this.form.markAllAsTouched();
         if (this.form.invalid) return;
 
-        this.serverError.set(null);
         this.state.set('loading');
 
         const payload = this.form.getRawValue();
@@ -72,9 +70,7 @@ export class SignUpPageComponent {
             },
             error: (err) => {
                 this.state.set('form');
-                this.serverError.set(
-                    err?.error?.detail || err?.error?.message || 'Registration failed. Please try again.'
-                );
+                setTimeout(() => applyApiErrors(this.form, err?.error));
             },
         });
     }

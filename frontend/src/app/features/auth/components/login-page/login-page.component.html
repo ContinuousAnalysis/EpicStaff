@@ -40,12 +40,11 @@
             </div>
         </form>
 
-        <div
-            *ngIf="serverError()"
-            class="server-error"
-        >
-            {{ serverError() }}
-        </div>
+        @if (serverError()) {
+            <div class="server-error">
+                {{ serverError() }}
+            </div>
+        }
 
         <app-button
             class="btn"
