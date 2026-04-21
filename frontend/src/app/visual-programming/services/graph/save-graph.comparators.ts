@@ -21,6 +21,7 @@ import { PythonNode } from '../../../pages/flows-page/components/flow-visual-pro
 import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
 import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
+import { PromptConfig } from '../../core/models/classification-decision-table.model';
 import { ConditionGroup } from '../../core/models/decision-table.model';
 import {
     AudioToTextNodeModel,
@@ -476,7 +477,17 @@ export function getClassificationDecisionTableNodeForComparisonFromBackend(
             field_expressions: g.field_expressions,
             field_manipulations: g.field_manipulations,
         })),
-        prompts: node.prompts,
+        prompt_configs: [...(node.prompt_configs ?? [])]
+            .sort((a, b) => a.prompt_key.localeCompare(b.prompt_key))
+            .map((p) => ({
+                prompt_key: p.prompt_key,
+                prompt_text: p.prompt_text ?? '',
+                llm_config: p.llm_config ?? null,
+                output_schema: p.output_schema ?? null,
+                result_variable: p.result_variable ?? '',
+                variable_mappings: p.variable_mappings ?? {},
+            })),
+        default_llm_config: node.default_llm_config ?? null,
         default_next_node: node.default_next_node,
         next_error_node: node.next_error_node,
         pre_input_map: node.pre_input_map || {},
@@ -514,7 +525,17 @@ export function getClassificationDecisionTableNodeForComparisonFromUI(node: Clas
         node_name: node.node_name,
         pre_computation_code: preCode,
         condition_groups: groups,
-        prompts: tableData?.prompts || {},
+        prompt_configs: Object.entries((tableData?.prompts || {}) as Record<string, PromptConfig>)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, cfg]) => ({
+                prompt_key: key,
+                prompt_text: cfg.prompt_text ?? '',
+                llm_config: cfg.llm_config ?? null,
+                output_schema: cfg.output_schema ?? null,
+                result_variable: cfg.result_variable ?? '',
+                variable_mappings: cfg.variable_mappings ?? {},
+            })),
+        default_llm_config: tableData?.default_llm_config ?? null,
         default_next_node: tableData?.default_next_node || null,
         next_error_node: tableData?.next_error_node || null,
         pre_input_map: tableData?.pre_computation?.input_map || tableData?.pre_input_map || {},

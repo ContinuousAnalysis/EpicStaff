@@ -30,6 +30,7 @@ import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/compone
 import { GetWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import { NODE_COLORS, NODE_ICONS } from '../../core/enums/node-config';
 import { NodeType } from '../../core/enums/node-type';
+import { PromptConfig } from '../../core/models/classification-decision-table.model';
 import { ConnectionModel } from '../../core/models/connection.model';
 import { FlowModel } from '../../core/models/flow.model';
 import {
@@ -546,7 +547,20 @@ function buildClassificationDecisionTableNode(
                 post_computation_code: n.post_python_code?.code ?? null,
                 post_input_map: n.post_input_map ?? {},
                 post_output_variable_path: n.post_output_variable_path,
-                prompts: n.prompts ?? {},
+                prompts: (() => {
+                    const promptsDict: Record<string, PromptConfig> = {};
+                    for (const p of n.prompt_configs ?? []) {
+                        promptsDict[p.prompt_key] = {
+                            prompt_text: p.prompt_text ?? '',
+                            llm_config: p.llm_config ?? null,
+                            output_schema: p.output_schema ?? null,
+                            result_variable: p.result_variable ?? '',
+                            variable_mappings: p.variable_mappings ?? {},
+                        };
+                    }
+                    return promptsDict;
+                })(),
+                default_llm_config: n.default_llm_config ?? null,
                 default_next_node: n.default_next_node,
                 next_error_node: n.next_error_node,
                 pre_computation: {

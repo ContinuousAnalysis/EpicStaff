@@ -57,7 +57,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     public currentNodeId = input.required<string>();
     public storageNodeId = input<string>('');
     public prompts = input<Record<string, PromptConfig>>({});
-    public defaultLlmId = input<string>('');
+    public defaultLlmId = input<number | null>(null);
     public llmConfigs = input<{ id: number; label: string }[]>([]);
     public preInputMapKeys = input<string[]>([]);
     public domainKeys = input<string[]>([]);

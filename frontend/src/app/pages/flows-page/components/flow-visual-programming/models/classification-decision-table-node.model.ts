@@ -1,3 +1,22 @@
+export interface PromptConfigBackend {
+    id: number;
+    prompt_key: string;
+    prompt_text: string;
+    llm_config: number | null;
+    output_schema: Record<string, unknown> | string | null;
+    result_variable: string;
+    variable_mappings: Record<string, string>;
+}
+
+export interface CreatePromptConfigRequest {
+    prompt_key: string;
+    prompt_text: string;
+    llm_config: number | null;
+    output_schema: Record<string, unknown> | string | null;
+    result_variable: string;
+    variable_mappings: Record<string, string>;
+}
+
 export interface ClassificationConditionGroupBackend {
     id: number;
     classification_decision_table_node: number;
@@ -44,7 +63,8 @@ export interface GetClassificationDecisionTableNodeRequest {
     post_python_code: CDTPythonCodeBlock;
     post_input_map: Record<string, string>;
     post_output_variable_path: string | null;
-    prompts: Record<string, unknown>;
+    prompt_configs: PromptConfigBackend[];
+    default_llm_config: number | null;
     default_next_node: string | null;
     next_error_node: string | null;
     condition_groups: ClassificationConditionGroupBackend[];
@@ -60,7 +80,8 @@ export interface CreateClassificationDecisionTableNodeRequest {
     post_python_code: CDTPythonCodeBlock;
     post_input_map: Record<string, string> | null;
     post_output_variable_path: string | null;
-    prompts: Record<string, unknown>;
+    prompt_configs: CreatePromptConfigRequest[];
+    default_llm_config: number | null;
     default_next_node: string | null;
     next_error_node: string | null;
     condition_groups: CreateClassificationConditionGroupRequest[];

@@ -20,7 +20,7 @@ export interface ClassificationDecisionTableData {
     route_variable_name: string;
     default_next_node: string | null;
     next_error_node: string | null;
-    default_llm_id?: number | null;
+    default_llm_config?: number | null;
     expression_errors_as_false?: boolean;
     prompts?: Record<string, PromptConfig>;
     output_variables?: OutputVariableMapping[];
@@ -47,7 +47,8 @@ export interface OutputVariableMapping {
 
 export interface PromptConfig {
     prompt_text: string;
-    llm_id: string;
+    llm_config: number | null;
     output_schema: Record<string, unknown> | string | null;
     result_variable: string;
+    variable_mappings: Record<string, string>;
 }
