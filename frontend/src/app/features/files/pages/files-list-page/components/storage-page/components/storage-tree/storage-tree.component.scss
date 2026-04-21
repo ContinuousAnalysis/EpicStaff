@@ -304,6 +304,7 @@
         padding: 0 0.5rem 0 3rem;
         flex-shrink: 0;
         z-index: 2;
+        visibility: hidden;
         background: linear-gradient(
             to right,
             transparent 0%,
@@ -311,6 +312,10 @@
             rgb(39, 40, 54) 55%,
             rgb(39, 40, 54) 100%
         );
+
+        &--visible {
+            visibility: visible;
+        }
     }
 
     &__hover-btn {

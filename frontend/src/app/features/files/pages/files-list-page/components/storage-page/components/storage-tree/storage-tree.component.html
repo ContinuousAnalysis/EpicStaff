@@ -77,8 +77,11 @@
                 <span class="storage-tree__name" [title]="node.name">{{ node.name }}</span>
             }
 
-            @if (hoveredItem() === node && (!renamingItem() || renamingItem()?.path !== node.path)) {
-                <div class="storage-tree__hover-actions">
+            @if (!renamingItem() || renamingItem()?.path !== node.path) {
+                <div
+                    class="storage-tree__hover-actions"
+                    [class.storage-tree__hover-actions--visible]="hoveredItem() === node"
+                >
                     <button
                         class="storage-tree__hover-btn storage-tree__hover-btn--plus"
                         aria-label="Add folder"
