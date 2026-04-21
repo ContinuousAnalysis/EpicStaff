@@ -79,7 +79,7 @@ class DecisionTableNodeData(BaseModel):
 
 class PromptConfigData(BaseModel):
     prompt_text: str
-    llm_id: str
+    llm_id: int | None = None
     output_schema: dict[str, Any] | str = {}
     result_variable: str = "prompt_result"
     variable_mappings: dict[str, str] = {}

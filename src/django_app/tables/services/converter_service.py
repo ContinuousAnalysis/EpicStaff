@@ -736,8 +736,6 @@ class ConverterService(metaclass=SingletonMeta):
         node: ClassificationDecisionTableNode,
         resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
     ):
-        from utils.logger import logger
-
         condition_groups = [
             ClassificationConditionGroupData(
                 group_name=cg.group_name,
@@ -755,22 +753,23 @@ class ConverterService(metaclass=SingletonMeta):
         ]
 
         prompts_dict = {}
-        if node.prompts:
-            for prompt_id, prompt_data in node.prompts.items():
-                prompt_config = PromptConfigData(**prompt_data)
-                if prompt_config.llm_id:
-                    try:
-                        llm_config_obj = LLMConfig.objects.get(
-                            pk=int(prompt_config.llm_id)
-                        )
-                        prompt_config.llm_data = self.convert_llm_config_to_pydantic(
-                            llm_config_obj
-                        )
-                    except (LLMConfig.DoesNotExist, ValueError):
-                        logger.warning(
-                            f"LLM config {prompt_config.llm_id} not found for prompt '{prompt_id}'"
-                        )
-                prompts_dict[prompt_id] = prompt_config
+        default_llm_config = node.default_llm_config
+
+        for pc in node.prompt_configs.all():
+            llm_config_obj = pc.llm_config or default_llm_config
+            llm_data = None
+            llm_id = None
+            if llm_config_obj:
+                llm_id = llm_config_obj.id
+                llm_data = self.convert_llm_config_to_pydantic(llm_config_obj)
+            prompts_dict[pc.prompt_key] = PromptConfigData(
+                prompt_text=pc.prompt_text,
+                llm_id=llm_id,
+                output_schema=pc.output_schema or {},
+                result_variable=pc.result_variable or "prompt_result",
+                variable_mappings=pc.variable_mappings or {},
+                llm_data=llm_data,
+            )
 
         pre_python_code_data = None
         if node.pre_python_code is not None:

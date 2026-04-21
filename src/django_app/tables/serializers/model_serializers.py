@@ -1755,7 +1755,25 @@ class ClassificationDecisionTableNodeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClassificationDecisionTableNode
-        fields = "__all__"
+        fields = [
+            "id",
+            "graph",
+            "node_name",
+            "pre_python_code",
+            "pre_input_map",
+            "pre_output_variable_path",
+            "post_python_code",
+            "post_input_map",
+            "post_output_variable_path",
+            "default_llm_config",
+            "default_next_node",
+            "next_error_node",
+            "created_at",
+            "updated_at",
+            "metadata",
+            "condition_groups",
+            "prompt_configs",
+        ]
 
     def create(self, validated_data):
         condition_groups_data = validated_data.pop("condition_groups", [])
