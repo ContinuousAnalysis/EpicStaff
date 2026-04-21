@@ -48,6 +48,15 @@ export class ClassificationDecisionTableNodeService {
         });
     }
 
+    updateNode(
+        id: number,
+        request: CreateClassificationDecisionTableNodeRequest
+    ): Observable<GetClassificationDecisionTableNodeRequest> {
+        return this.http.put<GetClassificationDecisionTableNodeRequest>(`${this.apiUrl}${id}/`, request, {
+            headers: this.headers,
+        });
+    }
+
     buildCreatePayload(
         graphId: number,
         node: ClassificationDecisionTableNodeModel,
