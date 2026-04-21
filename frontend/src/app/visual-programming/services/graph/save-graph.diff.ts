@@ -378,7 +378,7 @@ export function getNodeOnlyDiff(previous: GraphPreviousState, current: GraphNewS
         current.classificationDecisionTableNodes,
         (n) => n.backendId,
         getClassificationDecisionTableNodeForComparisonFromBackend,
-        getClassificationDecisionTableNodeForComparisonFromUI
+        (n) => getClassificationDecisionTableNodeForComparisonFromUI(n, allNodes)
     );
 
     return {
@@ -707,7 +707,8 @@ function serializeCDTFieldExpressions(fieldExpressions: Record<string, unknown>)
 export function buildClassificationDecisionTablePayload(
     node: ClassificationDecisionTableNodeModel,
     graphId: number,
-    allNodes: NodeModel[]
+    allNodes: NodeModel[],
+    idMap?: Map<string, number>
 ): CreateClassificationDecisionTableNodeRequest {
     const tableData = node.data?.table;
     const preComp = tableData?.pre_computation || {};
@@ -725,7 +726,8 @@ export function buildClassificationDecisionTablePayload(
             prompt_id: g.prompt_id || null,
             manipulation: g.manipulation || null,
             continue_flag: !!(g.continue_flag ?? g.continue),
-            route_code: g.route_code || null,
+            next_node_id: resolveBackendIdWithMap(g.next_node, allNodes, idMap),
+            // route_code: g.route_code || null,  // TEMP: testing without route_code
             dock_visible: g.dock_visible !== false,
             field_expressions: serializeCDTFieldExpressions(g.field_expressions || {}),
             field_manipulations: g.field_manipulations || {},

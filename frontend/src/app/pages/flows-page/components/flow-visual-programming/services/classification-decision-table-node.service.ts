@@ -78,7 +78,10 @@ export class ClassificationDecisionTableNodeService {
                 prompt_id: group.prompt_id || null,
                 manipulation: group.manipulation || null,
                 continue_flag: !!(group.continue_flag ?? group.continue),
-                route_code: group.route_code || null,
+                // TODO: resolve group.next_node UUID to backend integer ID when an ID resolver is available here.
+                // The primary save path (save-graph.diff.ts buildClassificationDecisionTablePayload) handles this correctly.
+                next_node_id: null,
+                // route_code: group.route_code || null,  // TEMP: testing without route_code
                 dock_visible: group.dock_visible !== false,
                 field_expressions: this.serializeFieldExpressions(group.field_expressions || {}),
                 field_manipulations: group.field_manipulations || {},
