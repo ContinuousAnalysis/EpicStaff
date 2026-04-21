@@ -1,3 +1,5 @@
+export * from './agent-search-config.model';
+export * from './auth/auth.model';
 export * from './crew_run_message.model';
 export * from './embeddings/embedding.model';
 export * from './embeddings/embedding-config.model';
@@ -13,4 +15,3 @@ export * from './tag.model';
 export * from './task-message.model';
 export * from './tool_config.model';
 export * from './user-message.model';
-export * from './agent-search-config.model';

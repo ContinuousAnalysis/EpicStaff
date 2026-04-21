@@ -1,0 +1,36 @@
+import { CommonModule } from '@angular/common';
+import { Component, inject, signal } from '@angular/core';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AppSvgIconComponent, ButtonComponent, CustomInputComponent } from '@shared/components';
+
+@Component({
+    selector: 'app-onboarding-page',
+    imports: [CommonModule, ReactiveFormsModule, ButtonComponent, CustomInputComponent, AppSvgIconComponent],
+    templateUrl: './onboarding-page.component.html',
+    styleUrls: ['./onboarding-page.component.scss'],
+})
+export class OnboardingPageComponent {
+    private readonly router = inject(Router);
+
+    step = signal<1 | 2>(1);
+    orgNameControl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
+
+    onContinue(): void {
+        if (this.orgNameControl.invalid) {
+            this.orgNameControl.markAsTouched();
+            return;
+        }
+        this.step.set(2);
+    }
+
+    onStartWorking(): void {
+        sessionStorage.removeItem('needs_onboarding');
+        void this.router.navigate(['/projects']);
+    }
+
+    onSetupOrganizations(): void {
+        sessionStorage.removeItem('needs_onboarding');
+        void this.router.navigate(['/projects']);
+    }
+}

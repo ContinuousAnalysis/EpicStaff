@@ -1,18 +1,21 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import {
+    AppSvgIconComponent,
     ButtonComponent,
     CheckboxComponent,
     CustomInputComponent,
     PasswordStrengthComponent,
     ValidationErrorsComponent,
 } from '@shared/components';
+import { notNumericOnlyValidator, strictEmailValidator } from '@shared/form-validators';
+import { forkJoin, timer } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
-import { SetupService } from '../../../../services/auth/setup.service';
-import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+
+type PageState = 'form' | 'loading' | 'success';
 
 @Component({
     selector: 'app-sign-up',
@@ -30,25 +33,21 @@ import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/
     styleUrls: ['../login-page/login-page.component.scss', './sign-up-page.component.scss'],
 })
 export class SignUpPageComponent {
-    private readonly setupService = inject(SetupService);
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
-    private readonly route = inject(ActivatedRoute);
 
     termsControl = new FormControl(false);
 
     form = new FormGroup({
-        username: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+        email: new FormControl('', { nonNullable: true, validators: [Validators.required, strictEmailValidator()] }),
         password: new FormControl('', {
             nonNullable: true,
-            validators: [Validators.required, Validators.minLength(8)],
+            validators: [Validators.required, Validators.minLength(8), notNumericOnlyValidator()],
         }),
-        email: new FormControl('', { nonNullable: true }),
     });
 
     apiKey: string | null = null;
-    loading = false;
-    termsAccepted = false;
+    state = signal<PageState>('form');
     serverError = signal<string | null>(null);
 
     get password(): string {
@@ -60,24 +59,22 @@ export class SignUpPageComponent {
         if (this.form.invalid) return;
 
         this.serverError.set(null);
-        this.loading = true;
+        this.state.set('loading');
 
         const payload = this.form.getRawValue();
-        this.setupService.runSetup(payload).subscribe({
-            next: (resp) => {
+        forkJoin([this.authService.runSetup(payload), timer(1000)]).subscribe({
+            next: ([resp]) => {
                 this.authService.storeTokens({ access: resp.access, refresh: resp.refresh });
-                this.loading = false;
-                const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/projects';
-                void this.router.navigateByUrl(returnUrl);
+                this.state.set('success');
+                timer(1000).subscribe(() => {
+                    void this.router.navigate(['/onboarding']);
+                });
             },
             error: (err) => {
-                this.loading = false;
+                this.state.set('form');
                 this.serverError.set(
                     err?.error?.detail || err?.error?.message || 'Registration failed. Please try again.'
                 );
-            },
-            complete: () => {
-                this.loading = false;
             },
         });
     }

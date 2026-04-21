@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
+    AppSvgIconComponent,
     ButtonComponent,
     CheckboxComponent,
     CustomInputComponent,
@@ -11,7 +12,6 @@ import {
 } from '@shared/components';
 
 import { AuthService } from '../../../../services/auth/auth.service';
-import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-login-page',
@@ -34,7 +34,7 @@ export class LoginPageComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
 
     form = new FormGroup({
-        username: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+        email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
         password: new FormControl('', {
             nonNullable: true,
             validators: [Validators.required, Validators.minLength(8)],
@@ -57,9 +57,9 @@ export class LoginPageComponent implements OnInit {
         this.loading = true;
         this.serverError.set(null);
 
-        const { username, password, rememberMe } = this.form.getRawValue();
+        const { email, password, rememberMe } = this.form.getRawValue();
         this.authService
-            .login(username, password, rememberMe)
+            .login(email, password, rememberMe)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {

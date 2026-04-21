@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { FirstSetupRequest, FirstSetupResponse, FirstSetupStatus, GetMeResponse } from '@shared/models';
 import { finalize, map, Observable, of, shareReplay, tap } from 'rxjs';
 
 import { ConfigService } from '../config';
@@ -31,8 +32,16 @@ export class AuthService {
         return this.configService.apiUrl.replace(/\/+$/, '');
     }
 
-    login(username: string, password: string, rememberMe: boolean = false): Observable<boolean> {
-        return this.http.post<TokenPair>(`${this.baseUrl}/auth/token/`, { username, password }).pipe(
+    getStatus(): Observable<FirstSetupStatus> {
+        return this.http.get<FirstSetupStatus>(`${this.baseUrl}/auth/first-setup/`);
+    }
+
+    runSetup(payload: FirstSetupRequest): Observable<FirstSetupResponse> {
+        return this.http.post<FirstSetupResponse>(`${this.baseUrl}/auth/first-setup/`, payload);
+    }
+
+    login(email: string, password: string, rememberMe: boolean = false): Observable<boolean> {
+        return this.http.post<TokenPair>(`${this.baseUrl}/auth/token/`, { email, password }).pipe(
             tap((tokens) => this.storeTokens(tokens, rememberMe)),
             map(() => true)
         );
@@ -65,6 +74,10 @@ export class AuthService {
             );
 
         return this.refreshInProgress$;
+    }
+
+    getCurrentUser(): Observable<GetMeResponse> {
+        return this.http.get<GetMeResponse>(`${this.baseUrl}/auth/me/`);
     }
 
     logout(): void {
@@ -120,8 +133,9 @@ export class AuthService {
         try {
             const parts = token.split('.');
             if (parts.length !== 3) return null;
-            const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-            const decoded = atob(payload);
+            const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+            const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+            const decoded = atob(padded);
             return JSON.parse(decoded);
         } catch {
             return null;

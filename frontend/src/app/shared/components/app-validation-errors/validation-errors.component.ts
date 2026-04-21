@@ -23,6 +23,7 @@ export class ValidationErrorsComponent {
             `Max length is ${(error as LengthError).requiredLength}. Current length is ${(error as LengthError).actualLength}.`,
         pattern: () => `The value does not match the required pattern.`,
         email: () => `Invalid email address.`,
+        numericOnly: () => `Password cannot be entirely numeric.`,
         other: (error: unknown) => String(error),
     };
 

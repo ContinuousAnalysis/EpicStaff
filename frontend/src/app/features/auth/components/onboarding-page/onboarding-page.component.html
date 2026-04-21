@@ -1,0 +1,55 @@
+<div class="page">
+    @if (step() === 1) {
+        <p class="step-label">STEP 1 OF 2</p>
+        <div class="hero">
+            <h1 class="hero__title">Name your organization</h1>
+            <p class="hero__subtitle">It will help you identify your workspace</p>
+        </div>
+
+        <div class="card">
+            <div class="field">
+                <app-custom-input
+                    label="Organization Name"
+                    placeholder="e.g. Example Corp"
+                    [formControl]="orgNameControl"
+                />
+                <p class="field__hint">You can rename this anytime in settings</p>
+            </div>
+            <app-button (click)="onContinue()">Continue</app-button>
+        </div>
+    } @else if (step() === 2) {
+        <p class="step-label">STEP 2 OF 2</p>
+        <div class="hero">
+            <h1 class="hero__title">How do you want to start?</h1>
+            <p class="hero__subtitle">Select a mode to start interacting with the system</p>
+        </div>
+
+        <div class="choices">
+            <button
+                class="choice-card"
+                (click)="onStartWorking()"
+            >
+                <app-svg-icon
+                    class="choice-card__icon"
+                    icon="play"
+                    size="32px"
+                />
+                <span class="choice-card__title">Start working</span>
+                <span class="choice-card__subtitle">Jump right now, no setup needed</span>
+            </button>
+
+            <button
+                class="choice-card"
+                (click)="onSetupOrganizations()"
+            >
+                <app-svg-icon
+                    class="choice-card__icon"
+                    icon="play"
+                    size="32px"
+                />
+                <span class="choice-card__title">Set up organizations</span>
+                <span class="choice-card__subtitle">Invite users &amp; assign roles</span>
+            </button>
+        </div>
+    }
+</div>
