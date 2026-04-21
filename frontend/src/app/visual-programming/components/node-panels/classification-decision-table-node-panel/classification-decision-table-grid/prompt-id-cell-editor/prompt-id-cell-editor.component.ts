@@ -13,7 +13,7 @@ interface LlmOption {
 
 interface PromptIdEditorParams extends ICellEditorParams {
     prompts: Record<string, PromptConfig>;
-    defaultLlmId: string;
+    defaultLlmId: number | null;
     llmConfigs: LlmOption[];
     onAddPrompt: (id: string, config: PromptConfig) => void;
     onPromptChange: (promptId: string, field: keyof PromptConfig, value: PromptConfig[keyof PromptConfig]) => void;
@@ -50,7 +50,7 @@ interface PromptIdEditorParams extends ICellEditorParams {
                     </div>
                     <select
                         class="pe-llm-select"
-                        [ngModel]="p.config.llm_id"
+                        [ngModel]="p.config.llm_config"
                         (ngModelChange)="onLlmChange(p.id, $event)"
                         (click)="$event.stopPropagation()"
                         title="LLM"
@@ -364,7 +364,7 @@ export class PromptIdCellEditorComponent implements ICellEditorAngularComp, Afte
     public newResultVar = '';
     public newPromptText = '';
     public newSchema = '';
-    public newLlmId = '';
+    public newLlmId: number | string | null = null;
     public llmOptions: LlmOption[] = [];
 
     private allPrompts: { id: string; config: PromptConfig }[] = [];
@@ -378,7 +378,7 @@ export class PromptIdCellEditorComponent implements ICellEditorAngularComp, Afte
         const prompts = params.prompts || {};
         this.allPrompts = Object.entries(prompts).map(([id, config]) => ({ id, config }));
         this.llmOptions = params.llmConfigs || [];
-        this.newLlmId = params.defaultLlmId || '';
+        this.newLlmId = params.defaultLlmId ?? null;
         this.filterPrompts();
     }
 
@@ -433,9 +433,15 @@ export class PromptIdCellEditorComponent implements ICellEditorAngularComp, Afte
 
         const config: PromptConfig = {
             prompt_text: this.newPromptText,
-            llm_id: this.newLlmId || this.params.defaultLlmId || '',
+            llm_config: (() => {
+                const raw = this.newLlmId ?? this.params.defaultLlmId ?? null;
+                if (raw === '' || raw == null) return null;
+                const n = Number(raw);
+                return Number.isFinite(n) ? n : null;
+            })(),
             output_schema: schema || '',
             result_variable: this.newResultVar,
+            variable_mappings: {},
         };
 
         this.params.onAddPrompt?.(id, config);
@@ -475,7 +481,9 @@ export class PromptIdCellEditorComponent implements ICellEditorAngularComp, Afte
         this.cdr.markForCheck();
     }
 
-    onLlmChange(promptId: string, llmId: string): void {
-        this.params.onPromptChange?.(promptId, 'llm_id', llmId);
+    onLlmChange(promptId: string, llmId: number | string | null | ''): void {
+        const parsed = llmId === '' || llmId == null ? null : Number(llmId);
+        const finalValue = Number.isFinite(parsed) ? parsed : null;
+        this.params.onPromptChange?.(promptId, 'llm_config', finalValue);
     }
 }

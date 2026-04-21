@@ -14,7 +14,10 @@ import { isEqual } from 'lodash-es';
 import { GraphDto } from '../../../features/flows/models/graph.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
 import { CreateAudioToTextNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/audio-to-text.model';
-import { CreateClassificationDecisionTableNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/classification-decision-table-node.model';
+import {
+    CreateClassificationDecisionTableNodeRequest,
+    CreatePromptConfigRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/classification-decision-table-node.model';
 import { CreateCodeAgentNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { CreateConditionalEdgeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { CreateCrewNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/crew-node.model';
@@ -32,6 +35,7 @@ import { CreateSubGraphNodeRequest } from '../../../pages/flows-page/components/
 import { CreateTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
 import { CreateWebhookTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/webhook-trigger';
 import { NodeType } from '../../core/enums/node-type';
+import { PromptConfig } from '../../core/models/classification-decision-table.model';
 import { ConnectionModel } from '../../core/models/connection.model';
 import { ConditionGroup } from '../../core/models/decision-table.model';
 import { FlowModel } from '../../core/models/flow.model';
@@ -746,7 +750,18 @@ export function buildClassificationDecisionTablePayload(
         },
         post_input_map: postComp.input_map || tableData?.post_input_map || {},
         post_output_variable_path: postComp.output_variable_path || tableData?.post_output_variable_path || null,
-        prompts: tableData?.prompts || {},
+        prompt_configs: Object.entries((tableData?.prompts || {}) as Record<string, PromptConfig>).map(
+            ([key, cfg]) =>
+                ({
+                    prompt_key: key,
+                    prompt_text: cfg.prompt_text ?? '',
+                    llm_config: cfg.llm_config ?? null,
+                    output_schema: cfg.output_schema ?? null,
+                    result_variable: cfg.result_variable ?? '',
+                    variable_mappings: cfg.variable_mappings ?? {},
+                }) as CreatePromptConfigRequest
+        ),
+        default_llm_config: tableData?.default_llm_config ?? null,
         default_next_node: resolveNodeNameFromNodes(tableData?.default_next_node, allNodes),
         next_error_node: resolveNodeNameFromNodes(tableData?.next_error_node, allNodes),
         condition_groups: conditionGroups,

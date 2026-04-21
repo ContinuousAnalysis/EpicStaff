@@ -3,11 +3,13 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ConfigService } from '../../../../../services/config/config.service';
+import { PromptConfig } from '../../../../../visual-programming/core/models/classification-decision-table.model';
 import { ConditionGroup } from '../../../../../visual-programming/core/models/decision-table.model';
 import { ClassificationDecisionTableNodeModel } from '../../../../../visual-programming/core/models/node.model';
 import {
     CreateClassificationConditionGroupRequest,
     CreateClassificationDecisionTableNodeRequest,
+    CreatePromptConfigRequest,
     GetClassificationDecisionTableNodeRequest,
 } from '../models/classification-decision-table-node.model';
 
@@ -104,7 +106,18 @@ export class ClassificationDecisionTableNodeService {
             },
             post_input_map: postComp.input_map || tableData?.post_input_map || null,
             post_output_variable_path: postComp.output_variable_path || tableData?.post_output_variable_path || null,
-            prompts: tableData?.prompts || {},
+            prompt_configs: Object.entries((tableData?.prompts || {}) as Record<string, PromptConfig>).map(
+                ([key, cfg]) =>
+                    ({
+                        prompt_key: key,
+                        prompt_text: cfg.prompt_text ?? '',
+                        llm_config: cfg.llm_config ?? null,
+                        output_schema: cfg.output_schema ?? null,
+                        result_variable: cfg.result_variable ?? '',
+                        variable_mappings: cfg.variable_mappings ?? {},
+                    }) as CreatePromptConfigRequest
+            ),
+            default_llm_config: tableData?.default_llm_config ?? null,
             default_next_node: resolveNodeName(tableData?.default_next_node),
             next_error_node: resolveNodeName(tableData?.next_error_node),
             condition_groups: conditionGroups,

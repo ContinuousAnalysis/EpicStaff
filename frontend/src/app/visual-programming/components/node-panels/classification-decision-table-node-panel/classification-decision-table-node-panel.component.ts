@@ -233,7 +233,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
             post_libraries: [postComp.libraries?.join(', ') || ''],
             default_next_node: [defaultNext],
             next_error_node: [errorNext],
-            default_llm_id: [tableData.default_llm_id || null],
+            default_llm_config: [tableData.default_llm_config || null],
         });
 
         this.initializeInputMapArray(form, 'pre_input_map', preComp.input_map || {});
@@ -298,7 +298,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
             route_variable_name: 'route_code',
             default_next_node: this.form.value.default_next_node,
             next_error_node: this.form.value.next_error_node,
-            default_llm_id: this.form.value.default_llm_id || null,
+            default_llm_config: this.form.value.default_llm_config || null,
             prompts: { ...this.prompts() },
         };
 
@@ -360,9 +360,10 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         const newId = `prompt_${n}`;
         const newConfig: PromptConfig = {
             prompt_text: '',
-            llm_id: '',
+            llm_config: null,
             output_schema: null,
             result_variable: '',
+            variable_mappings: {},
         };
         this.prompts.update((p) => ({ ...p, [newId]: newConfig }));
         this.editingPromptId.set(newId);
@@ -425,13 +426,14 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         }
     }
 
-    public onPromptLlmChange(promptId: string, llmId: number): void {
-        this.updatePrompt(promptId, 'llm_id', String(llmId));
+    public onPromptLlmChange(promptId: string, llmId: number | string | null): void {
+        const parsed = llmId === '' || llmId == null ? null : Number(llmId);
+        const finalValue = Number.isFinite(parsed) ? parsed : null;
+        this.updatePrompt(promptId, 'llm_config', finalValue);
     }
 
-    public getLlmIdAsNumber(llmId: string): number | null {
-        const n = Number(llmId);
-        return isNaN(n) || !llmId ? null : n;
+    public getLlmIdAsNumber(llmConfig: number | null): number | null {
+        return llmConfig ?? null;
     }
 
     public getSchemaString(schema: PromptConfig['output_schema']): string {
