@@ -81,7 +81,7 @@ import { SessionFilesButtonComponent } from './session-files-button/session-file
                 height: 5rem !important;
                 width: 100%;
                 min-width: 0;
-                overflow: hidden;
+                overflow: visible;
                 padding: 0 clamp(1rem, 4vw, 3rem);
                 border-bottom: 1px solid var(--color-divider-subtle);
 
@@ -166,7 +166,7 @@ import { SessionFilesButtonComponent } from './session-files-button/session-file
                     margin-left: auto;
                     flex: 0 1 auto;
                     max-width: 100%;
-                    overflow: hidden;
+                    overflow: visible;
                 }
 
                 app-session-files-button {
