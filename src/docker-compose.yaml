@@ -39,6 +39,7 @@ services:
       DJANGO_HOST: ${DJANGO_HOST:-localhost}
       DJANGO_PORT: ${DJANGO_PORT:-8000}
       LOAD_DEBUG_ENV: ${LOAD_DEBUG_ENV}
+      TIMEZONE: ${TIMEZONE:-UTC}
     volumes:
       - media_data:/app/src/django_app/media
     networks:
