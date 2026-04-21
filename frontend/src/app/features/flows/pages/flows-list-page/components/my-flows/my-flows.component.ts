@@ -23,6 +23,7 @@ import {
     ConfirmationResult,
 } from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
 import { LoadingSpinnerComponent } from '../../../../../../shared/components/loading-spinner/loading-spinner.component';
+import { DragScrollDirective } from '../../../../../../shared/directives/drag-scroll.directive';
 import { FlowCardAction, FlowCardComponent } from '../../../../components/flow-card/flow-card.component';
 import { FlowRenameDialogComponent } from '../../../../components/flow-rename-dialog/flow-rename-dialog.component';
 import { FlowSessionsListComponent } from '../../../../components/flow-sessions-dialog/flow-sessions-list.component';
@@ -38,7 +39,7 @@ import { RunGraphService } from '../../../../services/run-graph-session.service'
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './my-flows.component.html',
     styleUrls: ['./my-flows.component.scss'],
-    imports: [CommonModule, FlowCardComponent, LoadingSpinnerComponent, DialogModule, RouterLink],
+    imports: [CommonModule, FlowCardComponent, LoadingSpinnerComponent, DialogModule, RouterLink, DragScrollDirective],
 })
 export class MyFlowsComponent implements AfterViewChecked {
     private readonly flowsService = inject(FlowsStorageService);
