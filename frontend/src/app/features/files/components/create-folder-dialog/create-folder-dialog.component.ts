@@ -116,7 +116,9 @@ export class CreateFolderDialogComponent {
         const query = this.searchQuery().toLowerCase().trim();
         const roots = this.rootNodes();
         if (query) {
-            return this.allNodes().filter((n) => n.name.toLowerCase().includes(query));
+            const filtered = this.allNodes().filter((n) => n.name.toLowerCase().includes(query));
+            const minLevel = filtered.reduce((min, n) => Math.min(min, n.level), Infinity);
+            return filtered.map((n) => ({ ...n, level: n.level - minLevel }));
         }
         return this.buildVisible(roots);
     });
