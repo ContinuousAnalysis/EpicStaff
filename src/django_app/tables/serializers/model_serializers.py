@@ -15,6 +15,7 @@ from tables.serializers.telegram_trigger_serializers import (
 from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
+from tables.validators.schedule_trigger_validator import ScheduleTriggerValidator
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import (
     WebhookTrigger,
@@ -81,6 +82,7 @@ from tables.models.graph_models import (
     GraphOrganization,
     GraphOrganizationUser,
     WebhookTriggerNode,
+    ScheduleTriggerNode,
 )
 from tables.models.llm_models import (
     DefaultLLMConfig,
@@ -2061,3 +2063,28 @@ class VoiceSettingsSerializer(serializers.ModelSerializer):
                 + "/voice/stream"
             )
         return None
+    
+
+class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+    class Meta:
+        model = ScheduleTriggerNode
+        fields = "__all__"
+        read_only_fields = ["current_runs"]
+
+    def validate(self, attrs):
+        ScheduleTriggerValidator().validate(attrs)
+        return attrs
+
+    def update(self, instance, validated_data):
+        reactivating = (
+            not instance.is_active
+            and validated_data.get("is_active") is True
+        )
+
+        new_max_runs = validated_data.get("max_runs", instance.max_runs)
+        max_runs_changed = new_max_runs != instance.max_runs
+
+        if reactivating or max_runs_changed:
+            validated_data["current_runs"] = 0
+
+        return super().update(instance, validated_data)

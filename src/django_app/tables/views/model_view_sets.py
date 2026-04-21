@@ -115,6 +115,7 @@ from tables.models.graph_models import (
     TelegramTriggerNode,
     TelegramTriggerNodeField,
     WebhookTriggerNode,
+    ScheduleTriggerNode,
 )
 from tables.models.llm_models import (
     RealtimeConfig,
@@ -212,6 +213,7 @@ from tables.serializers.model_serializers import (
     VoiceSettingsSerializer,
     WebhookTriggerNodeSerializer,
     WebhookTriggerSerializer,
+    ScheduleTriggerNodeSerializer,
 )
 from tables.serializers.serializers import (
     BulkExportSerializer,
@@ -1361,6 +1363,15 @@ class TelegramTriggerNodeViewSet(
 class TelegramTriggerNodeFieldViewSet(ModelViewSet):
     queryset = TelegramTriggerNodeField.objects.select_related("telegram_trigger_node")
     serializer_class = TelegramTriggerNodeFieldSerializer
+
+
+class ScheduleTriggerNodeViewSet(
+    IdempotentNodeCreateMixin, ContentHashPreconditionMixin, ModelViewSet
+):
+    queryset = ScheduleTriggerNode.objects.all()
+    serializer_class = ScheduleTriggerNodeSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["graph", "is_active", "run_mode"]
 
 
 class GraphNoteViewSet(
