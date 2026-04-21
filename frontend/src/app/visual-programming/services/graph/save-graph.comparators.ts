@@ -472,7 +472,8 @@ export function getClassificationDecisionTableNodeForComparisonFromBackend(
             prompt_id: g.prompt_id,
             manipulation: g.manipulation,
             continue_flag: g.continue_flag,
-            route_code: g.route_code,
+            next_node_id: g.next_node_id,
+            // route_code: g.route_code,  // TEMP: testing without route_code
             dock_visible: g.dock_visible,
             field_expressions: g.field_expressions,
             field_manipulations: g.field_manipulations,
@@ -500,7 +501,10 @@ export function getClassificationDecisionTableNodeForComparisonFromBackend(
     };
 }
 
-export function getClassificationDecisionTableNodeForComparisonFromUI(node: ClassificationDecisionTableNodeModel) {
+export function getClassificationDecisionTableNodeForComparisonFromUI(
+    node: ClassificationDecisionTableNodeModel,
+    allNodes: NodeModel[] = []
+) {
     const tableData = node.data?.table;
     const preCode = tableData?.pre_computation?.code || tableData?.pre_computation_code || null;
     const groups = (tableData?.condition_groups || [])
@@ -515,7 +519,8 @@ export function getClassificationDecisionTableNodeForComparisonFromUI(node: Clas
             prompt_id: g.prompt_id || null,
             manipulation: g.manipulation || null,
             continue_flag: !!(g.continue_flag ?? g.continue),
-            route_code: g.route_code || null,
+            next_node_id: resolveBackendId(g.next_node, allNodes),
+            // route_code: g.route_code || null,  // TEMP: testing without route_code
             dock_visible: g.dock_visible !== false,
             field_expressions: g.field_expressions || {},
             field_manipulations: g.field_manipulations || {},

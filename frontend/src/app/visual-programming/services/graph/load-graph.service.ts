@@ -32,6 +32,7 @@ import { NODE_COLORS, NODE_ICONS } from '../../core/enums/node-config';
 import { NodeType } from '../../core/enums/node-type';
 import { PromptConfig } from '../../core/models/classification-decision-table.model';
 import { ConnectionModel } from '../../core/models/connection.model';
+import { ConditionGroup } from '../../core/models/decision-table.model';
 import { FlowModel } from '../../core/models/flow.model';
 import {
     AudioToTextNodeModel,
@@ -582,10 +583,11 @@ function buildClassificationDecisionTableNode(
                     prompt_id: g.prompt_id,
                     manipulation: g.manipulation,
                     continue_flag: g.continue_flag,
-                    route_code: g.route_code,
+                    // route_code: g.route_code,  // TEMP: testing without route_code
                     dock_visible: g.dock_visible,
                     field_expressions: g.field_expressions ?? {},
                     field_manipulations: g.field_manipulations ?? {},
+                    next_node: null, // resolved in resolveClassificationDecisionTableNodeRefs after all nodes are loaded
                 })),
             },
         },
@@ -939,7 +941,9 @@ function resolveDecisionTableNodeRefs(
 
 function resolveClassificationDecisionTableNodeRefs(
     cdtNodes: ClassificationDecisionTableNodeModel[],
-    allNodes: NodeModel[]
+    allNodes: NodeModel[],
+    backendCdtNodes: GetClassificationDecisionTableNodeRequest[],
+    backendIdToUuid: Map<number, string>
 ): void {
     const nodeByName = new Map<string, NodeModel>();
     for (const n of allNodes) {
@@ -950,6 +954,7 @@ function resolveClassificationDecisionTableNodeRefs(
 
     for (const cdtNode of cdtNodes) {
         const table = cdtNode.data.table;
+        const backendCdt = backendCdtNodes.find((d) => d.id === cdtNode.backendId);
 
         if (table.default_next_node) {
             const target = nodeByName.get(table.default_next_node);
@@ -960,6 +965,16 @@ function resolveClassificationDecisionTableNodeRefs(
             const target = nodeByName.get(table.next_error_node);
             table.next_error_node = target?.id ?? null;
         }
+
+        // Resolve per-group next_node_id (backend integer PK) → frontend UUID
+        (table.condition_groups || []).forEach((group: ConditionGroup, idx: number) => {
+            const backendGroup = backendCdt?.condition_groups?.[idx];
+            if (backendGroup?.next_node_id != null) {
+                group.next_node = backendIdToUuid.get(backendGroup.next_node_id) ?? null;
+            } else {
+                group.next_node = null;
+            }
+        });
     }
 }
 
@@ -1099,7 +1114,12 @@ export function buildFlowModelFromGraph(graph: GraphDto): FlowModel {
     }
     // ── 4. Post-process: resolve backend ID refs → UUIDs in decision tables
     resolveDecisionTableNodeRefs(decisionTableNodes, graph.decision_table_node_list ?? [], backendIdToUuid);
-    resolveClassificationDecisionTableNodeRefs(classificationDecisionTableNodes, allNodes);
+    resolveClassificationDecisionTableNodeRefs(
+        classificationDecisionTableNodes,
+        allNodes,
+        graph.classification_decision_table_node_list ?? [],
+        backendIdToUuid
+    );
 
     // ── 5. Post-process: resolve conditional edge source/then names ──────
     resolveConditionalEdgeNodeRefs(

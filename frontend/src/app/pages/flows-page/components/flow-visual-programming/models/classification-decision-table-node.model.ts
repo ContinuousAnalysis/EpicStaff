@@ -26,7 +26,8 @@ export interface ClassificationConditionGroupBackend {
     prompt_id: string | null;
     manipulation: string | null;
     continue_flag: boolean;
-    route_code: string | null;
+    next_node_id: number | null;
+    // route_code: string | null;  // TEMP: testing without route_code
     dock_visible: boolean;
     field_expressions: Record<string, string>;
     field_manipulations: Record<string, string>;
@@ -39,7 +40,8 @@ export interface CreateClassificationConditionGroupRequest {
     prompt_id: string | null;
     manipulation: string | null;
     continue_flag: boolean;
-    route_code: string | null;
+    next_node_id: number | null;
+    // route_code: string | null;  // TEMP: testing without route_code
     dock_visible: boolean;
     field_expressions: Record<string, string>;
     field_manipulations: Record<string, string>;
