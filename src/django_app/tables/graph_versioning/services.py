@@ -23,11 +23,3 @@ class GraphVersioningService:
             snapshot=snapshot,
             dependencies=light_deps,
         )
-
-    def list_versions(self, graph: Graph):
-        """
-        List all active versions of the given graph
-        """
-        return GraphVersion.objects.filter(
-            graph=graph, is_active=True, deleted_at__isnull=True
-        )

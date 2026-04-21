@@ -25,6 +25,7 @@ from rest_framework.exceptions import (
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
 from tables.exceptions import (
     AgentSerializerError,
@@ -886,9 +887,19 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class GraphVersionViewSet(viewsets.ModelViewSet):
-    queryset = GraphVersion.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["graph_id"]
+
+    def get_queryset(self):
+        qs = GraphVersion.objects.filter(is_active=True, deleted_at__isnull=True)
+        if self.action in ["list", "all"]:
+            qs = qs.defer("snapshot", "dependencies")
+        return qs
+
+    def get_permissions(self):
+        if self.action == "all":
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -910,6 +921,19 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
             GraphVersionReadSerializer(version).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=False, methods=["get"], url_path="all")
+    def all(self, request):
+        queryset = self.filter_queryset(
+            GraphVersion.objects.all().defer("snapshot", "dependencies")
+        )
+        page = self.paginate_queryset(queryset)
+        serializer_class = self.get_serializer_class()
+        if page is not None:
+            serializer = serializer_class(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = serializer_class(queryset, many=True)
+        return Response(serializer.data)
 
 
 class IdempotentNodeCreateMixin:
