@@ -11,10 +11,17 @@
             </button>
             @if (item()) {
                 <div class="storage-preview__breadcrumbs">
-                    @for (crumb of breadcrumbs; track crumb; let last = $last) {
-                        <span class="storage-preview__breadcrumb">{{ crumb }}</span>
+                    @for (crumb of breadcrumbs; track crumb; let last = $last; let i = $index) {
                         @if (!last) {
+                            <button
+                                class="storage-preview__breadcrumb storage-preview__breadcrumb--link"
+                                (click)="breadcrumbClick.emit(breadcrumbs.slice(0, i + 1).join('/'))"
+                            >
+                                {{ crumb }}
+                            </button>
                             <span class="storage-preview__breadcrumb-sep">/</span>
+                        } @else {
+                            <span class="storage-preview__breadcrumb">{{ crumb }}</span>
                         }
                     }
                 </div>

@@ -63,6 +63,18 @@
         &:last-child {
             color: var(--color-text-primary);
         }
+
+        &--link {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+
+            &:hover {
+                color: var(--color-text-primary);
+                text-decoration: underline;
+            }
+        }
     }
 
     &__breadcrumb-sep {

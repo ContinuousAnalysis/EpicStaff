@@ -24,6 +24,7 @@
                     [showSidebar]="showSidebar()"
                     (toggleSidebar)="toggleSidebar()"
                     (contextAction)="onPreviewContextAction($event)"
+                    (breadcrumbClick)="showSidebar.set(true); expandAndSelectPath($event)"
                 />
             </div>
         }

@@ -32,6 +32,7 @@ export class StoragePreviewComponent {
     showSidebar = input(true);
     toggleSidebar = output<void>();
     contextAction = output<{ action: string; item: StorageItem; selectedItems?: StorageItem[] }>();
+    breadcrumbClick = output<string>();
 
     private destroyRef = inject(DestroyRef);
     private storageApiService = inject(StorageApiService);

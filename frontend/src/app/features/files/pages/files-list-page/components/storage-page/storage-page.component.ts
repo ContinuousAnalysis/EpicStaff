@@ -225,7 +225,7 @@ export class StoragePageComponent {
         walk(0, this.treeData(), '');
     }
 
-    private expandAndSelectPath(targetPath: string): void {
+    expandAndSelectPath(targetPath: string): void {
         const segments = targetPath.split('/').filter(Boolean);
         if (segments.length === 0) return;
 
@@ -300,7 +300,12 @@ export class StoragePageComponent {
 
     onPreviewContextAction(event: { action: string; item: StorageItem; selectedItems?: StorageItem[] }): void {
         if (event.action === 'rename') {
-            this.storageTree?.startRename(event.item);
+            if (!this.showSidebar()) {
+                this.showSidebar.set(true);
+                setTimeout(() => this.storageTree?.startRename(event.item));
+            } else {
+                this.storageTree?.startRename(event.item);
+            }
         } else {
             this.onContextAction(event);
         }
