@@ -16,7 +16,7 @@ class GraphVersionReadSerializer(serializers.ModelSerializer):
         model = GraphVersion
         fields = [
             "id",
-            "graph",
+            "graph_id",
             "name",
             "description",
             "created_at",

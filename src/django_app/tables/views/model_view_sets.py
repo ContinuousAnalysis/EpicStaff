@@ -886,9 +886,9 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class GraphVersionViewSet(viewsets.ModelViewSet):
-    queryset = GraphVersion.objects.prefetch_related("graph").all()
+    queryset = GraphVersion.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["graph"]
+    filterset_fields = ["graph_id"]
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -896,7 +896,8 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
         return GraphVersionReadSerializer
 
     def create(self, request, *args, **kwargs):
-        write_serializer = GraphVersionCreateSerializer(data=request.data)
+        serializer_class = self.get_serializer_class()
+        write_serializer = serializer_class(data=request.data)
         write_serializer.is_valid(raise_exception=True)
 
         version = GraphVersioningService().save_version(
