@@ -3,7 +3,7 @@ import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CustomInputComponent, InputNumberComponent, ValidationErrorsComponent } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 
-import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { HelpTooltipComponent } from '../../../../../../../shared/components/help-tooltip/help-tooltip.component';
 import { CharacterStrategyModel } from '../../../../../models/strategy.model';
 import { StrategyForm } from '../strategy-config-form.abstract';
 
@@ -14,7 +14,7 @@ import { StrategyForm } from '../strategy-config-form.abstract';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         CustomInputComponent,
-        AppSvgIconComponent,
+        HelpTooltipComponent,
         MATERIAL_FORMS,
         InputNumberComponent,
         ReactiveFormsModule,
