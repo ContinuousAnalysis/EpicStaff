@@ -93,11 +93,12 @@ class SessionManagerService(metaclass=SingletonMeta):
         # it might not exist if graph has no start node
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
 
-        if variables and start_node.variables:
-            start_node_variables = self._get_actual_variables(start_node.variables)
-            variables = self._deep_merge_dicts(start_node_variables, variables)
-        elif start_node.variables:
-            variables = start_node.variables
+        if start_node is not None:
+            if variables and start_node.variables:
+                start_node_variables = self._get_actual_variables(start_node.variables)
+                variables = self._deep_merge_dicts(start_node_variables, variables)
+            elif start_node.variables:
+                variables = start_node.variables
 
         variables = self._get_actual_variables(variables)
 
