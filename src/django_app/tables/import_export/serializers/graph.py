@@ -21,7 +21,7 @@ from tables.models import (
     Condition,
     SubGraphNode,
 )
-from tables.models.graph_models import CodeAgentNode, GraphNote
+from tables.models.graph_models import CodeAgentNode, GraphNote, ScheduleTriggerNode
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 
 
@@ -196,3 +196,9 @@ class GraphImportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Graph
         exclude = ["tags", "created_at", "updated_at", "labels"]
+
+
+class ScheduleTriggerNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
+        model = ScheduleTriggerNode
+        exclude = ["created_at", "updated_at"]

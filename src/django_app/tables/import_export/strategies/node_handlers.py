@@ -31,6 +31,7 @@ from tables.import_export.serializers.graph import (
     ConditionImportSerializer,
     SubgraphNodeImportSerializer,
     GraphNoteImportSerializer,
+    ScheduleTriggerNodeImportSerializer,
 )
 
 
@@ -223,5 +224,9 @@ NODE_HANDLERS = {
         "serializer": CodeAgentNodeImportSerializer,
         "relation": "code_agent_node_list",
         "import_hook": import_code_agent_node,
+    },
+    NodeType.SCHEDULE_TRIGGER_NODE: {
+        "serializer": ScheduleTriggerNodeImportSerializer,
+        "relation": "schedule_trigger_node_list",
     },
 }
