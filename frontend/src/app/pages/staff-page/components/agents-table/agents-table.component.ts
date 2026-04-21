@@ -646,6 +646,7 @@ export class AgentsTableComponent {
         delete (parsed as Record<string, unknown>)['tools'];
         delete (parsed as Record<string, unknown>)['fullFcmLlmConfig'];
         delete (parsed as Record<string, unknown>)['selected_knowledge_source'];
+        delete (parsed as Record<string, unknown>)['realtime_agent'];
 
         return parsed;
     };

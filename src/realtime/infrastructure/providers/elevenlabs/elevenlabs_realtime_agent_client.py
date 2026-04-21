@@ -21,20 +21,6 @@ from infrastructure.providers.elevenlabs.event_handlers.elevenlabs_client_event_
 )
 from application.tool_manager_service import ToolManagerService
 
-_OPENAI_VOICE_NAMES = {
-    "alloy",
-    "ash",
-    "ballad",
-    "coral",
-    "echo",
-    "fable",
-    "onyx",
-    "nova",
-    "sage",
-    "shimmer",
-    "verse",
-}
-
 
 class ElevenLabsRealtimeAgentClient(BaseRealtimeAgentClient):
     """
@@ -150,11 +136,9 @@ class ElevenLabsRealtimeAgentClient(BaseRealtimeAgentClient):
                 return
             raise
 
-        logger.info(f"ElevenLabs WebSocket connected: agent_id={self.agent_id}")
+        logger.info(f"ElevenLabs WebSocket connected: agent_id={self.agent_id} | voice_id={self.voice!r} | language={self.language!r}")
 
         config_override = {}
-        if self.voice and self.voice.lower() not in _OPENAI_VOICE_NAMES:
-            config_override["tts"] = {"voice_id": self.voice}
         if self.language:
             config_override["agent"] = {"language": self.language}
 

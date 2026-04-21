@@ -141,6 +141,8 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
         llm_model: str,
         language: Optional[str] = None,
     ) -> str:
+        voice = voice or "21m00Tcm4TlvDq8ikWAM"  # default to Rachel if empty/None
+        logger.info(f"EL Provisioner: get_or_create_agent | voice_id={voice!r} | llm={llm_model!r} | language={language!r}")
         cache_key = self._cache_key(
             api_key, instructions, voice, rt_tools, llm_model, language
         )
@@ -233,10 +235,11 @@ class ElevenLabsAgentProvisioner(metaclass=SingletonMeta):
                 }
             )
 
+        _DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # Rachel
         voice_id = (
             voice
-            if voice.lower() not in _OPENAI_VOICE_NAMES
-            else "21m00Tcm4TlvDq8ikWAM"
+            if voice and voice.lower() not in _OPENAI_VOICE_NAMES
+            else _DEFAULT_VOICE_ID
         )
 
         tts_model = (

@@ -589,6 +589,8 @@ class RealtimeAgentReadSerializer(serializers.ModelSerializer):
 
 
 class RealtimeAgentWriteSerializer(serializers.ModelSerializer):
+    voice = serializers.CharField(allow_blank=True, default="alloy")
+
     class Meta:
         model = RealtimeAgent
         exclude = ["agent"]

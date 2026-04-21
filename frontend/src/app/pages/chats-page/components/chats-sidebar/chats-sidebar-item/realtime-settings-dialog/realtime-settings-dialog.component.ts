@@ -92,7 +92,7 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         else if (ra.gemini_config != null) this.activeProvider.set('gemini');
 
         this.settingsForm = this.fb.group({
-            voice: [ra.voice, Validators.required],
+            voice: [ra.voice ?? ''],
             threshold: [
                 Number(this.data.agent.search_configs?.naive?.similarity_threshold ?? 0.2),
                 [Validators.required, Validators.min(0), Validators.max(1)],
