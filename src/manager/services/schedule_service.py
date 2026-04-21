@@ -19,6 +19,7 @@ from services.redis_service import RedisService
 
 SCHEDULE_CHANNEL = "schedule_channel"
 TIMEZONE = os.getenv("TIMEZONE", "UTC")
+SYNC_RETRY_DELAY = int(os.getenv("SCHEDULE_SYNC_RETRY_DELAY", "5"))
 
 
 class ScheduleService:
@@ -73,18 +74,37 @@ class ScheduleService:
         """
         Initial sync: loads active nodes from DB and registers APScheduler Jobs.
 
-        Input:  —
-        Output: Jobs registered in self.scheduler
-        """
-        try:
-            active_nodes = await self.repository.get_all_active_schedule_nodes()
-            if not active_nodes:
-                return
+        Retries indefinitely every SYNC_RETRY_DELAY seconds if DB is unreachable.
+        Distinguishes repository failure (None) from empty result ([]):
+          - None  → DB error, retry
+          - []    → no active nodes, stop retrying
+          - list  → register jobs, stop retrying
 
-            for node_data in active_nodes:
-                await self.add_schedule(node_data)
-        except Exception:
-            logger.exception("[ScheduleService] Error loading schedules from DB")
+        Input:  —
+        Output: Jobs registered in self.scheduler once DB sync succeeds
+        """
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                active_nodes = await self.repository.get_all_active_schedule_nodes()
+                if active_nodes is None:
+                    raise RuntimeError("Repository returned None (DB unreachable)")
+
+                for node_data in active_nodes:
+                    await self.add_schedule(node_data)
+
+                logger.info(
+                    f"[ScheduleService] DB sync completed "
+                    f"(attempt {attempt}, nodes loaded: {len(active_nodes)})"
+                )
+                return
+            except Exception as exc:
+                logger.warning(
+                    f"[ScheduleService] DB sync failed (attempt {attempt}): {exc}. "
+                    f"Retrying in {SYNC_RETRY_DELAY}s..."
+                )
+                await asyncio.sleep(SYNC_RETRY_DELAY)
 
     async def add_schedule(self, node_data: dict):
         """
