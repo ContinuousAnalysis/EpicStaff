@@ -308,22 +308,10 @@ def _from_ns(obj):
 
 def main(**kwargs) -> dict:
     _raw = kwargs.get("variables", {{}})
-    _var_keys = list(_raw.keys())
 {var_assignments}
     variables = _to_ns(_raw)
 
 {self._indent_code(manipulation)}
-
-    # Write modified locals back into the variables namespace
-    _lcl = locals()
-    _internal = {{"_raw", "_var_keys", "variables", "_lcl", "_k", "_internal", "kwargs", "_to_ns", "_from_ns"}}
-    for _k in _var_keys:
-        if _k in _lcl:
-            setattr(variables, _k, _lcl[_k])
-    # Also persist NEW variables created by manipulation code
-    for _k in _lcl:
-        if _k not in _internal and _k not in _var_keys and not _k.startswith("_"):
-            setattr(variables, _k, _lcl[_k])
 
     # Write back from namespace to dict
     return _from_ns(variables)
