@@ -11,3 +11,4 @@ export * from './ngrok-config/ngrok-config-storage.service';
 export * from './realtime-llms/full-reamtime-config.service';
 export * from './realtime-llms/real-time-model-config.service';
 export * from './realtime-llms/real-time-models.service';
+export * from './realtime-voices.service';

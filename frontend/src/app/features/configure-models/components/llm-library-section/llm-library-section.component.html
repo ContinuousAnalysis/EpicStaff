@@ -63,6 +63,78 @@
                 }
             </div>
         }
+
+        <!-- OpenAI Voice Configs -->
+        <div class="llm-library__section">
+            <div class="llm-library__section-header">
+                <h4 class="llm-library__section-title">OpenAI Voice Configs:</h4>
+                <app-button type="primary" (click)="onAddOpenAIRealtime()">Add Config</app-button>
+            </div>
+            @if (openaiRealtimeConfigs().length === 0) {
+                <p class="llm-library__empty-hint">No OpenAI Voice configs yet.</p>
+            } @else {
+                <div class="llm-library__flat-list">
+                    @for (c of openaiRealtimeConfigs(); track c.id) {
+                        <div class="llm-library__flat-item">
+                            <span class="llm-library__flat-name">{{ c.custom_name }}</span>
+                            <span class="llm-library__flat-meta">{{ c.model_name }}</span>
+                            <div class="llm-library__flat-actions">
+                                <app-icon-button icon="edit" (click)="onEditOpenAIRealtime(c)" />
+                                <app-icon-button icon="delete" (click)="onDeleteOpenAIRealtime(c)" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- ElevenLabs Voice Configs -->
+        <div class="llm-library__section">
+            <div class="llm-library__section-header">
+                <h4 class="llm-library__section-title">ElevenLabs Voice Configs:</h4>
+                <app-button type="primary" (click)="onAddElevenLabsRealtime()">Add Config</app-button>
+            </div>
+            @if (elevenLabsRealtimeConfigs().length === 0) {
+                <p class="llm-library__empty-hint">No ElevenLabs Voice configs yet.</p>
+            } @else {
+                <div class="llm-library__flat-list">
+                    @for (c of elevenLabsRealtimeConfigs(); track c.id) {
+                        <div class="llm-library__flat-item">
+                            <span class="llm-library__flat-name">{{ c.custom_name }}</span>
+                            <span class="llm-library__flat-meta">{{ c.model_name }}</span>
+                            <div class="llm-library__flat-actions">
+                                <app-icon-button icon="edit" (click)="onEditElevenLabsRealtime(c)" />
+                                <app-icon-button icon="delete" (click)="onDeleteElevenLabsRealtime(c)" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Gemini Voice Configs -->
+        <div class="llm-library__section">
+            <div class="llm-library__section-header">
+                <h4 class="llm-library__section-title">Gemini Voice Configs:</h4>
+                <app-button type="primary" (click)="onAddGeminiRealtime()">Add Config</app-button>
+            </div>
+            @if (geminiRealtimeConfigs().length === 0) {
+                <p class="llm-library__empty-hint">No Gemini Voice configs yet.</p>
+            } @else {
+                <div class="llm-library__flat-list">
+                    @for (c of geminiRealtimeConfigs(); track c.id) {
+                        <div class="llm-library__flat-item">
+                            <span class="llm-library__flat-name">{{ c.custom_name }}</span>
+                            <span class="llm-library__flat-meta">{{ c.model_name }}</span>
+                            <div class="llm-library__flat-actions">
+                                <app-icon-button icon="edit" (click)="onEditGeminiRealtime(c)" />
+                                <app-icon-button icon="delete" (click)="onDeleteGeminiRealtime(c)" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
     } @else {
         <app-loading-spinner message="Loading Configurations data" />
     }

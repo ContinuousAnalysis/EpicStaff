@@ -1,0 +1,57 @@
+<div class="dialog">
+    <div class="dialog__header">
+        {{ data.action === 'create' ? 'Add ElevenLabs Realtime Config' : 'Edit ElevenLabs Realtime Config' }}
+    </div>
+    <form class="dialog__form" [formGroup]="form">
+        <div *ngIf="errorMessage()" class="dialog__error-message">
+            <p>{{ errorMessage() }}</p>
+        </div>
+        <div>
+            <app-custom-input
+                label="Name"
+                formControlName="custom_name"
+                [required]="true"
+                placeholder="e.g. My ElevenLabs Config"
+                tooltipText="A descriptive name for this configuration"
+            />
+            <app-validation-errors [control]="form.get('custom_name')!" />
+        </div>
+        <div>
+            <app-custom-input
+                type="password"
+                label="API Key"
+                formControlName="api_key"
+                placeholder="your-elevenlabs-api-key"
+                tooltipText="ElevenLabs API key"
+            />
+        </div>
+        <div>
+            <app-custom-input
+                label="Model Name"
+                formControlName="model_name"
+                [required]="true"
+                placeholder="eleven_turbo_v2_5"
+                tooltipText="The ElevenLabs model to use"
+            />
+            <app-validation-errors [control]="form.get('model_name')!" />
+        </div>
+        <div>
+            <app-custom-input
+                label="Language"
+                formControlName="language"
+                placeholder="en"
+                tooltipText="ISO-639-1 language code (optional, e.g. 'en', 'de', 'fr')"
+            />
+        </div>
+    </form>
+    <div class="dialog__actions">
+        <app-button type="outline-primary" (click)="onCancel()">Cancel</app-button>
+        <app-button type="primary" (click)="onSubmit()" [disabled]="form.invalid || isSubmitting()">
+            @if (isSubmitting()) {
+                {{ data.action === 'create' ? 'Creating…' : 'Saving…' }}
+            } @else {
+                {{ data.action === 'create' ? 'Create' : 'Save' }}
+            }
+        </app-button>
+    </div>
+</div>

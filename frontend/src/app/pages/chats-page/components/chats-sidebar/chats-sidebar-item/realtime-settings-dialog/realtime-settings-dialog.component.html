@@ -14,15 +14,86 @@
         <!-- Content -->
         <div class="dialog-content">
             <div class="scrollable-content">
+                <!-- Provider Selection -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h3>Voice Provider</h3>
+                        <app-help-tooltip
+                            text="Select which AI provider handles this agent's real-time voice calls."
+                        ></app-help-tooltip>
+                    </div>
+                    <div class="provider-toggle">
+                        @for (p of providers; track p.id) {
+                            <button
+                                type="button"
+                                class="provider-btn"
+                                [class.provider-btn--active]="activeProvider() === p.id"
+                                (click)="onProviderSelect(p.id)"
+                            >
+                                {{ p.label }}
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <!-- Provider Config Select -->
+                @if (activeProvider() === 'openai') {
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h3>OpenAI Config</h3>
+                            <app-help-tooltip
+                                text="Select the OpenAI realtime configuration to use for this agent."
+                            ></app-help-tooltip>
+                        </div>
+                        <app-select
+                            formControlName="openai_config"
+                            [items]="openaiConfigItems()"
+                            placeholder="Select OpenAI config"
+                        />
+                    </div>
+                }
+
+                @if (activeProvider() === 'elevenlabs') {
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h3>ElevenLabs Config</h3>
+                            <app-help-tooltip
+                                text="Select the ElevenLabs realtime configuration to use for this agent."
+                            ></app-help-tooltip>
+                        </div>
+                        <app-select
+                            formControlName="elevenlabs_config"
+                            [items]="elevenLabsConfigItems()"
+                            placeholder="Select ElevenLabs config"
+                        />
+                    </div>
+                }
+
+                @if (activeProvider() === 'gemini') {
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h3>Gemini Config</h3>
+                            <app-help-tooltip
+                                text="Select the Gemini realtime configuration to use for this agent."
+                            ></app-help-tooltip>
+                        </div>
+                        <app-select
+                            formControlName="gemini_config"
+                            [items]="geminiConfigItems()"
+                            placeholder="Select Gemini config"
+                        />
+                    </div>
+                }
+
                 <!-- Voice Selector -->
                 <div class="form-section">
                     <div class="section-header">
                         <h3>Voice</h3>
                         <app-help-tooltip
-                            text="Select the voice that the AI agent will use when speaking. Different voices have different characteristics and accents."
+                            text="Select the voice for the AI agent. For ElevenLabs enter your custom Voice ID."
                         ></app-help-tooltip>
                     </div>
-                    @if (isElevenLabs) {
+                    @if (isElevenLabs()) {
                         <div class="input-container">
                             <input
                                 type="text"
@@ -34,30 +105,11 @@
                     } @else {
                         <app-voice-selector
                             label="Voice"
-                            [voices]="voices"
+                            [voices]="availableVoices()"
                             [selectedVoice]="settingsForm.get('voice')?.value"
                             (voiceChange)="onVoiceChange($event)"
                         ></app-voice-selector>
                     }
-                </div>
-
-                <!-- Transcription Config Selector -->
-                <div class="form-section">
-                    <div class="section-header">
-                        <h3>Transcription Model</h3>
-                        <app-help-tooltip
-                            text="Choose the model that will convert your speech to text. More advanced models provide better accuracy but may be slower or more expensive."
-                        ></app-help-tooltip>
-                    </div>
-                    <app-transcription-config-selector
-                        label="Transcription Model"
-                        [configs]="transcriptionConfigs"
-                        [selectedConfigId]="settingsForm.get('realtime_transcription_config')?.value"
-                        [loading]="loadingConfigs"
-                        (configChange)="onTranscriptionConfigChange($event)"
-                        (createNew)="openCreateTranscriptionConfigDialog()"
-                        (deleteConfig)="deleteTranscriptionConfig($event)"
-                    ></app-transcription-config-selector>
                 </div>
 
                 <!-- Wakeword Input -->
@@ -65,7 +117,7 @@
                     <div class="section-header">
                         <h3>Wake word</h3>
                         <app-help-tooltip
-                            text="A phrase that activates the agent. When you say this phrase, the agent will start listening to your commands."
+                            text="A phrase that activates the agent. When you say this phrase, the agent will start listening."
                         ></app-help-tooltip>
                     </div>
                     <div class="input-container">
@@ -83,7 +135,7 @@
                     <div class="section-header">
                         <h3>Stop word</h3>
                         <app-help-tooltip
-                            text="A phrase that tells the agent to stop listening or speaking. Use this to end the current interaction."
+                            text="A phrase that tells the agent to stop listening or speaking."
                         ></app-help-tooltip>
                     </div>
                     <div class="input-container">
@@ -96,40 +148,6 @@
                     </div>
                 </div>
 
-                <!-- Preferred Language Dropdown -->
-                <div class="form-section">
-                    <div class="section-header">
-                        <h3>Preferred Language</h3>
-                        <app-help-tooltip
-                            text="The primary language the agent should use for speech recognition and responses. This helps improve accuracy for non-English languages."
-                        ></app-help-tooltip>
-                    </div>
-                    <app-language-selector
-                        label="Preferred Language"
-                        [languages]="languages"
-                        [selectedLanguage]="settingsForm.get('preferredLanguage')?.value"
-                        (languageChange)="onLanguageChange($event)"
-                    ></app-language-selector>
-                </div>
-
-                <!-- Prompt Textarea -->
-                <div class="form-section">
-                    <div class="section-header">
-                        <h3>Voice recognition prompt</h3>
-                        <app-help-tooltip
-                            text="Additional instructions for the voice recognition system. You can provide context or specific guidelines to improve recognition accuracy."
-                        ></app-help-tooltip>
-                    </div>
-                    <div class="input-container">
-                        <textarea
-                            class="input-field textarea"
-                            formControlName="voice_recognition_prompt"
-                            placeholder="Enter a custom prompt"
-                            rows="4"
-                        ></textarea>
-                    </div>
-                </div>
-
                 <!-- Threshold Slider -->
                 <div class="form-section">
                     <div class="section-header">
@@ -138,7 +156,7 @@
                             {{ settingsForm.get('threshold')?.value | number: '1.2-2' }}
                         </span>
                         <app-help-tooltip
-                            text="Sets the similarity threshold for knowledge retrieval. Lower values return more results but may be less relevant. Higher values are more precise but may miss useful information."
+                            text="Sets the similarity threshold for knowledge retrieval."
                         ></app-help-tooltip>
                     </div>
                     <div class="slider-container">
@@ -165,7 +183,7 @@
                             {{ settingsForm.get('searchLimit')?.value }}
                         </span>
                         <app-help-tooltip
-                            text="The maximum number of items to retrieve when searching for relevant information. Higher values provide more context but may slow down responses."
+                            text="The maximum number of items to retrieve when searching for relevant information."
                         ></app-help-tooltip>
                     </div>
                     <div class="slider-container">
@@ -192,11 +210,11 @@
             <button
                 class="btn create"
                 type="button"
-                [disabled]="settingsForm.invalid"
-                [class.disabled]="settingsForm.invalid"
+                [disabled]="settingsForm.invalid || submitting"
+                [class.disabled]="settingsForm.invalid || submitting"
                 (click)="onConfirm()"
             >
-                Save
+                {{ submitting ? 'Saving…' : 'Save' }}
             </button>
         </div>
     </form>

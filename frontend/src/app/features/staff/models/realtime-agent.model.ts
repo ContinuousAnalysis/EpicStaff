@@ -4,10 +4,10 @@ export interface RealtimeAgent {
     search_limit: number;
     wake_word: string | null;
     stop_prompt: string | null;
-
-    language: string | null;
-    voice_recognition_prompt: string | null;
     voice: string;
+    openai_config: number | null;
+    elevenlabs_config: number | null;
+    gemini_config: number | null;
 }
 
 export interface UpdateRealtimeAgentRequest {
@@ -16,9 +16,10 @@ export interface UpdateRealtimeAgentRequest {
     search_limit?: number;
     wake_word?: string;
     stop_prompt?: string;
-    language?: string;
-    voice_recognition_prompt?: string;
     voice?: string;
+    openai_config?: number | null;
+    elevenlabs_config?: number | null;
+    gemini_config?: number | null;
 }
 export interface CreateRealtimeAgentRequest {
     agent: number;
@@ -26,7 +27,8 @@ export interface CreateRealtimeAgentRequest {
     search_limit?: number;
     wake_word?: string;
     stop_prompt?: string;
-    language?: string;
-    voice_recognition_prompt?: string;
     voice?: string;
+    openai_config?: number | null;
+    elevenlabs_config?: number | null;
+    gemini_config?: number | null;
 }

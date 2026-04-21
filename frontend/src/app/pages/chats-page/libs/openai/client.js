@@ -191,7 +191,7 @@ export class RealtimeClient extends RealtimeEventHandler {
    * Create a new RealtimeClient instance
    * @param {{url?: string, apiKey?: string, dangerouslyAllowAPIKeyInBrowser?: boolean, debug?: boolean}} [settings]
    */
-  constructor({ url, apiKey, dangerouslyAllowAPIKeyInBrowser, debug } = {}) {
+  constructor({ url, apiKey, dangerouslyAllowAPIKeyInBrowser, debug, token } = {}) {
     super();
     console.log("RealtimeClient constructor", url);
 
@@ -225,6 +225,7 @@ export class RealtimeClient extends RealtimeEventHandler {
       apiKey,
       dangerouslyAllowAPIKeyInBrowser,
       debug,
+      token,
     });
 
     this.conversation = new RealtimeConversation();

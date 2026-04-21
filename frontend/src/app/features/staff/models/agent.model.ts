@@ -1,4 +1,4 @@
-import { AgentSearchConfigs } from "../../../shared/models";
+import { AgentSearchConfigs } from '../../../shared/models';
 import { GetMcpToolRequest } from '../../tools/models/mcp-tool.model';
 import { GetPythonCodeToolRequest } from '../../tools/models/python-code-tool.model';
 import { GetToolRequest } from '../../tools/models/tool.model';
@@ -43,11 +43,10 @@ export interface Agent {
 export interface RealtimeAgentConfig {
     wake_word: string | null;
     stop_prompt: string | null;
-    language: string | null;
-    voice_recognition_prompt: string | null;
     voice: string;
-    realtime_config: number | null;
-    realtime_transcription_config: number | null;
+    openai_config: number | null;
+    elevenlabs_config: number | null;
+    gemini_config: number | null;
 }
 export interface GetAgentRequest {
     id: number;
@@ -157,7 +156,7 @@ export interface UpdateAgentRequest {
 export interface AgentRag {
     rag_id: number;
     rag_type: string;
-    rag_status?: string
+    rag_status?: string;
 }
 
 export type AgentTableItem = Omit<Agent, 'id'> & {

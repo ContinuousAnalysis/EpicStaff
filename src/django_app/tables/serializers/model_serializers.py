@@ -578,7 +578,7 @@ class ConversationRecordingSerializer(serializers.ModelSerializer):
         read_only_fields = ["file_size", "audio_format", "created_at"]
 
 
-class RealtimeAgentSerializer(serializers.ModelSerializer):
+class RealtimeAgentReadSerializer(serializers.ModelSerializer):
     openai_config = OpenAIRealtimeConfigSerializer(read_only=True)
     elevenlabs_config = ElevenLabsRealtimeConfigSerializer(read_only=True)
     gemini_config = GeminiRealtimeConfigSerializer(read_only=True)
@@ -588,9 +588,33 @@ class RealtimeAgentSerializer(serializers.ModelSerializer):
         exclude = ["agent"]
 
 
+class RealtimeAgentWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RealtimeAgent
+        exclude = ["agent"]
+
+    def validate(self, attrs):
+        openai_config = attrs.get('openai_config', getattr(self.instance, 'openai_config', None))
+        elevenlabs_config = attrs.get('elevenlabs_config', getattr(self.instance, 'elevenlabs_config', None))
+        gemini_config = attrs.get('gemini_config', getattr(self.instance, 'gemini_config', None))
+
+        set_count = sum([
+            openai_config is not None,
+            elevenlabs_config is not None,
+            gemini_config is not None,
+        ])
+
+        if set_count > 1:
+            raise serializers.ValidationError(
+                "A RealtimeAgent may have at most one provider config set "
+                "(openai_config, elevenlabs_config, or gemini_config)."
+            )
+
+        return attrs
+
 class AgentReadSerializer(serializers.ModelSerializer):
     tools = serializers.SerializerMethodField()
-    realtime_agent = RealtimeAgentSerializer(read_only=True)
+    realtime_agent = RealtimeAgentReadSerializer(read_only=True)
     rag = serializers.SerializerMethodField()
     search_configs = serializers.SerializerMethodField()
 
@@ -708,7 +732,7 @@ class AgentWriteSerializer(serializers.ModelSerializer):
         # write_only=True,
         required=False,
     )
-    realtime_agent = RealtimeAgentSerializer(required=False)
+    realtime_agent = RealtimeAgentWriteSerializer(required=False)
     llm_config = serializers.PrimaryKeyRelatedField(
         queryset=LLMConfig.objects.all(), required=False, allow_null=True
     )

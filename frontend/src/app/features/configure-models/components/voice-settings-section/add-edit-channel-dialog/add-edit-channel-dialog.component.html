@@ -1,0 +1,80 @@
+<div class="dialog">
+    <div class="dialog__header">
+        {{ data.action === 'create' ? 'Add Channel' : 'Edit Channel' }}
+    </div>
+
+    <form class="dialog__form" [formGroup]="form">
+        <div *ngIf="errorMessage()" class="dialog__error-message">
+            <p>{{ errorMessage() }}</p>
+        </div>
+
+        <div>
+            <app-custom-input
+                label="Channel Name"
+                formControlName="name"
+                [required]="true"
+                placeholder="e.g. Support Line"
+                tooltipText="A descriptive name for this channel"
+            />
+        </div>
+
+        <app-select
+            label="Realtime Agent"
+            formControlName="realtime_agent"
+            [items]="agentItems()"
+            placeholder="Select an agent"
+            tooltipText="The realtime agent that will handle calls on this channel"
+        />
+
+        <div class="dialog__section-divider">
+            <span class="dialog__section-label">Twilio Settings</span>
+        </div>
+
+        <div>
+            <app-custom-input
+                label="Account SID"
+                formControlName="account_sid"
+                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                tooltipText="Your Twilio Account SID"
+            />
+        </div>
+
+        <div>
+            <app-custom-input
+                type="password"
+                label="Auth Token"
+                formControlName="auth_token"
+                placeholder="••••••••••••••••••••••••••••••••"
+                tooltipText="Your Twilio Auth Token"
+            />
+        </div>
+
+        <div>
+            <app-custom-input
+                label="Phone Number"
+                formControlName="phone_number"
+                placeholder="+15551234567"
+                tooltipText="Twilio phone number in E.164 format"
+            />
+        </div>
+
+        <app-select
+            label="Webhook Tunnel"
+            formControlName="ngrok_config"
+            [items]="ngrokItems()"
+            placeholder="Select a tunnel"
+            tooltipText="Ngrok tunnel that exposes the voice endpoint to Twilio"
+        />
+    </form>
+
+    <div class="dialog__actions">
+        <app-button type="outline-primary" (click)="onCancel()">Cancel</app-button>
+        <app-button type="primary" (click)="onSubmit()" [disabled]="form.invalid || isSubmitting()">
+            @if (isSubmitting()) {
+                {{ data.action === 'create' ? 'Creating…' : 'Saving…' }}
+            } @else {
+                {{ data.action === 'create' ? 'Create' : 'Save' }}
+            }
+        </app-button>
+    </div>
+</div>

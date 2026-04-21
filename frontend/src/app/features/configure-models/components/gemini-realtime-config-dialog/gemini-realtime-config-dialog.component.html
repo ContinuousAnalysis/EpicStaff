@@ -1,0 +1,57 @@
+<div class="dialog">
+    <div class="dialog__header">
+        {{ data.action === 'create' ? 'Add Gemini Realtime Config' : 'Edit Gemini Realtime Config' }}
+    </div>
+    <form class="dialog__form" [formGroup]="form">
+        <div *ngIf="errorMessage()" class="dialog__error-message">
+            <p>{{ errorMessage() }}</p>
+        </div>
+        <div>
+            <app-custom-input
+                label="Name"
+                formControlName="custom_name"
+                [required]="true"
+                placeholder="e.g. My Gemini Config"
+                tooltipText="A descriptive name for this configuration"
+            />
+            <app-validation-errors [control]="form.get('custom_name')!" />
+        </div>
+        <div>
+            <app-custom-input
+                type="password"
+                label="API Key"
+                formControlName="api_key"
+                placeholder="your-gemini-api-key"
+                tooltipText="Google Gemini API key"
+            />
+        </div>
+        <div>
+            <app-custom-input
+                label="Model Name"
+                formControlName="model_name"
+                [required]="true"
+                placeholder="gemini-2.0-flash-live-001"
+                tooltipText="The Gemini live model to use"
+            />
+            <app-validation-errors [control]="form.get('model_name')!" />
+        </div>
+        <div>
+            <app-custom-input
+                label="Voice Recognition Prompt"
+                formControlName="voice_recognition_prompt"
+                placeholder="Optional context for voice recognition"
+                tooltipText="Optional prompt to guide speech recognition"
+            />
+        </div>
+    </form>
+    <div class="dialog__actions">
+        <app-button type="outline-primary" (click)="onCancel()">Cancel</app-button>
+        <app-button type="primary" (click)="onSubmit()" [disabled]="form.invalid || isSubmitting()">
+            @if (isSubmitting()) {
+                {{ data.action === 'create' ? 'Creating…' : 'Saving…' }}
+            } @else {
+                {{ data.action === 'create' ? 'Create' : 'Save' }}
+            }
+        </app-button>
+    </div>
+</div>

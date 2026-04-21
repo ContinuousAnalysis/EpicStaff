@@ -26,16 +26,6 @@ class OpenAIRealtimeConfig(models.Model):
         max_length=250, default="whisper-1", null=True, blank=True
     )
     transcription_api_key = models.TextField(null=True, blank=True)
-    input_audio_format = models.CharField(
-        max_length=20,
-        choices=AudioFormatChoices.choices,
-        default=AudioFormatChoices.PCM16,
-    )
-    output_audio_format = models.CharField(
-        max_length=20,
-        choices=AudioFormatChoices.choices,
-        default=AudioFormatChoices.PCM16,
-    )
     voice_recognition_prompt = models.TextField(null=True, blank=True)
 
     def __str__(self):

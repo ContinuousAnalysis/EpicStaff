@@ -167,11 +167,13 @@ export class RealtimeClient extends RealtimeEventHandler {
         apiKey,
         dangerouslyAllowAPIKeyInBrowser,
         debug,
+        token,
     }?: {
         url?: string;
         apiKey?: string;
         dangerouslyAllowAPIKeyInBrowser?: boolean;
         debug?: boolean;
+        token?: string;
     });
     defaultSessionConfig: {
         modalities: string[];

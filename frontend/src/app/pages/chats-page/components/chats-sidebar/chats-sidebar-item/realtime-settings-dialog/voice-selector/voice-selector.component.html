@@ -22,7 +22,8 @@
             [class.selected]="voice.id === selectedVoice"
             (click)="selectVoice(voice.id)"
         >
-            {{ voice.name }}
+            <span class="dropdown-item__name">{{ voice.name }}</span>
+            <span *ngIf="voice.description" class="dropdown-item__desc">{{ voice.description }}</span>
         </div>
     </div>
 </div>

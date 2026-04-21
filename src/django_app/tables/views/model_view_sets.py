@@ -26,6 +26,8 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
+from drf_spectacular.utils import extend_schema, extend_schema_view
+
 from tables.exceptions import (
     AgentSerializerError,
     BuiltInToolModificationError,
@@ -205,7 +207,8 @@ from tables.serializers.model_serializers import (
     GeminiRealtimeConfigSerializer,
     OpenAIRealtimeConfigSerializer,
     RealtimeAgentChatSerializer,
-    RealtimeAgentSerializer,
+    RealtimeAgentReadSerializer,
+    RealtimeAgentWriteSerializer,
     RealtimeChannelSerializer,
     RealtimeConfigSerializer,
     RealtimeModelSerializer,
@@ -1076,10 +1079,50 @@ class RealtimeSessionItemViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = RealtimeSessionItemSerializer
 
 
+@extend_schema_view(
+    create=extend_schema(
+        request=RealtimeAgentWriteSerializer,
+        responses={201: RealtimeAgentReadSerializer}
+    ),
+    update=extend_schema(
+        request=RealtimeAgentWriteSerializer,
+        responses={200: RealtimeAgentReadSerializer}
+    ),
+    partial_update=extend_schema(
+        request=RealtimeAgentWriteSerializer,
+        responses={200: RealtimeAgentReadSerializer}
+    )
+)
 class RealtimeAgentViewSet(viewsets.ModelViewSet):
     queryset = RealtimeAgent.objects.all()
-    serializer_class = RealtimeAgentSerializer
 
+    def get_serializer_class(self):
+        # На чтение (GET) отдаем полные объекты
+        if self.action in ['list', 'retrieve']:
+            return RealtimeAgentReadSerializer
+        return RealtimeAgentWriteSerializer
+
+    def create(self, request, *args, **kwargs):
+        write_serializer = self.get_serializer(data=request.data)
+        write_serializer.is_valid(raise_exception=True)
+        instance = write_serializer.save()
+        
+        read_serializer = RealtimeAgentReadSerializer(instance)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        write_serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        write_serializer.is_valid(raise_exception=True)
+        self.perform_update(write_serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        read_serializer = RealtimeAgentReadSerializer(instance)
+        return Response(read_serializer.data)
 
 class RealtimeAgentChatViewSet(ReadOnlyModelViewSet):
     """
@@ -1173,6 +1216,24 @@ class ConversationRecordingViewSet(viewsets.ModelViewSet):
             audio_format=audio_format,
             **({"rt_agent_chat": rt_agent_chat} if rt_agent_chat is not None else {}),
         )
+
+
+def _load_realtime_voices() -> dict:
+    import json
+    from pathlib import Path
+    path = Path(__file__).parent.parent / "static" / "realtime_voices.json"
+    with path.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+_REALTIME_VOICES = _load_realtime_voices()
+
+
+class RealtimeVoicesView(generics.GenericAPIView):
+    """Return static list of available voices per realtime provider."""
+
+    def get(self, request, *args, **kwargs):
+        return Response(_REALTIME_VOICES)
 
 
 class StartNodeModelViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet):

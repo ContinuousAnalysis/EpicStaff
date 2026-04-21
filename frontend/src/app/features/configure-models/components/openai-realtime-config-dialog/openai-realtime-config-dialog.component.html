@@ -1,0 +1,74 @@
+<div class="dialog">
+    <div class="dialog__header">
+        {{ data.action === 'create' ? 'Add OpenAI Realtime Config' : 'Edit OpenAI Realtime Config' }}
+    </div>
+    <form class="dialog__form" [formGroup]="form">
+        <div *ngIf="errorMessage()" class="dialog__error-message">
+            <p>{{ errorMessage() }}</p>
+        </div>
+        <div>
+            <app-custom-input
+                label="Name"
+                formControlName="custom_name"
+                [required]="true"
+                placeholder="e.g. My OpenAI Config"
+                tooltipText="A descriptive name for this configuration"
+            />
+            <app-validation-errors [control]="form.get('custom_name')!" />
+        </div>
+        <div>
+            <app-custom-input
+                type="password"
+                label="API Key"
+                formControlName="api_key"
+                placeholder="sk-..."
+                tooltipText="OpenAI API key (leave blank to use default)"
+            />
+        </div>
+        <div>
+            <app-custom-input
+                label="Model Name"
+                formControlName="model_name"
+                [required]="true"
+                placeholder="gpt-4o-realtime-preview"
+                tooltipText="The realtime model to use"
+            />
+            <app-validation-errors [control]="form.get('model_name')!" />
+        </div>
+        <div>
+            <app-custom-input
+                label="Transcription Model"
+                formControlName="transcription_model_name"
+                placeholder="whisper-1"
+                tooltipText="Model used for speech-to-text transcription"
+            />
+        </div>
+        <div>
+            <app-custom-input
+                type="password"
+                label="Transcription API Key"
+                formControlName="transcription_api_key"
+                placeholder="sk-..."
+                tooltipText="Separate API key for transcription (optional)"
+            />
+        </div>
+        <div>
+            <app-custom-input
+                label="Voice Recognition Prompt"
+                formControlName="voice_recognition_prompt"
+                placeholder="Optional system prompt for voice recognition"
+                tooltipText="Optional context prompt for speech recognition"
+            />
+        </div>
+    </form>
+    <div class="dialog__actions">
+        <app-button type="outline-primary" (click)="onCancel()">Cancel</app-button>
+        <app-button type="primary" (click)="onSubmit()" [disabled]="form.invalid || isSubmitting()">
+            @if (isSubmitting()) {
+                {{ data.action === 'create' ? 'Creating…' : 'Saving…' }}
+            } @else {
+                {{ data.action === 'create' ? 'Create' : 'Save' }}
+            }
+        </app-button>
+    </div>
+</div>

@@ -1,0 +1,42 @@
+.dialog {
+    background-color: var(--color-modals-background);
+    border-radius: 8px;
+    min-width: 400px;
+    max-width: 520px;
+    color: var(--color-text-primary);
+
+    &__header {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--color-divider-subtle);
+        font-size: 1.25rem;
+        font-weight: 500;
+    }
+
+    &__error-message {
+        background-color: rgba(255, 77, 79, 0.1);
+        color: var(--color-error, #ff4d4f);
+        padding: 0.75rem;
+        border-radius: 4px;
+        p {
+            margin: 0;
+            font-size: 0.875rem;
+        }
+    }
+
+    &__form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.25rem;
+        max-height: 75vh;
+        overflow-y: auto;
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding: 1.25rem;
+        border-top: 1px solid var(--color-divider-subtle);
+    }
+}

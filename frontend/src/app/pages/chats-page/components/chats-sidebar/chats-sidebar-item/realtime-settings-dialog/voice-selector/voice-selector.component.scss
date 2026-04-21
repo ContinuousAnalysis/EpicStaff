@@ -57,6 +57,9 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 
         .dropdown-item {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
             padding: 10px 12px;
             color: #ededed;
             font-size: 14px;
@@ -71,6 +74,19 @@
                 background-color: #1e72e6;
                 color: white;
                 font-weight: 500;
+
+                .dropdown-item__desc {
+                    color: rgba(255, 255, 255, 0.7);
+                }
+            }
+
+            &__name {
+                flex-shrink: 0;
+            }
+
+            &__desc {
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.4);
             }
         }
     }

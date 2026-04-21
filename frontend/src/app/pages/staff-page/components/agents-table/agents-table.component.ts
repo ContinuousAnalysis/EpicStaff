@@ -236,15 +236,13 @@ export class AgentsTableComponent {
             rag: null,
             tools: [],
             search_configs: null,
-            // Replace realtime_config with realtime_agent object using provided defaults
             realtime_agent: {
                 wake_word: '',
                 stop_prompt: 'stop',
-                language: null,
-                voice_recognition_prompt: null,
                 voice: 'alloy',
-                realtime_config: null,
-                realtime_transcription_config: null,
+                openai_config: null,
+                elevenlabs_config: null,
+                gemini_config: null,
             },
             // Additional fields from FullAgent
             fullLlmConfig: undefined,
@@ -601,7 +599,6 @@ export class AgentsTableComponent {
     private parseAgentData = (agentData: TableFullAgent) => {
         // Extract LLM config ID and realtime config ID from mergedConfigs
         let llmConfigId = null;
-        let realtimeConfigId = null;
 
         // Check if mergedConfigs exist and process them
         if (agentData.mergedConfigs && Array.isArray(agentData.mergedConfigs)) {
@@ -609,12 +606,6 @@ export class AgentsTableComponent {
             const llmConfig = agentData.mergedConfigs.find((config: MergedConfig) => config.type === 'llm');
             if (llmConfig) {
                 llmConfigId = llmConfig.id;
-            }
-
-            // Find realtime config
-            const realtimeConfig = agentData.mergedConfigs.find((config: MergedConfig) => config.type === 'realtime');
-            if (realtimeConfig) {
-                realtimeConfigId = realtimeConfig.id;
             }
         } else {
             // Fallback to direct fields if mergedConfigs isn't available
@@ -624,17 +615,15 @@ export class AgentsTableComponent {
         // Process merged tools
         const mergedTools = agentData.mergedTools || [];
 
-        // Create or update the realtime_agent object
-        const realtime_agent = {
-            ...(agentData.realtime_agent || {}),
-            realtime_config: realtimeConfigId,
-            // Include other realtime_agent properties if they exist in agentData
-            wake_word: agentData.realtime_agent?.wake_word,
-            stop_prompt: agentData.realtime_agent?.stop_prompt,
-            language: agentData.realtime_agent?.language,
-            voice_recognition_prompt: agentData.realtime_agent?.voice_recognition_prompt,
-            voice: agentData.realtime_agent?.voice,
-            realtime_transcription_config: agentData.realtime_agent?.realtime_transcription_config,
+        // Use realtime_agent directly — provider FKs (openai_config/elevenlabs_config/gemini_config)
+        // are set via the RealtimeSettingsDialog and already present on the object
+        const realtime_agent = agentData.realtime_agent || {
+            wake_word: '',
+            stop_prompt: 'stop',
+            voice: 'alloy',
+            openai_config: null,
+            elevenlabs_config: null,
+            gemini_config: null,
         };
 
         const parsed = {
@@ -878,36 +867,14 @@ export class AgentsTableComponent {
         this.cdr.markForCheck();
 
         // Check if this is a temporary row or one with a real ID
-        // Get realtime config ID - check mergedConfigs FIRST as it's the source of truth
-        let realtimeConfigId = null;
-
-        // First check mergedConfigs if available (most up-to-date)
-        if (updatedAgent.mergedConfigs && Array.isArray(updatedAgent.mergedConfigs)) {
-            const realtimeConfig = updatedAgent.mergedConfigs.find((config) => config.type === 'realtime');
-            if (realtimeConfig) {
-                realtimeConfigId = realtimeConfig.id;
-            }
-        }
-        // Fallback to fullRealtimeConfig if mergedConfigs doesn't exist
-        else if (updatedAgent.fullRealtimeConfig?.id) {
-            realtimeConfigId = updatedAgent.fullRealtimeConfig.id;
-        }
-        // Finally check the realtime_agent.realtime_config field directly
-        else if (updatedAgent.realtime_agent?.realtime_config) {
-            realtimeConfigId = updatedAgent.realtime_agent.realtime_config;
-        }
-
-        // Create or update the realtime_agent object
-        const realtime_agent = {
-            ...(updatedAgent.realtime_agent || {
-                wake_word: '',
-                stop_prompt: 'stop',
-                language: null,
-                voice_recognition_prompt: null,
-                voice: 'alloy',
-                realtime_transcription_config: null,
-            }),
-            realtime_config: realtimeConfigId,
+        // Use realtime_agent directly (provider FKs are set by RealtimeSettingsDialog)
+        const realtime_agent = updatedAgent.realtime_agent || {
+            wake_word: '',
+            stop_prompt: 'stop',
+            voice: 'alloy',
+            openai_config: null,
+            elevenlabs_config: null,
+            gemini_config: null,
         };
 
         const allToolsPreBuilding = {
@@ -1120,28 +1087,14 @@ export class AgentsTableComponent {
         this.gridApi.refreshCells({ force: true, columns: ['index'] });
         this.cdr.markForCheck();
 
-        // 3) build CreateAgentRequest (same mapping as you already had)
-        let realtimeConfigId = null;
-
-        if (newAgentData.mergedConfigs && Array.isArray(newAgentData.mergedConfigs)) {
-            const realtimeConfig = newAgentData.mergedConfigs.find((c) => c.type === 'realtime');
-            if (realtimeConfig) realtimeConfigId = realtimeConfig.id;
-        } else if (newAgentData.fullRealtimeConfig?.id) {
-            realtimeConfigId = newAgentData.fullRealtimeConfig.id;
-        } else if (newAgentData.realtime_agent?.realtime_config) {
-            realtimeConfigId = newAgentData.realtime_agent.realtime_config;
-        }
-
-        const realtime_agent = {
-            ...(newAgentData.realtime_agent || {
-                wake_word: '',
-                stop_prompt: 'stop',
-                language: null,
-                voice_recognition_prompt: null,
-                voice: 'alloy',
-                realtime_transcription_config: null,
-            }),
-            realtime_config: realtimeConfigId,
+        // 3) build CreateAgentRequest
+        const realtime_agent = newAgentData.realtime_agent || {
+            wake_word: '',
+            stop_prompt: 'stop',
+            voice: 'alloy',
+            openai_config: null,
+            elevenlabs_config: null,
+            gemini_config: null,
         };
 
         const parsedAgentData = this.parseAgentData(newAgentData);
@@ -1482,21 +1435,8 @@ export class AgentsTableComponent {
                             rowNode.setDataValue('fullLlmConfig', null);
                         }
 
-                        if (realtimeConfig) {
-                            const realtime_agent = {
-                                ...(rowData.realtime_agent || {}),
-                                realtime_config: realtimeConfig.id,
-                            };
-                            rowNode.setDataValue('realtime_agent', realtime_agent);
-                        } else {
+                        if (!realtimeConfig) {
                             rowNode.setDataValue('fullRealtimeConfig', null);
-                            if (rowData.realtime_agent) {
-                                const realtime_agent = {
-                                    ...rowData.realtime_agent,
-                                    realtime_config: null,
-                                };
-                                rowNode.setDataValue('realtime_agent', realtime_agent);
-                            }
                         }
 
                         const freshRowData = rowNode.data;
@@ -2076,11 +2016,10 @@ export class AgentsTableComponent {
             realtime_agent: {
                 wake_word: '',
                 stop_prompt: 'stop',
-                language: null,
-                voice_recognition_prompt: null,
                 voice: 'alloy',
-                realtime_config: null,
-                realtime_transcription_config: null,
+                openai_config: null,
+                elevenlabs_config: null,
+                gemini_config: null,
             },
         };
 
@@ -2109,11 +2048,10 @@ export class AgentsTableComponent {
             'search_configs.naive.similarity_threshold',
             'realtime_agent.wake_word',
             'realtime_agent.stop_prompt',
-            'realtime_agent.language',
-            'realtime_agent.voice_recognition_prompt',
             'realtime_agent.voice',
-            'realtime_agent.realtime_config',
-            'realtime_agent.realtime_transcription_config',
+            'realtime_agent.openai_config',
+            'realtime_agent.elevenlabs_config',
+            'realtime_agent.gemini_config',
         ];
 
         return pathsToCheck.some((path) => {

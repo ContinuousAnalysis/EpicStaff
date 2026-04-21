@@ -55,8 +55,8 @@ class RealtimeService(metaclass=SingletonMeta):
             chat_kwargs.update(
                 openai_config=cfg,
                 voice_recognition_prompt=cfg.voice_recognition_prompt,
-                input_audio_format=cfg.input_audio_format,
-                output_audio_format=cfg.output_audio_format,
+                input_audio_format="pcm16",
+                output_audio_format="pcm16",
             )
         elif rt_agent.elevenlabs_config:
             cfg = rt_agent.elevenlabs_config

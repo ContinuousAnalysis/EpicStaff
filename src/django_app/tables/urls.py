@@ -54,6 +54,7 @@ from tables.views.model_view_sets import (
     RealtimeChannelViewSet,
     TwilioChannelViewSet,
     ConversationRecordingViewSet,
+    RealtimeVoicesView,
     GraphFileViewSet,
     OrganizationViewSet,
     OrganizationUserViewSet,
@@ -412,6 +413,11 @@ urlpatterns = [
         "register-webhooks/",
         RegisterWebhooksApiView.as_view(),
         name="register-webhooks",
+    ),
+    path(
+        "realtime-voices/",
+        RealtimeVoicesView.as_view(),
+        name="realtime-voices",
     ),
     path(
         "voice-settings/",
