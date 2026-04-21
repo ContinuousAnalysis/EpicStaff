@@ -23,7 +23,11 @@ from tables.models import (
     ClassificationDecisionTableNode,
     ClassificationConditionGroup,
 )
-from tables.models.graph_models import CodeAgentNode, GraphNote
+from tables.models.graph_models import (
+    CodeAgentNode,
+    GraphNote,
+    ClassificationDecisionTablePrompt,
+)
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 
 
@@ -111,14 +115,30 @@ class ClassificationConditionGroupImportSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class ClassificationDecisionTablePromptImportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClassificationDecisionTablePrompt
+        fields = [
+            "prompt_key",
+            "prompt_text",
+            "llm_config",
+            "output_schema",
+            "result_variable",
+            "variable_mappings",
+        ]
+
+
 class ClassificationDecisionTableNodeImportSerializer(BaseNodeImportSerializer):
     condition_groups = ClassificationConditionGroupImportSerializer(
+        many=True, required=False, read_only=True
+    )
+    prompt_configs = ClassificationDecisionTablePromptImportSerializer(
         many=True, required=False, read_only=True
     )
 
     class Meta(BaseNodeImportSerializer.Meta):
         model = ClassificationDecisionTableNode
-        exclude = ["created_at", "updated_at"]
+        exclude = ["created_at", "updated_at", "prompts"]
 
 
 class TelegramTriggerNodeFieldImportSerializer(serializers.ModelSerializer):

@@ -2,6 +2,7 @@ import uuid
 from copy import deepcopy
 
 from tables.models import Graph, Crew
+from tables.models.graph_models import ClassificationDecisionTablePrompt
 from tables.serializers.model_serializers import (
     CrewSerializer,
 )
@@ -47,6 +48,17 @@ class GraphStrategy(EntityImportExportStrategy):
         deps[EntityType.LLM_CONFIG] = set(
             instance.code_agent_node_list.values_list("llm_config_id", flat=True)
         )
+        deps[EntityType.LLM_CONFIG] |= set(
+            instance.classification_decision_table_node_list.values_list(
+                "default_llm_config_id", flat=True
+            )
+        )
+        deps[EntityType.LLM_CONFIG] |= set(
+            ClassificationDecisionTablePrompt.objects.filter(
+                cdt_node__graph=instance
+            ).values_list("llm_config_id", flat=True)
+        )
+        deps[EntityType.LLM_CONFIG].discard(None)
         return deps
 
     def export_entity(self, instance: Graph) -> dict:

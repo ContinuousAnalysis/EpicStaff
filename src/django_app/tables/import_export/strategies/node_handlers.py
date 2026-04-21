@@ -10,7 +10,11 @@ from tables.models import (
     SubGraphNode,
     ClassificationDecisionTableNode,
 )
-from tables.models.graph_models import GraphNote
+from tables.models.graph_models import (
+    GraphNote,
+    ClassificationConditionGroup,
+    ClassificationDecisionTablePrompt,
+)
 from tables.import_export.enums import NodeType, EntityType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
@@ -127,6 +131,12 @@ def import_classification_decision_table_node(
     graph: Graph, node_data: dict, id_mapper: IDMapper
 ) -> ClassificationDecisionTableNode:
     condition_groups_data = node_data.pop("condition_groups", [])
+    prompt_configs_data = node_data.pop("prompt_configs", [])
+
+    default_llm_config_id = node_data.pop("default_llm_config", None)
+    node_data["default_llm_config"] = id_mapper.get_or_none(
+        EntityType.LLM_CONFIG, default_llm_config_id
+    )
 
     serializer = ClassificationDecisionTableNodeImportSerializer(
         data={**node_data, "graph": graph.id}
@@ -136,10 +146,26 @@ def import_classification_decision_table_node(
 
     for group_data in condition_groups_data:
         group_data["classification_decision_table_node_id"] = cdt_node.id
-
         group_serializer = ClassificationConditionGroupImportSerializer(data=group_data)
         group_serializer.is_valid(raise_exception=True)
         group_serializer.save()
+
+    ClassificationDecisionTablePrompt.objects.bulk_create(
+        [
+            ClassificationDecisionTablePrompt(
+                cdt_node=cdt_node,
+                prompt_key=pc["prompt_key"],
+                prompt_text=pc.get("prompt_text", ""),
+                llm_config_id=id_mapper.get_or_none(
+                    EntityType.LLM_CONFIG, pc.get("llm_config")
+                ),
+                output_schema=pc.get("output_schema", {}),
+                result_variable=pc.get("result_variable", "prompt_result"),
+                variable_mappings=pc.get("variable_mappings", {}),
+            )
+            for pc in prompt_configs_data
+        ]
+    )
 
     return cdt_node
 
