@@ -4,9 +4,15 @@
             <div
                 class="port-circle"
                 fNodeInput
+                fNodeOutput
                 [fInputMultiple]="port.multiple"
+                [fOutputMultiple]="port.multiple"
                 [fInputId]="port.id"
+                [fOutputId]="port.id"
+                [fCanBeConnectedInputs]="getPortConnections(port.id)"
+                [isSelfConnectable]="false"
                 [fInputConnectableSide]="port.position"
+                [fOutputConnectableSide]="port.position"
                 [ngStyle]="{
                     'border-color': 'hsl(0, 0%, 15%)',
                     'background-color': port.color,
@@ -34,9 +40,15 @@
                         <div class="port-wrapper">
                             <div
                                 class="port-circle"
+                                fNodeInput
                                 fNodeOutput
+                                [fInputMultiple]="port.multiple"
                                 [fOutputMultiple]="port.multiple"
+                                [fInputId]="port.id"
                                 [fOutputId]="port.id"
+                                [fCanBeConnectedInputs]="getPortConnections(port.id)"
+                                [isSelfConnectable]="false"
+                                [fInputConnectableSide]="port.position"
                                 [fOutputConnectableSide]="port.position"
                                 [ngStyle]="{
                                     'border-color': port.color,
@@ -69,9 +81,15 @@
                 <div class="port-wrapper">
                     <div
                         class="port-circle"
+                        fNodeInput
                         fNodeOutput
+                        [fInputMultiple]="port.multiple"
                         [fOutputMultiple]="port.multiple"
+                        [fInputId]="port.id"
                         [fOutputId]="port.id"
+                        [fCanBeConnectedInputs]="getPortConnections(port.id)"
+                        [isSelfConnectable]="false"
+                        [fInputConnectableSide]="port.position"
                         [fOutputConnectableSide]="port.position"
                         [ngStyle]="{
                             'border-color': port.color,
@@ -98,9 +116,15 @@
                 <div class="port-wrapper">
                     <div
                         class="port-circle"
+                        fNodeInput
                         fNodeOutput
+                        [fInputMultiple]="port.multiple"
                         [fOutputMultiple]="port.multiple"
+                        [fInputId]="port.id"
                         [fOutputId]="port.id"
+                        [fCanBeConnectedInputs]="getPortConnections(port.id)"
+                        [isSelfConnectable]="false"
+                        [fInputConnectableSide]="port.position"
                         [fOutputConnectableSide]="port.position"
                         [ngStyle]="{
                             'border-color': port.color,

@@ -28,20 +28,12 @@ export function getDefaultNodeSize(type: NodeType, data?: unknown): { width: num
         case NodeType.EDGE:
             return { width: 300, height: 180 };
 
+        case NodeType.START:
+            return { width: 125, height: 60 };
+
         default:
             return { width: 330, height: 60 };
     }
-}
-
-export function ensureNodeSize(node: NodeModel): NodeModel {
-    if (node.size?.width && node.size?.height) {
-        return node;
-    }
-
-    return {
-        ...node,
-        size: getDefaultNodeSize(node.type as NodeType, node.data),
-    };
 }
 
 export function normalizeTableNodeSize(node: NodeModel): NodeModel {

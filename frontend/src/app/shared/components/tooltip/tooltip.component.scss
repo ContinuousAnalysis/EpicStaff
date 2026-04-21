@@ -20,6 +20,6 @@
 }
 
 .tooltip-label-required {
-    color: #9c2e2e;
+    color: var(--color-required-asterisk, var(--accent-color));
     line-height: 1.3;
 }
