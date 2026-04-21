@@ -182,7 +182,7 @@ class ClassificationDecisionTableNodeSubgraph:
         label: str,
     ) -> None:
         """Execute computation via sandboxed RunPythonCodeService."""
-        if python_code is None:
+        if python_code is None or not python_code.code.strip():
             return
 
         inputs = self._resolve_input_map(input_map, state)
