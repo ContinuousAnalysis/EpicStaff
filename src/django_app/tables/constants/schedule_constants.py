@@ -1,0 +1,6 @@
+CRON_EVERY_N_MINUTES = "*/{every} * * * *"
+CRON_EVERY_N_HOURS = "0 */{every} * * *"
+CRON_EVERY_N_DAYS = "0 0 */{every} * *"
+CRON_WEEKDAYS = "0 0 * * {weekdays}"
+CRON_WEEKLY_SUNDAY = "0 0 * * 0"
+CRON_EVERY_N_MONTHS = "0 0 1 */{every} *"
