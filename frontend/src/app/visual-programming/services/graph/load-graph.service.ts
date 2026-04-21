@@ -540,17 +540,27 @@ function buildClassificationDecisionTableNode(
         data: {
             name: n.node_name,
             table: {
-                pre_computation_code: n.pre_computation_code,
+                pre_computation_code: n.pre_python_code?.code ?? null,
                 pre_input_map: n.pre_input_map ?? {},
                 pre_output_variable_path: n.pre_output_variable_path,
-                post_computation_code: n.post_computation_code,
+                post_computation_code: n.post_python_code?.code ?? null,
                 post_input_map: n.post_input_map ?? {},
                 post_output_variable_path: n.post_output_variable_path,
                 prompts: n.prompts ?? {},
-                route_variable_name: n.route_variable_name,
                 default_next_node: n.default_next_node,
                 next_error_node: n.next_error_node,
-                expression_errors_as_false: n.expression_errors_as_false,
+                pre_computation: {
+                    code: n.pre_python_code?.code ?? '',
+                    input_map: n.pre_input_map ?? {},
+                    output_variable_path: n.pre_output_variable_path ?? null,
+                    libraries: n.pre_python_code?.libraries ?? [],
+                },
+                post_computation: {
+                    code: n.post_python_code?.code ?? '',
+                    input_map: n.post_input_map ?? {},
+                    output_variable_path: n.post_output_variable_path ?? null,
+                    libraries: n.post_python_code?.libraries ?? [],
+                },
                 condition_groups: n.condition_groups.map((g) => ({
                     group_name: g.group_name,
                     order: g.order,

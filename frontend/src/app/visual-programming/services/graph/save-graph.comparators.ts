@@ -463,7 +463,7 @@ export function getClassificationDecisionTableNodeForComparisonFromBackend(
 ) {
     return {
         node_name: node.node_name,
-        pre_computation_code: node.pre_computation_code,
+        pre_computation_code: node.pre_python_code?.code || null,
         condition_groups: node.condition_groups.map((g) => ({
             group_name: g.group_name,
             order: g.order,
@@ -477,15 +477,15 @@ export function getClassificationDecisionTableNodeForComparisonFromBackend(
             field_manipulations: g.field_manipulations,
         })),
         prompts: node.prompts,
-        route_variable_name: node.route_variable_name,
         default_next_node: node.default_next_node,
         next_error_node: node.next_error_node,
-        expression_errors_as_false: node.expression_errors_as_false,
         pre_input_map: node.pre_input_map || {},
         pre_output_variable_path: node.pre_output_variable_path || null,
-        post_computation_code: node.post_computation_code || null,
+        post_computation_code: node.post_python_code?.code || null,
         post_input_map: node.post_input_map || {},
         post_output_variable_path: node.post_output_variable_path || null,
+        pre_libraries: node.pre_python_code?.libraries || [],
+        post_libraries: node.post_python_code?.libraries || [],
     };
 }
 
@@ -515,10 +515,8 @@ export function getClassificationDecisionTableNodeForComparisonFromUI(node: Clas
         pre_computation_code: preCode,
         condition_groups: groups,
         prompts: tableData?.prompts || {},
-        route_variable_name: tableData?.route_variable_name || 'route_code',
         default_next_node: tableData?.default_next_node || null,
         next_error_node: tableData?.next_error_node || null,
-        expression_errors_as_false: tableData?.expression_errors_as_false ?? false,
         pre_input_map: tableData?.pre_computation?.input_map || tableData?.pre_input_map || {},
         pre_output_variable_path:
             tableData?.pre_computation?.output_variable_path || tableData?.pre_output_variable_path || null,
@@ -526,5 +524,7 @@ export function getClassificationDecisionTableNodeForComparisonFromUI(node: Clas
         post_input_map: tableData?.post_computation?.input_map || tableData?.post_input_map || {},
         post_output_variable_path:
             tableData?.post_computation?.output_variable_path || tableData?.post_output_variable_path || null,
+        pre_libraries: tableData?.pre_computation?.libraries || [],
+        post_libraries: tableData?.post_computation?.libraries || [],
     };
 }
