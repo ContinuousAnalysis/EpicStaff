@@ -18,6 +18,8 @@ class TablesConfig(AppConfig):
         import tables.signals.naive_rag_signals
         import tables.signals.webhook_signals
         import tables.import_export.version_conversions.convertions
+        import tables.signals.schedule_signals
+        from tables.services.schedule_trigger_service import ScheduleTriggerService
         from tables.services.config_service import YamlConfigService
         from tables.services.converter_service import ConverterService
         from tables.services.redis_service import RedisService
@@ -61,6 +63,9 @@ class TablesConfig(AppConfig):
         TelegramTriggerService(
             session_manager_service=session_manager_service,
             webhook_trigger_service=webhook_trigger_service,
+        )
+        ScheduleTriggerService(
+            session_manager_service=session_manager_service
         )
 
         # Register strategies for import/export entities
