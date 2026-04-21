@@ -51,10 +51,12 @@ class FirstSetupView(APIView):
         summary="Perform first-time setup",
         description=(
             "Creates the first superadmin (is_superadmin=True), a default "
-            "Organization, and an OrganizationUser membership with the built-in "
-            "'Org Admin' role. Returns the user, the org, and JWT tokens so the "
-            "frontend can drop the user straight into the app. Refuses with 409 "
-            "if any user already exists."
+            "Organization (name from `DJANGO_DEFAULT_ORG_NAME` env var, "
+            "falling back to 'Default Organization'), and an OrganizationUser "
+            "membership with the built-in 'Org Admin' role. Returns the user, "
+            "the org, and JWT tokens so the frontend can drop the user straight "
+            "into the app. Refuses with 409 if any user already exists or if "
+            "the default organization row survived a prior user wipe."
         ),
         request=FirstSetupRequestSerializer,
         responses={
@@ -70,8 +72,6 @@ class FirstSetupView(APIView):
         result = self._service.setup(
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
-            organization_name=serializer.validated_data["organization_name"],
-            display_name=serializer.validated_data.get("display_name") or None,
         )
         tokens = IssuedTokens.for_user(result.user)
 

@@ -15,22 +15,12 @@ class FirstSetupStatusSerializer(serializers.Serializer):
 class FirstSetupRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-    display_name = serializers.CharField(
-        required=False, allow_blank=True, max_length=255
-    )
-    organization_name = serializers.CharField(max_length=255)
 
     def validate_password(self, value: str) -> str:
         try:
             validate_password(value)
         except DjangoValidationError as exc:
             raise serializers.ValidationError(list(exc.messages))
-        return value
-
-    def validate_organization_name(self, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise serializers.ValidationError("Organization name cannot be empty.")
         return value
 
 
