@@ -43,7 +43,10 @@ import { SessionFilesButtonComponent } from './session-files-button/session-file
             <div class="view-options"></div>
             <div class="actions">
                 @if (sessionId) {
-                    <app-session-files-button [sessionId]="sessionId"></app-session-files-button>
+                    <app-session-files-button
+                        [sessionId]="sessionId"
+                        [sessionStatus]="sessionStatus"
+                    ></app-session-files-button>
                 }
                 <button mat-button class="sessions-button" (click)="openSessionsDialog()" [disabled]="!graphData">
                     <span class="btn-label">Sessions</span>

@@ -3,6 +3,7 @@ import {
     Component,
     computed,
     DestroyRef,
+    effect,
     ElementRef,
     HostListener,
     inject,
@@ -18,9 +19,17 @@ import { Router } from '@angular/router';
 import { SessionOutputFile } from '../../../../../features/files/models/storage.models';
 import { StorageApiService } from '../../../../../features/files/services/storage-api.service';
 import { getFileExtension } from '../../../../../features/files/utils/storage-file.utils';
+import { GraphSessionStatus } from '../../../../../features/flows/services/flows-sessions.service';
 import { ToastService } from '../../../../../services/notifications/toast.service';
 import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CollapseOnOverflowDirective } from '../../../../../shared/directives/collapse-on-overflow.directive';
+
+const TERMINAL_STATUSES = new Set([
+    GraphSessionStatus.ENDED,
+    GraphSessionStatus.ERROR,
+    GraphSessionStatus.STOP,
+    GraphSessionStatus.EXPIRED,
+]);
 
 interface TreeNode {
     name: string;
@@ -42,6 +51,7 @@ interface TreeNode {
 })
 export class SessionFilesButtonComponent implements OnInit {
     readonly sessionId = input.required<string>();
+    readonly sessionStatus = input<GraphSessionStatus | null>(null);
 
     private readonly storageApiService = inject(StorageApiService);
     private readonly router = inject(Router);
@@ -73,7 +83,20 @@ export class SessionFilesButtonComponent implements OnInit {
         return this.buildVisible(this.rootNodes());
     });
 
+    constructor() {
+        effect(() => {
+            const status = this.sessionStatus();
+            if (status && TERMINAL_STATUSES.has(status)) {
+                this.loadFiles();
+            }
+        });
+    }
+
     ngOnInit(): void {
+        this.loadFiles();
+    }
+
+    private loadFiles(): void {
         this.storageApiService
             .getSessionOutputFiles(this.sessionId())
             .pipe(takeUntilDestroyed(this.destroyRef))
