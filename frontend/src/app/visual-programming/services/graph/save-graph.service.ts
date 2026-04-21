@@ -319,57 +319,20 @@ export class GraphUpdateService {
                     this.codeAgentNodeService.updateCodeAgentNode(id.toString(), buildCodeAgentPayload(n, graphId)),
                 (n) => n.id
             ),
-            classificationDecisionTableNodes: (() => {
-                const cdtDiff = diff.classificationDecisionTableNodes;
-                const toDelete = [...cdtDiff.toDelete, ...cdtDiff.toUpdate.map((u) => u.backend)];
-                const toCreate = [...cdtDiff.toCreate, ...cdtDiff.toUpdate.map((u) => u.ui)];
-
-                if (!toDelete.length && !toCreate.length) {
-                    return of({ results: [], createdMappings: [] } as NodeDiffResult);
-                }
-
-                // Delete all first (parallel), then create all (parallel) — sequential to avoid unique constraint violations
-                const deleteAll$ = toDelete.length
-                    ? forkJoin(
-                          toDelete.map((n) =>
-                              this.classificationDecisionTableNodeService.deleteNode(n.id.toString()).pipe(
-                                  catchError((err) => {
-                                      console.error('[SaveGraph] CDT delete failed:', err);
-                                      return of(null);
-                                  })
-                              )
-                          )
-                      )
-                    : of([]);
-
-                return deleteAll$.pipe(
-                    switchMap(() => {
-                        if (!toCreate.length) {
-                            return of({ results: [], createdMappings: [] } as NodeDiffResult);
-                        }
-                        return forkJoin(
-                            toCreate.map((n) =>
-                                this.classificationDecisionTableNodeService
-                                    .createNode(buildClassificationDecisionTablePayload(n, graphId, allNodes))
-                                    .pipe(
-                                        map((r) => ({ uiNodeId: n.id, backendId: (r as { id: number }).id })),
-                                        catchError((err) => {
-                                            console.error('[SaveGraph] CDT create failed:', err);
-                                            return of(null);
-                                        })
-                                    )
-                            )
-                        ).pipe(
-                            map((results) => {
-                                const createdMappings: CreatedNodeMapping[] = results.filter(
-                                    (r): r is CreatedNodeMapping => r != null && r.backendId != null
-                                );
-                                return { results, createdMappings } as NodeDiffResult;
-                            })
-                        );
-                    })
-                );
-            })(),
+            classificationDecisionTableNodes: this.executeNodeDiff(
+                diff.classificationDecisionTableNodes,
+                (n) => this.classificationDecisionTableNodeService.deleteNode(n.id.toString()),
+                (n) =>
+                    this.classificationDecisionTableNodeService.createNode(
+                        buildClassificationDecisionTablePayload(n, graphId, allNodes)
+                    ),
+                (id, n) =>
+                    this.classificationDecisionTableNodeService.updateNode(
+                        id,
+                        buildClassificationDecisionTablePayload(n, graphId, allNodes)
+                    ),
+                (n) => n.id
+            ),
         });
     }
 
