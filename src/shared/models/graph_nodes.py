@@ -144,6 +144,20 @@ class TelegramTriggerNodeData(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ScheduleTriggerNodeData(BaseModel):
+    node_name: str
+    run_mode: Literal["once", "repeat"]
+    start_date_time: str
+    every: int | None = None
+    unit: Literal["seconds", "minutes", "hours", "days", "weeks", "months"] | None = None
+    weekdays: list[str] = []
+    end_type: Literal["never", "on_date", "after_n_runs"]
+    end_date_time: str | None = None
+    max_runs: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class SubGraphNodeData(BaseModel):
     node_name: str
     subgraph_id: int
@@ -170,6 +184,7 @@ class GraphData(BaseModel):
     entrypoint: str
     end_node: EndNodeData | None
     telegram_trigger_node_data_list: list[TelegramTriggerNodeData] = []
+    schedule_trigger_node_data_list: list[ScheduleTriggerNodeData] = []
 
     model_config = ConfigDict(from_attributes=True)
 

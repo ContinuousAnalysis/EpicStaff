@@ -29,6 +29,7 @@ from .graph_nodes import (
     WebhookTriggerNodeData,
     TelegramTriggerNodeFieldData,
     TelegramTriggerNodeData,
+    ScheduleTriggerNodeData,
     SubGraphNodeData,
     GraphData,
     SubGraphData,
@@ -54,6 +55,7 @@ from .sessions import (
     GraphSessionMessageData,
     StopSessionMessage,
     WebhookEventData,
+    ScheduleEventData
 )
 from .tools import (
     ToolConfigData,
@@ -99,6 +101,7 @@ __all__ = [
     "WebhookTriggerNodeData",
     "TelegramTriggerNodeFieldData",
     "TelegramTriggerNodeData",
+    "ScheduleTriggerNodeData",
     "SubGraphNodeData",
     "GraphData",
     "SubGraphData",
@@ -122,6 +125,7 @@ __all__ = [
     "GraphSessionMessageData",
     "StopSessionMessage",
     "WebhookEventData",
+    "ScheduleEventData",
     # tools
     "ToolConfigData",
     "ConfiguredToolData",
