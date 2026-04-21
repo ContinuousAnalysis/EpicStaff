@@ -158,7 +158,6 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
 
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
-        const currentNodeId = this.node().id;
 
         return nodes
             .filter(
@@ -166,8 +165,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
                     node.type !== NodeType.NOTE &&
                     node.type !== NodeType.START &&
                     node.type !== NodeType.WEBHOOK_TRIGGER &&
-                    node.type !== NodeType.TELEGRAM_TRIGGER &&
-                    node.id !== currentNodeId
+                    node.type !== NodeType.TELEGRAM_TRIGGER
             )
             .map((node) => ({
                 value: node.id,

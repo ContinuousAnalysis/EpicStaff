@@ -162,6 +162,10 @@
                 @if (activeTab() === 'postcomputation') {
                     <div class="computation-section">
                         <div class="computation-sidebar">
+                            <h4 class="section-label">Input Map</h4>
+                            <div class="input-map">
+                                <app-input-map [activeColor]="activeColor" arrayName="post_input_map"></app-input-map>
+                            </div>
                             <app-custom-input
                                 label="Output Variable Path"
                                 tooltipText="The path where the output of this code will be stored in your flow variables. Leave empty if you don't need to store the output."

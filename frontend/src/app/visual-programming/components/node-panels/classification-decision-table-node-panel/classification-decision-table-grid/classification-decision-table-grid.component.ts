@@ -219,11 +219,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     public availableNodes = computed(() => {
         const nodes = this.flowService.nodes();
-        const currentId = this.currentNodeId();
         return nodes
-            .filter(
-                (node: NodeModel) => node.id !== currentId && node.type !== NodeType.NOTE && node.type !== NodeType.EDGE
-            )
+            .filter((node: NodeModel) => node.type !== NodeType.NOTE && node.type !== NodeType.EDGE)
             .map((node: NodeModel) => ({
                 label: node.node_name,
                 value: node.id,
@@ -671,8 +668,19 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             manipSection = [manipCol];
         }
 
+        const routeCodeCol: ColDef = {
+            headerName: 'Route Code',
+            field: 'route_code',
+            editable: true,
+            width: 150,
+            suppressMovable: true,
+            cellStyle: {
+                fontSize: '14px',
+            },
+        };
+
         const skipCol: ColDef = {
-            headerName: 'Skip',
+            headerName: 'Continue',
             field: 'continue_flag',
             editable: true,
             width: 65,
@@ -740,7 +748,16 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             },
         };
 
-        return [...staticBefore, ...exprSection, promptIdCol, ...manipSection, skipCol, nextNodeCol, deleteCol];
+        return [
+            ...staticBefore,
+            ...exprSection,
+            promptIdCol,
+            ...manipSection,
+            routeCodeCol,
+            skipCol,
+            nextNodeCol,
+            deleteCol,
+        ];
     }
 
     private getMergeableColIds(): string[] {
