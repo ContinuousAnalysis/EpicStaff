@@ -104,6 +104,7 @@ from django.db.models import Prefetch
 from tables.models.graph_models import (
     ClassificationConditionGroup,
     ClassificationDecisionTableNode,
+    ClassificationDecisionTablePrompt,
     Condition,
     ConditionGroup,
     DecisionTableNode,
@@ -1234,12 +1235,13 @@ class ClassificationDecisionTableNodeModelViewSet(viewsets.ModelViewSet):
     def _create_or_update_node(self, data, instance=None, partial=False):
         data = data.copy()
         condition_groups_data = data.pop("condition_groups", None)
+        prompt_configs_data = data.pop("prompt_configs", None)
 
         node_serializer = self.get_serializer(instance, data=data, partial=partial)
         node_serializer.is_valid(raise_exception=True)
         node = node_serializer.save()
 
-        if partial and condition_groups_data is None:
+        if partial and condition_groups_data is None and prompt_configs_data is None:
             return node, None
 
         if instance:
@@ -1261,6 +1263,24 @@ class ClassificationDecisionTableNodeModelViewSet(viewsets.ModelViewSet):
                     )
                 )
             ClassificationConditionGroup.objects.bulk_create(groups_to_create)
+
+        if prompt_configs_data is not None:
+            if instance:
+                ClassificationDecisionTablePrompt.objects.filter(cdt_node=node).delete()
+
+            ClassificationDecisionTablePrompt.objects.bulk_create(
+                [
+                    ClassificationDecisionTablePrompt(
+                        cdt_node=node,
+                        **{
+                            k: v
+                            for k, v in prompt_data.items()
+                            if k not in ("id", "cdt_node")
+                        },
+                    )
+                    for prompt_data in prompt_configs_data
+                ]
+            )
 
         return node, condition_groups_data
 

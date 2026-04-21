@@ -588,6 +588,13 @@ class ClassificationDecisionTableNode(BaseGraphEntity, BaseGlobalNode):
         max_length=512, null=True, default=None, blank=True
     )
     prompts = models.JSONField(default=dict, blank=True)
+    default_llm_config = models.ForeignKey(
+        "LLMConfig",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cdt_nodes_as_default",
+    )
     default_next_node = models.CharField(max_length=255, null=True, default=None)
     next_error_node = models.CharField(max_length=255, null=True, default=None)
 
@@ -598,6 +605,29 @@ class ClassificationDecisionTableNode(BaseGraphEntity, BaseGlobalNode):
                 name="unique_graph_node_name_for_classification_dt_node",
             )
         ]
+
+
+class ClassificationDecisionTablePrompt(TimestampMixin, models.Model):
+    cdt_node = models.ForeignKey(
+        "ClassificationDecisionTableNode",
+        on_delete=models.CASCADE,
+        related_name="prompt_configs",
+    )
+    prompt_key = models.CharField(max_length=255)
+    prompt_text = models.TextField(blank=True, default="")
+    llm_config = models.ForeignKey(
+        "LLMConfig",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cdt_prompts",
+    )
+    output_schema = models.JSONField(default=dict, blank=True)
+    result_variable = models.CharField(max_length=255, default="prompt_result")
+    variable_mappings = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        unique_together = ("cdt_node", "prompt_key")
 
 
 class ClassificationConditionGroup(BaseGraphEntity, models.Model):

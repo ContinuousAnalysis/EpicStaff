@@ -73,6 +73,7 @@ from tables.models.graph_models import (
     ConditionGroup,
     ClassificationConditionGroup,
     ClassificationDecisionTableNode,
+    ClassificationDecisionTablePrompt,
     DecisionTableNode,
     EndNode,
     LLMNode,
@@ -1727,10 +1728,30 @@ class ClassificationConditionGroupSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class ClassificationDecisionTablePromptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClassificationDecisionTablePrompt
+        fields = [
+            "id",
+            "prompt_key",
+            "prompt_text",
+            "llm_config",
+            "output_schema",
+            "result_variable",
+            "variable_mappings",
+        ]
+
+
 class ClassificationDecisionTableNodeSerializer(serializers.ModelSerializer):
     condition_groups = ClassificationConditionGroupSerializer(many=True, required=False)
+    prompt_configs = ClassificationDecisionTablePromptSerializer(
+        many=True, required=False
+    )
     pre_python_code = PythonCodeSerializer(required=False, allow_null=True)
     post_python_code = PythonCodeSerializer(required=False, allow_null=True)
+    default_llm_config = serializers.PrimaryKeyRelatedField(
+        queryset=LLMConfig.objects.all(), required=False, allow_null=True
+    )
 
     class Meta:
         model = ClassificationDecisionTableNode
@@ -1738,6 +1759,7 @@ class ClassificationDecisionTableNodeSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         condition_groups_data = validated_data.pop("condition_groups", [])
+        prompt_configs_data = validated_data.pop("prompt_configs", [])
         pre_python_code_data = validated_data.pop("pre_python_code", None)
         post_python_code_data = validated_data.pop("post_python_code", None)
 
@@ -1760,10 +1782,18 @@ class ClassificationDecisionTableNodeSerializer(serializers.ModelSerializer):
                 classification_decision_table_node=node, **group_data
             )
 
+        ClassificationDecisionTablePrompt.objects.bulk_create(
+            [
+                ClassificationDecisionTablePrompt(cdt_node=node, **prompt_data)
+                for prompt_data in prompt_configs_data
+            ]
+        )
+
         return node
 
     def update(self, instance, validated_data):
         condition_groups_data = validated_data.pop("condition_groups", None)
+        prompt_configs_data = validated_data.pop("prompt_configs", None)
 
         if "pre_python_code" in validated_data:
             pre_python_code_data = validated_data.pop("pre_python_code")
@@ -1811,6 +1841,15 @@ class ClassificationDecisionTableNodeSerializer(serializers.ModelSerializer):
                 ClassificationConditionGroup.objects.create(
                     classification_decision_table_node=instance, **group_data
                 )
+
+        if prompt_configs_data is not None:
+            instance.prompt_configs.all().delete()
+            ClassificationDecisionTablePrompt.objects.bulk_create(
+                [
+                    ClassificationDecisionTablePrompt(cdt_node=instance, **prompt_data)
+                    for prompt_data in prompt_configs_data
+                ]
+            )
 
         return instance
 
