@@ -59,10 +59,10 @@ export interface GetClassificationDecisionTableNodeRequest {
     id: number;
     graph: number;
     node_name: string;
-    pre_python_code: CDTPythonCodeBlock;
+    pre_python_code: CDTPythonCodeBlock | null;
     pre_input_map: Record<string, string>;
     pre_output_variable_path: string | null;
-    post_python_code: CDTPythonCodeBlock;
+    post_python_code: CDTPythonCodeBlock | null;
     post_input_map: Record<string, string>;
     post_output_variable_path: string | null;
     prompt_configs: PromptConfigBackend[];
@@ -76,10 +76,10 @@ export interface GetClassificationDecisionTableNodeRequest {
 export interface CreateClassificationDecisionTableNodeRequest {
     graph: number;
     node_name: string;
-    pre_python_code: CDTPythonCodeBlock;
+    pre_python_code: CDTPythonCodeBlock | null;
     pre_input_map: Record<string, string> | null;
     pre_output_variable_path: string | null;
-    post_python_code: CDTPythonCodeBlock;
+    post_python_code: CDTPythonCodeBlock | null;
     post_input_map: Record<string, string> | null;
     post_output_variable_path: string | null;
     prompt_configs: CreatePromptConfigRequest[];

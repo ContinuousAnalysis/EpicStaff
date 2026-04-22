@@ -714,6 +714,9 @@ export function buildClassificationDecisionTablePayload(
     const preComp = tableData?.pre_computation || {};
     const postComp = tableData?.post_computation || {};
 
+    const preCodeValue = preComp.code || tableData?.pre_computation_code || '';
+    const postCodeValue = postComp.code || tableData?.post_computation_code || '';
+
     const conditionGroups = (tableData?.condition_groups || [])
         .sort(
             (a: ConditionGroup & { continue_flag?: boolean }, b: ConditionGroup & { continue_flag?: boolean }) =>
@@ -736,20 +739,26 @@ export function buildClassificationDecisionTablePayload(
     return {
         graph: graphId,
         node_name: node.node_name,
-        pre_python_code: {
-            code: preComp.code || tableData?.pre_computation_code || '',
-            libraries: preComp.libraries || [],
-            entrypoint: 'main',
-            global_kwargs: {},
-        },
+        pre_python_code:
+            preCodeValue.trim() === ''
+                ? null
+                : {
+                      code: preCodeValue,
+                      libraries: preComp.libraries || [],
+                      entrypoint: 'main',
+                      global_kwargs: {},
+                  },
         pre_input_map: preComp.input_map || tableData?.pre_input_map || {},
         pre_output_variable_path: preComp.output_variable_path || tableData?.pre_output_variable_path || null,
-        post_python_code: {
-            code: postComp.code || tableData?.post_computation_code || '',
-            libraries: postComp.libraries || [],
-            entrypoint: 'main',
-            global_kwargs: {},
-        },
+        post_python_code:
+            postCodeValue.trim() === ''
+                ? null
+                : {
+                      code: postCodeValue,
+                      libraries: postComp.libraries || [],
+                      entrypoint: 'main',
+                      global_kwargs: {},
+                  },
         post_input_map: postComp.input_map || tableData?.post_input_map || {},
         post_output_variable_path: postComp.output_variable_path || tableData?.post_output_variable_path || null,
         prompt_configs: Object.entries((tableData?.prompts || {}) as Record<string, PromptConfig>).map(
