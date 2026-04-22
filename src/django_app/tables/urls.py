@@ -225,9 +225,9 @@ urlpatterns = [
         name="run-python-code",
     ),
     path(
-        "pythonnodes/<int:pk>/last-test-input/",
+        "pythonnodes/<int:pk>/last-session-input/",
         PythonNodeLastTestInputView.as_view(),
-        name="python-node-last-test-input",
+        name="python-node-last-session-input",
     ),
     path(
         "init-realtime/",
