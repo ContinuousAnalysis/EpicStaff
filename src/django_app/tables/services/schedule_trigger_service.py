@@ -21,10 +21,10 @@ from tables.services.session_manager_service import SessionManagerService
 
 
 def generate_cron(node: ScheduleTriggerNode) -> str | None:
-    """
-    Generates a 5-field CRON expression for modes supported by crontab.
-    NOTE: seconds are not supported by crontab and must be scheduled via IntervalTrigger.
-    For once mode, DateTrigger is recommended.
+    """Build a 5-field crontab for a repeat schedule node.
+
+    Returns None when crontab cannot express the schedule: run_mode="once"
+    (use DateTrigger) and unit="seconds" (use IntervalTrigger).
     """
     if node.run_mode == ScheduleTriggerNode.RunMode.ONCE:
         return None
@@ -41,11 +41,11 @@ def generate_cron(node: ScheduleTriggerNode) -> str | None:
         return CRON_EVERY_N_HOURS.format(every=every)
     elif unit == ScheduleTriggerNode.TimeUnit.DAYS:
         if node.weekdays:
-            return CRON_WEEKDAYS.format(weekdays=','.join(node.weekdays))
+            return CRON_WEEKDAYS.format(weekdays=",".join(node.weekdays))
         return CRON_EVERY_N_DAYS.format(every=every)
     elif unit == ScheduleTriggerNode.TimeUnit.WEEKS:
         if node.weekdays:
-            return CRON_WEEKDAYS.format(weekdays=','.join(node.weekdays))
+            return CRON_WEEKDAYS.format(weekdays=",".join(node.weekdays))
         return CRON_WEEKLY_SUNDAY
     elif unit == ScheduleTriggerNode.TimeUnit.MONTHS:
         return CRON_EVERY_N_MONTHS.format(every=every)
@@ -56,13 +56,7 @@ def generate_cron(node: ScheduleTriggerNode) -> str | None:
 
 
 class ScheduleTriggerService(metaclass=SingletonMeta):
-    """
-    Service for running graph sessions on schedule.
-
-    Pattern: SingletonMeta (same as WebhookTriggerService, TelegramTriggerService).
-    Dependency injection: SessionManagerService is passed via __init__
-    to allow mock substitution in tests.
-    """
+    """Runs a graph session when a schedule fires (signalled from Manager via Redis)."""
 
     def __init__(self, session_manager_service=None):
         if session_manager_service is None:
@@ -71,32 +65,17 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
 
     @transaction.atomic
     def handle_schedule_trigger(self, node_id: int) -> None:
-        """
-        Runs a graph session if all schedule conditions are met.
+        """Check guards, start a graph session, and increment current_runs.
 
-        Input:
-            node_id — PK of the ScheduleTriggerNode that fired
-
-        Process (inside transaction):
-            1. SELECT ... FOR UPDATE SKIP LOCKED
-               → if row is locked → exit (another worker is handling it)
-            2. Guard: start_date_time > now → exit (too early)
-            3. Guard: end_type='on_date' and end_date_time <= now → exit (expired)
-            4. Guard: end_type='after_n_runs' and current_runs >= max_runs → exit (limit reached)
-            5. session_manager_service.run_session(graph_id, variables, entrypoint)
-            6. Atomic UPDATE current_runs = current_runs + 1 via F()
-
-        Output:
-            - On success: new Session created, current_runs incremented by 1
-            - On guard-fail: early return without error
-            - On exception: raise after logger.error (transaction rolls back)
+        select_for_update(skip_locked=True) lets concurrent workers race for the
+        fired node; only one wins, others exit silently. current_runs is bumped
+        via F() so concurrent increments never clobber each other.
         """
         try:
             now = timezone.now()
 
             node = (
-                ScheduleTriggerNode.objects
-                .select_for_update(skip_locked=True)
+                ScheduleTriggerNode.objects.select_for_update(skip_locked=True)
                 .filter(id=node_id, is_active=True)
                 .first()
             )
@@ -140,7 +119,6 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
                     f"run limit reached ({node.current_runs}/{node.max_runs}). Skipping."
                 )
                 return
-
 
             self.session_manager_service.run_session(
                 graph_id=node.graph_id,

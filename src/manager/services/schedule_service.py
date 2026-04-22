@@ -23,19 +23,10 @@ SYNC_RETRY_DELAY = int(os.getenv("SCHEDULE_SYNC_RETRY_DELAY", "5"))
 
 
 class ScheduleService:
-    """
-    Task scheduling service based on APScheduler (AsyncIOScheduler).
+    """APScheduler-based scheduler.
 
-    When a schedule fires, Manager does NOT make an HTTP request to Django.
-    Instead it publishes a Redis signal {"action": "run_session", "node_id": N}
-    to schedule_channel. Django's RedisPubSub receives the signal and calls
-    ScheduleTriggerService, which atomically handles all business logic.
-
-    Lifecycle:
-      1. start()            — load from DB + start scheduler + Redis listener
-      2. add_schedule()     — register a new APScheduler Job
-      3. remove_schedule()  — remove Job on node deactivation/deletion
-      4. execute_schedule() — callback: publish run_session → Redis → Django
+    Fired schedules do not call Django via HTTP — they publish a Redis signal
+    on schedule_channel; Django's RedisPubSub routes it to ScheduleTriggerService.
     """
 
     def __init__(self, redis_service: RedisService):
@@ -58,30 +49,16 @@ class ScheduleService:
         self._manual_removals: set[str] = set()
 
     async def start(self):
-        """
-        Entry point. Called from app.py on FastAPI startup.
-
-        Process:
-            1. Load all active nodes from DB
-            2. Start APScheduler
-            3. Subscribe to schedule_channel in Redis
-        """
+        """Load active schedules, start APScheduler, subscribe to the Redis channel."""
         await self.load_schedules_from_django()
         self.scheduler.start()
         asyncio.create_task(self._start_redis_listener())
 
     async def load_schedules_from_django(self):
-        """
-        Initial sync: loads active nodes from DB and registers APScheduler Jobs.
+        """Initial sync of active schedules from the DB into APScheduler.
 
-        Retries indefinitely every SYNC_RETRY_DELAY seconds if DB is unreachable.
-        Distinguishes repository failure (None) from empty result ([]):
-          - None  → DB error, retry
-          - []    → no active nodes, stop retrying
-          - list  → register jobs, stop retrying
-
-        Input:  —
-        Output: Jobs registered in self.scheduler once DB sync succeeds
+        Retries indefinitely on DB error (repository returns None); an empty
+        list is a valid terminal state (no active nodes).
         """
         attempt = 0
         while True:
@@ -107,18 +84,7 @@ class ScheduleService:
                 await asyncio.sleep(SYNC_RETRY_DELAY)
 
     async def add_schedule(self, node_data: dict):
-        """
-        Registers an APScheduler Job for a schedule node.
-
-        Input:
-            node_data — dict with node fields (id, run_mode, start_date_time, ...)
-        Process:
-            1. Parse start_date_time with timezone
-            2. Build APScheduler trigger via _build_trigger()
-            3. scheduler.add_job(func=execute_schedule, ...)
-        Output:
-            Job registered in scheduler; self.schedule_nodes updated
-        """
+        """Register (or replace) an APScheduler job for a schedule node."""
         node_id = node_data["id"]
         trigger = self._build_trigger(node_data)
 
@@ -161,15 +127,11 @@ class ScheduleService:
             self._manual_removals.discard(job_id)
 
     def _on_job_removed(self, event):
-        """
-        Handler for APScheduler EVENT_JOB_REMOVED.
+        """APScheduler EVENT_JOB_REMOVED handler.
 
-        Fires on every Job removal — both manual (our remove_schedule / replace_existing)
-        and automatic (APScheduler removes the Job when trigger returns None,
-        e.g. end_date reached or run_date of DateTrigger has passed).
-
-        Manual removals are pre-marked in self._manual_removals → we skip them.
-        Auto-removals publish 'deactivate' so Django marks the node is_active=False.
+        Manual removals (remove_schedule / replace_existing) are pre-marked in
+        _manual_removals and skipped. Auto-removals (end_date reached,
+        DateTrigger fired) publish 'deactivate' so Django flips is_active.
         """
         job_id = event.job_id
 
@@ -193,7 +155,7 @@ class ScheduleService:
         asyncio.create_task(self._publish_deactivate(node_id))
 
     async def _publish_deactivate(self, node_id: int):
-        """Publishes a 'deactivate' signal so Django marks the node is_active=False."""
+        """Publish a 'deactivate' signal so Django flips is_active=False."""
         try:
             await self.redis_service.async_publish(
                 SCHEDULE_CHANNEL,
@@ -205,12 +167,7 @@ class ScheduleService:
             )
 
     async def remove_schedule(self, node_id: int):
-        """
-        Removes an APScheduler Job for a schedule node.
-
-        Input:  node_id — node ID
-        Output: Job removed from scheduler; self.schedule_nodes updated
-        """
+        """Remove the APScheduler job for a node (idempotent if already gone)."""
         job_id = self.schedule_nodes.pop(node_id, None)
         if not job_id:
             logger.warning(f"[ScheduleService] Job for node {node_id} not found")
@@ -232,23 +189,10 @@ class ScheduleService:
             self._manual_removals.discard(job_id)
 
     async def execute_schedule(self, node_data: dict):
-        """
-        APScheduler callback. Called on each schedule fire.
+        """APScheduler callback. Forward the fire event to Django via Redis.
 
-        Input:
-            node_data — snapshot of node data at the time the Job was registered.
-
-        Process:
-            1. Publish 'run_session' → schedule_channel → Django
-               Django receives the signal and calls ScheduleTriggerService.handle_schedule_trigger(),
-               which atomically: checks guard conditions + run_session() + increments current_runs.
-            2. If node run_mode is 'once' → publish 'deactivate' + remove_schedule()
-               (Django sets is_active=False; Manager removes Job from memory)
-
-        Output:
-            New session in Django (via Redis → ScheduleTriggerService);
-            current_runs atomically incremented on Django side;
-            for 'once' — node deactivated and Job removed from APScheduler.
+        All business logic (guards, current_runs) lives Django-side in
+        ScheduleTriggerService. For run_mode="once" also publishes 'deactivate'.
         """
         node_id = node_data["id"]
         logger.info(f"[ScheduleService] Executing schedule for node {node_id}")
@@ -276,24 +220,10 @@ class ScheduleService:
             )
 
     def _build_trigger(self, node_data: dict):
-        """
-        APScheduler Trigger factory.
+        """Build an APScheduler trigger from node data.
 
-        Input:
-            node_data — dict with fields: run_mode, start_date_time, end_type,
-                        end_date_time, every, unit, weekdays
-
-        Process:
-            - once     → DateTrigger(run_date=start_date_time)
-            - seconds  → IntervalTrigger(seconds=every, end_date=...)
-            - minutes  → CronTrigger("*/every * * * *", end_date=...)
-            - hours    → CronTrigger("0 */every * * *", end_date=...)
-            - days     → CronTrigger("0 0 */every * *") or with weekdays
-            - weeks    → CronTrigger("0 0 * * mon,wed")
-            - months   → CronTrigger("0 0 1 */every *")
-
-        Output:
-            APScheduler Trigger object or None for unknown unit
+        run_mode="once" → DateTrigger; unit="seconds" → IntervalTrigger; every
+        other unit → CronTrigger. Returns None on missing/invalid config.
         """
         run_mode = node_data["run_mode"]
 
@@ -343,12 +273,10 @@ class ScheduleService:
         return None
 
     def _make_cron(self, crontab: str, end_dt=None) -> CronTrigger:
-        """
-        Build CronTrigger from 5-field crontab with optional end_date.
+        """Build a CronTrigger from a 5-field crontab with an optional end_date.
 
-        CronTrigger.from_crontab() doesn't accept end_date, so we parse the
-        fields manually and use the constructor directly. second=0 matches
-        crontab semantics (fire at second 0 of each matching minute).
+        CronTrigger.from_crontab() has no end_date parameter, so the fields are
+        parsed manually. second="0" matches crontab's once-per-minute semantics.
         """
         minute, hour, day, month, day_of_week = crontab.split()
         return CronTrigger(
@@ -363,12 +291,7 @@ class ScheduleService:
         )
 
     def _parse_dt(self, s: str | None) -> datetime | None:
-        """
-        Parses an ISO 8601 string into a timezone-aware datetime.
-
-        Input:  string like "2025-01-15T09:00:00+03:00" or None
-        Output: datetime with tzinfo or None
-        """
+        """Parse an ISO 8601 string into a timezone-aware datetime (or None)."""
         if not s:
             return None
         try:
@@ -381,18 +304,7 @@ class ScheduleService:
             return None
 
     async def _start_redis_listener(self):
-        """
-        Subscribes to schedule_channel and handles live node updates from Django.
-
-        Messages format:
-        {
-          "action": "node_update",
-          "data": {
-            "action": "create" | "update" | "delete",
-            "node": <dict with node fields>
-          }
-        }
-        """
+        """Subscribe to schedule_channel and apply live node updates from Django."""
         pubsub = self.redis_service.aioredis_client.pubsub()
         await pubsub.subscribe(SCHEDULE_CHANNEL)
 

@@ -1859,34 +1859,10 @@ class _ScheduleConfigInputSerializer(serializers.Serializer):
 
 
 class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
-    """
-    Public JSON shape groups schedule config under a single `schedule` key:
+    """Translates the nested `schedule` block to/from the model's flat columns."""
 
-        {
-          "id": 1,
-          "graph": 12,
-          "node_name": "schedule_1",
-          "is_active": true,
-          "metadata": {...},
-          "current_runs": 0,
-          "schedule": {
-            "run_mode": "repeat",
-            "start_date_time": "2026-01-01T00:00:00Z",
-            "interval": {"every": 5, "unit": "minutes", "weekdays": [...]} | null,
-            "end":      {"type": "after_n_runs", "date_time": null, "max_runs": 10}
-          }
-        }
-
-    Model columns stay flat. to_internal_value flattens the nested `schedule`
-    back into the columns before ModelSerializer validation so the existing
-    ScheduleTriggerValidator (cross-field rules) and the custom update() hook
-    keep working unchanged.
-    """
-
-    # required=False because to_internal_value below handles presence/validation
-    # of the `schedule` block before delegating to super(); without this flag
-    # ModelSerializer.to_internal_value would raise "required" on the data dict
-    # it receives (which no longer contains `schedule` — already flattened).
+    # required=False: presence/null is enforced in to_internal_value; by the
+    # time super() runs, `schedule` is already popped and flattened.
     schedule = _ScheduleConfigInputSerializer(required=False, write_only=True)
 
     class Meta:
@@ -1904,9 +1880,7 @@ class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSeria
         if schedule is serializers.empty:
             if self.partial:
                 return super().to_internal_value(data)
-            raise serializers.ValidationError(
-                {"schedule": ["This field is required."]}
-            )
+            raise serializers.ValidationError({"schedule": ["This field is required."]})
         if schedule is None:
             raise serializers.ValidationError(
                 {"schedule": ["This field may not be null."]}
@@ -1973,8 +1947,7 @@ class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSeria
 
     def update(self, instance, validated_data):
         reactivating = (
-            not instance.is_active
-            and validated_data.get("is_active") is True
+            not instance.is_active and validated_data.get("is_active") is True
         )
 
         new_max_runs = validated_data.get("max_runs", instance.max_runs)

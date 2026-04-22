@@ -7,21 +7,17 @@ from db.config import AsyncSessionLocal
 
 
 class ScheduleTriggerNodeRepository:
-    """
-    Repository for accessing tables_scheduletriggernode from Manager.
+    """Read/update tables_scheduletriggernode from Manager.
 
-    Manager uses a separate DB user (manager_user) with SELECT, UPDATE rights
-    — without access to Django ORM.
+    Manager uses a restricted DB user (manager_user, SELECT/UPDATE only) —
+    no Django ORM here, raw SQL via SQLAlchemy async.
     """
 
     def __init__(self, session_factory=None):
         self.session_factory = session_factory or AsyncSessionLocal
 
     async def _execute_with_session(self, operation):
-        """
-        Wrapper for executing an operation in a session with automatic
-        commit/rollback and connection cleanup.
-        """
+        """Run an operation in a session with automatic commit/rollback."""
         async with self.session_factory() as session:
             try:
                 result = await operation(session)
@@ -37,20 +33,9 @@ class ScheduleTriggerNodeRepository:
                 raise
 
     async def get_all_active_schedule_nodes(self) -> list[dict] | None:
-        """
-        Returns a list of all active schedule nodes.
+        """Return all schedule nodes with is_active=true.
 
-        Input:  —
-        Process:
-            SELECT id, node_name, graph_id, is_active, run_mode, start_date_time,
-                   every, unit, weekdays, end_type, end_date_time, max_runs, current_runs
-            FROM tables_scheduletriggernode
-            WHERE is_active = true
-
-        Output:
-            list[dict] — each dict contains all node fields;
-            [] if no active nodes exist;
-            None on DB error.
+        Empty list when there are none; None on DB error (caller decides retry).
         """
 
         async def operation(session: AsyncSession):
@@ -78,16 +63,14 @@ class ScheduleTriggerNodeRepository:
                     "is_active": row.is_active,
                     "run_mode": row.run_mode,
                     "start_date_time": (
-                        row.start_date_time.isoformat()
-                        if row.start_date_time else None
+                        row.start_date_time.isoformat() if row.start_date_time else None
                     ),
                     "every": row.every,
                     "unit": row.unit,
                     "weekdays": row.weekdays,
                     "end_type": row.end_type,
                     "end_date_time": (
-                        row.end_date_time.isoformat()
-                        if row.end_date_time else None
+                        row.end_date_time.isoformat() if row.end_date_time else None
                     ),
                     "max_runs": row.max_runs,
                     "current_runs": row.current_runs,
