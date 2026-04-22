@@ -1830,6 +1830,162 @@ class GraphNoteSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
         fields = "__all__"
 
 
+class _ScheduleIntervalInputSerializer(serializers.Serializer):
+    every = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    unit = serializers.ChoiceField(
+        choices=ScheduleTriggerNode.TimeUnit.choices,
+        required=False,
+        allow_null=True,
+    )
+    weekdays = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_null=True,
+        allow_empty=True,
+    )
+
+
+class _ScheduleEndInputSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=ScheduleTriggerNode.EndType.choices)
+    date_time = serializers.DateTimeField(required=False, allow_null=True)
+    max_runs = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+
+
+class _ScheduleConfigInputSerializer(serializers.Serializer):
+    run_mode = serializers.ChoiceField(choices=ScheduleTriggerNode.RunMode.choices)
+    start_date_time = serializers.DateTimeField()
+    interval = _ScheduleIntervalInputSerializer(required=False, allow_null=True)
+    end = _ScheduleEndInputSerializer()
+
+
+class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+    """
+    Public JSON shape groups schedule config under a single `schedule` key:
+
+        {
+          "id": 1,
+          "graph": 12,
+          "node_name": "schedule_1",
+          "is_active": true,
+          "metadata": {...},
+          "current_runs": 0,
+          "schedule": {
+            "run_mode": "repeat",
+            "start_date_time": "2026-01-01T00:00:00Z",
+            "interval": {"every": 5, "unit": "minutes", "weekdays": [...]} | null,
+            "end":      {"type": "after_n_runs", "date_time": null, "max_runs": 10}
+          }
+        }
+
+    Model columns stay flat. to_internal_value flattens the nested `schedule`
+    back into the columns before ModelSerializer validation so the existing
+    ScheduleTriggerValidator (cross-field rules) and the custom update() hook
+    keep working unchanged.
+    """
+
+    # required=False because to_internal_value below handles presence/validation
+    # of the `schedule` block before delegating to super(); without this flag
+    # ModelSerializer.to_internal_value would raise "required" on the data dict
+    # it receives (which no longer contains `schedule` — already flattened).
+    schedule = _ScheduleConfigInputSerializer(required=False, write_only=True)
+
+    class Meta:
+        model = ScheduleTriggerNode
+        fields = "__all__"
+        read_only_fields = ["current_runs"]
+
+    def to_internal_value(self, data):
+        if not isinstance(data, dict):
+            return super().to_internal_value(data)
+
+        data = dict(data)
+        schedule = data.pop("schedule", serializers.empty)
+
+        if schedule is serializers.empty:
+            if self.partial:
+                return super().to_internal_value(data)
+            raise serializers.ValidationError(
+                {"schedule": ["This field is required."]}
+            )
+        if schedule is None:
+            raise serializers.ValidationError(
+                {"schedule": ["This field may not be null."]}
+            )
+
+        config = _ScheduleConfigInputSerializer(data=schedule)
+        try:
+            config.is_valid(raise_exception=True)
+        except serializers.ValidationError as exc:
+            raise serializers.ValidationError({"schedule": exc.detail})
+
+        cfg = config.validated_data
+        interval = cfg.get("interval") or {}
+        end = cfg["end"]
+
+        data["run_mode"] = cfg["run_mode"]
+        data["start_date_time"] = cfg["start_date_time"]
+        data["every"] = interval.get("every")
+        data["unit"] = interval.get("unit")
+        data["weekdays"] = interval.get("weekdays")
+        data["end_type"] = end["type"]
+        data["end_date_time"] = end.get("date_time")
+        data["max_runs"] = end.get("max_runs")
+
+        return super().to_internal_value(data)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        run_mode = data.pop("run_mode", None)
+        start_dt = data.pop("start_date_time", None)
+        every = data.pop("every", None)
+        unit = data.pop("unit", None)
+        weekdays = data.pop("weekdays", None)
+        end_type = data.pop("end_type", None)
+        end_dt = data.pop("end_date_time", None)
+        max_runs = data.pop("max_runs", None)
+
+        interval = (
+            None
+            if run_mode == ScheduleTriggerNode.RunMode.ONCE
+            else {
+                "every": every,
+                "unit": unit,
+                "weekdays": weekdays or [],
+            }
+        )
+
+        data["schedule"] = {
+            "run_mode": run_mode,
+            "start_date_time": start_dt,
+            "interval": interval,
+            "end": {
+                "type": end_type,
+                "date_time": end_dt,
+                "max_runs": max_runs,
+            },
+        }
+        return data
+
+    def validate(self, attrs):
+        ScheduleTriggerValidator().validate(attrs)
+        return attrs
+
+    def update(self, instance, validated_data):
+        reactivating = (
+            not instance.is_active
+            and validated_data.get("is_active") is True
+        )
+
+        new_max_runs = validated_data.get("max_runs", instance.max_runs)
+        max_runs_changed = new_max_runs != instance.max_runs
+
+        if reactivating or max_runs_changed:
+            validated_data["current_runs"] = 0
+
+        return super().update(instance, validated_data)
+
+
 class GraphSerializer(serializers.ModelSerializer):
     # Reverse relationships
     crew_node_list = CrewNodeSerializer(many=True, read_only=True)
@@ -2063,28 +2219,3 @@ class VoiceSettingsSerializer(serializers.ModelSerializer):
                 + "/voice/stream"
             )
         return None
-    
-
-class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
-    class Meta:
-        model = ScheduleTriggerNode
-        fields = "__all__"
-        read_only_fields = ["current_runs"]
-
-    def validate(self, attrs):
-        ScheduleTriggerValidator().validate(attrs)
-        return attrs
-
-    def update(self, instance, validated_data):
-        reactivating = (
-            not instance.is_active
-            and validated_data.get("is_active") is True
-        )
-
-        new_max_runs = validated_data.get("max_runs", instance.max_runs)
-        max_runs_changed = new_max_runs != instance.max_runs
-
-        if reactivating or max_runs_changed:
-            validated_data["current_runs"] = 0
-
-        return super().update(instance, validated_data)

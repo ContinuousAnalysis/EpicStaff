@@ -4,8 +4,40 @@ from loguru import logger
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from tables.models.graph_models import ScheduleTriggerNode
-from tables.serializers.model_serializers import ScheduleTriggerNodeSerializer
 from tables.services.redis_service import RedisService
+
+
+def _flat_schedule_payload(instance: ScheduleTriggerNode) -> dict:
+    """
+    Flat wire-protocol projection for the Django→Manager Redis channel.
+
+    The public HTTP serializer groups fields under a nested `schedule` block,
+    but the Manager-side consumers (ScheduleService, ScheduleTriggerNodeRepository)
+    read flat keys directly. Keep this helper's shape in sync with
+    ScheduleTriggerNodeRepository.get_all_active_schedule_nodes() — changing
+    either side without the other will break the Manager.
+    """
+    return {
+        "id": instance.pk,
+        "node_name": instance.node_name,
+        "graph": instance.graph_id,
+        "is_active": instance.is_active,
+        "run_mode": instance.run_mode,
+        "start_date_time": (
+            instance.start_date_time.isoformat()
+            if instance.start_date_time else None
+        ),
+        "every": instance.every,
+        "unit": instance.unit,
+        "weekdays": instance.weekdays,
+        "end_type": instance.end_type,
+        "end_date_time": (
+            instance.end_date_time.isoformat()
+            if instance.end_date_time else None
+        ),
+        "max_runs": instance.max_runs,
+        "current_runs": instance.current_runs,
+    }
 
 
 @receiver(post_save, sender=ScheduleTriggerNode)
@@ -37,7 +69,7 @@ def schedule_trigger_post_save_handler(sender, instance: ScheduleTriggerNode, cr
             "action": "node_update",
             "data": {
                 "action": action,
-                "node": ScheduleTriggerNodeSerializer(instance).data,
+                "node": _flat_schedule_payload(instance),
             },
         }
         redis_service.redis_client.publish("schedule_channel", json.dumps(payload))
