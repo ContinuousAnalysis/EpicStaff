@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     "tables",
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "django_filters",
     "corsheaders",
@@ -101,11 +102,14 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "tables.authentication.JwtOrApiKeyAuthentication",
+        "tables.services.rbac.authentication.JwtOrApiKeyAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        "login": os.getenv("LOGIN_THROTTLE_RATE", "5/min"),
+    },
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -120,8 +124,8 @@ SIMPLE_JWT = {
         minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15"))
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "7"))),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 ROOT_URLCONF = "django_app.urls"
@@ -223,6 +227,8 @@ MEDIA_URL = "/media/"
 AUTH_USER_MODEL = "tables.User"
 
 PASSWORD_RESET_TOKEN_TTL = int(os.getenv("PASSWORD_RESET_TOKEN_TTL", "3600"))
+
+SSE_TICKET_TTL_SECONDS = int(os.getenv("SSE_TICKET_TTL_SECONDS", "300"))
 
 MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 

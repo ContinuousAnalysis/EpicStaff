@@ -118,6 +118,25 @@ class ResetUserResponseSerializer(serializers.Serializer):
     api_key = serializers.CharField()
 
 
+# ---- Logout ----
+
+
+class LogoutRequestSerializer(serializers.Serializer):
+    refresh = serializers.CharField(write_only=True)
+
+
+class LogoutResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+# ---- SSE ticket ----
+
+
+class SseTicketResponseSerializer(serializers.Serializer):
+    ticket = serializers.CharField()
+    expires_in = serializers.IntegerField()
+
+
 # ---- Swagger token (OAuth2 password flow) ----
 
 
@@ -135,7 +154,7 @@ class SwaggerTokenResponseSerializer(serializers.Serializer):
 # ---- Custom TokenObtainPair (embeds email + is_superadmin claims) ----
 
 
-class EpicStaffTokenObtainPairSerializer(TokenObtainPairSerializer):
+class LoginSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)

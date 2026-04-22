@@ -11,7 +11,7 @@ from tables.models.rbac_models import ApiKey
 
 
 class JwtOrApiKeyAuthenticationScheme(OpenApiAuthenticationExtension):
-    target_class = "tables.authentication.JwtOrApiKeyAuthentication"
+    target_class = "tables.services.rbac.authentication.JwtOrApiKeyAuthentication"
     name = "BearerAuth"
 
     def get_security_definition(self, auto_schema):

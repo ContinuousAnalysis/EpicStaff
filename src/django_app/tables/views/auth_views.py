@@ -4,20 +4,23 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from tables.authentication import JwtOrApiKeyAuthentication
+from tables.services.rbac.authentication import JwtOrApiKeyAuthentication
 from tables.models.rbac_models import ApiKey
 from tables.serializers.rbac_serializers import (
     ApiKeyValidateResponseSerializer,
     AuthMeResponseSerializer,
-    EpicStaffTokenObtainPairSerializer,
+    LoginSerializer,
+    LogoutRequestSerializer,
+    LogoutResponseSerializer,
     FirstSetupRequestSerializer,
     FirstSetupResponseSerializer,
     FirstSetupStatusSerializer,
     ResetUserRequestSerializer,
     ResetUserResponseSerializer,
+    SseTicketResponseSerializer,
     SwaggerTokenRequestSerializer,
     SwaggerTokenResponseSerializer,
     TokenIntrospectRequestSerializer,
@@ -25,13 +28,82 @@ from tables.serializers.rbac_serializers import (
 )
 from tables.services.rbac.auth_service import AuthService, IssuedTokens
 from tables.services.rbac.first_setup_service import FirstSetupService
+from tables.services.rbac.rbac_exceptions import InvalidRefreshTokenError
 from tables.services.rbac.reset_user_service import ResetUserService
+from tables.services.rbac.sse_ticket_service import SseTicketService
+from tables.throttles import LoginThrottle
 
 
-class EpicStaffTokenObtainPairView(TokenObtainPairView):
-    """JWT login — accepts `{"email", "password"}` (USERNAME_FIELD=email)."""
+class LoginView(TokenObtainPairView):
+    """JWT login — accepts `{"email", "password"}` (USERNAME_FIELD=email).
 
-    serializer_class = EpicStaffTokenObtainPairSerializer
+    Throttled by `LoginThrottle` (composite IP|email bucket; rate driven by
+    `LOGIN_THROTTLE_RATE` env var, default 5/min). 6th attempt inside the
+    window returns 429 with a `Retry-After` header.
+    """
+
+    serializer_class = LoginSerializer
+    throttle_classes = [LoginThrottle]
+
+
+class LogoutView(APIView):
+    """
+    JWT logout — blacklists the caller's refresh token so it can no longer
+    be used (or rotated) to obtain new access tokens. The short-lived access
+    token continues to work until its own expiry.
+    """
+
+    authentication_classes = [JwtOrApiKeyAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Log out (blacklist refresh token)",
+        request=LogoutRequestSerializer,
+        responses={
+            205: LogoutResponseSerializer,
+            400: OpenApiResponse(description="Refresh token invalid or expired"),
+        },
+    )
+    def post(self, request):
+        serializer = LogoutRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            RefreshToken(serializer.validated_data["refresh"]).blacklist()
+        except TokenError as exc:
+            raise InvalidRefreshTokenError() from exc
+        return Response(
+            {"detail": "Logged out."},
+            status=status.HTTP_205_RESET_CONTENT,
+        )
+
+
+class SseTicketView(APIView):
+    """
+    Issue a single-use SSE ticket bound to the calling JWT user. The ticket
+    is used as a `?ticket=...` query param on SSE endpoints because
+    EventSource cannot attach an `Authorization` header. See
+    `docs/rbac/sse_auth.md` for the FE flow.
+    """
+
+    authentication_classes = [JwtOrApiKeyAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    _service = SseTicketService()
+
+    @extend_schema(
+        summary="Issue a short-lived single-use SSE ticket",
+        responses={200: SseTicketResponseSerializer},
+    )
+    def post(self, request):
+        if not getattr(request.user, "is_authenticated", False) or not hasattr(
+            request.user, "email"
+        ):
+            return Response(
+                {"detail": "This endpoint requires a user context."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        ticket, ttl = self._service.issue(request.user)
+        return Response({"ticket": ticket, "expires_in": ttl})
 
 
 class FirstSetupView(APIView):
@@ -213,6 +285,7 @@ class SwaggerTokenView(APIView):
 
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [LoginThrottle]
 
     @extend_schema(
         summary="Swagger UI token endpoint (OAuth2 password flow)",
@@ -223,7 +296,7 @@ class SwaggerTokenView(APIView):
         },
     )
     def post(self, request):
-        serializer = EpicStaffTokenObtainPairSerializer(
+        serializer = LoginSerializer(
             data={
                 "email": request.data.get("username"),
                 "password": request.data.get("password"),

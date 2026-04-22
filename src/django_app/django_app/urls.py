@@ -20,9 +20,11 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from tables.views.auth_views import (
     ApiKeyValidateView,
     AuthMeView,
-    EpicStaffTokenObtainPairView,
     FirstSetupView,
+    LoginView,
+    LogoutView,
     ResetUserView,
+    SseTicketView,
     SwaggerTokenView,
     TokenIntrospectView,
 )
@@ -32,13 +34,11 @@ from django.conf.urls.static import static
 
 
 urlpatterns = [
-    path(
-        "api/auth/token/",
-        EpicStaffTokenObtainPairView.as_view(),
-        name="token_obtain_pair",
-    ),
-    path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/auth/login/", LoginView.as_view(), name="login"),
+    path("api/auth/logout/", LogoutView.as_view(), name="logout"),
+    path("api/auth/refresh/", TokenRefreshView.as_view(), name="refresh"),
     path("api/auth/me/", AuthMeView.as_view(), name="auth_me"),
+    path("api/auth/sse-ticket/", SseTicketView.as_view(), name="sse_ticket"),
     path(
         "api/auth/introspect/", TokenIntrospectView.as_view(), name="token_introspect"
     ),
