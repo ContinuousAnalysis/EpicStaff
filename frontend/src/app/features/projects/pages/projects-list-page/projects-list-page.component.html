@@ -45,12 +45,7 @@
                         (ngModelChange)="onSearchTermChange($event)"
                     />
                     @if (searchTerm) {
-                        <button
-                            type="button"
-                            class="clear-btn"
-                            aria-label="Clear"
-                            (click)="clearSearch()"
-                        >
+                        <button type="button" class="clear-btn" aria-label="Clear" (click)="clearSearch()">
                             <app-svg-icon icon="x" size="1.1rem" />
                         </button>
                     }

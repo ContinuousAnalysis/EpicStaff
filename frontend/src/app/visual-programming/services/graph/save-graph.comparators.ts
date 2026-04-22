@@ -104,6 +104,7 @@ export function getPythonNodeForComparisonFromBackend(node: PythonNode) {
         input_map: node.input_map,
         output_variable_path: node.output_variable_path,
         stream_config: node.stream_config ?? {},
+        use_storage: node.use_storage ?? false,
         metadata: getBackendMetadataForComparison(node),
     };
 }
@@ -117,6 +118,7 @@ export function getPythonNodeForComparisonFromUI(node: PythonNodeModel) {
         input_map: node.input_map || {},
         output_variable_path: node.output_variable_path || null,
         stream_config: node.stream_config ?? {},
+        use_storage: node.data.use_storage ?? false,
         metadata: getUIMetadataForComparison(node),
     };
 }
@@ -420,6 +422,7 @@ export function getCodeAgentNodeForComparisonFromBackend(node: GetCodeAgentNodeR
         output_variable_path: node.output_variable_path,
         stream_config: node.stream_config ?? {},
         output_schema: node.output_schema ?? {},
+        use_storage: node.use_storage ?? false,
         metadata: getBackendMetadataForComparison(node),
     };
 }
@@ -443,6 +446,7 @@ export function getCodeAgentNodeForComparisonFromUI(node: CodeAgentNodeModel) {
         output_variable_path: node.output_variable_path,
         stream_config: node.stream_config ?? {},
         output_schema: node.data?.output_schema ?? {},
+        use_storage: node.data?.use_storage ?? false,
         metadata: getUIMetadataForComparison(node),
     };
 }

@@ -16,7 +16,10 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
         <div class="start-container">
             <div class="start-header" (click)="toggleMessage()">
                 <div class="play-arrow" *ngIf="hasInputs()">
-                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                    <app-svg-icon
+                        [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                        size="1.1rem"
+                    />
                 </div>
                 <div class="icon-container">
                     <app-svg-icon icon="flag" size="1.25rem" />
@@ -32,7 +35,10 @@ import { GraphMessage } from '../../../../models/graph-session-message.model';
                     <!-- Input Parameters Section -->
                     <div class="input-container" *ngIf="hasInputs()">
                         <div class="section-heading" (click)="toggleInputs($event)">
-                            <app-svg-icon [icon]="isInputsExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                            <app-svg-icon
+                                [icon]="isInputsExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Input Parameters
                         </div>
                         <div

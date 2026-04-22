@@ -37,7 +37,9 @@ export class FlowsApiService {
             httpParams = httpParams.set('no_label', 'true');
         }
         return this.http
-            .get<ApiGetRequest<GetGraphLightRequest>>(`${this.configService.apiUrl}graph-light/`, { params: httpParams })
+            .get<
+                ApiGetRequest<GetGraphLightRequest>
+            >(`${this.configService.apiUrl}graph-light/`, { params: httpParams })
             .pipe(map((response) => response.results.sort((a, b) => b.id - a.id)));
     }
 

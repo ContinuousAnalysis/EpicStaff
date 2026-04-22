@@ -7,7 +7,7 @@ import { ToolConfig } from '../../../features/tools/models/tool-config.model';
 import { CodeAgentNodeData } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { CustomConditionalEdgeModelForNode } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { TelegramTriggerNodeField } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
-import { GetLlmConfigRequest } from "../../../shared/models/llms/llm-config.model";
+import { GetLlmConfigRequest } from '../../../shared/models/llms/llm-config.model';
 import { NodeType } from '../enums/node-type';
 import { DecisionTableNode } from './decision-table.model';
 import { ViewPort } from './port.model';

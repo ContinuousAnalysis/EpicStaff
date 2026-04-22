@@ -1,7 +1,15 @@
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, OnDestroy, TemplateRef, ViewChild, ViewContainerRef } from '@angular/core';
+import {
+    AfterViewInit,
+    Component,
+    ElementRef,
+    OnDestroy,
+    TemplateRef,
+    ViewChild,
+    ViewContainerRef,
+} from '@angular/core';
 import { IHeaderParams } from 'ag-grid-community';
 import { fromEvent, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';

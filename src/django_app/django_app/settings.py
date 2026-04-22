@@ -199,6 +199,14 @@ CACHES = {
 MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
 MEDIA_URL = "/media/"
 
+# Object storage
+STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "s3")
+STORAGE_ENDPOINT = os.getenv("STORAGE_ENDPOINT", "")
+STORAGE_ACCESS_KEY = os.getenv("STORAGE_ACCESS_KEY", "")
+STORAGE_SECRET_KEY = os.getenv("STORAGE_SECRET_KEY", "")
+STORAGE_BUCKET_NAME = os.getenv("STORAGE_BUCKET_NAME", "epicstaff")
+STORAGE_LOCAL_ROOT = os.getenv("STORAGE_LOCAL_ROOT", "/app/storage")
+
 MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 REDIS_TUNNEL_CONFIG_CHANNEL = os.getenv(
@@ -235,6 +243,9 @@ GRAPH_MESSAGE_UPDATE_CHANNEL = os.environ.get(
     "GRAPH_MESSAGE_UPDATE_CHANNEL", "graph:message:update"
 )
 WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
+STORAGE_MUTATION_CHANNEL = os.environ.get(
+    "STORAGE_MUTATION_CHANNEL", "storage_mutations"
+)
 TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
 
 

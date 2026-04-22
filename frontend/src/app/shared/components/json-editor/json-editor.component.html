@@ -23,8 +23,12 @@
 </div>
 
 <!-- Editor Container -->
-<div class="editor-container" [class.collapsed]="collapsible && collapsed" [class.expanded]="collapsible && !collapsed"
-     #editorContainer>
+<div
+    class="editor-container"
+    [class.collapsed]="collapsible && collapsed"
+    [class.expanded]="collapsible && !collapsed"
+    #editorContainer
+>
     @if (!collapsible || !collapsed) {
         <ngx-monaco-editor
             [options]="editorOptions"

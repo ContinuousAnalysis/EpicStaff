@@ -1,9 +1,7 @@
 <section class="quickstart-section">
     <header class="quickstart-section__header">
         <h3 class="quickstart-section__title">Quickstart</h3>
-        <p class="quickstart-section__subtitle">
-            Quickly configure your environment with your AI provider
-        </p>
+        <p class="quickstart-section__subtitle">Quickly configure your environment with your AI provider</p>
     </header>
 
     <div class="quickstart-section__layout">
@@ -41,20 +39,11 @@
                             help_outline
                         </mat-icon>
                     </div>
-                    <app-custom-input
-                        formControlName="apiKey"
-                        type="password"
-                        placeholder="Enter API key"
-                    />
+                    <app-custom-input formControlName="apiKey" type="password" placeholder="Enter API key" />
                 </div>
 
                 <div class="quickstart-section__actions">
-                    <app-button
-                        type="outline-primary"
-                        (click)="onReset()"
-                    >
-                        Reset
-                    </app-button>
+                    <app-button type="outline-primary" (click)="onReset()"> Reset </app-button>
                     <app-button
                         type="primary"
                         (click)="onQuickStart()"
@@ -68,9 +57,7 @@
 
         <div class="quickstart-section__right">
             <div class="quickstart-section__card">
-                <div class="quickstart-section__card-title">
-                    How to find your provider's API key
-                </div>
+                <div class="quickstart-section__card-title">How to find your provider's API key</div>
                 <ol class="quickstart-section__steps">
                     <li>
                         Go to the official website of your provider
@@ -124,7 +111,7 @@
                         <span class="quickstart-section__card-link">Tools</span>,
                         <span class="quickstart-section__card-link">Voice</span> and
                         <span class="quickstart-section__card-link">Transcription</span>
-                        <span>{{ quickstartStatus() === 'updated' ? "?" : "." }}</span>
+                        <span>{{ quickstartStatus() === 'updated' ? '?' : '.' }}</span>
                     </p>
 
                     <p class="quickstart-section__card-text">
@@ -141,5 +128,3 @@
         </div>
     </div>
 </section>
-
-

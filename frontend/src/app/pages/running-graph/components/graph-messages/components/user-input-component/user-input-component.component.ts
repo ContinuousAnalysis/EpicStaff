@@ -24,9 +24,7 @@ import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg
                     [disabled]="!userMessage.trim() || isSubmitting"
                     title="Send"
                 >
-                    <ng-container *ngIf="!isSubmitting">
-                        <app-svg-icon icon="send" size="1rem" />Send
-                    </ng-container>
+                    <ng-container *ngIf="!isSubmitting"> <app-svg-icon icon="send" size="1rem" />Send </ng-container>
                     <div *ngIf="isSubmitting" class="spinner"></div>
                 </button>
             </div>

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, input, Output, output, signal } from '@angular/core';
 import { CheckboxComponent, IconButtonComponent, LoadingSpinnerComponent } from '@shared/components';
 import { GraphMessagesComponent } from 'src/app/pages/running-graph/components/graph-messages/graph-messages.component';
 
@@ -35,7 +35,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                         <th style="width: 10%">ID</th>
                         <th style="width: 17%">
                             <app-flow-session-status-filter-dropdown
-                                [value]="statusFilter"
+                                [value]="statusFilter()"
                                 (valueChange)="statusFilterChange.emit($event)"
                             >
                             </app-flow-session-status-filter-dropdown>
@@ -140,13 +140,13 @@ export class FlowSessionsTableComponent {
     @Input() flow!: GraphDto;
     @Input() isLoading: boolean = false;
     @Input() showEmptyState: boolean = false;
-    @Input() statusFilter: string[] = ['all'];
+    statusFilter = input<string[]>(['all']);
 
     @Output() deleteSelected = new EventEmitter<number[]>();
     @Output() viewSession = new EventEmitter<number>();
     @Output() stopSession = new EventEmitter<number>();
-    @Output() statusFilterChange = new EventEmitter<string[]>();
-    @Output() selectedIdsChange = new EventEmitter<Set<number>>();
+    statusFilterChange = output<string[]>();
+    selectedIdsChange = output<Set<number>>();
 
     public selectedIds = signal<Set<number>>(new Set());
     public expandedSessionId = signal<number | null>(null);

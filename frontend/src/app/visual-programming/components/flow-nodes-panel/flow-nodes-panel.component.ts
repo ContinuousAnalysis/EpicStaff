@@ -13,8 +13,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FFlowModule } from '@foblex/flow';
-import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 
+import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { NODE_COLORS, NODE_ICONS } from '../../core/enums/node-config';
 import { NodeType } from '../../core/enums/node-type';
 import { AgentNodeModel, LLMNodeModel, NodeModel } from '../../core/models/node.model';

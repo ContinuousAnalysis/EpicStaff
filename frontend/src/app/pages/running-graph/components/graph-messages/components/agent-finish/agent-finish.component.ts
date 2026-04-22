@@ -6,11 +6,7 @@ import { MarkdownModule } from 'ngx-markdown';
 import { GetAgentRequest } from '../../../../../../features/staff/models/agent.model';
 import { expandCollapseAnimation } from '../../../../../../shared/animations/animations-expand-collapse';
 import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
-import {
-    AgentFinishMessageData,
-    GraphMessage,
-    MessageType,
-} from '../../../../models/graph-session-message.model';
+import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../models/graph-session-message.model';
 
 @Component({
     selector: 'app-agent-finish-message',
@@ -22,7 +18,10 @@ import {
             <!-- Agent Message Header with Toggle -->
             <div class="agent-header" (click)="toggleMessage()">
                 <div class="play-arrow">
-                    <app-svg-icon [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                    <app-svg-icon
+                        [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                        size="1.1rem"
+                    />
                 </div>
                 <div class="icon-container">
                     <app-svg-icon icon="robot" size="1.25rem" />
@@ -38,7 +37,10 @@ import {
                     <!-- Thought Section -->
                     <div class="thought-container" *ngIf="agentFinishMessageData?.thought">
                         <div class="section-heading" (click)="toggleSection('thought')">
-                            <app-svg-icon [icon]="isThoughtExpanded ? 'caret-down-filled' : 'caret-right-filled'" size="1.1rem" />
+                            <app-svg-icon
+                                [icon]="isThoughtExpanded ? 'caret-down-filled' : 'caret-right-filled'"
+                                size="1.1rem"
+                            />
                             Thought
                         </div>
                         <div

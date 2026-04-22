@@ -12,7 +12,13 @@ import { StrategyForm } from '../strategy-config-form.abstract';
     templateUrl: './json-form.component.html',
     styleUrls: ['../../document-config.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [InputNumberComponent, AppSvgIconComponent, MATERIAL_FORMS, ReactiveFormsModule, ValidationErrorsComponent],
+    imports: [
+        InputNumberComponent,
+        AppSvgIconComponent,
+        MATERIAL_FORMS,
+        ReactiveFormsModule,
+        ValidationErrorsComponent,
+    ],
 })
 export class JsonFormComponent extends StrategyForm<JsonStrategyModel> {
     initializeForm(config: JsonStrategyModel): FormGroup {

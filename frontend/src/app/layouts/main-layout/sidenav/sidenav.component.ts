@@ -147,10 +147,10 @@ export class LeftSidebarComponent implements AfterViewInit {
                 showTooltip: false,
             },
             {
-                id: 'knowledge-sources',
-                routeLink: 'knowledge-sources',
+                id: 'files',
+                routeLink: 'files',
                 icon: 'sources',
-                label: 'Knowledge Sources',
+                label: 'Files',
                 showTooltip: false,
             },
             {

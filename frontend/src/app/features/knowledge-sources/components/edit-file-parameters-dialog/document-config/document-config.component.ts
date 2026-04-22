@@ -5,7 +5,6 @@ import { SelectComponent } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 
 import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
-
 import { CHUNK_STRATEGIES_SELECT_ITEMS } from '../../../constants/constants';
 import { ADDITIONAL_PARAMS_FORM_COMPONENT_MAP } from '../../../enums/additional-params-form.map';
 import { NaiveRagChunkStrategy } from '../../../enums/naive-rag-chunk-strategy';

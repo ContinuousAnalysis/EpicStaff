@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { expandCollapseAnimation } from '@shared/animations';
 import { CustomInputComponent, JsonEditorComponent } from '@shared/components';
 import { FullLLMConfig, FullLLMConfigService } from '@shared/services';
@@ -13,12 +13,14 @@ import { CodeAgentNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 import { SidePanelService } from '../../../services/side-panel.service';
 import { InputMapComponent } from '../../input-map/input-map.component';
+import { NodeStorageSectionComponent } from '../../node-storage-section/node-storage-section.component';
+import {
+    createInputMapFromPairs,
+    getValidInputPairs,
+    initializeInputMap,
+    parseCommaSeparatedList,
+} from '../node-panel-form.utils';
 import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
-
-interface InputMapPair {
-    key: string;
-    value: string;
-}
 
 @Component({
     standalone: true,
@@ -27,6 +29,7 @@ interface InputMapPair {
         ReactiveFormsModule,
         CustomInputComponent,
         InputMapComponent,
+        NodeStorageSectionComponent,
         CodeEditorComponent,
         CommonModule,
         JsonEditorComponent,
@@ -178,6 +181,13 @@ interface InputMapPair {
                                         placeholder="e.g. requests, httpx"
                                         [activeColor]="activeColor"
                                     ></app-custom-input>
+
+                                    <app-node-storage-section
+                                        [useStorage]="useStorage()"
+                                        (onToggleChange)="onStorageToggle($event)"
+                                        (onInsertCode)="insertStorageCode($event)"
+                                        (onRemoveCode)="removeStorageCode($event)"
+                                    ></app-node-storage-section>
                                 </div>
                             }
 
@@ -189,7 +199,7 @@ interface InputMapPair {
                                         viewBox="0 0 9 22"
                                         fill="none"
                                         xmlns="http://www.w3.org/2000/svg"
-                                        [style.transform]="isCodeEditorFullWidth() ? 'scaleX(1)' : 'scaleX(-1)'"
+                                        [style.transform]="isCodeEditorFullWidth() ? 'scaleX(-1)' : 'scaleX(1)'"
                                     >
                                         <path
                                             d="M7.16602 21.0001L1.16602 11.0001L7.16602 1.00012"
@@ -347,6 +357,13 @@ interface InputMapPair {
                                     </label>
                                 </div>
                             </div>
+
+                            <app-node-storage-section
+                                [useStorage]="useStorage()"
+                                (onToggleChange)="onStorageToggle($event)"
+                                (onInsertCode)="insertStorageCode($event)"
+                                (onRemoveCode)="removeStorageCode($event)"
+                            ></app-node-storage-section>
                         </div>
                     }
                 </form>
@@ -677,6 +694,7 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
     public override readonly isExpanded = input<boolean>(false);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
     public readonly activeEditorTab = signal<'hooks' | 'schema'>('hooks');
+    public readonly useStorage = signal<boolean>(false);
 
     streamHandlerCode: string = '';
     outputSchemaText: string = '';
@@ -729,8 +747,31 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
         this.outputSchemaError = isValid ? '' : 'Invalid JSON';
     }
 
+    onStorageToggle(value: boolean): void {
+        this.useStorage.set(value);
+        this.sidePanelService.triggerAutosave();
+    }
+
+    insertStorageCode(code: string): void {
+        if (!this.streamHandlerCode.includes('epicstaff_storage')) {
+            this.streamHandlerCode = code + '\n\n' + this.streamHandlerCode;
+        }
+        this.sidePanelService.triggerAutosave();
+    }
+
+    removeStorageCode(code: string): void {
+        const prefix = code + '\n\n';
+        if (this.streamHandlerCode.startsWith(prefix)) {
+            this.streamHandlerCode = this.streamHandlerCode.slice(prefix.length);
+            this.sidePanelService.triggerAutosave();
+        }
+    }
+
     initializeForm(): FormGroup {
         const data = this.node().data;
+
+        this.useStorage.set(data.use_storage ?? false);
+
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
             input_map: this.fb.array([]),
@@ -764,15 +805,9 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
     }
 
     createUpdatedNode(): CodeAgentNodeModel {
-        const validInputPairs = this.getValidInputPairs();
-        const inputMapValue = this.createInputMapFromPairs(validInputPairs);
-
-        const librariesArray = this.form.value.libraries
-            ? this.form.value.libraries
-                  .split(',')
-                  .map((lib: string) => lib.trim())
-                  .filter((lib: string) => lib.length > 0)
-            : [];
+        const validInputPairs = getValidInputPairs(this.inputMapPairs);
+        const inputMapValue = createInputMapFromPairs(validInputPairs);
+        const librariesArray = parseCommaSeparatedList(this.form.value.libraries);
 
         return {
             ...this.node(),
@@ -794,48 +829,14 @@ export class CodeAgentNodePanelComponent extends BaseSidePanel<CodeAgentNodeMode
                 inactivity_timeout_s: Number(this.form.value.inactivity_timeout_s) || 120,
                 max_wait_s: Number(this.form.value.max_wait_s) || 300,
                 output_schema: this.parsedOutputSchema(),
+                use_storage: this.useStorage(),
             },
             stream_config: this.form.value.stream_config || {},
         };
     }
 
     private initializeInputMap(form: FormGroup): void {
-        const inputMapArray = form.get('input_map') as FormArray;
-
-        if (this.node().input_map && Object.keys(this.node().input_map).length > 0) {
-            Object.entries(this.node().input_map).forEach(([key, value]) => {
-                inputMapArray.push(
-                    this.fb.group({
-                        key: [key, Validators.required],
-                        value: [value, Validators.required],
-                    })
-                );
-            });
-        } else {
-            inputMapArray.push(
-                this.fb.group({
-                    key: [''],
-                    value: ['variables.'],
-                })
-            );
-        }
-    }
-
-    private getValidInputPairs(): AbstractControl[] {
-        return this.inputMapPairs.controls.filter((control) => {
-            const value = control.value as InputMapPair;
-            return value.key?.trim() !== '' || value.value?.trim() !== '';
-        });
-    }
-
-    private createInputMapFromPairs(pairs: AbstractControl[]): Record<string, string> {
-        return pairs.reduce((acc: Record<string, string>, curr: AbstractControl) => {
-            const pair = curr.value as InputMapPair;
-            if (pair.key?.trim()) {
-                acc[pair.key.trim()] = pair.value;
-            }
-            return acc;
-        }, {});
+        initializeInputMap(form, this.node().input_map as Record<string, unknown> | null | undefined, this.fb);
     }
 
     toggleCodeEditorFullWidth(): void {

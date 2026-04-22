@@ -15,9 +15,7 @@ import { GraphMessage, UpdateSessionStatusMessageData } from '../../../../models
                 <span class="status-value">Status: {{ status }}</span>
             </div>
             <div class="status-data" *ngIf="hasStatusData()">
-                <div class="status-data-label">
-                    <app-svg-icon icon="info-circle" size="1rem" /> Status Data:
-                </div>
+                <div class="status-data-label"><app-svg-icon icon="info-circle" size="1rem" /> Status Data:</div>
                 <pre class="status-data-content">{{ statusData | json }}</pre>
             </div>
         </div>
