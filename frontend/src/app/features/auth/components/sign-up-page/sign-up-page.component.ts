@@ -15,6 +15,7 @@ import { applyApiErrors } from '@shared/utils';
 import { forkJoin, timer } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
+import { ToastService } from '../../../../services/notifications';
 
 type PageState = 'form' | 'loading' | 'success';
 
@@ -36,6 +37,7 @@ type PageState = 'form' | 'loading' | 'success';
 export class SignUpPageComponent {
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
+    private readonly toast = inject(ToastService);
 
     termsControl = new FormControl(false);
 
@@ -69,8 +71,9 @@ export class SignUpPageComponent {
                 });
             },
             error: (err) => {
+                this.toast.error(err.error.message);
                 this.state.set('form');
-                setTimeout(() => applyApiErrors(this.form, err?.error));
+                setTimeout(() => applyApiErrors(this.form, err?.error.errors));
             },
         });
     }

@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { FirstSetupRequest, FirstSetupResponse, FirstSetupStatus, GetMeResponse } from '@shared/models';
-import { finalize, map, Observable, of, shareReplay, tap } from 'rxjs';
+import { catchError, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { ConfigService } from '../config';
 
@@ -22,6 +23,7 @@ interface TokenDecoded {
 export class AuthService {
     private readonly http = inject(HttpClient);
     private readonly configService = inject(ConfigService);
+    private readonly router = inject(Router);
 
     private readonly accessKey = 'auth.access';
     private readonly refreshKey = 'auth.refresh';
@@ -51,9 +53,23 @@ export class AuthService {
     }
 
     login(email: string, password: string, rememberMe: boolean = false): Observable<boolean> {
-        return this.http.post<TokenPair>(`${this.baseUrl}/auth/token/`, { email, password }).pipe(
+        return this.http.post<TokenPair>(`${this.baseUrl}/auth/login/`, { email, password }).pipe(
             tap((tokens) => this.storeTokens(tokens, rememberMe)),
             map(() => true)
+        );
+    }
+
+    logout(): Observable<void> {
+        const refreshToken = this.getRefreshToken();
+
+        if (!refreshToken) {
+            this.removeTokensAndNavToLogin();
+            return of();
+        }
+
+        return this.http.post<void>(`${this.baseUrl}/auth/logout/`, { refresh: refreshToken }).pipe(
+            tap(() => this.removeTokensAndNavToLogin()),
+            catchError((err) => throwError(() => err))
         );
     }
 
@@ -66,7 +82,7 @@ export class AuthService {
         if (!refresh) return of(null);
 
         this.refreshInProgress$ = this.http
-            .post<{ access: string; refresh?: string }>(`${this.baseUrl}/auth/token/refresh/`, {
+            .post<{ access: string; refresh?: string }>(`${this.baseUrl}/auth/refresh/`, {
                 refresh,
             })
             .pipe(
@@ -90,9 +106,11 @@ export class AuthService {
         return this.http.get<GetMeResponse>(`${this.baseUrl}/auth/me/`);
     }
 
-    logout(): void {
+    removeTokensAndNavToLogin(): void {
         this.deleteCookie(this.accessKey);
         this.deleteCookie(this.refreshKey);
+
+        void this.router.navigate(['/login']);
     }
 
     isAuthenticated(): boolean {
