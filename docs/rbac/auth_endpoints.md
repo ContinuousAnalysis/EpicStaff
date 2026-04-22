@@ -15,13 +15,21 @@ Base URL in examples: `http://localhost:8000`.
 |---|---|---|---|
 | GET | `/api/auth/first-setup/` | public | Is initial setup needed? |
 | POST | `/api/auth/first-setup/` | public | Create first superadmin + default org |
-| POST | `/api/auth/token/` | public | JWT login (email + password) |
-| POST | `/api/auth/token/refresh/` | public | Exchange refresh → access |
+| POST | `/api/auth/login/` | public (throttled) | JWT login (email + password) |
+| POST | `/api/auth/refresh/` | public | Exchange refresh → new access + rotated refresh |
+| POST | `/api/auth/logout/` | Bearer JWT | Blacklist the caller's refresh token |
+| POST | `/api/auth/sse-ticket/` | Bearer JWT | Issue a single-use SSE ticket (5-min TTL) |
 | GET | `/api/auth/me/` | Bearer JWT (or user-owned ApiKey) | Current user + memberships |
 | POST | `/api/auth/introspect/` | ApiKey | Validate a JWT, return claims |
 | GET | `/api/auth/api-key/validate/` | ApiKey | Metadata about the calling key |
-| POST | `/api/auth/swagger-token/` | public | OAuth2 password flow for Swagger |
+| POST | `/api/auth/swagger-token/` | public (throttled) | OAuth2 password flow for Swagger |
 | POST | `/api/auth/reset-user/` | Bearer JWT or ApiKey | Destructive: wipe users+keys, recreate superadmin |
+
+**Login/Swagger-token throttle:** `LOGIN_THROTTLE_RATE` env (default `5/min`), bucketed per `<ip>|<email>`. 6th attempt inside the window returns `429` with `Retry-After`.
+
+**Refresh tokens rotate on every use** (`ROTATE_REFRESH_TOKENS=True`). The old refresh is blacklisted — replaying it returns `401`.
+
+**SSE streams** require a ticket obtained from `POST /api/auth/sse-ticket/` and passed as `?ticket=` on the stream URL. See [`sse_auth.md`](./sse_auth.md) for the FE migration flow.
 
 ---
 
@@ -185,15 +193,15 @@ resolve to `AnonymousUser` and don't pass `IsAuthenticated`).
 
 ---
 
-## JWT login and refresh
+## JWT login, refresh, logout
 
-### POST `/api/auth/token/`
+### POST `/api/auth/login/`
 
 Standard simplejwt endpoint, customized to **accept `email` instead of
 `username`**. Returns access + refresh tokens.
 
 ```bash
-curl -X POST http://localhost:8000/api/auth/token/ \
+curl -X POST http://localhost:8000/api/auth/login/ \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@acme.com","password":"StrongPass123!"}'
 ```
@@ -204,11 +212,59 @@ Response:
 ```
 
 - `401` on invalid credentials.
+- `429` with `Retry-After` header once the composite `<ip>|<email>` bucket is
+  exhausted. Rate comes from `LOGIN_THROTTLE_RATE` (default `5/min`).
 
-### POST `/api/auth/token/refresh/`
+### POST `/api/auth/refresh/`
 
-Unchanged from simplejwt. Body: `{ "refresh": "<jwt>" }` → returns a new
-`access`.
+Body: `{ "refresh": "<jwt>" }` → returns a new `{access, refresh}` pair.
+
+- **Refresh-token rotation is on** (`ROTATE_REFRESH_TOKENS=True`,
+  `BLACKLIST_AFTER_ROTATION=True`). Every successful refresh issues a **new**
+  refresh token and blacklists the one you just sent.
+- Replaying an old refresh returns `401`. If your storage was tampered with
+  or the network duplicated the request, re-login.
+
+### POST `/api/auth/logout/`
+
+- **Auth:** `IsAuthenticated` via JWT.
+- **Body:**
+  ```json
+  { "refresh": "<jwt-refresh>" }
+  ```
+- **Success:** `205 Reset Content` with `{ "detail": "Logged out." }`. The
+  refresh token is blacklisted so it can no longer be rotated.
+- **Error:** `400` with
+  ```json
+  { "status_code": 400, "code": "invalid_or_expired_refresh",
+    "message": "Refresh token is invalid, expired, or already revoked." }
+  ```
+  on malformed, expired, or already-blacklisted tokens.
+- The short-lived **access** token continues to work until its own expiry
+  (default 15 min). Keep access TTL short; consult `JWT_ACCESS_MINUTES`.
+
+---
+
+## SSE authentication
+
+See the dedicated [`sse_auth.md`](./sse_auth.md) for the complete FE flow.
+
+### POST `/api/auth/sse-ticket/`
+
+- **Auth:** `IsAuthenticated` (JWT or user-owned ApiKey).
+- **Body:** none.
+- **Response 200:**
+  ```json
+  { "ticket": "<opaque random>", "expires_in": 300 }
+  ```
+- Tickets are **single-use** and stored in the Redis cache backend under
+  `rbac:sse_ticket:<token>` keys. TTL is `SSE_TICKET_TTL_SECONDS` (default
+  300). Reconnects must fetch a fresh ticket.
+- SSE endpoints reject missing/invalid/expired tickets with
+  ```json
+  { "status_code": 401, "code": "invalid_sse_ticket",
+    "message": "Invalid or expired SSE ticket." }
+  ```
 
 ---
 
@@ -294,7 +350,7 @@ call itself.
 
 ```bat
 REM 1. Get an access token via login
-curl.exe -X POST http://localhost:8000/api/auth/token/ ^
+curl.exe -X POST http://localhost:8000/api/auth/login/ ^
   -H "Content-Type: application/json" ^
   -d "{\"email\":\"admin@acme.com\",\"password\":\"StrongPass123!\"}"
 
@@ -466,7 +522,7 @@ curl -s -X POST http://localhost:8000/api/auth/first-setup/ \
   -d '{"email":"admin@acme.com","password":"StrongPass123!","organization_name":"Acme"}' | jq .
 
 # 2. Login
-ACCESS=$(curl -s -X POST http://localhost:8000/api/auth/token/ \
+ACCESS=$(curl -s -X POST http://localhost:8000/api/auth/login/ \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@acme.com","password":"StrongPass123!"}' | jq -r .access)
 
@@ -483,7 +539,11 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 
 | Area | Change |
 |---|---|
-| Login form | Field label must send **`email`** (not `username`) in the request body to `POST /api/auth/token/` and `POST /api/auth/swagger-token/`. Field in request JSON is literally `"email"`. |
+| Login form | Field label must send **`email`** (not `username`) in the request body to `POST /api/auth/login/` (previously `/api/auth/token/`) and `POST /api/auth/swagger-token/`. Field in request JSON is literally `"email"`. |
+| Logout flow | New — call `POST /api/auth/logout/` with `{refresh}` before dropping tokens from storage. 205 on success, 400 if the refresh is already dead. |
+| Refresh rotation | Each call to `POST /api/auth/refresh/` (renamed from `/api/auth/token/refresh/`) returns a **new** refresh in addition to the access token — overwrite local storage with both values. The previous refresh is blacklisted; replaying it → 401. |
+| Login throttling | 6th credential attempt within the bucket window returns `429` with a `Retry-After` header. Surface a "too many attempts, retry in N seconds" message instead of generic error. |
+| SSE streams | EventSource can no longer connect directly. Fetch a ticket via `POST /api/auth/sse-ticket/`, then connect with `?ticket=<value>`. On `onerror` / reconnect, fetch a **fresh** ticket first. Full migration guide: [`sse_auth.md`](./sse_auth.md). |
 | First-setup screen | Call `GET /api/auth/first-setup/` on boot; if `needs_setup: true`, show the setup form. POST payload is `{ email, password, organization_name, display_name? }`. Response returns `access` + `refresh` — persist them and skip the login screen on success. |
 | Idempotency | A repeated `POST /api/auth/first-setup/` returns **409** with `{"detail": "Setup has already been completed"}`. Handle this explicitly (e.g. redirect to login). |
 | `/me` response shape | Changed. New fields: `display_name`, `avatar_url`, `is_superadmin`, `memberships[]`. Removed: `username`. FE should render email (not username) in the profile menu, and use `memberships` to populate the org/role sidebar. |
@@ -510,7 +570,10 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 
 | Endpoint | Before | After |
 |---|---|---|
-| `/api/auth/token/` request | `{username, password}` | `{email, password}` |
+| `/api/auth/token/` → **`/api/auth/login/`** | `{username, password}` | `{email, password}` (renamed path) |
+| `/api/auth/token/refresh/` → **`/api/auth/refresh/`** | returns `{access}` only | returns `{access, refresh}` (rotation on) |
+| `/api/auth/logout/` | *did not exist* | new — `{refresh}` → 205 |
+| `/api/auth/sse-ticket/` | *did not exist* | new — JWT-authed; returns `{ticket, expires_in}` |
 | `/api/auth/first-setup/` POST request | `{username, password, email?}` | `{email, password, organization_name, display_name?}` |
 | `/api/auth/first-setup/` POST response | `{access, refresh, api_key}` | `{user, organization, access, refresh}` |
 | `/api/auth/me/` response | `{id, username, email}` | `{id, email, display_name, avatar_url, is_superadmin, memberships[]}` |
