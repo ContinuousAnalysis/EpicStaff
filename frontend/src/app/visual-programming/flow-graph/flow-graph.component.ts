@@ -68,7 +68,12 @@ import {
     isBackwardConnection,
     isConnectionValid,
 } from '../core/helpers/helpers';
-import { computeSegmentAvoidanceWaypoints } from '../core/helpers/segment-avoidance.helper';
+import {
+    computeSegmentAvoidanceWaypoints,
+    getConnectionIntersectingNodes,
+    getConnectionRenderedPath,
+    normalizeConnectionWaypoints,
+} from '../core/helpers/segment-avoidance.helper';
 import { ConnectionModel } from '../core/models/connection.model';
 import { FlowModel } from '../core/models/flow.model';
 import { GraphNoteModel, NodeModel, ProjectNodeModel, StartNodeModel } from '../core/models/node.model';
@@ -378,7 +383,6 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     public onConnectionAdded(event: FCreateConnectionEvent): void {
-        // Save the state for undo before adding the connection
         this.undoRedoService.stateChanged();
 
         const { fOutputId, fInputId } = event;
@@ -431,9 +435,15 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         this.flowService.addConnection(newConnection);
 
         // Immediately compute avoidance waypoints if any node blocks the path
-        const avoidWaypoints = computeSegmentAvoidanceWaypoints(newConnection, this.flowService.nodes());
-        if (avoidWaypoints) {
-            this.flowService.updateConnectionWaypoints(newConnection.id, avoidWaypoints);
+        const nodes = this.flowService.nodes();
+        const intersects = getConnectionIntersectingNodes(newConnection, nodes);
+
+        if (intersects.length > 0) {
+            const avoidWaypoints = computeSegmentAvoidanceWaypoints(newConnection, nodes);
+            if (avoidWaypoints) {
+                const normalizedWaypoints = this.normalizeWaypointsForConnection(newConnection, avoidWaypoints);
+                this.flowService.updateConnectionWaypoints(newConnection.id, normalizedWaypoints);
+            }
         }
     }
 
@@ -557,12 +567,18 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     protected onWaypointsChanged(connectionId: string, waypoints: IPoint[]): void {
-        if (waypoints.length > 0) {
+        const connection = this.flowService.connections().find((c) => c.id === connectionId);
+        if (!connection) return;
+
+        const normalizedWaypoints = this.normalizeWaypointsForConnection(connection, waypoints);
+
+        if (normalizedWaypoints.length > 0) {
             this.userAdjustedConnectionIds.add(connectionId);
         } else {
             this.userAdjustedConnectionIds.delete(connectionId);
         }
-        this.flowService.updateConnectionWaypoints(connectionId, waypoints);
+
+        this.flowService.updateConnectionWaypoints(connectionId, normalizedWaypoints);
     }
 
     public onNodeDroppedFromPanel(event: FCreateNodeEvent): void {
@@ -860,12 +876,44 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
             if (backwardIds.has(conn.id)) continue;
             if (this.userAdjustedConnectionIds.has(conn.id)) continue;
 
-            const waypoints = computeSegmentAvoidanceWaypoints(conn, nodes);
-            const newWaypoints = waypoints ?? [];
-            const existing = conn.waypoints ?? [];
+            const MAX_ATTEMPTS = 3;
+            let current = this.flowService.connections().find((c) => c.id === conn.id);
+            if (!current) continue;
+            const currentIntersections = getConnectionIntersectingNodes(current, nodes);
+            if (currentIntersections.length === 0) {
+                if (!current.waypoints || current.waypoints.length === 0) continue;
 
-            if (!waypointsEqual(existing, newWaypoints)) {
-                this.flowService.updateConnectionWaypoints(conn.id, newWaypoints);
+                const restoreResult = computeSegmentAvoidanceWaypoints(current, nodes, current.waypoints);
+
+                if (restoreResult !== null) {
+                    const normalizedRestore = this.normalizeWaypointsForConnection(current, restoreResult);
+
+                    if (!waypointsEqual(current.waypoints ?? [], normalizedRestore)) {
+                        this.flowService.updateConnectionWaypoints(current.id, normalizedRestore);
+                    }
+                }
+                continue;
+            }
+
+            for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+                const waypoints = computeSegmentAvoidanceWaypoints(current, nodes, current.waypoints);
+                if (waypoints === null) break;
+
+                const normalizedWaypoints = this.normalizeWaypointsForConnection(current, waypoints);
+                if (waypointsEqual(current.waypoints ?? [], normalizedWaypoints)) break;
+
+                this.flowService.updateConnectionWaypoints(current.id, normalizedWaypoints);
+                current = { ...current, waypoints: normalizedWaypoints };
+
+                // Post-apply diagnostic
+                const appliedPath = getConnectionRenderedPath(current, nodes);
+                const intersecting = appliedPath ? getConnectionIntersectingNodes(current, nodes) : [];
+                console.log(
+                    `[APPLY attempt=${attempt}] conn=${current.id}`,
+                    `\n  applied waypoints : [${waypoints.map((p) => `(${p.x.toFixed(1)},${p.y.toFixed(1)})`).join(', ')}]`,
+                    `\n  rendered path     : ${appliedPath ? `[${appliedPath.map((p) => `(${p.x.toFixed(1)},${p.y.toFixed(1)})`).join(', ')}]` : 'null'}`,
+                    `\n  intersecting nodes: [${intersecting.map((n) => `${n.id}(${n.type})`).join(', ')}]`
+                );
             }
         }
     }
@@ -1232,5 +1280,9 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
                 height: visualHeight,
             },
         };
+    }
+
+    private normalizeWaypointsForConnection(connection: ConnectionModel, waypoints: IPoint[] | undefined): IPoint[] {
+        return normalizeConnectionWaypoints(connection, this.flowService.nodes(), waypoints);
     }
 }
