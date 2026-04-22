@@ -331,7 +331,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: (response) => {
-                    this.warningMessages = response.messages;
+                    this.warningMessages = response?.messages ?? null;
                     this.cdr.markForCheck();
                 },
                 error: (err) => {

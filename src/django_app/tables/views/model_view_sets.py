@@ -25,6 +25,7 @@ from rest_framework.exceptions import (
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
 from tables.exceptions import (
     AgentSerializerError,
@@ -55,6 +56,7 @@ from tables.models import (
     Graph,
     GraphFile,
     GraphSessionMessage,
+    GraphVersion,
     LLMConfig,
     LLMModel,
     Provider,
@@ -884,6 +886,13 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=["get"], url_path="versions")
+    def list_versions(self, request, pk=None):
+        graph = self.get_object()
+        versions = GraphVersioningService().list_versions(graph)
+        serializer = GraphVersionReadSerializer(versions, many=True)
+        return Response(serializer.data)
+
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphLightSerializer
@@ -899,6 +908,50 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
         return Graph.objects.only("id", "name", "description").prefetch_related(
             "tags", "labels"
         )
+
+
+class GraphVersionViewSet(viewsets.ModelViewSet):
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["graph_id"]
+
+    def get_queryset(self):
+        manager = (
+            GraphVersion.all_objects if self.action == "all" else GraphVersion.objects
+        )
+        qs = manager.all()
+        if self.action in ("list", "all"):
+            qs = qs.defer("snapshot", "dependencies")
+        return qs
+
+    def get_permissions(self):
+        if self.action == "all":
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return GraphVersionCreateSerializer
+        return GraphVersionReadSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        write_serializer = serializer_class(data=request.data)
+        write_serializer.is_valid(raise_exception=True)
+
+        version = GraphVersioningService().save_version(
+            graph=write_serializer.validated_data["graph"],
+            name=write_serializer.validated_data["name"],
+            description=write_serializer.validated_data.get("description", ""),
+        )
+
+        return Response(
+            GraphVersionReadSerializer(version).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=["get"], url_path="all")
+    def all(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class IdempotentNodeCreateMixin:

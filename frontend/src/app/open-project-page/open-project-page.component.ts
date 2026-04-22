@@ -20,7 +20,6 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { AppSvgIconComponent } from '../shared/components/app-svg-icon/app-svg-icon.component';
 import { EMPTY, filter, forkJoin, from, Observable, of, Subscription } from 'rxjs';
 import { catchError, concatMap, finalize, map, switchMap, tap, toArray } from 'rxjs/operators';
 
@@ -32,6 +31,7 @@ import { FullAgent, FullAgentService } from '../features/staff/services/full-age
 import { AgentsService } from '../features/staff/services/staff.service';
 import { TasksService } from '../features/tasks/services/tasks.service';
 import { ToastService } from '../services/notifications/toast.service';
+import { AppSvgIconComponent } from '../shared/components/app-svg-icon/app-svg-icon.component';
 import { CreateAgentFormComponent } from '../shared/components/create-agent-form-dialog/create-agent-form-dialog.component';
 import { SpinnerComponent } from '../shared/components/spinner/spinner.component';
 import { UnsavedChangesDialogService } from '../shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
@@ -295,9 +295,7 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
 
                         this.cdr.markForCheck();
                     },
-                    error: (err) => {
-                        console.error('loadData - Failed to fetch project data', err);
-                        console.error('Error details:', err.message, err.status);
+                    error: () => {
                         this.toastService.error('Failed to load project data');
                         this.isLoading.set(false);
                         this.cdr.markForCheck();
