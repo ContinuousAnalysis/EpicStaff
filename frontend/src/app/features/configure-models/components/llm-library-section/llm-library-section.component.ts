@@ -1,7 +1,16 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { ComponentType } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    inject,
+    OnInit,
+    Signal,
+    signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import {
@@ -18,9 +27,6 @@ import { ModelTypes } from '@shared/models';
 import { Observable } from 'rxjs';
 
 import { ToastService } from '../../../../services/notifications';
-import { ElevenLabsRealtimeConfig } from '../../../../shared/models/realtime-voice/elevenlabs-realtime-config.model';
-import { GeminiRealtimeConfig } from '../../../../shared/models/realtime-voice/gemini-realtime-config.model';
-import { OpenAIRealtimeConfig } from '../../../../shared/models/realtime-voice/openai-realtime-config.model';
 import { LlmLibraryModel } from '../../interfaces/llm-library-model.interface';
 import { LlmLibraryProviderGroup } from '../../interfaces/llm-library-provider-group.interface';
 import { DefaultModelsStorageService } from '../../services/default-models-storage.service';
@@ -41,6 +47,23 @@ import { OpenAIRealtimeConfigDialogComponent } from '../openai-realtime-config-d
 import { TranscriptionModelConfigDialogComponent } from '../transcription-model-config-dialog/transcription-model-config-dialog.component';
 import { VoiceModelConfigDialogComponent } from '../voice-config-model/voice-model-config-dialog.component';
 
+interface VoiceProviderConfig {
+    id: number;
+    custom_name: string;
+    model_name: string;
+}
+
+interface VoiceProvider {
+    key: string;
+    label: string;
+    storage: {
+        configs: Signal<VoiceProviderConfig[]>;
+        getAllConfigs(force?: boolean): Observable<unknown[]>;
+        deleteConfig(id: number): Observable<void>;
+    };
+    dialogComponent: ComponentType<unknown>;
+}
+
 @Component({
     selector: 'app-llm-library-section',
     imports: [
@@ -58,24 +81,40 @@ import { VoiceModelConfigDialogComponent } from '../voice-config-model/voice-mod
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LlmLibrarySectionComponent implements OnInit {
-    private llmLibraryService = inject(LLMLibraryService);
-    private llmConfigStorageService = inject(LlmConfigStorageService);
-    private embeddingConfigStorage = inject(EmbeddingConfigStorageService);
-    private realtimeConfigStorage = inject(RealtimeConfigStorageService);
-    private transcriptionConfigStorage = inject(TranscriptionConfigStorageService);
-    private openaiRealtimeStorage = inject(OpenAIRealtimeConfigStorageService);
-    private elevenLabsRealtimeStorage = inject(ElevenLabsRealtimeConfigStorageService);
-    private geminiRealtimeStorage = inject(GeminiRealtimeConfigStorageService);
-    private confirmationDialogService = inject(ConfirmationDialogService);
-    private defaultModelsStorageService = inject(DefaultModelsStorageService);
-    private destroyRef = inject(DestroyRef);
-    private dialog = inject(Dialog);
-    private toast = inject(ToastService);
+    private readonly llmLibraryService = inject(LLMLibraryService);
+    private readonly llmConfigStorageService = inject(LlmConfigStorageService);
+    private readonly embeddingConfigStorage = inject(EmbeddingConfigStorageService);
+    private readonly realtimeConfigStorage = inject(RealtimeConfigStorageService);
+    private readonly transcriptionConfigStorage = inject(TranscriptionConfigStorageService);
+    private readonly openaiRealtimeStorage = inject(OpenAIRealtimeConfigStorageService);
+    private readonly elevenLabsRealtimeStorage = inject(ElevenLabsRealtimeConfigStorageService);
+    private readonly geminiRealtimeStorage = inject(GeminiRealtimeConfigStorageService);
+    private readonly confirmationDialogService = inject(ConfirmationDialogService);
+    private readonly defaultModelsStorageService = inject(DefaultModelsStorageService);
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly dialog = inject(Dialog);
+    private readonly toast = inject(ToastService);
 
-    // New per-provider realtime configs (flat lists, no provider-group nesting)
-    openaiRealtimeConfigs = this.openaiRealtimeStorage.configs;
-    elevenLabsRealtimeConfigs = this.elevenLabsRealtimeStorage.configs;
-    geminiRealtimeConfigs = this.geminiRealtimeStorage.configs;
+    readonly voiceProviders: VoiceProvider[] = [
+        {
+            key: 'openai',
+            label: 'OpenAI Voice Configs',
+            storage: this.openaiRealtimeStorage,
+            dialogComponent: OpenAIRealtimeConfigDialogComponent,
+        },
+        {
+            key: 'elevenlabs',
+            label: 'ElevenLabs Voice Configs',
+            storage: this.elevenLabsRealtimeStorage,
+            dialogComponent: ElevenLabsRealtimeConfigDialogComponent,
+        },
+        {
+            key: 'gemini',
+            label: 'Gemini Voice Configs',
+            storage: this.geminiRealtimeStorage,
+            dialogComponent: GeminiRealtimeConfigDialogComponent,
+        },
+    ];
 
     public providerGroups = this.llmLibraryService.providerGroups;
     public configs = this.llmConfigStorageService.configs;
@@ -136,93 +175,33 @@ export class LlmLibrarySectionComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(() => this.configsLoaded.set(true));
 
-        this.openaiRealtimeStorage.getAllConfigs().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-        this.elevenLabsRealtimeStorage.getAllConfigs().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-        this.geminiRealtimeStorage.getAllConfigs().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+        for (const p of this.voiceProviders) {
+            p.storage.getAllConfigs().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+        }
     }
 
-    // ── OpenAI Realtime ──────────────────────────────────────────────────────
-
-    onAddOpenAIRealtime(): void {
-        this.dialog.open(OpenAIRealtimeConfigDialogComponent, {
+    onAddConfig(provider: VoiceProvider): void {
+        this.dialog.open(provider.dialogComponent, {
             disableClose: true,
             data: { config: null, action: 'create' },
         });
     }
 
-    onEditOpenAIRealtime(config: OpenAIRealtimeConfig): void {
-        this.dialog.open(OpenAIRealtimeConfigDialogComponent, {
+    onEditConfig(provider: VoiceProvider, config: VoiceProviderConfig): void {
+        this.dialog.open(provider.dialogComponent, {
             disableClose: true,
             data: { config, action: 'update' },
         });
     }
 
-    onDeleteOpenAIRealtime(config: OpenAIRealtimeConfig): void {
+    onDeleteConfig(provider: VoiceProvider, config: VoiceProviderConfig): void {
         this.confirmationDialogService
             .confirmDelete(config.custom_name)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((result) => {
                 if (result !== true) return;
-                this.openaiRealtimeStorage.deleteConfig(config.id).subscribe({
-                    next: () => this.toast.success('OpenAI Realtime config deleted.'),
-                    error: () => this.toast.error('Failed to delete config.'),
-                });
-            });
-    }
-
-    // ── ElevenLabs Realtime ──────────────────────────────────────────────────
-
-    onAddElevenLabsRealtime(): void {
-        this.dialog.open(ElevenLabsRealtimeConfigDialogComponent, {
-            disableClose: true,
-            data: { config: null, action: 'create' },
-        });
-    }
-
-    onEditElevenLabsRealtime(config: ElevenLabsRealtimeConfig): void {
-        this.dialog.open(ElevenLabsRealtimeConfigDialogComponent, {
-            disableClose: true,
-            data: { config, action: 'update' },
-        });
-    }
-
-    onDeleteElevenLabsRealtime(config: ElevenLabsRealtimeConfig): void {
-        this.confirmationDialogService
-            .confirmDelete(config.custom_name)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((result) => {
-                if (result !== true) return;
-                this.elevenLabsRealtimeStorage.deleteConfig(config.id).subscribe({
-                    next: () => this.toast.success('ElevenLabs Realtime config deleted.'),
-                    error: () => this.toast.error('Failed to delete config.'),
-                });
-            });
-    }
-
-    // ── Gemini Realtime ──────────────────────────────────────────────────────
-
-    onAddGeminiRealtime(): void {
-        this.dialog.open(GeminiRealtimeConfigDialogComponent, {
-            disableClose: true,
-            data: { config: null, action: 'create' },
-        });
-    }
-
-    onEditGeminiRealtime(config: GeminiRealtimeConfig): void {
-        this.dialog.open(GeminiRealtimeConfigDialogComponent, {
-            disableClose: true,
-            data: { config, action: 'update' },
-        });
-    }
-
-    onDeleteGeminiRealtime(config: GeminiRealtimeConfig): void {
-        this.confirmationDialogService
-            .confirmDelete(config.custom_name)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((result) => {
-                if (result !== true) return;
-                this.geminiRealtimeStorage.deleteConfig(config.id).subscribe({
-                    next: () => this.toast.success('Gemini Realtime config deleted.'),
+                provider.storage.deleteConfig(config.id).subscribe({
+                    next: () => this.toast.success(`${provider.label} config deleted.`),
                     error: () => this.toast.error('Failed to delete config.'),
                 });
             });
