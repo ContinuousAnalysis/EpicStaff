@@ -6,13 +6,12 @@
         <div class="option-row">
             <span class="option-label">
                 Preserve Flow UUIDs
-                <app-svg-icon
-                    icon="help"
+                <app-help-tooltip
                     size="0.875rem"
                     class="help-icon"
-                    matTooltip="Maintaining UUIDs lets imported flows use the same IDs as the original system"
-                    matTooltipPosition="above"
-                ></app-svg-icon>
+                    text="Maintaining UUIDs lets imported flows use the same IDs as the original system"
+                    position="right"
+                />
             </span>
             <div class="toggle-group" (click)="preserveUuids.set(!preserveUuids())">
                 <div class="toggle-slider" [class.right]="preserveUuids()"></div>
