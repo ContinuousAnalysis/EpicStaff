@@ -1857,18 +1857,63 @@ class _ScheduleConfigInputSerializer(serializers.Serializer):
     interval = _ScheduleIntervalInputSerializer(required=False, allow_null=True)
     end = _ScheduleEndInputSerializer()
 
+    def to_representation(self, instance):
+        """Build the nested `schedule` block from a ScheduleTriggerNode's flat columns."""
+        interval = (
+            None
+            if instance.run_mode == ScheduleTriggerNode.RunMode.ONCE
+            else {
+                "every": instance.every,
+                "unit": instance.unit,
+                "weekdays": instance.weekdays or [],
+            }
+        )
+        return {
+            "run_mode": instance.run_mode,
+            "start_date_time": (
+                instance.start_date_time.isoformat()
+                if instance.start_date_time
+                else None
+            ),
+            "interval": interval,
+            "end": {
+                "type": instance.end_type,
+                "date_time": (
+                    instance.end_date_time.isoformat()
+                    if instance.end_date_time
+                    else None
+                ),
+                "max_runs": instance.max_runs,
+            },
+        }
+
 
 class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
     """Translates the nested `schedule` block to/from the model's flat columns."""
 
-    # required=False: presence/null is enforced in to_internal_value; by the
-    # time super() runs, `schedule` is already popped and flattened.
-    schedule = _ScheduleConfigInputSerializer(required=False, write_only=True)
+    # source="*" drives both directions through the nested block.
+    # Write: to_internal_value below pops `schedule`, validates it, and injects
+    # the flat columns into the returned attrs. Read: _ScheduleConfigInputSerializer's
+    # to_representation builds the block from the same flat columns on the instance.
+    schedule = _ScheduleConfigInputSerializer(required=False, source="*")
 
     class Meta:
         model = ScheduleTriggerNode
-        fields = "__all__"
-        read_only_fields = ["current_runs"]
+        # Explicit list — the flat schedule columns are intentionally excluded
+        # so Swagger only shows the nested `schedule` block in both schemas.
+        fields = [
+            "id",
+            "graph",
+            "node_name",
+            "is_active",
+            "metadata",
+            "content_hash",
+            "created_at",
+            "updated_at",
+            "current_runs",
+            "schedule",
+        ]
+        read_only_fields = ["id", "current_runs", "created_at", "updated_at"]
 
     def to_internal_value(self, data):
         if not isinstance(data, dict):
@@ -1896,50 +1941,17 @@ class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSeria
         interval = cfg.get("interval") or {}
         end = cfg["end"]
 
-        data["run_mode"] = cfg["run_mode"]
-        data["start_date_time"] = cfg["start_date_time"]
-        data["every"] = interval.get("every")
-        data["unit"] = interval.get("unit")
-        data["weekdays"] = interval.get("weekdays")
-        data["end_type"] = end["type"]
-        data["end_date_time"] = end.get("date_time")
-        data["max_runs"] = end.get("max_runs")
+        attrs = super().to_internal_value(data)
+        attrs["run_mode"] = cfg["run_mode"]
+        attrs["start_date_time"] = cfg["start_date_time"]
+        attrs["every"] = interval.get("every")
+        attrs["unit"] = interval.get("unit")
+        attrs["weekdays"] = interval.get("weekdays")
+        attrs["end_type"] = end["type"]
+        attrs["end_date_time"] = end.get("date_time")
+        attrs["max_runs"] = end.get("max_runs")
 
-        return super().to_internal_value(data)
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-
-        run_mode = data.pop("run_mode", None)
-        start_dt = data.pop("start_date_time", None)
-        every = data.pop("every", None)
-        unit = data.pop("unit", None)
-        weekdays = data.pop("weekdays", None)
-        end_type = data.pop("end_type", None)
-        end_dt = data.pop("end_date_time", None)
-        max_runs = data.pop("max_runs", None)
-
-        interval = (
-            None
-            if run_mode == ScheduleTriggerNode.RunMode.ONCE
-            else {
-                "every": every,
-                "unit": unit,
-                "weekdays": weekdays or [],
-            }
-        )
-
-        data["schedule"] = {
-            "run_mode": run_mode,
-            "start_date_time": start_dt,
-            "interval": interval,
-            "end": {
-                "type": end_type,
-                "date_time": end_dt,
-                "max_runs": max_runs,
-            },
-        }
-        return data
+        return attrs
 
     def validate(self, attrs):
         ScheduleTriggerValidator().validate(attrs)
