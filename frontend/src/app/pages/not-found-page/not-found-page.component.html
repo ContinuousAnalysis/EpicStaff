@@ -1,0 +1,31 @@
+<section class="not-found-page">
+    <div class="not-found-page__hero" aria-hidden="true">
+        <svg
+            class="not-found-page__illustration"
+            viewBox="0 0 754 468"
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            aria-label=""
+        >
+            <use href="#icon-not-found-404"></use>
+        </svg>
+    </div>
+
+    <div class="not-found-page__content">
+        <h1 class="not-found-page__title">Page Not Found</h1>
+        <p class="not-found-page__text">
+            We couldn't find the page or resource you were looking for.<br />
+            The link may be broken, or the resource may not exist in your active organization.
+        </p>
+    </div>
+
+    <div class="not-found-page__actions">
+        <button type="button" class="not-found-page__btn not-found-page__btn--secondary" (click)="goBack()">
+            <span class="not-found-page__arrow">&larr;</span>
+            Go back
+        </button>
+        <button type="button" class="not-found-page__btn not-found-page__btn--primary" (click)="openWorkspace()">
+            Open Workspace
+        </button>
+    </div>
+</section>

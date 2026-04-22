@@ -13,6 +13,7 @@
         <form
             [formGroup]="form"
             class="form"
+            (keydown.enter)="onSubmit()"
         >
             <div>
                 <app-custom-input
@@ -40,12 +41,11 @@
             </div>
         </form>
 
-        <div
-            *ngIf="serverError()"
-            class="server-error"
-        >
-            {{ serverError() }}
-        </div>
+        @if (serverError()) {
+            <div class="server-error">
+                {{ serverError() }}
+            </div>
+        }
 
         <app-button
             class="btn"

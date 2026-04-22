@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AppSvgIconComponent, ButtonComponent, CustomInputComponent } from '@shared/components';
 
@@ -14,7 +14,7 @@ export class OnboardingPageComponent {
     private readonly router = inject(Router);
 
     step = signal<1 | 2>(1);
-    orgNameControl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
+    orgNameControl = new FormControl('');
 
     onContinue(): void {
         if (this.orgNameControl.invalid) {

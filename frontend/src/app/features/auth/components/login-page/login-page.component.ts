@@ -10,6 +10,7 @@ import {
     CustomInputComponent,
     ValidationErrorsComponent,
 } from '@shared/components';
+import { strictEmailValidator } from '@shared/form-validators';
 
 import { AuthService } from '../../../../services/auth/auth.service';
 
@@ -34,7 +35,7 @@ export class LoginPageComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
 
     form = new FormGroup({
-        email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+        email: new FormControl('', { nonNullable: true, validators: [Validators.required, strictEmailValidator()] }),
         password: new FormControl('', {
             nonNullable: true,
             validators: [Validators.required, Validators.minLength(8)],

@@ -1,41 +1,32 @@
 import { CommonModule } from '@angular/common';
 import { Component, forwardRef, Input } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
+import { HelpTooltipComponent } from '../help-tooltip/help-tooltip.component';
 
 @Component({
     selector: 'app-custom-input',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatTooltipModule, AppSvgIconComponent],
+    imports: [CommonModule, FormsModule, HelpTooltipComponent],
     template: `
         <div class="form-group">
-            <div class="label-container" *ngIf="label">
-                <label [for]="id">{{ label }}</label>
-                @if (required) {
-                    <span class="required">*</span>
-                }
-                <ng-container *ngIf="tooltipText">
-                    <app-svg-icon
-                        *ngIf="!isClassIcon"
-                        [icon]="icon"
-                        size="18px"
-                        [matTooltip]="tooltipText"
-                        matTooltipPosition="right"
-                        matTooltipClass="custom-tooltip"
-                        class="help-icon"
-                    />
-                    <i
-                        *ngIf="isClassIcon"
-                        [class]="icon"
-                        [matTooltip]="tooltipText"
-                        matTooltipPosition="right"
-                        matTooltipClass="custom-tooltip"
-                        class="help-icon class-icon"
-                    ></i>
-                </ng-container>
-            </div>
+            @if (label) {
+                <div class="label-container">
+                    <label [for]="id">{{ label }}</label>
+                    @if (required) {
+                        <span class="required">*</span>
+                    }
+                    @if (tooltipText) {
+                        <app-help-tooltip
+                            [text]="tooltipText"
+                            position="right"
+                            [icon]="isClassIcon ? 'help' : icon"
+                            [iconClass]="isClassIcon ? icon : ''"
+                            size="18px"
+                        />
+                    }
+                </div>
+            }
             <div class="input-wrapper">
                 <input
                     [type]="effectiveType"
@@ -51,19 +42,17 @@ import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
                     [autofocus]="autofocus"
                     [style.--active-color]="activeColor"
                 />
-                <button
-                    *ngIf="type === 'password'"
-                    type="button"
-                    class="toggle-visibility"
-                    (click)="togglePasswordVisibility()"
-                    tabindex="-1"
-                >
-                    <i [class]="'ti ' + (passwordVisible ? 'ti-eye' : 'ti-eye-off')"></i>
-                </button>
+                @if (type === 'password') {
+                    <button type="button" class="toggle-visibility" (click)="togglePasswordVisibility()" tabindex="-1">
+                        <i [class]="'ti ' + (passwordVisible ? 'ti-eye' : 'ti-eye-off')"></i>
+                    </button>
+                }
             </div>
-            <div class="error-message" *ngIf="errorMessage">
-                {{ errorMessage }}
-            </div>
+            @if (errorMessage) {
+                <div class="error-message">
+                    {{ errorMessage }}
+                </div>
+            }
         </div>
     `,
     styles: [
@@ -80,7 +69,7 @@ import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
                     margin-bottom: 8px;
 
                     .required {
-                        color: #ef4444;
+                        color: var(--color-required-asterisk, var(--accent-color));
                     }
                 }
 
@@ -90,24 +79,6 @@ import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
                     line-height: 130%;
                     color: var(--color-ks-text);
                     margin: 0;
-                }
-
-                .help-icon {
-                    width: 18px;
-                    height: 18px;
-                    color: var(--accent-color);
-                    cursor: help;
-                    transition: color 0.2s ease;
-
-                    &:hover {
-                        opacity: 0.7;
-                    }
-
-                    &.class-icon {
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                    }
                 }
 
                 .input-wrapper {
@@ -171,15 +142,6 @@ import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
                     margin-top: 4px;
                     line-height: 1.4;
                 }
-            }
-
-            :host ::ng-deep .custom-tooltip {
-                background: #232323 !important;
-                color: #fff !important;
-                font-size: 0.9rem !important;
-                max-width: 300px !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
             }
         `,
     ],

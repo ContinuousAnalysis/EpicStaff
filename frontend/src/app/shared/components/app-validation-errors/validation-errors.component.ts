@@ -24,6 +24,7 @@ export class ValidationErrorsComponent {
         pattern: () => `The value does not match the required pattern.`,
         email: () => `Invalid email address.`,
         numericOnly: () => `Password cannot be entirely numeric.`,
+        serverError: (error: unknown) => String(error),
         other: (error: unknown) => String(error),
     };
 

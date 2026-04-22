@@ -1,5 +1,5 @@
 <div class="page">
-    <ng-container *ngIf="state() === 'form'">
+    @if (state() === 'form') {
         <div class="card">
             <app-svg-icon
                 icon="logo"
@@ -31,8 +31,8 @@
                         placeholder="Enter password"
                         formControlName="password"
                     />
-                    <app-password-strength [password]="password" />
                     <app-validation-errors [control]="form.get('password')!" />
+                    <app-password-strength [password]="password" />
                 </div>
             </form>
 
@@ -46,13 +46,6 @@
                 </p>
             </div>
 
-            <div
-                *ngIf="serverError()"
-                class="server-error"
-            >
-                {{ serverError() }}
-            </div>
-
             <app-button
                 class="btn"
                 [disabled]="form.invalid || !termsControl.value"
@@ -63,39 +56,36 @@
         </div>
 
         <p class="prompt">Already have an account? <span (click)="navToLogin()">Log in</span></p>
-    </ng-container>
-
-    <div
-        class="card card--status"
-        *ngIf="state() !== 'form'"
-    >
-        <app-svg-icon
-            icon="logo"
-            size="120px"
-        />
-        <p class="status-text">{{ state() === 'loading' ? 'Processing...' : 'Successfully' }}</p>
-        <div
-            class="status-indicator"
-            [class.status-indicator--success]="state() === 'success'"
-        >
-            <div class="spinner-ring"></div>
-            <div class="success-circle">
-                <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 14 14"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                        d="M2 7L5.5 10.5L12 3.5"
-                        stroke="white"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
-                </svg>
+    } @else {
+        <div class="card card--status">
+            <app-svg-icon
+                icon="logo"
+                size="120px"
+            />
+            <p class="status-text">{{ state() === 'loading' ? 'Processing...' : 'Successfully' }}</p>
+            <div
+                class="status-indicator"
+                [class.status-indicator--success]="state() === 'success'"
+            >
+                <div class="spinner-ring"></div>
+                <div class="success-circle">
+                    <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M2 7L5.5 10.5L12 3.5"
+                            stroke="white"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </div>
             </div>
         </div>
-    </div>
+    }
 </div>
