@@ -891,8 +891,11 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
     filterset_fields = ["graph_id"]
 
     def get_queryset(self):
-        qs = GraphVersion.objects.filter(is_active=True, deleted_at__isnull=True)
-        if self.action in ["list", "all"]:
+        manager = (
+            GraphVersion.all_objects if self.action == "all" else GraphVersion.objects
+        )
+        qs = manager.all()
+        if self.action in ("list", "all"):
             qs = qs.defer("snapshot", "dependencies")
         return qs
 
@@ -923,17 +926,8 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
         )
 
     @action(detail=False, methods=["get"], url_path="all")
-    def all(self, request):
-        queryset = self.filter_queryset(
-            GraphVersion.objects.all().defer("snapshot", "dependencies")
-        )
-        page = self.paginate_queryset(queryset)
-        serializer_class = self.get_serializer_class()
-        if page is not None:
-            serializer = serializer_class(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = serializer_class(queryset, many=True)
-        return Response(serializer.data)
+    def all(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class IdempotentNodeCreateMixin:
