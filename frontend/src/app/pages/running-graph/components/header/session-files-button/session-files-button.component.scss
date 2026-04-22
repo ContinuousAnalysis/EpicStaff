@@ -157,7 +157,7 @@
         }
 
         &:hover .session-files-dropdown__link-btn {
-            display: inline-flex;
+            visibility: visible;
         }
     }
 
@@ -228,7 +228,7 @@
     }
 
     &__link-btn {
-        display: none;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         width: 28px;
@@ -241,6 +241,7 @@
         color: rgba(104, 95, 255, 1);
         border-radius: 4px;
         gap: 10px;
+        visibility: hidden;
 
         &:hover {
             background-color: rgba(104, 95, 255, 0.15);
