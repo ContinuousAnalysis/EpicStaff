@@ -668,16 +668,17 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             manipSection = [manipCol];
         }
 
-        const routeCodeCol: ColDef = {
-            headerName: 'Route Code',
-            field: 'route_code',
-            editable: true,
-            width: 150,
-            suppressMovable: true,
-            cellStyle: {
-                fontSize: '14px',
-            },
-        };
+        // TEMP: route_code column disabled
+        // const routeCodeCol: ColDef = {
+        //     headerName: 'Route Code',
+        //     field: 'route_code',
+        //     editable: true,
+        //     width: 150,
+        //     suppressMovable: true,
+        //     cellStyle: {
+        //         fontSize: '14px',
+        //     },
+        // };
 
         const skipCol: ColDef = {
             headerName: 'Continue',
@@ -748,16 +749,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             },
         };
 
-        return [
-            ...staticBefore,
-            ...exprSection,
-            promptIdCol,
-            ...manipSection,
-            routeCodeCol,
-            skipCol,
-            nextNodeCol,
-            deleteCol,
-        ];
+        // TEMP: route_code column disabled — routeCodeCol removed from layout
+        // return [...staticBefore, ...exprSection, promptIdCol, ...manipSection, routeCodeCol, skipCol, nextNodeCol, deleteCol];
+        return [...staticBefore, ...exprSection, promptIdCol, ...manipSection, skipCol, nextNodeCol, deleteCol];
     }
 
     private getMergeableColIds(): string[] {
@@ -1341,7 +1335,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             conditions: [],
             manipulation: null,
             continue_flag: false,
-            route_code: `ROUTE_${index + 1}`,
+            // TEMP: route_code disabled
+            // route_code: `ROUTE_${index + 1}`,
             dock_visible: true,
             next_node: null,
             order: index + 1,
