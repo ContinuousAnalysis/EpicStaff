@@ -1,3 +1,4 @@
+import copy
 from abc import ABC, abstractmethod
 from typing import Any, Literal
 from langgraph.types import StreamWriter
@@ -225,16 +226,7 @@ class BaseNode(ABC):
         the state at the time of execution.
         """
 
-        import json
-
         state_history = state["state_history"]
-
-        # Serialize via JSON to avoid deepcopy pickle issues with asyncio objects
-        def json_serialize(obj):
-            try:
-                return json.loads(json.dumps(obj, default=str))
-            except Exception:
-                return str(obj)
 
         state_history.append(
             {
@@ -242,7 +234,7 @@ class BaseNode(ABC):
                 "name": name,
                 "additional_data": copy.deepcopy(kwargs),
                 "input": copy.deepcopy(input),
-                "variables": variables.deep_dump(),
+                "variables": state["variables"].deep_dump(),
                 "output": copy.deepcopy(output),
             }
         )
