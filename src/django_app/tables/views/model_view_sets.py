@@ -791,6 +791,10 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
                     "telegram_trigger_node_list",
                     queryset=TelegramTriggerNode.objects.all(),
                 ),
+                Prefetch(
+                    "schedule_trigger_node_list",
+                    queryset=ScheduleTriggerNode.objects.all(),
+                ),
                 "start_node_list",
                 Prefetch("graph_note_list", queryset=GraphNote.objects.all()),
             )

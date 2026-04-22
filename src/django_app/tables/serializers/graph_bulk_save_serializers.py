@@ -12,6 +12,7 @@ from tables.serializers.model_serializers import (
     LLMNodeSerializer,
     GraphNoteSerializer,
     PythonNodeSerializer,
+    ScheduleTriggerNodeSerializer,
     StartNodeSerializer,
     SubGraphNodeSerializer,
     WebhookTriggerNodeSerializer,
@@ -92,6 +93,12 @@ class WebhookTriggerNodeBulkSerializer(
 
 class TelegramTriggerNodeBulkSerializer(
     BulkSaveEntityMixin, TelegramTriggerNodeSerializer
+):
+    pass
+
+
+class ScheduleTriggerNodeBulkSerializer(
+    BulkSaveEntityMixin, ScheduleTriggerNodeSerializer
 ):
     pass
 

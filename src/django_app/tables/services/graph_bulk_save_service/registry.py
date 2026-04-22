@@ -12,6 +12,7 @@ from tables.models.graph_models import (
     LLMNode,
     GraphNote,
     PythonNode,
+    ScheduleTriggerNode,
     StartNode,
     SubGraphNode,
     TelegramTriggerNode,
@@ -27,6 +28,7 @@ from tables.serializers.graph_bulk_save_serializers import (
     LLMNodeBulkSerializer,
     GraphNoteBulkSerializer,
     PythonNodeBulkSerializer,
+    ScheduleTriggerNodeBulkSerializer,
     StartNodeBulkSerializer,
     SubGraphNodeBulkSerializer,
     TelegramTriggerNodeBulkSerializer,
@@ -156,6 +158,12 @@ NODE_TYPE_REGISTRY: list[NodeTypeConfig] = [
         "telegram_trigger_node_ids",
         TelegramTriggerNode,
         TelegramTriggerNodeBulkSerializer,
+    ),
+    NodeTypeConfig(
+        "schedule_trigger_node_list",
+        "schedule_trigger_node_ids",
+        ScheduleTriggerNode,
+        ScheduleTriggerNodeBulkSerializer,
     ),
 ]
 
