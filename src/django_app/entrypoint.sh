@@ -55,7 +55,6 @@ else:
     service.setup(
         email=os.environ['DJANGO_ADMIN_EMAIL'],
         password=os.environ['DJANGO_ADMIN_PASSWORD'],
-        organization_name=os.environ['DJANGO_DEFAULT_ORG_NAME'],
     )
     print(f\"Bootstrapped superadmin {os.environ['DJANGO_ADMIN_EMAIL']} in org '{os.environ['DJANGO_DEFAULT_ORG_NAME']}'.\")
 "

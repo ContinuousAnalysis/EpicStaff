@@ -26,7 +26,7 @@ from tables.serializers.rbac_serializers import (
     TokenIntrospectRequestSerializer,
     TokenIntrospectResponseSerializer,
 )
-from tables.services.rbac.auth_service import AuthService, IssuedTokens
+from tables.services.rbac.auth_service import AuthService, TokenPair
 from tables.services.rbac.auth_validation_service import AuthValidationService
 from tables.services.rbac.first_setup_service import FirstSetupService
 from tables.services.rbac.rbac_exceptions import InvalidRefreshTokenError
@@ -78,7 +78,15 @@ class LogoutView(APIView):
         serializer = LogoutRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            RefreshToken(serializer.validated_data["refresh"]).blacklist()
+            token = RefreshToken(serializer.validated_data["refresh"])
+            # Ownership check: a leaked refresh token must not let a third
+            # party log the owner out. Mismatch is reported with the same
+            # exception as malformed/expired tokens so the caller cannot
+            # distinguish "real but not yours" from "garbage".
+            token_user_id = token.payload.get("user_id")
+            if token_user_id is None or int(token_user_id) != request.user.id:
+                raise InvalidRefreshTokenError()
+            token.blacklist()
         except TokenError as exc:
             raise InvalidRefreshTokenError() from exc
         return Response(
@@ -155,7 +163,7 @@ class FirstSetupView(APIView):
             email=cleaned["email"],
             password=cleaned["password"],
         )
-        tokens = IssuedTokens.for_user(result.user)
+        tokens = TokenPair.for_user(result.user)
 
         return Response(
             {
@@ -353,7 +361,7 @@ class ResetUserView(APIView):
             email=cleaned["email"],
             password=cleaned["password"],
         )
-        tokens = IssuedTokens.for_user(user)
+        tokens = TokenPair.for_user(user)
 
         return Response(
             {

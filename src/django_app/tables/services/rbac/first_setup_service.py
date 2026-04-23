@@ -1,7 +1,6 @@
-import os
 from dataclasses import dataclass
-from typing import Optional
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from loguru import logger
@@ -35,47 +34,29 @@ class FirstSetupService:
       already exists ("When this setup is completed once, it never
       appears again" — re-opens only if all users are removed).
 
-    The organization name is resolved from (in order):
-      1. explicit `organization_name` kwarg (used by the env-bootstrap path
-         in `entrypoint.sh`),
-      2. `DJANGO_DEFAULT_ORG_NAME` environment variable,
-      3. the hardcoded fallback `"Default Organization"`.
+    The organization name always comes from `settings.DJANGO_DEFAULT_ORG_NAME`
+    (driven by the `DJANGO_DEFAULT_ORG_NAME` env var, with a sane fallback).
+    It is not taken from the HTTP request body.
     """
 
     ORG_ADMIN_ROLE_NAME = "Org Admin"
-    DEFAULT_ORG_NAME_FALLBACK = "Default Organization"
     DEFAULT_API_KEY_NAME = "epicstaff-apikey"
 
     def is_setup_required(self) -> bool:
         return not get_user_model().objects.exists()
 
-    def _resolve_organization_name(self, explicit: Optional[str]) -> str:
-        if explicit:
-            return explicit
-        return (
-            os.environ.get("DJANGO_DEFAULT_ORG_NAME") or self.DEFAULT_ORG_NAME_FALLBACK
-        )
-
     @transaction.atomic
-    def setup(
-        self,
-        *,
-        email: str,
-        password: str,
-        organization_name: Optional[str] = None,
-        display_name: Optional[str] = None,
-    ) -> SetupResult:
+    def setup(self, *, email: str, password: str) -> SetupResult:
         user_model = get_user_model()
 
         if user_model.objects.exists():
             raise SetupAlreadyCompletedError()
 
-        org_name = self._resolve_organization_name(organization_name)
+        org_name = settings.DJANGO_DEFAULT_ORG_NAME
 
         user = user_model.objects.create_superuser(
             email=email,
             password=password,
-            display_name=display_name,
         )
 
         try:

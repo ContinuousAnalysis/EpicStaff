@@ -61,6 +61,13 @@ class JwtOrApiKeyAuthentication(BaseAuthentication):
     def __init__(self) -> None:
         self.jwt_auth = JWTAuthentication()
 
+    def authenticate_header(self, request: Request) -> str:
+        # RFC 7235: a 401 response MUST include a WWW-Authenticate challenge.
+        # Without this method DRF falls back to 403 for unauthenticated
+        # requests, which contradicts the documented auth envelope and makes
+        # it harder for clients to distinguish "no creds" from "forbidden".
+        return "Bearer"
+
     def authenticate(self, request: Request) -> Optional[Tuple[object, object]]:
         auth_header = _get_header(request, "HTTP_AUTHORIZATION")
         if auth_header and auth_header.lower().startswith("bearer "):

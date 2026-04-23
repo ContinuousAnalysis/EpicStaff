@@ -20,9 +20,8 @@ class Migration(migrations.Migration):
         # Legacy graph-domain `Organization` and `OrganizationUser` rows (named
         # flow end-users) have no mapping into the new RBAC schema. Per-flow
         # persistent variables (GraphOrganization, GraphOrganizationUser) are
-        # also dropped because they FK into the above. User confirmed no data
-        # needs to be preserved. Session.graph_user is on_delete=SET_NULL, so
-        # those pointers nullify automatically.
+        # also dropped because they FK into the above. Session.graph_user is
+        # on_delete=SET_NULL, so those pointers nullify automatically.
         migrations.RunSQL(
             sql=(
                 "DELETE FROM tables_graphorganizationuser;"
