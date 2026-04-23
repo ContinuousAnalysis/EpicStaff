@@ -621,17 +621,3 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 | PowerShell's `curl -H` throws "Cannot bind parameter 'Headers'" | PowerShell aliases `curl` to `Invoke-WebRequest`. | Use `curl.exe`, `Invoke-RestMethod -Headers @{...}`, or `Remove-Item Alias:curl`. |
 | `ALTER TABLE because it has pending trigger events` during migrate | Postgres deferred FK triggers. | Handled in 0170 with `SET CONSTRAINTS ALL IMMEDIATE`; if you see this on a different migration, add the same. |
 | After swapping AUTH_USER_MODEL, `admin.LogEntry.user was declared with a lazy reference to 'tables.user'` | `django.contrib.admin` references the swapped model during state build. | Remove `django.contrib.admin` from `INSTALLED_APPS` |
-
-
-
-
-docs(EST-2417-BE): align auth docs with implementation
-
-- First-setup request/response examples no longer show
-  organization_name / display_name (the endpoint ignores them); org
-  name is documented as coming from DJANGO_DEFAULT_ORG_NAME.
-- Login section documents both 400 (structured, aggregated, redacted
-  errors) and flat 401 (wrong credentials, no errors array).
-- Logout section documents the refresh-token ownership check.
-- SSE section notes GETDEL atomicity and 30-second hardcoded TTL.
-- Corrected stale /api/auth/token/ references to /api/auth/login/
