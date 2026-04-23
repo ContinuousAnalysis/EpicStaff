@@ -1,4 +1,5 @@
 import os
+import re
 
 from rest_framework import serializers
 
@@ -6,9 +7,19 @@ from tables.models import Graph
 from tables.validators.file_upload_validator import FileValidator
 
 
+_MAX_STORAGE_PATH_BYTES = 1000
+
+
 def _normalize_path(value: str) -> str:
-    """Strip trailing slashes so endpoints behave consistently."""
-    return value.rstrip("/") if value else value
+    if not value:
+        return value
+    value = re.sub(r"/+", "/", value)
+    value = value.rstrip("/")
+    if len(value.encode("utf-8")) > _MAX_STORAGE_PATH_BYTES:
+        raise serializers.ValidationError(
+            f"Path too long: max {_MAX_STORAGE_PATH_BYTES} bytes."
+        )
+    return value
 
 
 class StoragePathQuerySerializer(serializers.Serializer):

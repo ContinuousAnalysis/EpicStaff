@@ -180,8 +180,13 @@ class StorageAPIView(ViewSet):
             )
         except FileNotFoundError:
             pass
+        except ValueError as e:
+            raise ValidationError({"detail": str(e)})
 
-        self.manager.mkdir(user_name, org_id, path)
+        try:
+            self.manager.mkdir(user_name, org_id, path)
+        except ValueError as e:
+            raise ValidationError({"detail": str(e)})
         return Response({"path": path, "created": True}, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=["delete"], url_path="delete")

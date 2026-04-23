@@ -570,7 +570,7 @@ class StorageFile(models.Model):
         "Organization", on_delete=models.CASCADE, related_name="storage_files"
     )
     path = models.CharField(
-        max_length=2048, help_text="Org-relative path, never starts with '/'"
+        max_length=1000, help_text="Org-relative path, never starts with '/'"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -160,7 +160,13 @@ class S3StorageBackend(AbstractStorageBackend):
         full_path = self._full_path(path)
         if not full_path.endswith("/"):
             full_path += "/"
-        self.client.put_object(Bucket=self.bucket_name, Key=full_path, Body=b"")
+        try:
+            self.client.put_object(Bucket=self.bucket_name, Key=full_path, Body=b"")
+        except ClientError as error:
+            code = error.response["Error"]["Code"]
+            if code in ("400", "XMinioInvalidObjectName"):
+                raise ValueError(f"Invalid storage path: {path!r}")
+            raise
 
     def move(self, source_path: str, destination_path: str) -> None:
         self.copy(source_path, destination_path)
@@ -300,7 +306,12 @@ class S3StorageBackend(AbstractStorageBackend):
                 modified=head["LastModified"].isoformat(),
             )
         except ClientError as error:
-            if error.response["Error"]["Code"] != "404":
+            code = error.response["Error"]["Code"]
+            if code == "404":
+                pass
+            elif code in ("400", "XMinioInvalidObjectName"):
+                raise ValueError(f"Invalid storage path: {path!r}")
+            else:
                 raise
 
         # Try as folder marker
@@ -312,7 +323,12 @@ class S3StorageBackend(AbstractStorageBackend):
                 modified=head["LastModified"].isoformat(),
             )
         except ClientError as error:
-            if error.response["Error"]["Code"] != "404":
+            code = error.response["Error"]["Code"]
+            if code == "404":
+                pass
+            elif code in ("400", "XMinioInvalidObjectName"):
+                raise ValueError(f"Invalid storage path: {path!r}")
+            else:
                 raise
 
         # Fallback: virtual folder (no marker, but objects exist under prefix)
