@@ -1,19 +1,23 @@
 """
 Integration tests for the Story 2 auth surface:
 
-- First-setup idempotency
+- First-setup idempotency + ignores body fields the endpoint no longer accepts
+- Structured validation errors (AuthValidationService): aggregated + redacted
 - Login valid/invalid + consistent 401 envelope
 - /me via JWT / env ApiKey / user ApiKey
 - Refresh rotation + blacklist
-- Logout
+- Logout (including refresh-token ownership check)
 - Login throttle (composite IP|email, 5/min)
-- SSE ticket issue/consume single-use + expired
+- SSE ticket issue/consume single-use + expired + atomic
 """
 
 from unittest.mock import patch
 
 import pytest
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -223,14 +227,14 @@ def test_sse_ticket_is_single_use(auth_client, regular_user):
     r = auth_client.post(reverse("sse_ticket"))
     assert r.status_code == 200
     ticket = r.json()["ticket"]
-    assert r.json()["expires_in"] == 300
+    assert r.json()["expires_in"] == settings.SSE_TICKET_TTL_SECONDS
 
     service = SseTicketService()
     user = service.consume(ticket)
     assert user is not None
     assert user.pk == regular_user.pk
 
-    # Second consume fails
+    # Second consume fails — GETDEL already removed the ticket atomically.
     assert service.consume(ticket) is None
 
 
@@ -240,9 +244,177 @@ def test_sse_ticket_expired_or_unknown_returns_none():
     service = SseTicketService()
     assert service.consume("no-such-ticket") is None
     assert service.consume("") is None
+    assert service.consume(None) is None
 
 
 @pytest.mark.django_db
 def test_sse_ticket_endpoint_requires_jwt(api_client):
     r = api_client.post(reverse("sse_ticket"))
     assert r.status_code == 401
+
+
+# ---------------- Logout ownership ----------------
+
+
+@pytest.mark.django_db
+def test_logout_rejects_refresh_owned_by_another_user(
+    api_client, regular_user, jwt_tokens
+):
+    """A leaked refresh token belonging to user B must not be blacklistable
+    by user A, even when A presents a valid access token of their own."""
+    other = get_user_model().objects.create_user(
+        email="other@example.com", password="OtherPass123!"
+    )
+    other_refresh = str(RefreshToken.for_user(other))
+
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {jwt_tokens['access']}")
+    r = api_client.post(
+        reverse("logout"), data={"refresh": other_refresh}, format="json"
+    )
+    assert r.status_code == 400
+    assert r.json()["code"] == "invalid_or_expired_refresh"
+
+    # The other user's refresh token must still work afterwards.
+    api_client.credentials()
+    r2 = api_client.post(
+        reverse("refresh"), data={"refresh": other_refresh}, format="json"
+    )
+    assert r2.status_code == 200
+
+
+# ---------------- First-setup: ignored body fields + settings-driven org ----------------
+
+
+@pytest.mark.django_db
+def test_first_setup_ignores_organization_name_and_display_name_in_body(api_client):
+    """After the M1/M2 cleanup the endpoint silently ignores these fields;
+    the org name comes from settings.DJANGO_DEFAULT_ORG_NAME."""
+    r = api_client.post(
+        reverse("first_setup"),
+        data={
+            "email": "admin@example.com",
+            "password": "StrongPass123!",
+            "organization_name": "Rogue Corp",
+            "display_name": "Rogue Name",
+        },
+        format="json",
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert body["user"]["display_name"] is None
+    assert body["organization"]["name"] == settings.DJANGO_DEFAULT_ORG_NAME
+
+
+@pytest.mark.django_db
+@override_settings(DJANGO_DEFAULT_ORG_NAME="Override Co")
+def test_first_setup_uses_django_default_org_name_from_settings(api_client):
+    r = api_client.post(
+        reverse("first_setup"),
+        data={"email": "admin@example.com", "password": "StrongPass123!"},
+        format="json",
+    )
+    assert r.status_code == 201
+    assert r.json()["organization"]["name"] == "Override Co"
+
+
+# ---------------- AuthValidationService: aggregated + redacted errors ----------------
+
+
+@pytest.mark.django_db
+def test_first_setup_validation_aggregates_email_and_password_errors(api_client):
+    r = api_client.post(
+        reverse("first_setup"),
+        data={"email": "not-an-email", "password": "12345"},
+        format="json",
+    )
+    assert r.status_code == 400
+    body = r.json()
+    assert body["code"] == "invalid"
+    errors = body["errors"]
+    fields = {e["field"] for e in errors}
+    assert "email" in fields and "password" in fields
+    # Multiple password-policy reasons must be returned in one response, not one-by-one.
+    password_reasons = [e["reason"] for e in errors if e["field"] == "password"]
+    assert len(password_reasons) >= 2
+
+
+@pytest.mark.django_db
+def test_first_setup_password_similar_to_email_is_rejected(api_client):
+    """Regression guard for the UserAttributeSimilarityValidator gap — this
+    used to silently pass because validate_password() was called without a
+    user= argument."""
+    r = api_client.post(
+        reverse("first_setup"),
+        data={"email": "john@acme.com", "password": "john@acme.com"},
+        format="json",
+    )
+    assert r.status_code == 400
+    reasons = [e["reason"] for e in r.json()["errors"] if e["field"] == "password"]
+    assert any("similar" in reason.lower() for reason in reasons)
+
+
+@pytest.mark.django_db
+def test_first_setup_password_value_is_always_redacted(api_client):
+    r = api_client.post(
+        reverse("first_setup"),
+        data={"email": "a@b.co", "password": "password"},
+        format="json",
+    )
+    assert r.status_code == 400
+    for entry in r.json()["errors"]:
+        if entry["field"] == "password":
+            assert entry["value"] == "***"
+
+
+@pytest.mark.django_db
+def test_first_setup_missing_fields_reports_both_as_required(api_client):
+    r = api_client.post(reverse("first_setup"), data={}, format="json")
+    assert r.status_code == 400
+    fields = {e["field"] for e in r.json()["errors"]}
+    assert {"email", "password"} <= fields
+
+
+@pytest.mark.django_db
+def test_login_missing_fields_returns_structured_errors(api_client):
+    r = api_client.post(reverse("login"), data={}, format="json")
+    assert r.status_code == 400
+    body = r.json()
+    fields = {e["field"] for e in body["errors"]}
+    assert {"email", "password"} <= fields
+
+
+@pytest.mark.django_db
+def test_login_wrong_credentials_has_no_errors_array(api_client, regular_user):
+    """User-enumeration guard: wrong creds must not disclose which field failed."""
+    r = api_client.post(
+        reverse("login"),
+        data={"email": regular_user.email, "password": "wrong"},
+        format="json",
+    )
+    assert r.status_code == 401
+    assert "errors" not in r.json()
+
+
+# ---------------- Reset-user validation ----------------
+
+
+@pytest.mark.django_db
+def test_reset_user_rejects_weak_password_with_structured_errors(auth_client):
+    r = auth_client.post(
+        reverse("reset_user"),
+        data={"email": "new@example.com", "password": "12345"},
+        format="json",
+    )
+    assert r.status_code == 400
+    assert r.json()["code"] == "invalid"
+    assert any(e["field"] == "password" for e in r.json()["errors"])
+
+
+@pytest.mark.django_db
+def test_reset_user_requires_authentication(api_client):
+    r = api_client.post(
+        reverse("reset_user"),
+        data={"email": "new@example.com", "password": "StrongPass123!"},
+        format="json",
+    )
+    assert r.status_code in (401, 403)
