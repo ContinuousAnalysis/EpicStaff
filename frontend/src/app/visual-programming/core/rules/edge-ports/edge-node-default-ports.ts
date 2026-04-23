@@ -18,6 +18,7 @@ export const DEFAULT_EDGE_NODE_PORTS: BasePort[] = [
             'audio-to-text-out',
             'webhook-trigger-out',
             'telegram-trigger-out',
+            'schedule-trigger-out',
             'code-agent-out',
         ],
         position: 'left',
