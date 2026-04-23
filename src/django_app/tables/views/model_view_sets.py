@@ -648,12 +648,12 @@ class ToolConfigViewSet(ModelViewSet):
 
 
 class ContentHashPreconditionMixin:
-    """Passes content_hash from request data to the model instance before saving.
+    # """Passes content_hash from request data to the model instance before saving.
 
-    The model's ContentHashMixin.save() validates _expected_hash against the DB,
-    raising 409 Conflict on mismatch. Omitting content_hash skips the check.
-    Scripts can also set instance._expected_hash = hash before calling .save().
-    """
+    # The model's ContentHashMixin.save() validates _expected_hash against the DB,
+    # raising 409 Conflict on mismatch. Omitting content_hash skips the check.
+    # Scripts can also set instance._expected_hash = hash before calling .save().
+    # """
 
     def perform_update(self, serializer):
         incoming_hash = self.request.data.get("content_hash")
@@ -887,12 +887,12 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
 
 class IdempotentNodeCreateMixin:
     # TODO: change fields from (graph, node_name) to id (all nodes id's are consistent)
-    """
-    COMMIT_COMMENTS: Makes node POST idempotent — if a node with the same
-    (graph, node_name) already exists, update it instead of failing with a
-    unique constraint violation. This prevents orphan accumulation when
-    forkJoin-based saves partially fail and retry.
-    """
+    # """
+    # COMMIT_COMMENTS: Makes node POST idempotent — if a node with the same
+    # (graph, node_name) already exists, update it instead of failing with a
+    # unique constraint violation. This prevents orphan accumulation when
+    # forkJoin-based saves partially fail and retry.
+    # """
 
     def create(self, request, *args, **kwargs):
         graph_id = request.data.get("graph")
