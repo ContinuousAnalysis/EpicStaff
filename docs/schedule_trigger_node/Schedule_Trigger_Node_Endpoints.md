@@ -107,14 +107,18 @@ All requests use `Content-Type: application/json`.
 
 ### 2.3 Cross-field validation rules
 
-- `run_mode="once"` → `interval` is `null` (equivalently `every`/`unit`
-  are `null`).
+- `run_mode="once"` → `interval` is `null` (equivalently `every`/`unit`/
+  `weekdays` are empty) **and** `end.type` must be `"never"`.
 - `run_mode="repeat"` → `interval.every >= 1` and `interval.unit` are
   **required**.
-- `end.type="on_date"` → `end.date_time` is **required**.
+- `end.type="never"` → `end.date_time` and `end.max_runs` must both be
+  `null`.
+- `end.type="on_date"` → `end.date_time` is **required** and must be
+  **later than** `schedule.start_date_time`.
 - `end.type="after_n_runs"` → `end.max_runs >= 1` is **required**.
 - `interval.weekdays` must be a subset of
-  `["mon","tue","wed","thu","fri","sat","sun"]`.
+  `["mon","tue","wed","thu","fri","sat","sun"]` and is only allowed when
+  `interval.unit ∈ {"days", "weeks"}`.
 
 A failing rule returns `400 Bad Request` with a structured error:
 

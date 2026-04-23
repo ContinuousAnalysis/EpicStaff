@@ -14,8 +14,9 @@ The system is split across two services:
 - **Manager** (FastAPI + APScheduler) — in-memory scheduler of jobs, consumes
   Redis updates, fires callbacks, publishes back to Django.
 
-The two services communicate over a single Redis pub/sub channel:
-`schedule_channel`. There is **no HTTP call** from Manager to Django.
+The two services communicate over a single Redis pub/sub channel whose
+name is read from the `SCHEDULE_CHANNEL` env var (default:
+`schedule_channel`). There is **no HTTP call** from Manager to Django.
 
 1. Data Model
 -------------
@@ -38,7 +39,7 @@ Persisted in Django (`tables_scheduletriggernode`). One row per node.
 | `end_type` | choice | `never` \| `on_date` \| `after_n_runs`. |
 | `end_date_time` | datetime, nullable | Required when `end_type="on_date"`. |
 | `max_runs` | int, nullable | Required when `end_type="after_n_runs"`. |
-| `current_runs` | int | Read-only counter maintained by the service. Reset to 0 on reactivation or `max_runs` change. |
+| `current_runs` | int | Read-only counter maintained by the service. Reset to 0 on reactivation or `max_runs` change. Excluded from `content_hash` so runtime increments don't invalidate client-held hashes. |
 
 The model exposes `RunMode`, `TimeUnit`, and `EndType` as `TextChoices`.
 
@@ -65,12 +66,16 @@ exact request/response JSON shape and per-endpoint rules.
 
 Validation rules enforced before any DB write:
 
-- `run_mode="once"` → `every` and `unit` must be `null` (equivalently,
-  `interval` is `null` in the API shape).
-- `run_mode="repeat"` → `every >= 1` is mandatory.
-- `end_type="on_date"` → `end_date_time` is mandatory.
+- `run_mode="once"` → `every`, `unit`, and `weekdays` must be empty
+  (equivalently, `interval` is `null` in the API shape), and `end_type`
+  must be `"never"`.
+- `run_mode="repeat"` → `every >= 1` is mandatory and `unit` is required.
+- `end_type="never"` → `end_date_time` and `max_runs` must both be `null`.
+- `end_type="on_date"` → `end_date_time` is mandatory and must be **later
+  than** `start_date_time`.
 - `end_type="after_n_runs"` → `max_runs >= 1` is mandatory.
-- `weekdays` must be a subset of `{mon, tue, wed, thu, fri, sat, sun}`.
+- `weekdays` must be a subset of `{mon, tue, wed, thu, fri, sat, sun}` and
+  is only allowed when `unit ∈ {days, weeks}`.
 
 4. Service Layer
 ----------------
@@ -209,10 +214,12 @@ schedule_channel_handler (Django pubsub)
         ├─ action=="run_session"  → ScheduleTriggerService.handle_schedule_trigger(node_id)
         │                           (see 5.3)
         │
-        └─ action=="deactivate"   → ScheduleTriggerNode is_active=False in DB
-                                    → post_save fires
-                                    → Redis node_update{is_active:false}
-                                    → Manager remove_schedule(node_id)
+        ├─ action=="deactivate"   → ScheduleTriggerNode.is_active=False via .save()
+        │                           → post_save fires
+        │                           → Redis node_update{is_active:false}
+        │                           → Manager remove_schedule(node_id)
+        │
+        └─ action=="node_update"  → skipped (Django→Manager echo of our own publish)
 ```
 
 ### 5.3 `handle_schedule_trigger` (Django, transactional)
@@ -223,8 +230,6 @@ Wrapped in `@transaction.atomic`:
    Concurrent workers race for the fired node; only one wins, others exit
    silently (row is locked or node is inactive).
 2. **Guard checks**:
-   - `start_date_time > now` → exit (too early; should never happen once
-     APScheduler fires, but defensive).
    - `end_type == "on_date"` and `end_date_time <= now` → publish
      `deactivate` to Redis and exit.
    - `end_type == "after_n_runs"` and `current_runs >= max_runs` → exit.
@@ -294,7 +299,7 @@ Django:
   `schedule_trigger_post_save_handler`,
   `schedule_trigger_post_delete_handler`.
 - `tables/services/schedule_trigger_service.py` — `ScheduleTriggerService`,
-  `handle_schedule_trigger`, `generate_cron`.
+  `handle_schedule_trigger`.
 - `tables/services/redis_pubsub.py` — Redis listener that routes
   `schedule_channel` messages into `ScheduleTriggerService`.
 - `tables/services/graph_bulk_save_service/registry.py` — bulk-save
