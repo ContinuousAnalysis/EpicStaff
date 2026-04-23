@@ -21,7 +21,10 @@
                         placeholder="example@email.com"
                         formControlName="email"
                     />
-                    <app-validation-errors [control]="form.get('email')!" />
+                    <app-validation-errors
+                        [control]="form.get('email')!"
+                        [serverError]="fieldErrors()['email']"
+                    />
                 </div>
 
                 <div>
@@ -31,7 +34,10 @@
                         placeholder="Enter password"
                         formControlName="password"
                     />
-                    <app-validation-errors [control]="form.get('password')!" />
+                    <app-validation-errors
+                        [control]="form.get('password')!"
+                        [serverError]="fieldErrors()['password']"
+                    />
                     <app-password-strength [password]="password" />
                 </div>
             </form>
@@ -57,7 +63,7 @@
 
         <p class="prompt">Already have an account? <span (click)="navToLogin()">Log in</span></p>
     } @else {
-        <div class="card card--status">
+        <div class="card status">
             <app-svg-icon
                 icon="logo"
                 size="120px"

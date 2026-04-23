@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -11,6 +11,7 @@ import {
     ValidationErrorsComponent,
 } from '@shared/components';
 import { strictEmailValidator } from '@shared/form-validators';
+import { interval, take } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
 
@@ -27,6 +28,7 @@ import { AuthService } from '../../../../services/auth/auth.service';
     ],
     templateUrl: './login-page.component.html',
     styleUrls: ['./login-page.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginPageComponent implements OnInit {
     private readonly authService = inject(AuthService);
@@ -45,6 +47,7 @@ export class LoginPageComponent implements OnInit {
 
     loading = false;
     serverError = signal<string | null>('');
+    throttleSecondsLeft = signal(0);
 
     ngOnInit(): void {
         this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
@@ -69,10 +72,29 @@ export class LoginPageComponent implements OnInit {
                 },
                 error: (err) => {
                     this.loading = false;
+                    if (err.error.status_code === 429) {
+                        this.handleThrottleError(err?.error?.message);
+                        return;
+                    }
                     this.serverError.set(err?.error?.message || 'Login failed. Please try again.');
                 },
                 complete: () => {
                     this.loading = false;
+                },
+            });
+    }
+
+    handleThrottleError(message: string): void {
+        const seconds = Math.ceil(parseFloat(message.split(':')[1]) || 0);
+        this.throttleSecondsLeft.set(seconds);
+
+        interval(1000)
+            .pipe(take(seconds), takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.throttleSecondsLeft.update((v) => v - 1),
+                complete: () => {
+                    this.serverError.set(null);
+                    this.throttleSecondsLeft.set(0);
                 },
             });
     }
