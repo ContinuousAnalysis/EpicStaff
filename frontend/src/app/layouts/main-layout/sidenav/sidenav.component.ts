@@ -13,6 +13,7 @@ import { environment } from 'src/environments/environment';
 
 import { ConfigureModelsDialogService } from '../../../features/configure-models/services/configure-models-dialog.service';
 import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
+import { AuthService } from '../../../services/auth/auth.service';
 import { ConfigService } from '../../../services/config/config.service';
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { TooltipComponent } from './tooltip/tooltip.component';
@@ -41,6 +42,7 @@ export class LeftSidebarComponent implements AfterViewInit {
     public bottomNavItems: NavItem[];
     public isEpicChatEnabled: boolean;
     public apiBaseUrl: string;
+    public accessToken: string;
     public showLogoTooltip = false;
     public readonly epicChatThemeConfig = {
         semantic: {
@@ -106,7 +108,8 @@ export class LeftSidebarComponent implements AfterViewInit {
     constructor(
         public epicChatService: EpicChatService,
         private configService: ConfigService,
-        private configureModelsDialogService: ConfigureModelsDialogService
+        private configureModelsDialogService: ConfigureModelsDialogService,
+        private authService: AuthService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
         // COMMIT_COMMENTS: Derive apiBaseUrl from browser origin so the EpicChat widget's
@@ -117,6 +120,7 @@ export class LeftSidebarComponent implements AfterViewInit {
         // Bad approach to use window.location because ui and backend can be on different domains
         // fixed localhost vs 127.0.0.1 problem in widget code
         this.apiBaseUrl = environment.apiUrl;
+        this.accessToken = this.authService.getAccessToken() ?? '';
         this.topNavItems = [
             {
                 id: 'projects',

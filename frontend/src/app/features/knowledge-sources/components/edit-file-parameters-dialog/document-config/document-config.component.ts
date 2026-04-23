@@ -4,18 +4,17 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { SelectComponent } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 
-import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
-
+import { HelpTooltipComponent } from '../../../../../shared/components/help-tooltip/help-tooltip.component';
 import { CHUNK_STRATEGIES_SELECT_ITEMS } from '../../../constants/constants';
 import { ADDITIONAL_PARAMS_FORM_COMPONENT_MAP } from '../../../enums/additional-params-form.map';
 import { NaiveRagChunkStrategy } from '../../../enums/naive-rag-chunk-strategy';
-import { TableDocument } from '../../rag-configuration/configuration-table/configuration-table.interface';
+import { TableDocument } from '../../naive-rag-configuration/configuration-table/configuration-table.interface';
 
 @Component({
     selector: 'app-document-config',
     templateUrl: './document-config.component.html',
     styleUrls: ['./document-config.component.scss'],
-    imports: [AppSvgIconComponent, MATERIAL_FORMS, SelectComponent, ReactiveFormsModule, NgComponentOutlet],
+    imports: [HelpTooltipComponent, MATERIAL_FORMS, SelectComponent, ReactiveFormsModule, NgComponentOutlet],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DocumentConfigComponent implements OnChanges {

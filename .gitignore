@@ -254,8 +254,8 @@ src/django_app/staticfiles/*
 # Cursor AI rules
 .cursorrules
 
-#knowledge data
-knowledge/graph_data/
+#knowledge
+src/knowledge/graph_data/
 
 # Knowledge migration backup
 **/knowledge_migration_backup/
@@ -271,6 +271,7 @@ CLAUDE.md
 CLAUDE.local.md
 !prod/prod.env.manifest
 .claude/settings.local.json
+/personal_files
 
 # Self — local gitignore tweaks should not be tracked
 .gitignore

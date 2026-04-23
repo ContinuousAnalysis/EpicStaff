@@ -1,3 +1,4 @@
+import { Edge } from '../../../pages/flows-page/components/flow-visual-programming/models/edge.model';
 import { CustomPortId } from './port.model';
 
 export interface ConnectionModel {
@@ -11,4 +12,6 @@ export interface ConnectionModel {
     endColor?: string;
     behavior: 'floating' | 'fixed';
     type: 'straight' | 'segment' | 'bezier';
+    /** Backend edge record — null for connections not yet persisted. */
+    data: Edge | null;
 }

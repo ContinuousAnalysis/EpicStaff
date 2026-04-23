@@ -15,3 +15,7 @@ $compact-theme: mat.define-theme(
 :root {
     @include mat.form-field-density($compact-theme);
 }
+
+.mat-mdc-form-field-required-marker {
+    color: var(--color-required-asterisk, var(--accent-color));
+}

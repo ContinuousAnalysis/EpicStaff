@@ -1,13 +1,13 @@
-@if (isLoaded) {
+@if (isLoaded()) {
     <app-flow-header
         [graphName]="graph.name"
         [graphId]="graph.id"
         [isEpicChatEnabled]="isEpicChatEnabled"
         [graph]="graph"
-        [isSaving]="isSaving"
-        [isRunning]="isRunning"
+        [isSaving]="isSaving()"
+        [isRunning]="isRunning()"
         [hasUnsavedChanges]="hasUnsavedChanges()"
-        (save)="handleSaveFlow(true).subscribe()"
+        (save)="onHeaderSave()"
         (viewSessions)="handleViewSessions()"
         (run)="handleRunFlow()"
         (getCurl)="handleGetCurl()"
@@ -17,11 +17,10 @@
 
     <div class="body">
         <app-flow-graph
-            [flowState]="loadedFlowState"
+            [flowState]="currentFlowState()"
             [currentFlowId]="graph.id"
             [initialNodeId]="initialNodeId"
-            [initialNodeId]="initialNodeId"
-            (save)="handleSaveFlow(true).subscribe()"
+            (save)="onGraphSave($event)"
             (openShortcuts)="openShortcutsModal($event)"
         ></app-flow-graph>
         <app-shortcuts-modal
@@ -32,20 +31,23 @@
             [sections]="shortcutSections"
             (closed)="closeShortcutsModal()"
         ></app-shortcuts-modal>
-        @if (isPanelOpen || !isPanelOpen) {
+        @if (isPanelOpen() || !isPanelOpen()) {
             <div
                 class="drag-handle"
                 [class.dragging]="isDragging"
-                [class.collapsed]="isPanelCollapsed"
+                [class.collapsed]="isPanelCollapsed()"
                 (mousedown)="onDragStart($event)"
             >
                 <button class="collapse-toggle" (mousedown)="$event.stopPropagation()" (click)="togglePanelCollapsed()">
                     <span class="collapse-toggle__icon">
-                        <app-svg-icon [icon]="isPanelCollapsed ? 'chevron-left' : 'chevron-right'" size="1rem"></app-svg-icon>
+                        <app-svg-icon
+                            [icon]="isPanelCollapsed() ? 'chevron-left' : 'chevron-right'"
+                            size="1rem"
+                        ></app-svg-icon>
                     </span>
                 </button>
             </div>
-            @if (!isPanelCollapsed) {
+            @if (!isPanelCollapsed()) {
                 <app-flow-messages-panel
                     [style.width.px]="panelWidthPx"
                     [graphId]="graph.id"

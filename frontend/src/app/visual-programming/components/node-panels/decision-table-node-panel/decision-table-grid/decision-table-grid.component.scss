@@ -34,8 +34,8 @@
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            color: rgba(255, 255, 255, 0.6);
-            background: rgba(255, 255, 255, 0.08);
+            color: var(--accent-color);
+            background: rgba(104, 95, 255, 0.1);
             font-size: 0.75rem;
             cursor: help;
             transition:
