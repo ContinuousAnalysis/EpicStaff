@@ -6,6 +6,7 @@ import { CustomPythonCode } from '../../../features/tools/models/python-code.mod
 import { ToolConfig } from '../../../features/tools/models/tool-config.model';
 import { CodeAgentNodeData } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { CustomConditionalEdgeModelForNode } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
+import { ScheduleTriggerNodeData } from '../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 import { TelegramTriggerNodeField } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
 import { GetLlmConfigRequest } from '../../../shared/models/llms/llm-config.model';
 import { NodeType } from '../enums/node-type';
@@ -120,7 +121,7 @@ export interface TelegramTriggerNodeModel extends BaseNodeModel {
 
 export interface ScheduleTriggerNodeModel extends BaseNodeModel {
     type: NodeType.SCHEDULE_TRIGGER;
-    data: unknown;
+    data: ScheduleTriggerNodeData;
 }
 
 export interface EndNodeData {
