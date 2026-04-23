@@ -15,6 +15,7 @@ import { ApiErrorItem } from '@shared/models';
 import { forkJoin, timer } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
+import { ToastService } from '../../../../services/notifications';
 
 type PageState = 'form' | 'loading' | 'success';
 
@@ -37,6 +38,7 @@ type PageState = 'form' | 'loading' | 'success';
 export class SignUpPageComponent {
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
+    private readonly toast = inject(ToastService);
 
     termsControl = new FormControl(false);
 
@@ -78,6 +80,11 @@ export class SignUpPageComponent {
             },
             error: (err) => {
                 this.state.set('form');
+                if (err.error.status_code === 409) {
+                    this.toast.error(err.error.message);
+                    return;
+                }
+
                 const errors: ApiErrorItem[] = err?.error?.errors ?? [];
                 this.setApiErrors(errors);
             },

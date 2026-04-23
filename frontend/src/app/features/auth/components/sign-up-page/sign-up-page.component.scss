@@ -1,13 +1,15 @@
-.card--status {
-    gap: 1.5rem;
-    align-items: center;
-    justify-content: center;
+.card {
+    &.status {
+        gap: 1.5rem;
+        align-items: center;
+        justify-content: center;
 
-    .status-text {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #d9d9de;
-        margin: 0;
+        .status-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #d9d9de;
+            margin: 0;
+        }
     }
 }
 

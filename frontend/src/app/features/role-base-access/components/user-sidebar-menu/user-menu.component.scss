@@ -112,7 +112,7 @@
     font-size: 14px;
     transition: background-color 0.15s ease;
 
-    &--danger {
+    &.danger {
         color: var(--color-ks-status-failed);
 
         .nav-icon {
