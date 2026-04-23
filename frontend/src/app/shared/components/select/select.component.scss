@@ -1,5 +1,7 @@
 :host {
     width: 100%;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .selector {
@@ -8,6 +10,8 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    min-width: 0;
+    overflow: hidden;
 
     &__btn {
         cursor: pointer;
@@ -15,13 +19,15 @@
         height: 100%;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: 0.5rem;
+        justify-content: flex-start;
         position: relative;
         border-radius: 0.5rem;
         border: 1px solid var(--color-input-border);
         background-color: var(--color-input-background);
         color: var(--color-text-primary);
         transition: border-color 0.2s ease;
+        min-width: 0;
 
         &--placeholder {
             color: var(--color-input-text-placeholder);
@@ -57,6 +63,14 @@
             cursor: not-allowed;
             opacity: 0.7;
         }
+    }
+
+    &__value {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     &__spinner {
@@ -113,10 +127,26 @@
         white-space: nowrap;
     }
 
-    &__option {
+    &__item-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        line-height: 1;
+    }
+
+    &__text {
+        text-align: left;
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        min-width: 0;
         transition: background 0.15s ease;
+    }
+
+    &__option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
 
         &--default {
             padding: 0.5rem 0.75rem;

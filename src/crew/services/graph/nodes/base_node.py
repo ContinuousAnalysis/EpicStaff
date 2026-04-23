@@ -50,10 +50,7 @@ class BaseNode(ABC):
         Returns:
             int: The number of times the node has been executed.
         """
-        state_history = state.get("state_history", None)
-        if not state_history:
-            return 0
-        return sum(1 for item in state.get("state_history") if item["name"] == name)
+        return state.get("execution_counts", {}).get(name, 0)
 
     def add_start_message(
         self, writer: StreamWriter, input_: Any, execution_order: int
@@ -97,6 +94,9 @@ class BaseNode(ABC):
         additional data passed as keyword arguments. The message is then
         written using the provided stream writer.
         """
+        sc = getattr(self, "stream_config", None)
+        if sc and sc.get("final_reply") is False:
+            kwargs["sse_visible"] = False
         self.custom_session_message_writer.add_finish_message(
             session_id=self.session_id,
             node_name=self.node_name,
@@ -234,9 +234,12 @@ class BaseNode(ABC):
                 "name": name,
                 "additional_data": copy.deepcopy(kwargs),
                 "input": copy.deepcopy(input),
-                "variables": copy.deepcopy(variables.model_dump()),
+                "variables": variables.deep_dump(),
                 "output": copy.deepcopy(output),
             }
         )
+
+        counts = state.setdefault("execution_counts", {})
+        counts[name] = counts.get(name, 0) + 1
 
     async def post_init(self, *args, **kwargs): ...

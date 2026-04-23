@@ -83,6 +83,11 @@
         font-size: 14px;
         width: 14px;
         height: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 0;
+        vertical-align: middle;
     }
 
     &__info-link {
@@ -112,12 +117,12 @@
             font-size: 18px;
             width: 18px;
             height: 18px;
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--accent-color);
             cursor: help;
-            transition: color 0.2s ease;
+            transition: opacity 0.2s ease;
 
             &:hover {
-                color: rgba(255, 255, 255, 0.9);
+                opacity: 0.7;
             }
         }
     }
@@ -156,7 +161,7 @@
     }
     &__error-message {
         font-size: 0.75rem;
-        color: #d9d9de60
+        color: #d9d9de60;
     }
 }
 

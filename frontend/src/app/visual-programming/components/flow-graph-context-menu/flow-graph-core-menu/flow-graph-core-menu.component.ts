@@ -1,9 +1,8 @@
-import {NgFor} from '@angular/common';
-import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output,} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 
-import {NODE_COLORS, NODE_ICONS} from '../../../core/enums/node-config';
-import {NodeType} from '../../../core/enums/node-type';
-import {FlowService} from '../../../services/flow.service';
+import { NODE_COLORS, NODE_ICONS } from '../../../core/enums/node-config';
+import { NodeType } from '../../../core/enums/node-type';
+import { FlowService } from '../../../services/flow.service';
 
 interface FlowGraphBlock {
     label: string;
@@ -17,16 +16,20 @@ interface FlowGraphBlock {
     standalone: true,
     template: `
         <ul>
-            <li
-                *ngFor="let block of filteredBlocks"
-                (click)="onBlockClicked(block.type)"
-                [style.border-left-color]="block.color"
-                [class.disabled]="isDisabled(block.type)"
-            >
-                <i [class]="block.icon" [style.color]="block.color"></i>
-                {{ block.label }}
-                <i class="ti ti-plus plus-icon"></i>
-            </li>
+            @for (block of filteredBlocks(); track block.type) {
+                <li
+                    (click)="onBlockClicked(block.type)"
+                    [style.border-left-color]="block.color"
+                    [class.disabled]="isDisabled(block.type)"
+                >
+                    <i
+                        [class]="block.icon"
+                        [style.color]="block.color"
+                    ></i>
+                    {{ block.label }}
+                    <i class="ti ti-plus plus-icon"></i>
+                </li>
+            }
         </ul>
     `,
     styles: [
@@ -36,6 +39,7 @@ interface FlowGraphBlock {
                 padding: 0 16px;
                 margin: 0;
             }
+
             li {
                 display: flex;
                 align-items: center;
@@ -47,28 +51,36 @@ interface FlowGraphBlock {
                 transition: background 0.2s ease;
                 position: relative;
             }
+
+            .node-icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+            .node-label {
+                color: #fff;
+            }
+
             li:hover {
                 background: #2a2a2a;
             }
-            li i {
-                font-size: 16px;
-                color: #bbb; /* Fallback color */
-                transition: color 0.2s ease;
-            }
-            li:hover i {
-                color: inher;
-            }
+
             .plus-icon {
                 margin-left: auto;
-                font-size: 18px;
                 color: #bbb;
                 opacity: 0;
-                transition: opacity 0.2s ease, color 0.2s ease;
+                transition:
+                    opacity 0.2s ease,
+                    color 0.2s ease;
             }
+
             li:hover .plus-icon {
                 opacity: 1;
                 color: inherit;
             }
+
             li.disabled {
                 opacity: 0.5;
                 cursor: not-allowed;
@@ -77,20 +89,18 @@ interface FlowGraphBlock {
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [NgFor],
 })
 export class FlowGraphCoreMenuComponent {
-    @Input() public searchTerm: string = '';
+    private readonly flowService = inject(FlowService);
 
-    @Output() public nodeSelected: EventEmitter<{
-        type: NodeType;
-        data: any;
-    }> = new EventEmitter();
+    public readonly searchTerm = input('');
+    public readonly nodeSelected = output<{ type: NodeType; data: unknown }>();
 
-    private flowService = inject(FlowService);
+    public readonly filteredBlocks = computed(() =>
+        this.blocks.filter((block) => block.label.toLowerCase().includes(this.searchTerm().toLowerCase()))
+    );
 
-    // Use NodeType-based mappings for icon & color
-    public blocks: FlowGraphBlock[] = [
+    public readonly blocks: FlowGraphBlock[] = [
         {
             label: 'Python Code Node',
             type: NodeType.PYTHON,
@@ -114,12 +124,6 @@ export class FlowGraphCoreMenuComponent {
             type: NodeType.END,
             icon: NODE_ICONS[NodeType.END],
             color: NODE_COLORS[NodeType.END],
-        },
-        {
-            label: 'Conditional Edge',
-            type: NodeType.EDGE,
-            icon: NODE_ICONS[NodeType.EDGE],
-            color: NODE_COLORS[NodeType.EDGE],
         },
         {
             label: 'Note',
@@ -151,22 +155,16 @@ export class FlowGraphCoreMenuComponent {
             icon: NODE_ICONS[NodeType.SCHEDULE_TRIGGER],
             color: NODE_COLORS[NodeType.SCHEDULE_TRIGGER],
         },
-        // {
-        //   label: 'Decision Table',
-        //   type: NodeType.TABLE,
-        //   icon: NODE_ICONS[NodeType.TABLE],
-        //   color: NODE_COLORS[NodeType.TABLE],
-        // },
+        {
+            label: 'Code Agent',
+            type: NodeType.CODE_AGENT,
+            icon: NODE_ICONS[NodeType.CODE_AGENT],
+            color: NODE_COLORS[NodeType.CODE_AGENT],
+        },
     ];
 
-    public get filteredBlocks(): FlowGraphBlock[] {
-        return this.blocks.filter((block) =>
-            block.label.toLowerCase().includes(this.searchTerm.toLowerCase())
-        );
-    }
-
     public onBlockClicked(type: NodeType): void {
-        let data: any = null;
+        let data: unknown = null;
 
         if (type === NodeType.EDGE) {
             data = {
@@ -200,7 +198,7 @@ export class FlowGraphCoreMenuComponent {
                             next_node: null,
                             order: 1,
                             valid: false,
-                        }
+                        },
                     ],
                     node_name: '',
                     default_next_node: null,
@@ -213,12 +211,10 @@ export class FlowGraphCoreMenuComponent {
                 backgroundColor: NODE_COLORS[NodeType.NOTE],
             };
         } else if (type === NodeType.FILE_EXTRACTOR) {
-            data = null; // File extractor data is unknown as specified
-
+            data = null;
         } else if (type === NodeType.AUDIO_TO_TEXT) {
-            data = null; // audio to text data is unknown as specified
-        }
-        else if (type === NodeType.WEBHOOK_TRIGGER) {
+            data = null;
+        } else if (type === NodeType.WEBHOOK_TRIGGER) {
             data = {
                 webhook_trigger: null,
                 python_code: {
@@ -226,21 +222,18 @@ export class FlowGraphCoreMenuComponent {
                     libraries: [],
                     code: 'def main(trigger_payload: dict, **kwargs: dict) -> dict:\n    """\n    Main handler for processing webhook-triggered events.\n\n    Parameters\n    ----------\n    trigger_payload : dict\n        The data received from a third-party service via a webhook.\n    **kwargs : dict\n        Additional domain variables passed to the function.\n\n    Returns\n    -------\n    dict\n        A dictionary containing the updated values for domain variables.\n        The returned structure must include all changes that should be\n        applied to the domain.\n    """\n    return {\n        "new_data": trigger_payload,\n    }\n',
                     entrypoint: 'main',
-                }
+                },
             };
-        }
-        else if (type === NodeType.TELEGRAM_TRIGGER) {
+        } else if (type === NodeType.TELEGRAM_TRIGGER) {
             data = {
                 webhook_trigger: null,
                 telegram_bot_api_key: '',
                 fields: [],
-            }
-        }
-        else if (type === NodeType.SCHEDULE_TRIGGER) {
+            };
+        } else if (type === NodeType.SCHEDULE_TRIGGER) {
             data = null;
-        }
-        else if (type === NodeType.END) {
-            data = null; // End node data is unknown as specified
+        } else if (type === NodeType.END) {
+            data = null;
         }
 
         this.nodeSelected.emit({ type, data });
@@ -250,6 +243,7 @@ export class FlowGraphCoreMenuComponent {
         if (type === NodeType.END) {
             return this.flowService.hasEndNode();
         }
+
         return false;
     }
 }

@@ -7,7 +7,6 @@ export enum NodeType {
     PYTHON = 'python',
     EDGE = 'edge',
     START = 'start',
-    GROUP = 'group',
     TABLE = 'table',
     NOTE = 'note',
     FILE_EXTRACTOR = 'file-extractor',
@@ -16,5 +15,6 @@ export enum NodeType {
     END = 'end',
     SUBGRAPH = 'subgraph',
     AUDIO_TO_TEXT = 'audio-to-text-node',
-    SCHEDULE_TRIGGER = 'schedule-trigger'
+    SCHEDULE_TRIGGER = 'schedule-trigger',
+    CODE_AGENT = 'code-agent',
 }

@@ -1,4 +1,4 @@
-from typing import Iterable
+from django.db.models import Prefetch
 
 from src.shared.models import (
     AgentData,
@@ -45,7 +45,6 @@ from tables.models import (
     PythonCode,
     PythonCodeTool,
     Task,
-    TaskContext,
     ToolConfig,
 )
 from tables.models.crew_models import (
@@ -53,7 +52,12 @@ from tables.models.crew_models import (
     AgentMcpTools,
     AgentPythonCodeToolConfigs,
     AgentPythonCodeTools,
+    TaskConfiguredTools,
+    TaskMcpTools,
+    TaskPythonCodeToolConfigs,
+    TaskPythonCodeTools,
 )
+from tables.models.knowledge_models.naive_rag_models import AgentNaiveRag
 from tables.models.graph_models import (
     AudioTranscriptionNode,
     Condition,
@@ -91,6 +95,7 @@ from utils.graph_utils import (
     NodeNameResolver,
 )
 from utils.singleton_meta import SingletonMeta
+from tables.services.rag_assignment_service import SearchConfigService
 
 tool_config_serializer = ToolConfigSerializer(
     ToolConfigValidator(validate_missing_reqired_fields=True, validate_null_fields=True)
@@ -108,6 +113,10 @@ class ConverterService(metaclass=SingletonMeta):
     ) -> RagSearchConfig | None:
         """
         Factory method to build appropriate RAG search config based on rag_type.
+
+        Handles nested graph format:
+            {"search_method": "basic", "basic": {...}, "local": {...}}
+        Extracts only the active method's params for the flat pydantic model.
 
         Returns:
             NaiveRagSearchConfig | GraphRagSearchConfig | None
@@ -130,14 +139,29 @@ class ConverterService(metaclass=SingletonMeta):
             "graph": lambda config: GraphRagSearchConfig(rag_type="graph", **config),
         }
 
-        builder = rag_config_map.get(rag_type)
-        if not builder:
-            return None
+        if rag_type == "naive":
+            return NaiveRagSearchConfig(rag_type="naive", **rag_specific_config)
 
-        return builder(rag_specific_config)
+        if rag_type == "graph":
+            search_method = rag_specific_config.get("search_method", "basic")
+            active_params = rag_specific_config.get(search_method) or {}
+            return GraphRagSearchConfig(
+                search_params={"search_method": search_method, **active_params},
+            )
+
+        return None
 
     def convert_crew_to_pydantic(self, crew_id: int) -> CrewData:
-        crew = Crew.objects.get(pk=crew_id).fill_with_defaults()
+        crew = (
+            Crew.objects.select_related(
+                "manager_llm_config__model__llm_provider",
+                "planning_llm_config__model__llm_provider",
+                "memory_llm_config__model__llm_provider",
+                "embedding_config__model__embedding_provider",
+            )
+            .get(pk=crew_id)
+            .fill_with_defaults()
+        )
 
         manager_llm = self.convert_llm_config_to_pydantic(crew.manager_llm_config)
         planning_llm = self.convert_llm_config_to_pydantic(crew.planning_llm_config)
@@ -154,7 +178,33 @@ class ConverterService(metaclass=SingletonMeta):
 
             embedder = self.convert_embedding_config_to_pydantic(embedding_config)
             memory_llm = self.convert_llm_config_to_pydantic(memory_llm_config)
-        task_list = Task.objects.filter(crew_id=crew_id)
+        task_list = (
+            Task.objects.filter(crew_id=crew_id)
+            .select_related("agent")
+            .prefetch_related(
+                Prefetch(
+                    "task_configured_tool_list",
+                    queryset=TaskConfiguredTools.objects.select_related("tool__tool"),
+                ),
+                Prefetch(
+                    "task_python_code_tool_list",
+                    queryset=TaskPythonCodeTools.objects.select_related(
+                        "tool__python_code"
+                    ),
+                ),
+                Prefetch(
+                    "task_python_code_tool_config_list",
+                    queryset=TaskPythonCodeToolConfigs.objects.select_related(
+                        "tool__tool__python_code"
+                    ),
+                ),
+                Prefetch(
+                    "task_mcp_tool_list",
+                    queryset=TaskMcpTools.objects.select_related("tool"),
+                ),
+                "task_context_list",
+            )
+        )
         self.task_validator.validate_assigned_agents(task_list)
         task_data_list: list[TaskData] = []
 
@@ -181,23 +231,102 @@ class ConverterService(metaclass=SingletonMeta):
                     config=task.config,
                     output_model=task.output_model,
                     tool_unique_name_list=[tool.unique_name for tool in base_tools],
-                    task_context_id_list=TaskContext.objects.filter(
-                        task=task
-                    ).values_list("context_id", flat=True),
+                    task_context_id_list=[
+                        tc.context_id for tc in task.task_context_list.all()
+                    ],
                 )
             )
 
         assert len(task_data_list) > 0, "No tasks found for crew"
 
-        agents_data = [
-            self.convert_agent_to_pydantic(agent, crew_id)
-            for agent in crew.agents.all()
-        ]
-        crew_agents: Iterable[Agent] = crew.agents.all()
+        # Fetch agents separately with prefetched tools (crew.fill_with_defaults()
+        # invalidates prefetch cache via agents.set(), so we query independently)
+        agents = list(
+            Agent.objects.filter(crew=crew)
+            .select_related(
+                "llm_config__model__llm_provider",
+                "fcm_llm_config__model__llm_provider",
+                "knowledge_collection",
+                "naive_search_config",
+            )
+            .prefetch_related(
+                Prefetch(
+                    "python_code_tools",
+                    queryset=AgentPythonCodeTools.objects.select_related(
+                        "pythoncodetool__python_code"
+                    ),
+                ),
+                Prefetch(
+                    "python_code_tool_configs",
+                    queryset=AgentPythonCodeToolConfigs.objects.select_related(
+                        "pythoncodetoolconfig__tool__python_code"
+                    ),
+                ),
+                Prefetch(
+                    "configured_tools",
+                    queryset=AgentConfiguredTools.objects.select_related(
+                        "toolconfig__tool"
+                    ),
+                ),
+                Prefetch(
+                    "mcp_tools",
+                    queryset=AgentMcpTools.objects.select_related("mcptool"),
+                ),
+                Prefetch(
+                    "agent_naive_rags",
+                    queryset=AgentNaiveRag.objects.select_related("naive_rag"),
+                ),
+            )
+        )
 
-        for agent in crew_agents:
+        agents_data = []
+        for agent in agents:
+            agent = agent.fill_with_defaults(
+                crew_id=crew_id, crew_temperature=crew.default_temperature
+            )
             agent_base_tools = self._get_agent_base_tools(agent=agent)
             crew_base_tools.extend(agent_base_tools)
+
+            llm = self.convert_llm_config_to_pydantic(agent.llm_config)
+            function_calling_llm = self.convert_llm_config_to_pydantic(
+                agent.fcm_llm_config
+            )
+
+            knowledge_collection_id = None
+            if agent.knowledge_collection is not None:
+                knowledge_collection_id = agent.knowledge_collection.pk
+
+            rag_type_id = agent.get_rag_type_and_id()
+            all_search_configs = SearchConfigService.get_search_configs(agent)
+            rag_search_config = self.build_rag_search_config(
+                rag_type_id, all_search_configs
+            )
+
+            agents_data.append(
+                AgentData(
+                    id=agent.pk,
+                    role=agent.role,
+                    goal=agent.goal,
+                    backstory=agent.backstory,
+                    tool_unique_name_list=[
+                        tool.unique_name for tool in agent_base_tools
+                    ],
+                    allow_delegation=agent.allow_delegation,
+                    memory=agent.memory,
+                    max_iter=agent.max_iter,
+                    max_rpm=agent.max_rpm,
+                    max_execution_time=agent.max_execution_time,
+                    max_retry_limit=agent.max_retry_limit,
+                    respect_context_window=agent.respect_context_window,
+                    cache=agent.cache,
+                    allow_code_execution=agent.allow_code_execution,
+                    llm=llm,
+                    function_calling_llm=function_calling_llm,
+                    knowledge_collection_id=knowledge_collection_id,
+                    rag_type_id=rag_type_id,
+                    rag_search_config=rag_search_config,
+                )
+            )
 
         crew_data = CrewData(
             id=crew.pk,
@@ -223,34 +352,14 @@ class ConverterService(metaclass=SingletonMeta):
         return crew_data
 
     def _get_agent_base_tools(self, agent: Agent) -> list[BaseToolData]:
-        python_tools = PythonCodeTool.objects.filter(
-            id__in=AgentPythonCodeTools.objects.filter(agent_id=agent.id).values_list(
-                "pythoncodetool_id", flat=True
-            )
-        )
-        python_tool_configs = PythonCodeToolConfig.objects.filter(
-            id__in=AgentPythonCodeToolConfigs.objects.filter(
-                agent_id=agent.id
-            ).values_list("pythoncodetoolconfig_id", flat=True)
-        )
-        configured_tools = ToolConfig.objects.filter(
-            id__in=AgentConfiguredTools.objects.filter(agent_id=agent.id).values_list(
-                "toolconfig_id", flat=True
-            )
-        )
-        mcp_tools = McpTool.objects.filter(
-            id__in=AgentMcpTools.objects.filter(agent_id=agent.id).values_list(
-                "mcptool_id", flat=True
-            )
-        )
+        python_tools = [entry.pythoncodetool for entry in agent.python_code_tools.all()]
+        python_tool_configs = [
+            entry.pythoncodetoolconfig for entry in agent.python_code_tool_configs.all()
+        ]
+        configured_tools = [entry.toolconfig for entry in agent.configured_tools.all()]
+        mcp_tools = [entry.mcptool for entry in agent.mcp_tools.all()]
 
-        all_tools = (
-            list(python_tools)
-            + list(python_tool_configs)
-            + list(configured_tools)
-            + list(mcp_tools)
-        )
-
+        all_tools = python_tools + python_tool_configs + configured_tools + mcp_tools
         return [self.convert_tool_to_base_tool_pydantic(tool) for tool in all_tools]
 
     def _get_task_base_tools(self, task: Task) -> list[BaseToolData]:
@@ -298,7 +407,7 @@ class ConverterService(metaclass=SingletonMeta):
 
         # Build RAG search config using factory method
         rag_type_id = agent.get_rag_type_and_id()
-        all_search_configs = agent.get_search_configs()
+        all_search_configs = SearchConfigService.get_search_configs(agent)
         rag_search_config = self.build_rag_search_config(
             rag_type_id, all_search_configs
         )
@@ -341,7 +450,7 @@ class ConverterService(metaclass=SingletonMeta):
 
         # Build RAG search config using factory method
         rag_type_id = agent.get_rag_type_and_id()
-        all_search_configs = agent.get_search_configs()
+        all_search_configs = SearchConfigService.get_search_configs(agent)
         rag_search_config = self.build_rag_search_config(
             rag_type_id, all_search_configs
         )
@@ -358,8 +467,12 @@ class ConverterService(metaclass=SingletonMeta):
             tools=self._get_agent_base_tools(agent=agent),
             rt_model_name=rt_config.realtime_model.name,
             rt_api_key=rt_config.api_key,
-            transcript_model_name=rt_transcription_config.realtime_transcription_model.name,
-            transcript_api_key=rt_transcription_config.api_key,
+            transcript_model_name=rt_transcription_config.realtime_transcription_model.name
+            if rt_transcription_config
+            else None,
+            transcript_api_key=rt_transcription_config.api_key
+            if rt_transcription_config
+            else None,
             temperature=agent.default_temperature,
             connection_key=rt_agent_chat.connection_key,
             wake_word=rt_agent_chat.wake_word,
@@ -369,6 +482,9 @@ class ConverterService(metaclass=SingletonMeta):
             voice=rt_agent_chat.voice,
             input_audio_format=rt_agent_chat.input_audio_format.value,
             output_audio_format=rt_agent_chat.output_audio_format.value,
+            rt_provider=rt_config.realtime_model.provider.name
+            if rt_config.realtime_model.provider
+            else "openai",
         )
 
         return rt_agent_chat_data
@@ -527,6 +643,7 @@ class ConverterService(metaclass=SingletonMeta):
             python_code=python_code_data,
             input_map=python_node.input_map,
             output_variable_path=python_node.output_variable_path,
+            stream_config=python_node.stream_config or {},
         )
 
     def convert_conditional_edge_to_pydantic(
@@ -601,6 +718,7 @@ class ConverterService(metaclass=SingletonMeta):
             crew=crew_data,
             input_map=crew_node.input_map,
             output_variable_path=crew_node.output_variable_path,
+            stream_config=crew_node.stream_config or {},
         )
 
     def convert_end_node_to_pydantic(

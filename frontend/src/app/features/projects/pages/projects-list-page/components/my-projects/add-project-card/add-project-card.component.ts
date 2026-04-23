@@ -1,21 +1,22 @@
 import {
-    Component,
     ChangeDetectionStrategy,
-    Output,
+    Component,
     EventEmitter,
+    Output,
 } from '@angular/core';
-import { AppIconComponent } from '../../../../../../../shared/components/app-icon/app-icon.component';
+
+import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-add-project-card',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [AppIconComponent],
+    imports: [AppSvgIconComponent],
     template: `
         <div class="add-project-card" (click)="createClick.emit()">
             <div class="content">
                 <div class="plus-icon">
-                    <app-icon icon="ui/plus" size="2.5rem"></app-icon>
+                    <app-svg-icon icon="plus" size="2.5rem" />
                 </div>
                 <div class="title">Create New Project</div>
             </div>
@@ -31,7 +32,7 @@ import { AppIconComponent } from '../../../../../../../shared/components/app-ico
                 font-size: 1rem;
                 display: flex;
                 flex-direction: column;
-                height: 168px;
+                height: 165px;
                 transition: all 0.2s ease;
                 position: relative;
                 border: 1px dashed #3a3e48;
@@ -40,7 +41,8 @@ import { AppIconComponent } from '../../../../../../../shared/components/app-ico
 
             .add-project-card:hover {
                 border-color: var(--accent-color);
-                box-shadow: 0 12px 20px rgba(0, 0, 0, 0.18),
+                box-shadow:
+                    0 12px 20px rgba(0, 0, 0, 0.18),
                     0 3px 6px rgba(0, 0, 0, 0.1);
             }
 
@@ -62,7 +64,7 @@ import { AppIconComponent } from '../../../../../../../shared/components/app-ico
                 margin-bottom: 0.5rem;
             }
 
-            .plus-icon app-icon {
+            .plus-icon app-svg-icon {
                 color: var(--accent-color);
                 width: 2.5rem;
                 height: 2.5rem;

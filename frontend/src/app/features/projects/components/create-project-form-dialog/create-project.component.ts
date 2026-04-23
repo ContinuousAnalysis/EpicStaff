@@ -1,25 +1,14 @@
-import {
-    Component,
-    OnInit,
-    ChangeDetectionStrategy,
-    signal,
-} from '@angular/core';
-import {
-    FormBuilder,
-    FormGroup,
-    FormControl,
-    Validators,
-    ReactiveFormsModule,
-} from '@angular/forms';
-import { MATERIAL_FORMS } from '../../../../shared/material-forms';
-
 import { DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ErrorStateMatcher } from '@angular/material/core';
+import { Subscription } from 'rxjs';
+
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
 import { CustomErrorStateMatcher } from '../../../../shared/error-state-matcher/custom-error-state-matcher';
-import {
-    ProjectProcess,
-    CreateProjectRequest,
-} from '../../models/project.model';
+import { MATERIAL_FORMS } from '../../../../shared/material-forms';
+import { CreateProjectRequest, ProjectProcess } from '../../models/project.model';
 import { ProjectsStorageService } from '../../services/projects-storage.service';
 
 // Typed interface for the form data - all fields are non-nullable
@@ -36,10 +25,9 @@ interface ProjectFormData {
 
 @Component({
     selector: 'app-create-project',
-    standalone: true,
     templateUrl: './create-project.component.html',
     styleUrls: ['./create-project.component.scss'],
-    imports: [ReactiveFormsModule, ...MATERIAL_FORMS],
+    imports: [ReactiveFormsModule, ...MATERIAL_FORMS, AppSvgIconComponent, HelpTooltipComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [
         {
@@ -48,7 +36,7 @@ interface ProjectFormData {
         },
     ],
 })
-export class CreateProjectComponent implements OnInit {
+export class CreateProjectComponent implements OnInit, OnDestroy {
     public projectForm!: FormGroup<{
         name: FormControl<string>;
         description: FormControl<string>;
@@ -61,39 +49,40 @@ export class CreateProjectComponent implements OnInit {
     }>;
     public isSubmitting = signal(false);
     public ProjectProcess = ProjectProcess;
+    private keydownSubscription?: Subscription;
 
     constructor(
         private fb: FormBuilder,
-        private dialogRef: DialogRef<any>,
+        private dialogRef: DialogRef<unknown>,
         private projectsStorageService: ProjectsStorageService
     ) {}
 
     ngOnInit(): void {
         this.initializeForm();
+
+        this.keydownSubscription = this.dialogRef.keydownEvents.subscribe((event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+                event.preventDefault();
+                event.stopPropagation();
+                this.onSubmit();
+            }
+        });
+    }
+
+    ngOnDestroy(): void {
+        this.keydownSubscription?.unsubscribe();
     }
 
     private initializeForm(): void {
         this.projectForm = new FormGroup({
             name: new FormControl<string>('', Validators.required),
             description: new FormControl<string>(''),
-            process: new FormControl<ProjectProcess>(
-                ProjectProcess.SEQUENTIAL,
-                Validators.required
-            ),
+            process: new FormControl<ProjectProcess>(ProjectProcess.SEQUENTIAL, Validators.required),
             memory: new FormControl<boolean>(false),
             cache: new FormControl<boolean>(false),
-            max_rpm: new FormControl<number>(15, [
-                Validators.min(1),
-                Validators.max(50),
-            ]),
-            search_limit: new FormControl<number>(10, [
-                Validators.min(1),
-                Validators.max(1000),
-            ]),
-            similarity_threshold: new FormControl<number>(0.7, [
-                Validators.min(0.0),
-                Validators.max(1.0),
-            ]),
+            max_rpm: new FormControl<number>(15, [Validators.min(1), Validators.max(50)]),
+            search_limit: new FormControl<number>(10, [Validators.min(1), Validators.max(1000)]),
+            similarity_threshold: new FormControl<number>(0.7, [Validators.min(0.0), Validators.max(1.0)]),
         }) as FormGroup<{
             name: FormControl<string>;
             description: FormControl<string>;
@@ -136,13 +125,13 @@ export class CreateProjectComponent implements OnInit {
 
     onSubmit(): void {
         if (this.projectForm.invalid || this.isSubmitting()) {
+            this.projectForm.markAllAsTouched();
             return;
         }
 
         this.isSubmitting.set(true);
 
         const formData = this.projectForm.value as ProjectFormData;
-        console.log('Form submitted:', formData);
 
         const createProjectRequest: CreateProjectRequest = {
             name: formData.name,
@@ -156,26 +145,22 @@ export class CreateProjectComponent implements OnInit {
         };
 
         // Call the actual service
-        this.projectsStorageService
-            .createProject(createProjectRequest)
-            .subscribe({
-                next: (newProject) => {
-                    console.log('Project created successfully:', newProject);
-                    this.isSubmitting.set(false);
-                    // Close dialog and return the created project
-                    this.dialogRef.close(newProject);
-                },
-                error: (error) => {
-                    console.error('Error creating project:', error);
-                    this.isSubmitting.set(false);
-                    // TODO: Show error message to user (snackbar, toast, etc.)
-                    // For now, just log the error
-                },
-            });
+        this.projectsStorageService.createProject(createProjectRequest).subscribe({
+            next: (newProject) => {
+                this.isSubmitting.set(false);
+                // Close dialog and return the created project
+                this.dialogRef.close(newProject);
+            },
+            error: (error) => {
+                console.error('Error creating project:', error);
+                this.isSubmitting.set(false);
+                // TODO: Show error message to user (snackbar, toast, etc.)
+                // For now, just log the error
+            },
+        });
     }
 
     onCancel(): void {
-        console.log('Form cancelled');
         // Close dialog without returning data
         this.dialogRef.close();
     }

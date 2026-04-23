@@ -2,6 +2,7 @@ import hashlib
 import json
 from abc import abstractmethod
 from enum import Enum
+
 from typing import Self
 
 from django.apps import apps
@@ -74,17 +75,23 @@ class DefaultBaseModel(models.Model):
     Singleton base model for models that intended to be defaults
     """
 
+    _load_cache: dict = {}
+
     class Meta:
         abstract = True
 
     def save(self, *args, **kwargs):
         self.pk = 1
+        # Invalidate cache on save
+        DefaultBaseModel._load_cache.pop(self.__class__, None)
         super(DefaultBaseModel, self).save(*args, **kwargs)
 
     @classmethod
     def load(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
+        if cls not in DefaultBaseModel._load_cache:
+            obj, _ = cls.objects.get_or_create(pk=1)
+            DefaultBaseModel._load_cache[cls] = obj
+        return DefaultBaseModel._load_cache[cls]
 
 
 class MessageType(Enum):
@@ -137,17 +144,31 @@ class MetadataMixin(models.Model):
 
 
 class ContentHashMixin(models.Model):
-    content_hash = models.CharField(max_length=64, editable=False, null=True)
-
     class Meta:
         abstract = True
+
+    @property
+    def content_hash(self):
+        if self._state.adding:
+            return None
+        return self.generate_hash()
+
+    @content_hash.setter
+    def content_hash(self, value):
+        """
+        Treat assignment as setting the expected hash for optimistic locking.
+        Serializer update() loops call setattr(instance, 'content_hash', client_value),
+        which flows into instance.save() → ContentHashConflictError on mismatch.
+        Works for both top-level nodes and nested objects (e.g. python_code).
+        """
+        self._expected_hash = value
 
     def generate_hash(self):
         """
         Generates a SHA-256 hash.
         """
 
-        excluded_fields = ["id", "created_at", "updated_at", "content_hash", "metadata"]
+        excluded_fields = ["id", "created_at", "updated_at", "metadata"]
 
         data = {
             f.name: str(getattr(self, f.name))
@@ -159,7 +180,14 @@ class ContentHashMixin(models.Model):
         return hashlib.sha256(data_string).hexdigest()
 
     def save(self, *args, **kwargs):
-        self.content_hash = self.generate_hash()
+        if not self._state.adding:
+            expected_hash = getattr(self, "_expected_hash", None)
+            if expected_hash is not None:
+                current = self.__class__.objects.get(pk=self.pk)
+                if current.content_hash != expected_hash:
+                    from tables.exceptions import ContentHashConflictError
+
+                    raise ContentHashConflictError()
         super().save(*args, **kwargs)
 
 

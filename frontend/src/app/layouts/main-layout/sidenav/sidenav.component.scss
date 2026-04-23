@@ -33,6 +33,8 @@
         cursor: pointer;
         position: relative;
         margin: 0 auto;
+        text-decoration: none;
+        background-color: var(--color-sidenav-background);
 
         .logo-svg {
             width: 2.5rem;
@@ -48,6 +50,7 @@
             display: none;
             width: 2.2rem;
             height: 2.2rem;
+            mix-blend-mode: lighten;
         }
         &:hover .static-logo {
             display: none;
@@ -55,31 +58,6 @@
         &:hover .gif-logo {
             display: block;
             transform: scale(1.25);
-        }
-        &:hover .logo-text {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(-50%) translateX(10px);
-        }
-        .logo-text {
-            position: absolute;
-            left: 100%;
-            top: 50%;
-            transform: translateY(-50%) translateX(25px);
-            background-color: #424242;
-            padding: 0.4rem 1rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #fff;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, transform 0.3s ease,
-                visibility 0.3s ease;
-            z-index: 10;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
     }
 }
@@ -149,4 +127,13 @@
             }
         }
     }
+}
+
+.epic-chat-host {
+    display: contents;
+}
+
+:host ::ng-deep .epic-chat-host .ep-chat-toggle-button,
+:host ::ng-deep .epic-chat-host .ep-chat-click-area {
+    display: none;
 }

@@ -3,8 +3,6 @@
     width: 100%;
 }
 
-// ─── Default / small bar style ───────────────────────────────────────────────
-
 .radio {
     display: flex;
     border-radius: 8px;
@@ -55,8 +53,6 @@
         background: var(--accent-color);
     }
 }
-
-// ─── Segmented sliding style ──────────────────────────────────────────────────
 
 .segmented {
     position: relative;

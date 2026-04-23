@@ -71,6 +71,14 @@ class InvalidTaskOrderError(CustomAPIExeption):
     default_code = "invalid_context_task_order"
 
 
+class ContentHashConflictError(CustomAPIExeption):
+    status_code = 409
+    default_detail = (
+        "Node has been modified by another user. Please refresh and try again."
+    )
+    default_code = "content_hash_conflict"
+
+
 class SubGraphValidationError(CustomAPIExeption):
     status_code = 400
     default_detail = (
@@ -254,11 +262,45 @@ class RagNotReadyForIndexingException(RagException):
         super().__init__(message)
 
 
-class GraphRagNotImplementedException(RagException):
-    """GraphRag not yet implemented."""
+class GraphRagNotFoundException(RagException):
+    """Raised when GraphRag is not found."""
 
-    def __init__(self):
-        super().__init__("GraphRag is not yet implemented")
+    def __init__(self, graph_rag_id):
+        self.graph_rag_id = graph_rag_id
+        super().__init__(f"GraphRag with id {graph_rag_id} not found")
+
+
+class LLMConfigNotFoundException(RagException):
+    """Raised when LLM config is not found."""
+
+    def __init__(self, llm_id):
+        self.llm_id = llm_id
+        super().__init__(f"LLM config with id {llm_id} not found")
+
+
+class GraphRagIndexConfigNotFoundException(RagException):
+    """Raised when GraphRag index config is not found."""
+
+    def __init__(self, config_id):
+        self.config_id = config_id
+        super().__init__(f"GraphRag index config with id {config_id} not found")
+
+
+class InvalidGraphRagParametersException(RagException):
+    """Raised when GraphRag parameters are invalid."""
+
+    pass
+
+
+class GraphRagDocumentNotFoundException(RagException):
+    """Raised when a document is not linked to the specified GraphRag."""
+
+    def __init__(self, document_id, graph_rag_id):
+        self.document_id = document_id
+        self.graph_rag_id = graph_rag_id
+        super().__init__(
+            f"Document {document_id} is not linked to GraphRag {graph_rag_id}"
+        )
 
 
 class AgentMissingCollectionException(RagException):
@@ -287,3 +329,9 @@ class UnknownRagTypeException(RagException):
     def __init__(self, rag_type):
         self.rag_type = rag_type
         super().__init__(f"Unknown RAG type: '{rag_type}'")
+
+
+class BulkSaveValidationError(CustomAPIExeption):
+    def __init__(self, errors: dict):
+        self.errors = errors
+        super().__init__(str(errors))

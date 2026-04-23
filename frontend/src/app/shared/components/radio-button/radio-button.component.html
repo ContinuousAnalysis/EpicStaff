@@ -24,7 +24,9 @@
                 [class.segmented__option--active]="value() === option.value"
                 [disabled]="isDisabled()"
                 (click)="select(option)"
-            >{{ option.label }}</button>
+            >
+                {{ option.label ?? option.name }}
+            </button>
         }
     </div>
 } @else {
@@ -41,7 +43,7 @@
                 [class.active]="option.value === value()"
                 (click)="select(option)"
             >
-                {{ option.label }}
+                {{ option.label ?? option.name }}
             </div>
         }
     </div>

@@ -1,9 +1,12 @@
 <div class="collections-page">
-    <header class="collections-page__header">
-        <h1 class="collections-page__title">
-            Knowledge Sources
-        </h1>
-    </header>
+    <app-page-header
+        headerTitle="Knowledge Sources"
+        [showCreate]="false"
+        [showFavoriteToggle]="false"
+        [showSearch]="false"
+        [showFilter]="false"
+        [showSort]="false"
+    ></app-page-header>
 
     <div class="collections-page__body">
         @if (isLoading()) {
@@ -24,9 +27,7 @@
             </div>
 
             <div class="collections-page__content">
-                <app-collection-details
-                    [selectedCollectionId]="selectedCollectionId()"
-                />
+                <app-collection-details [selectedCollectionId]="selectedCollectionId()" />
             </div>
         }
     </div>

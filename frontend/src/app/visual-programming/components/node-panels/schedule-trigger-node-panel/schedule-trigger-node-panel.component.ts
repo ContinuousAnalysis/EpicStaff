@@ -39,7 +39,7 @@ import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTriggerNodeModel> {
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
 
     private destroyRef = inject(DestroyRef);
 

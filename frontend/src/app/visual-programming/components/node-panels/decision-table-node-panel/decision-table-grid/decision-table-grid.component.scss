@@ -34,11 +34,13 @@
             width: 18px;
             height: 18px;
             border-radius: 50%;
-            color: rgba(255, 255, 255, 0.6);
-            background: rgba(255, 255, 255, 0.08);
+            color: var(--accent-color);
+            background: rgba(104, 95, 255, 0.1);
             font-size: 0.75rem;
             cursor: help;
-            transition: background 0.2s ease, color 0.2s ease;
+            transition:
+                background 0.2s ease,
+                color 0.2s ease;
 
             &:hover {
                 color: #fff;
@@ -48,9 +50,7 @@
     }
 }
 
-
 :host ::ng-deep {
-
     .decision-grid {
         flex: 1;
         min-height: 0;
@@ -90,7 +90,7 @@
                 overflow: visible !important;
                 position: relative !important;
                 box-sizing: border-box !important;
-                
+
                 .ag-overlay-no-rows-center {
                     overflow: visible !important;
                     text-overflow: unset !important;

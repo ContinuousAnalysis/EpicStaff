@@ -7,7 +7,7 @@ from tables.views.model_view_sets import (
     DecisionTableNodeModelViewSet,
     EdgeViewSet,
     EndNodeModelViewSet,
-    NoteNodeViewSet,
+    GraphNoteViewSet,
     SubGraphNodeModelViewSet,
     GraphLightViewSet,
     GraphViewSet,
@@ -18,6 +18,7 @@ from tables.views.model_view_sets import (
     PythonNodeViewSet,
     FileExtractorNodeViewSet,
     AudioTranscriptionNodeViewSet,
+    CodeAgentNodeViewSet,
     LLMNodeViewSet,
     StartNodeModelViewSet,
     RealtimeConfigModelViewSet,
@@ -52,8 +53,12 @@ from tables.views.model_view_sets import (
     OrganizationUserViewSet,
     GraphOrganizationViewSet,
     GraphOrganizationUserViewSet,
+    VoiceSettingsView,
+    TwilioPhoneNumbersView,
+    TwilioConfigureWebhookView,
     WebhookTriggerNodeViewSet,
     WebhookTriggerViewSet,
+    LabelViewSet,
 )
 
 from tables.views.views import (
@@ -77,6 +82,7 @@ from tables.views.views import (
     DefaultCrewConfigAPIView,
     # CollectionStatusAPIView,
     QuickstartView,
+    QuickstartApplyView,
     delete_environment_config,
 )
 
@@ -84,6 +90,7 @@ from tables.views.default_config import (
     DefaultConfigAPIView,
     DefaultRealtimeAgentConfigAPIView,
     DefaultToolConfigAPIView,
+    DefaultModelsAPIView,
 )
 
 from tables.views.knowledge_views.collection_management_views import (
@@ -101,9 +108,16 @@ from tables.views.knowledge_views.naive_rag_views import (
     NaiveRagChunkViewSet,
     NaiveRagChunkPreviewView,
 )
+from tables.views.knowledge_views.graph_rag_views import (
+    GraphRagViewSet,
+)
 
 
-from tables.views.sse_views import RunSessionSSEView, RunSessionSSEViewSwagger
+from tables.views.sse_views import (
+    RunSessionSSEView,
+    RunSessionSSEViewSwagger,
+    FilteredRunSessionSSEView,
+)
 
 router = DefaultRouter()
 router.register(r"template-agents", TemplateAgentReadWriteViewSet)
@@ -138,6 +152,7 @@ router.register(r"llmnodes", LLMNodeViewSet)
 router.register(r"startnodes", StartNodeModelViewSet)
 router.register(r"endnodes", EndNodeModelViewSet)
 router.register(r"subgraph-nodes", SubGraphNodeModelViewSet)
+router.register(r"code-agent-nodes", CodeAgentNodeViewSet)
 
 router.register(r"edges", EdgeViewSet)
 router.register(r"conditionaledges", ConditionalEdgeViewSet)
@@ -172,9 +187,10 @@ router.register(r"telegram-trigger-nodes", TelegramTriggerNodeViewSet)
 router.register(r"telegram-trigger-node-fields", TelegramTriggerNodeFieldViewSet)
 router.register(r"python-code-tool-configs", PythonCodeToolConfigViewSet)
 router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldViewSet)
-router.register(r"note-nodes", NoteNodeViewSet)
+router.register(r"graph-notes", GraphNoteViewSet)
 router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
 
+router.register(r"labels", LabelViewSet)
 
 urlpatterns = [
     path(
@@ -248,11 +264,18 @@ urlpatterns = [
         DefaultToolConfigAPIView.as_view(),
         name="default_tool_config",
     ),
+    path("default-models/", DefaultModelsAPIView.as_view(), name="default_models"),
+    path("quickstart/apply/", QuickstartApplyView.as_view(), name="quickstart_apply"),
     path("quickstart/", QuickstartView.as_view(), name="quickstart"),
     path(
         "run-session/subscribe/<int:session_id>/",
         RunSessionSSEView.as_view(),
         name="run-session-subscribe",
+    ),
+    path(
+        "run-session/subscribe/<int:session_id>/filtered/",
+        FilteredRunSessionSSEView.as_view(),
+        name="run-session-subscribe-filtered",
     ),
     path(
         "run-session/subscribe/<int:session_id>/swagger/",
@@ -325,6 +348,44 @@ urlpatterns = [
         NaiveRagDocumentConfigViewSet.as_view({"post": "bulk_delete"}),
         name="document-config-bulk-delete",
     ),
+    # GraphRag endpoints
+    path(
+        "graph-rag/collections/<str:collection_id>/graph-rag/",
+        GraphRagViewSet.as_view(
+            {"post": "create_or_update", "get": "get_by_collection"}
+        ),
+        name="graph-rag-collection",
+    ),
+    path(
+        "graph-rag/<int:pk>/",
+        GraphRagViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
+        name="graph-rag-detail",
+    ),
+    path(
+        "graph-rag/<int:pk>/index-config/",
+        GraphRagViewSet.as_view({"put": "update_index_config"}),
+        name="graph-rag-index-config",
+    ),
+    path(
+        "graph-rag/<int:pk>/documents/bulk-delete/",
+        GraphRagViewSet.as_view({"post": "remove_documents"}),
+        name="graph-rag-documents-bulk-delete",
+    ),
+    path(
+        "graph-rag/<int:pk>/documents/<int:document_id>/",
+        GraphRagViewSet.as_view({"delete": "delete_document"}),
+        name="graph-rag-document-delete",
+    ),
+    path(
+        "graph-rag/<int:pk>/documents/list/",
+        GraphRagViewSet.as_view({"get": "list_documents"}),
+        name="graph-rag-documents-list",
+    ),
+    path(
+        "graph-rag/<int:pk>/documents/initialize/",
+        GraphRagViewSet.as_view({"post": "initialize_documents"}),
+        name="graph-rag-documents-initialize",
+    ),
     path(
         "telegram-trigger-available-fields/",
         TelegramTriggerNodeAvailableFieldsView.as_view(),
@@ -339,5 +400,20 @@ urlpatterns = [
         "register-webhooks/",
         RegisterWebhooksApiView.as_view(),
         name="register-webhooks",
+    ),
+    path(
+        "voice-settings/",
+        VoiceSettingsView.as_view(),
+        name="voice-settings",
+    ),
+    path(
+        "twilio/phone-numbers/",
+        TwilioPhoneNumbersView.as_view(),
+        name="twilio-phone-numbers",
+    ),
+    path(
+        "twilio/configure-webhook/",
+        TwilioConfigureWebhookView.as_view(),
+        name="twilio-configure-webhook",
     ),
 ]

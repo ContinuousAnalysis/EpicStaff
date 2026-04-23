@@ -1,17 +1,9 @@
-import { NaiveRagChunkStrategy } from "../enums/naive-rag-chunk-strategy";
-import { RagType } from "./naive-rag.model";
+import { NaiveRagChunkStrategy } from '../enums/naive-rag-chunk-strategy';
 
-export type NaiveRagDocumentStatus =
-    | 'new'
-    | 'chunking'
-    | 'chunked'
-    | 'indexing'
-    | 'completed'
-    | 'warning'
-    | 'failed';
+export type NaiveRagDocumentStatus = 'new' | 'chunking' | 'chunked' | 'indexing' | 'completed' | 'warning' | 'failed';
 
 export type NaiveRagAdditionalParams = {
-    [key in NaiveRagChunkStrategy]: any;
+    [key in NaiveRagChunkStrategy]: Record<string, unknown>;
 };
 
 export interface NaiveRagDocumentConfig {
@@ -33,7 +25,7 @@ export interface InitNaiveRagDocumentsResponse {
     message: string;
     configs_created: number;
     configs_existing: number;
-    new_configs: any[];
+    new_configs: Record<string, unknown>[];
 }
 
 export interface GetNaiveRagDocumentConfigsResponse {
@@ -83,16 +75,4 @@ export interface BulkDeleteNaiveRagDocumentDtoResponse {
 export interface UpdateNaiveRagDocumentResponse {
     message: string;
     config: NaiveRagDocumentConfig;
-}
-
-export interface StartIndexingDtoRequest {
-    rag_id: number;
-    rag_type: RagType;
-}
-
-export interface StartIndexingDtoResponse {
-    detail: string;
-    rag_id: number;
-    rag_type: string;
-    collection_id: number;
 }

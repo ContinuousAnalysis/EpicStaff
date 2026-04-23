@@ -1,7 +1,10 @@
-import { inject, Injectable } from "@angular/core";
 import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
-import { ConfigService } from "../../../services/config";
+import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
+
+import { ConfigService } from "../../../services/config";
+import { StartIndexingDtoRequest, StartIndexingDtoResponse } from "../models/base-rag.model";
+import { CreateNaiveRagForCollectionResponse } from "../models/naive-rag.model";
 import { GetNaiveRagDocumentChunksResponse, NaiveRagChunkingResponse } from "../models/naive-rag-chunk.model";
 import {
     BulkDeleteNaiveRagDocumentDtoRequest,
@@ -10,17 +13,12 @@ import {
     BulkUpdateNaiveRagDocumentDtoResponse,
     GetNaiveRagDocumentConfigsResponse,
     InitNaiveRagDocumentsResponse,
-    StartIndexingDtoRequest,
-    StartIndexingDtoResponse,
     UpdateNaiveRagDocumentDtoRequest,
     UpdateNaiveRagDocumentResponse
 } from "../models/naive-rag-document.model";
-import {
-    CreateRagForCollectionResponse
-} from "../models/naive-rag.model";
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class NaiveRagService {
     private http = inject(HttpClient);
@@ -34,16 +32,13 @@ export class NaiveRagService {
         return `${this.configService.apiUrl}naive-rag/`;
     }
 
-    createRagForCollection(
-        collectionId: number,
-        embedderId: number
-    ): Observable<CreateRagForCollectionResponse> {
+    createRagForCollection(collectionId: number, embedderId: number): Observable<CreateNaiveRagForCollectionResponse> {
         const body = { embedder_id: embedderId };
 
-        return this.http.post<CreateRagForCollectionResponse>(
+        return this.http.post<CreateNaiveRagForCollectionResponse>(
             `${this.apiUrl}collections/${collectionId}/naive-rag/`,
             body
-        )
+        );
     }
 
     getDocumentConfigs(naiveRagId: number): Observable<GetNaiveRagDocumentConfigsResponse> {
@@ -82,14 +77,11 @@ export class NaiveRagService {
     }
 
     startIndexing(dto: StartIndexingDtoRequest): Observable<StartIndexingDtoResponse> {
-        return this.http.post<StartIndexingDtoResponse>(`${this.configService.apiUrl}process-rag-indexing/`, dto)
+        return this.http.post<StartIndexingDtoResponse>(`${this.configService.apiUrl}process-rag-indexing/`, dto);
     }
 
     initializeDocuments(ragId: number): Observable<InitNaiveRagDocumentsResponse> {
-        return this.http.post<InitNaiveRagDocumentsResponse>(
-            `${this.apiUrl}${ragId}/document-configs/initialize/`,
-            {}
-        );
+        return this.http.post<InitNaiveRagDocumentsResponse>(`${this.apiUrl}${ragId}/document-configs/initialize/`, {});
     }
 
     runChunkingProcess(ragId: number, documentId: number): Observable<NaiveRagChunkingResponse> {

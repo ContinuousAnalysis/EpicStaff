@@ -7,36 +7,28 @@
 
         <div class="config__grid-item">
             <label>Rows In Chunk</label>
-            <mat-icon
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="The number of CSV rows included in each chunk. Larger values preserve more tabular context, while smaller values create more granular chunks."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
-            >
-                help_outline
-            </mat-icon>
+                text="The number of CSV rows included in each chunk. Larger values preserve more tabular context, while smaller values create more granular chunks."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
+            />
         </div>
         <div class="config__grid-item config__grid-item--short">
-            <app-input-number
-                formControlName="rows_in_chunk"
-            />
+            <app-input-number formControlName="rows_in_chunk" />
         </div>
 
         <div class="config__grid-item">
             <label>Headers level</label>
-            <mat-icon
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="The number of header rows to include with each chunk. Ensures column context is preserved when splitting large CSV files."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
-            >
-                help_outline
-            </mat-icon>
+                text="The number of header rows to include with each chunk. Ensures column context is preserved when splitting large CSV files."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
+            />
         </div>
         <div class="config__grid-item config__grid-item--short">
-            <app-input-number
-                formControlName="headers_level"
-            />
+            <app-input-number formControlName="headers_level" />
         </div>
     </div>
 </form>
