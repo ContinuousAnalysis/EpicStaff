@@ -1,6 +1,28 @@
 from tables.exceptions import CustomAPIExeption
 
 
+class FormValidationError(CustomAPIExeption):
+    """Raised by AuthValidationService when one or more submitted fields
+    fail validation. Carries a structured `errors` list (populated by the
+    service) which `custom_exception_handler` surfaces under the `errors`
+    key of the response body.
+
+    Each entry in `errors` has shape:
+        {"field": str, "value": Any, "reason": str}
+
+    Sensitive submitted values (password, refresh, token) are redacted by
+    the service before they reach this exception.
+    """
+
+    status_code = 400
+    default_detail = "Validation failed"
+    default_code = "invalid"
+
+    def __init__(self, errors: list[dict], detail=None):
+        self.errors = errors
+        super().__init__(detail=detail or self.default_detail)
+
+
 class SetupAlreadyCompletedError(CustomAPIExeption):
     """Raised by FirstSetupService when setup has already been performed."""
 

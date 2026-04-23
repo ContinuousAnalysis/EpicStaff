@@ -27,6 +27,7 @@ from tables.serializers.rbac_serializers import (
     TokenIntrospectResponseSerializer,
 )
 from tables.services.rbac.auth_service import AuthService, IssuedTokens
+from tables.services.rbac.auth_validation_service import AuthValidationService
 from tables.services.rbac.first_setup_service import FirstSetupService
 from tables.services.rbac.rbac_exceptions import InvalidRefreshTokenError
 from tables.services.rbac.reset_user_service import ResetUserService
@@ -44,6 +45,15 @@ class LoginView(TokenObtainPairView):
 
     serializer_class = LoginSerializer
     throttle_classes = [LoginThrottle]
+
+    _validator = AuthValidationService()
+
+    def post(self, request, *args, **kwargs):
+        # Shape-check both fields and aggregate missing/blank errors
+        # before delegating to simplejwt. Wrong-credential errors stay a
+        # flat 401 to avoid user-enumeration leaks.
+        self._validator.validate_login(request.data)
+        return super().post(request, *args, **kwargs)
 
 
 class LogoutView(APIView):
@@ -111,6 +121,7 @@ class FirstSetupView(APIView):
     authentication_classes = []
 
     _service = FirstSetupService()
+    _validator = AuthValidationService()
 
     @extend_schema(
         summary="Check if first-time setup is required",
@@ -138,12 +149,11 @@ class FirstSetupView(APIView):
         },
     )
     def post(self, request):
-        serializer = FirstSetupRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        cleaned = self._validator.validate_first_setup(request.data)
 
         result = self._service.setup(
-            email=serializer.validated_data["email"],
-            password=serializer.validated_data["password"],
+            email=cleaned["email"],
+            password=cleaned["password"],
         )
         tokens = IssuedTokens.for_user(result.user)
 
@@ -320,6 +330,7 @@ class ResetUserView(APIView):
     permission_classes = [IsAuthenticated]
 
     _service = ResetUserService()
+    _validator = AuthValidationService()
 
     @extend_schema(
         summary="Reset user (destructive)",
@@ -336,12 +347,11 @@ class ResetUserView(APIView):
         },
     )
     def post(self, request):
-        serializer = ResetUserRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        cleaned = self._validator.validate_reset_user(request.data)
 
         user, raw_key = self._service.reset(
-            email=serializer.validated_data["email"],
-            password=serializer.validated_data["password"],
+            email=cleaned["email"],
+            password=cleaned["password"],
         )
         tokens = IssuedTokens.for_user(user)
 

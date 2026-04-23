@@ -1,6 +1,3 @@
-from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -13,15 +10,11 @@ class FirstSetupStatusSerializer(serializers.Serializer):
 
 
 class FirstSetupRequestSerializer(serializers.Serializer):
+    # Schema-only: request validation is performed by
+    # `AuthValidationService.validate_first_setup` so errors can be
+    # aggregated and formatted uniformly.
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-
-    def validate_password(self, value: str) -> str:
-        try:
-            validate_password(value)
-        except DjangoValidationError as exc:
-            raise serializers.ValidationError(list(exc.messages))
-        return value
 
 
 class _SetupUserPayload(serializers.Serializer):
@@ -101,15 +94,10 @@ class ApiKeyValidateResponseSerializer(serializers.Serializer):
 
 
 class ResetUserRequestSerializer(serializers.Serializer):
+    # Schema-only: request validation is performed by
+    # `AuthValidationService.validate_reset_user`.
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-
-    def validate_password(self, value: str) -> str:
-        try:
-            validate_password(value)
-        except DjangoValidationError as exc:
-            raise serializers.ValidationError(list(exc.messages))
-        return value
 
 
 class ResetUserResponseSerializer(serializers.Serializer):
