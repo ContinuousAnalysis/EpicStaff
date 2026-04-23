@@ -118,6 +118,11 @@ export interface TelegramTriggerNodeModel extends BaseNodeModel {
     };
 }
 
+export interface ScheduleTriggerNodeModel extends BaseNodeModel {
+    type: NodeType.SCHEDULE_TRIGGER;
+    data: unknown;
+}
+
 export interface EndNodeData {
     output_map: Record<string, unknown>;
 }
@@ -154,5 +159,6 @@ export type NodeModel =
     | SubGraphNodeModel
     | WebhookTriggerNodeModel
     | TelegramTriggerNodeModel
+    | ScheduleTriggerNodeModel
     | EndNodeModel
     | CodeAgentNodeModel;

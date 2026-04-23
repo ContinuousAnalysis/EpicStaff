@@ -1,0 +1,204 @@
+:host {
+    width: 100%;
+    display: block;
+}
+
+.date-picker {
+    position: relative;
+    width: 100%;
+
+    &__trigger {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        height: 40px;
+        padding: 0 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--color-input-border);
+        background-color: var(--color-input-background);
+        color: var(--color-text-primary);
+        transition: border-color 0.2s ease;
+        box-sizing: border-box;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--active-color, var(--accent-color, #685fff));
+        }
+
+        &--open {
+            border-color: var(--active-color, var(--accent-color, #685fff));
+        }
+
+        &--error {
+            border-color: #ef4444;
+        }
+
+        &--disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+    }
+
+    &__icon {
+        font-size: 15px;
+        color: var(--color-input-text-placeholder);
+        flex-shrink: 0;
+        pointer-events: none;
+    }
+
+    &__input {
+        flex: 1;
+        min-width: 0;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--color-text-primary);
+        font-size: 0.875rem;
+        line-height: 130%;
+        padding: 0;
+        cursor: pointer;
+
+        &::placeholder {
+            color: var(--color-input-text-placeholder);
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+        }
+    }
+
+    &__chevron {
+        flex-shrink: 0;
+        color: var(--color-input-text-placeholder);
+        transition: transform 0.2s ease;
+        cursor: pointer;
+
+        &--open {
+            transform: rotate(180deg);
+        }
+    }
+
+    &__dropdown {
+        border-radius: 10px;
+        border: 1px solid var(--color-input-border);
+        background-color: var(--color-input-background);
+        color: var(--color-text-primary);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+    }
+
+    &__calendar {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 4px;
+    }
+
+    &__month-year {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-text-primary);
+    }
+
+    &__nav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    &__nav-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        border: none;
+        background: #2b2d30;
+        color: var(--color-text-primary);
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+        padding: 0;
+
+        &:hover {
+            background: var(--active-color, var(--accent-color, #685fff));
+            color: #fff;
+        }
+    }
+
+    &__weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+    }
+
+    &__weekday {
+        text-align: center;
+        font-size: 0.6875rem;
+        font-weight: 500;
+        color: var(--color-input-text-placeholder);
+        padding: 2px 0 6px;
+    }
+
+    &__days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        row-gap: 2px;
+    }
+
+    &__day {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        justify-self: center;
+        width: 100%;
+        aspect-ratio: 1;
+        max-width: 30px;
+        border-radius: 50%;
+        font-size: 0.8125rem;
+        font-weight: 300;
+        cursor: pointer;
+        transition:
+            background 0.15s ease,
+            color 0.15s ease;
+        color: var(--color-text-primary);
+
+        &:hover:not(&--selected):not(&--empty):not(&--past) {
+            background: var(--color-ks-transparent-black-72);
+        }
+
+        &--today:not(&--selected) {
+            color: var(--active-color, var(--accent-color, #685fff));
+            font-weight: 500;
+        }
+
+        &--selected {
+            font-weight: 500;
+        }
+
+        &--past {
+            color: var(--color-input-text-placeholder);
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        &--empty {
+            cursor: default;
+            pointer-events: none;
+        }
+    }
+
+    &__error {
+        color: #ef4444;
+        font-size: 12px;
+        margin-top: 4px;
+        line-height: 1.4;
+    }
+}

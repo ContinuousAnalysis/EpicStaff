@@ -17,5 +17,6 @@ export const NODE_TYPE_PREFIXES: Record<NodeType, string> = {
     [NodeType.TELEGRAM_TRIGGER]: 'Telegram Trigger',
     [NodeType.END]: 'End',
     [NodeType.SUBGRAPH]: 'Flow-Node',
+    [NodeType.SCHEDULE_TRIGGER]: 'Schedule Trigger',
     [NodeType.CODE_AGENT]: 'Code-Agent',
 };

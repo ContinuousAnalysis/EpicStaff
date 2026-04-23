@@ -18,7 +18,7 @@
                 @case (menuTab.FLOW_CORE) {
                     <app-flow-graph-core-menu
                         [searchTerm]="searchTerm()"
-                        (nodeSelected)="onNodeSelected({ type: $event })"
+                        (nodeSelected)="onNodeSelected($event)"
                     ></app-flow-graph-core-menu>
                 }
                 @case (menuTab.PROJECTS) {

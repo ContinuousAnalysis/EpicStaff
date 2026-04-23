@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, input, output, si
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ShortcutListenerDirective } from '../../../core/directives/shortcut-listener.directive';
 import { PANEL_COMPONENT_MAP } from '../../../core/enums/node-panel.map';
+import { NodeType } from '../../../core/enums/node-type';
 import { NodeModel } from '../../../core/models/node.model';
 import { NodePanel } from '../../../core/models/node-panel.interface';
 import { SidePanelService } from '../../../services/side-panel.service';
@@ -24,15 +25,26 @@ import { SidePanelService } from '../../../services/side-panel.service';
     },
     template: `
         @if (node() && panelComponent()) {
-            <aside class="node-panel" [class.shake-attention]="isShaking()" [class.expanded]="isExpanded()">
+            <aside
+                class="node-panel"
+                [class.shake-attention]="isShaking()"
+                [class.expanded]="isExpanded()"
+            >
                 <header class="dialog-header">
                     <div class="icon-and-title">
-                        <i [class]="node()!.icon" [style.color]="node()!.color || '#685fff'"></i>
+                        <i
+                            [class]="node()!.icon"
+                            [style.color]="node()!.color || '#685fff'"
+                        ></i>
                         <span class="title">{{ nodeNameToDisplay() }}</span>
                     </div>
                     <div class="header-actions">
                         @if (shouldShowExpandButton()) {
-                            <button class="expand-btn" aria-label="Toggle panel size" (click)="toggleExpanded()">
+                            <button
+                                class="expand-btn"
+                                aria-label="Toggle panel size"
+                                (click)="toggleExpanded()"
+                            >
                                 <app-svg-icon
                                     [icon]="isExpanded() ? 'arrows-minimize' : 'arrows-maximize'"
                                     size="1.25rem"
@@ -41,7 +53,11 @@ import { SidePanelService } from '../../../services/side-panel.service';
                         }
                         <div class="close-action">
                             <span class="esc-label">ESC</span>
-                            <button class="close-btn" aria-label="Close dialog" (click)="onCloseClick()">
+                            <button
+                                class="close-btn"
+                                aria-label="Close dialog"
+                                (click)="onCloseClick()"
+                            >
                                 <app-svg-icon icon="x"></app-svg-icon>
                             </button>
                         </div>
@@ -84,7 +100,7 @@ export class NodePanelShellComponent {
 
     public readonly shouldShowExpandButton = computed(() => {
         const node = this.node();
-        return node && node.type !== 'table';
+        return node && node.type !== 'table' && node.type !== NodeType.SCHEDULE_TRIGGER;
     });
 
     protected readonly outlet = viewChild(NgComponentOutlet);

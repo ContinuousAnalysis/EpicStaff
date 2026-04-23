@@ -1,0 +1,6 @@
+<button
+    type="button"
+    class="round-btn"
+    [class.round-btn--active]="selected()"
+    [attr.data-tooltip]="tooltip() || null"
+>{{ label() }}</button>

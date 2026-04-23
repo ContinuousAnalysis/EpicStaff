@@ -8,6 +8,7 @@ import { EndNodePanelComponent } from '../../components/node-panels/end-node-pan
 import { FileExtractorNodePanelComponent } from '../../components/node-panels/file-extractor-node-panel/file-extractor-node-panel.component';
 import { ProjectNodePanelComponent } from '../../components/node-panels/project-node-panel/project-node-panel.component';
 import { PythonNodePanelComponent } from '../../components/node-panels/python-node-panel/python-node-panel.component';
+import { ScheduleTriggerNodePanelComponent } from '../../components/node-panels/schedule-trigger-node-panel/schedule-trigger-node-panel.component';
 import { SubGraphNodePanelComponent } from '../../components/node-panels/subgraph-node-panel/subgraph-node-panel.component';
 import { TelegramTriggerNodePanelComponent } from '../../components/node-panels/telegram-trigger-node-panel/telegram-trigger-node-panel.component';
 import { WebhookTriggerNodePanelComponent } from '../../components/node-panels/webhook-trigger-node-panel/webhook-trigger-node-panel.component';
@@ -29,6 +30,7 @@ export const PANEL_COMPONENT_MAP: Record<string, Type<NodePanel<NodeModel>>> = {
     subgraph: asNodePanelComponent(SubGraphNodePanelComponent),
     table: asNodePanelComponent(DecisionTableNodePanelComponent),
     [NodeType.AUDIO_TO_TEXT]: asNodePanelComponent(AudioToTextNodePanelComponent),
+    [NodeType.SCHEDULE_TRIGGER]: asNodePanelComponent(ScheduleTriggerNodePanelComponent),
     [NodeType.CODE_AGENT]: asNodePanelComponent(CodeAgentNodePanelComponent),
     // start: StartNodePanelComponent,
 };

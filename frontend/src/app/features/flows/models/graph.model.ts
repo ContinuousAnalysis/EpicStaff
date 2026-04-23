@@ -9,6 +9,7 @@ import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/component
 import { GraphNote } from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
 import { GetLLMNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
 import { PythonNode } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
+import { GetScheduleTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 import { StartNode } from '../../../pages/flows-page/components/flow-visual-programming/models/start-node.model';
 import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
@@ -55,6 +56,7 @@ export interface GraphDto extends GetGraphLightRequest {
     audio_transcription_node_list: GetAudioToTextNodeRequest[];
     graph_note_list: GraphNote[];
     code_agent_node_list: GetCodeAgentNodeRequest[];
+    schedule_trigger_node_list: GetScheduleTriggerNodeRequest[];
 }
 
 export interface CreateGraphDtoRequest {
