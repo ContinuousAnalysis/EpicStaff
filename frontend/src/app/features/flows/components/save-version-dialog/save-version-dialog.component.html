@@ -1,8 +1,14 @@
 <div class="dialog-container">
     <div class="dialog-header">
         <h2 class="dialog-title">Create Version</h2>
-        <button class="close-button" (click)="onCancel()">
-            <app-svg-icon icon="x" size="20px"></app-svg-icon>
+        <button
+            class="close-button"
+            (click)="onCancel()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="20px"
+            ></app-svg-icon>
         </button>
     </div>
 
@@ -21,8 +27,12 @@
                     placeholder="Enter value"
                     autocomplete="off"
                 />
-                @if (form.get('name')?.invalid && form.get('name')?.touched) {
-                    <div class="error-message">Version name is required.</div>
+                @if (form.get('name')?.touched) {
+                    @if (form.get('name')?.hasError('required')) {
+                        <div class="error-message">Version name is required.</div>
+                    } @else if (form.get('name')?.hasError('maxlength')) {
+                        <div class="error-message">Max length is 255 characters.</div>
+                    }
                 }
             </div>
 
@@ -42,7 +52,16 @@
     <div class="dialog-divider"></div>
 
     <div class="dialog-footer">
-        <app-button type="ghost" (click)="onCancel()">Cancel</app-button>
-        <app-button type="primary" [disabled]="form.invalid && form.touched" (click)="onSubmit()">Create</app-button>
+        <app-button
+            type="ghost"
+            (click)="onCancel()"
+            >Cancel</app-button
+        >
+        <app-button
+            type="primary"
+            [disabled]="form.invalid"
+            (click)="onSubmit()"
+            >Create</app-button
+        >
     </div>
 </div>

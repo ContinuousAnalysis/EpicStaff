@@ -16,7 +16,19 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, defaultIfEmpty, EMPTY, finalize, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
+import {
+    catchError,
+    defaultIfEmpty,
+    EMPTY,
+    filter,
+    finalize,
+    forkJoin,
+    map,
+    Observable,
+    of,
+    switchMap,
+    tap,
+} from 'rxjs';
 
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
@@ -599,17 +611,27 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                 data: {},
             });
 
-            dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
-                if (!result) return;
-
-                this.flowApiService
-                    .saveGraphVersion({ graph_id: this.graph.id, name: result.name, description: result.description })
-                    .pipe(takeUntilDestroyed(this.destroyRef))
-                    .subscribe({
-                        next: () => this.toastService.success(`Version '${result.name}' saved`),
-                        error: () => this.toastService.error('Failed to save version'),
-                    });
-            });
+            dialogRef.closed
+                .pipe(
+                    takeUntilDestroyed(this.destroyRef),
+                    filter((result): result is SaveVersionDialogResult => !!result),
+                    switchMap((result) =>
+                        this.flowApiService
+                            .saveGraphVersion({
+                                graph_id: this.graph.id,
+                                name: result.name,
+                                description: result.description,
+                            })
+                            .pipe(
+                                tap(() => this.toastService.success(`Version '${result.name}' saved`)),
+                                catchError(() => {
+                                    this.toastService.error('Failed to save version');
+                                    return EMPTY;
+                                })
+                            )
+                    )
+                )
+                .subscribe();
         };
 
         if (!this.hasUnsavedChanges()) {
