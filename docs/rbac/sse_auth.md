@@ -12,7 +12,7 @@
 
 Tickets are:
 
-- **Short-lived** — 5 minutes (configurable server-side via `SSE_TICKET_TTL_SECONDS`, default `300`).
+- **Short-lived** — 30 seconds (hardcoded in `settings.SSE_TICKET_TTL_SECONDS`).
 - **Single-use** — consumed the first time the SSE connection is opened with them. Reconnects require a fresh ticket.
 - **User-bound** — each ticket resolves to the JWT-authenticated user who requested it.
 - **Stored in Redis** — the ticket itself is an opaque random string; no user info is encoded in it.
@@ -27,7 +27,7 @@ Tickets are:
 - **Body:** none.
 - **Response 200:**
   ```json
-  { "ticket": "2f9a8c...opaque-random...", "expires_in": 300 }
+  { "ticket": "2f9a8c...opaque-random...", "expires_in": 30 }
   ```
 
 `expires_in` is seconds until expiry.
@@ -125,9 +125,9 @@ The `text/event-stream` handshake never starts when the ticket is rejected; you 
 
 ## Server config knobs
 
-| Env var | Default | Effect |
+| Setting | Value | Effect |
 |---|---|---|
-| `SSE_TICKET_TTL_SECONDS` | `300` | How long a freshly issued ticket is valid before consume. |
+| `SSE_TICKET_TTL_SECONDS` | `30` (hardcoded in `settings.py`) | How long a freshly issued ticket is valid before consume. |
 
-Tickets are stored in the Redis cache backend (`django_redis`) under the `rbac:sse_ticket:<token>` key. They are not persisted to the database.
+Tickets are stored in Redis via the raw `django_redis` client under the `rbac:sse_ticket:<token>` key. Consume uses `GETDEL` (Redis 6.2+) so get-and-delete is atomic — two simultaneous consumers cannot both succeed. They are not persisted to the database.
 

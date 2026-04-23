@@ -18,7 +18,7 @@ Base URL in examples: `http://localhost:8000`.
 | POST | `/api/auth/login/` | public (throttled) | JWT login (email + password) |
 | POST | `/api/auth/refresh/` | public | Exchange refresh → new access + rotated refresh |
 | POST | `/api/auth/logout/` | Bearer JWT | Blacklist the caller's refresh token |
-| POST | `/api/auth/sse-ticket/` | Bearer JWT | Issue a single-use SSE ticket (5-min TTL) |
+| POST | `/api/auth/sse-ticket/` | Bearer JWT | Issue a single-use SSE ticket (30-second TTL) |
 | GET | `/api/auth/me/` | Bearer JWT (or user-owned ApiKey) | Current user + memberships |
 | POST | `/api/auth/introspect/` | ApiKey | Validate a JWT, return claims |
 | GET | `/api/auth/api-key/validate/` | ApiKey | Metadata about the calling key |
@@ -40,7 +40,7 @@ Two authentication backends are composed in `JwtOrApiKeyAuthentication`:
 ### JWT (primary for end users)
 
 - Header: `Authorization: Bearer <access_token>`
-- Obtain via `POST /api/auth/token/` with `{ "email", "password" }`.
+- Obtain via `POST /api/auth/login/` with `{ "email", "password" }`.
 - Access token lifetime: `JWT_ACCESS_MINUTES` env (default 15).
 - Refresh token lifetime: `JWT_REFRESH_DAYS` env (default 7).
 - Token carries custom claims: `user_id`, `email`, `is_superadmin`.
@@ -94,28 +94,28 @@ Shape comes from `utils/exception_handler.custom_exception_handler`.
   ```json
   {
     "email": "admin@acme.com",
-    "password": "StrongPass123!",
-    "organization_name": "Acme Inc",
-    "display_name": "Admin"
+    "password": "StrongPass123!"
   }
   ```
   - `email` — must be a valid email.
   - `password` — must pass Django's `AUTH_PASSWORD_VALIDATORS` (min length,
     not-too-common, not-all-numeric, not-too-similar-to-email).
-  - `organization_name` — required, non-empty after trim.
-  - `display_name` — optional.
+  - Organization name is **not** taken from the request body; it comes from
+    the `DJANGO_DEFAULT_ORG_NAME` setting (env-driven, default
+    `"Default Organization"`). Any `organization_name` / `display_name`
+    fields passed in the body are silently ignored.
 - **Response 201:**
   ```json
   {
     "user": {
       "id": 1,
       "email": "admin@acme.com",
-      "display_name": "Admin",
+      "display_name": null,
       "is_superadmin": true
     },
     "organization": {
       "id": 1,
-      "name": "Acme Inc",
+      "name": "Default Organization",
       "is_active": true
     },
     "access":  "<jwt-access>",
@@ -123,7 +123,20 @@ Shape comes from `utils/exception_handler.custom_exception_handler`.
   }
   ```
 - **Errors:**
-  - `400` — validation failure (invalid email, weak password, empty org name).
+  - `400` — validation failure. Every failing field is aggregated into a
+    structured `errors` list; passwords are redacted as `"***"`:
+    ```json
+    {
+      "status_code": 400,
+      "code": "invalid",
+      "message": "FormValidationError: Validation failed",
+      "errors": [
+        { "field": "email",    "value": "not-an-email", "reason": "Enter a valid email address." },
+        { "field": "password", "value": "***",          "reason": "This password is too common." },
+        { "field": "password", "value": "***",          "reason": "This password is entirely numeric." }
+      ]
+    }
+    ```
   - `409` — `{"detail": "Setup has already been completed"}` when any user
     already exists.
 
@@ -144,7 +157,7 @@ Enable by setting in the service environment:
 | `DJANGO_AUTO_CREATE_ADMIN` | yes | `True` | Accepts only `True`, `true`, `False`, `false`. Anything else → entrypoint aborts (`exit 1`). |
 | `DJANGO_ADMIN_EMAIL` | when flag is `True` | `admin@acme.com` | |
 | `DJANGO_ADMIN_PASSWORD` | when flag is `True` | `StrongPass123!` | Used exactly as given. The entrypoint **never generates** or rewrites it. |
-| `DJANGO_DEFAULT_ORG_NAME` | when flag is `True` | `Acme Inc` | |
+| `DJANGO_DEFAULT_ORG_NAME` | optional | `Acme Inc` | Name for the default Organization. Falls back to `"Default Organization"` when unset. Read from `settings.DJANGO_DEFAULT_ORG_NAME` — applies to both the HTTP endpoint and the entrypoint bootstrap. |
 
 `docker-compose.yaml` forwards these vars into the `django_app` container
 already. Compose does not pass arbitrary `.env` entries into services — only
@@ -211,7 +224,12 @@ Response:
 { "access": "<jwt>", "refresh": "<jwt>" }
 ```
 
-- `401` on invalid credentials.
+- `400` with a structured `errors` list when `email` or `password` is missing
+  or the wrong type. Missing/blank/bad-type failures for both fields are
+  aggregated in one response; password values are redacted as `"***"`.
+- `401` on invalid credentials — flat envelope with no `errors` array, so the
+  caller cannot distinguish which of email/password was wrong (user-enumeration
+  protection).
 - `429` with `Retry-After` header once the composite `<ip>|<email>` bucket is
   exhausted. Rate comes from `LOGIN_THROTTLE_RATE` (default `5/min`).
 
@@ -239,7 +257,12 @@ Body: `{ "refresh": "<jwt>" }` → returns a new `{access, refresh}` pair.
   { "status_code": 400, "code": "invalid_or_expired_refresh",
     "message": "Refresh token is invalid, expired, or already revoked." }
   ```
-  on malformed, expired, or already-blacklisted tokens.
+  on malformed, expired, already-blacklisted, **or third-party** tokens.
+  Ownership is enforced — if the refresh token belongs to a different user
+  than the JWT access token authenticating the call, it is rejected with the
+  same error as a malformed token (so callers cannot distinguish "real but
+  not yours" from "garbage"). This stops a leaked refresh token from being
+  weaponized to log the owner out.
 - The short-lived **access** token continues to work until its own expiry
   (default 15 min). Keep access TTL short; consult `JWT_ACCESS_MINUTES`.
 
@@ -255,11 +278,13 @@ See the dedicated [`sse_auth.md`](./sse_auth.md) for the complete FE flow.
 - **Body:** none.
 - **Response 200:**
   ```json
-  { "ticket": "<opaque random>", "expires_in": 300 }
+  { "ticket": "<opaque random>", "expires_in": 30 }
   ```
-- Tickets are **single-use** and stored in the Redis cache backend under
-  `rbac:sse_ticket:<token>` keys. TTL is `SSE_TICKET_TTL_SECONDS` (default
-  300). Reconnects must fetch a fresh ticket.
+- Tickets are **single-use** and stored in Redis under
+  `rbac:sse_ticket:<token>` keys. TTL is `SSE_TICKET_TTL_SECONDS`
+  (hardcoded to 30 seconds in `settings.py`). Consume uses Redis `GETDEL` (6.2+) for
+  atomic get-and-delete, so even two simultaneous connects with the same
+  ticket cannot both succeed. Reconnects must fetch a fresh ticket.
 - SSE endpoints reject missing/invalid/expired tickets with
   ```json
   { "status_code": 401, "code": "invalid_sse_ticket",
@@ -519,7 +544,7 @@ backend filters `revoked_at__isnull=True`, so revoked keys start returning
 # 1. Setup
 curl -s -X POST http://localhost:8000/api/auth/first-setup/ \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@acme.com","password":"StrongPass123!","organization_name":"Acme"}' | jq .
+  -d '{"email":"admin@acme.com","password":"StrongPass123!"}' | jq .
 
 # 2. Login
 ACCESS=$(curl -s -X POST http://localhost:8000/api/auth/login/ \
@@ -544,7 +569,7 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 | Refresh rotation | Each call to `POST /api/auth/refresh/` (renamed from `/api/auth/token/refresh/`) returns a **new** refresh in addition to the access token — overwrite local storage with both values. The previous refresh is blacklisted; replaying it → 401. |
 | Login throttling | 6th credential attempt within the bucket window returns `429` with a `Retry-After` header. Surface a "too many attempts, retry in N seconds" message instead of generic error. |
 | SSE streams | EventSource can no longer connect directly. Fetch a ticket via `POST /api/auth/sse-ticket/`, then connect with `?ticket=<value>`. On `onerror` / reconnect, fetch a **fresh** ticket first. Full migration guide: [`sse_auth.md`](./sse_auth.md). |
-| First-setup screen | Call `GET /api/auth/first-setup/` on boot; if `needs_setup: true`, show the setup form. POST payload is `{ email, password, organization_name, display_name? }`. Response returns `access` + `refresh` — persist them and skip the login screen on success. |
+| First-setup screen | Call `GET /api/auth/first-setup/` on boot; if `needs_setup: true`, show the setup form. POST payload is `{ email, password }` — the organization name is sourced from the `DJANGO_DEFAULT_ORG_NAME` setting on the server, not the request body. Response returns `access` + `refresh` — persist them and skip the login screen on success. |
 | Idempotency | A repeated `POST /api/auth/first-setup/` returns **409** with `{"detail": "Setup has already been completed"}`. Handle this explicitly (e.g. redirect to login). |
 | `/me` response shape | Changed. New fields: `display_name`, `avatar_url`, `is_superadmin`, `memberships[]`. Removed: `username`. FE should render email (not username) in the profile menu, and use `memberships` to populate the org/role sidebar. |
 | JWT claims | Access token now carries `email` and `is_superadmin` in addition to `user_id`. FE may decode the access token locally to short-circuit UI gating without hitting `/me`. |
@@ -574,7 +599,7 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 | `/api/auth/token/refresh/` → **`/api/auth/refresh/`** | returns `{access}` only | returns `{access, refresh}` (rotation on) |
 | `/api/auth/logout/` | *did not exist* | new — `{refresh}` → 205 |
 | `/api/auth/sse-ticket/` | *did not exist* | new — JWT-authed; returns `{ticket, expires_in}` |
-| `/api/auth/first-setup/` POST request | `{username, password, email?}` | `{email, password, organization_name, display_name?}` |
+| `/api/auth/first-setup/` POST request | `{username, password, email?}` | `{email, password}` (org name comes from `DJANGO_DEFAULT_ORG_NAME`) |
 | `/api/auth/first-setup/` POST response | `{access, refresh, api_key}` | `{user, organization, access, refresh}` |
 | `/api/auth/me/` response | `{id, username, email}` | `{id, email, display_name, avatar_url, is_superadmin, memberships[]}` |
 | `/api/auth/introspect/` response | `{active, user_id, username, scopes}` | `{active, user_id, email, scopes}` |
@@ -592,7 +617,21 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 | `permission_denied` with a valid API key | Key has `created_by=NULL` → `AnonymousUser` → `IsAuthenticated` fails. | Backfill owner or use a user-owned key. See "User reset" caveats. |
 | `409 Setup has already been completed` | At least one User exists. | Expected. If intentional reset, use `POST /api/auth/reset-user/` or `manage.py reset_user`. |
 | FE shows login form but `needs_setup` is `true` | Frontend isn't calling `GET /api/auth/first-setup/` on boot. | Wire the boot check per "Frontend changes required". |
-| `/api/auth/token/` returns 401 on what looks like valid creds | Payload uses `username` instead of `email`. | Send `{"email": ..., "password": ...}`. |
+| `/api/auth/login/` returns 401 on what looks like valid creds | Payload uses `username` instead of `email`. | Send `{"email": ..., "password": ...}`. |
 | PowerShell's `curl -H` throws "Cannot bind parameter 'Headers'" | PowerShell aliases `curl` to `Invoke-WebRequest`. | Use `curl.exe`, `Invoke-RestMethod -Headers @{...}`, or `Remove-Item Alias:curl`. |
 | `ALTER TABLE because it has pending trigger events` during migrate | Postgres deferred FK triggers. | Handled in 0170 with `SET CONSTRAINTS ALL IMMEDIATE`; if you see this on a different migration, add the same. |
 | After swapping AUTH_USER_MODEL, `admin.LogEntry.user was declared with a lazy reference to 'tables.user'` | `django.contrib.admin` references the swapped model during state build. | Remove `django.contrib.admin` from `INSTALLED_APPS` |
+
+
+
+
+docs(EST-2417-BE): align auth docs with implementation
+
+- First-setup request/response examples no longer show
+  organization_name / display_name (the endpoint ignores them); org
+  name is documented as coming from DJANGO_DEFAULT_ORG_NAME.
+- Login section documents both 400 (structured, aggregated, redacted
+  errors) and flat 401 (wrong credentials, no errors array).
+- Logout section documents the refresh-token ownership check.
+- SSE section notes GETDEL atomicity and 30-second hardcoded TTL.
+- Corrected stale /api/auth/token/ references to /api/auth/login/
