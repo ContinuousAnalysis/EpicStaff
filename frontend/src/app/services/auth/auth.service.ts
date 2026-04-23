@@ -32,20 +32,24 @@ export class AuthService {
     private statusCache$: Observable<FirstSetupStatus> | null = null;
 
     private get baseUrl(): string {
-        return this.configService.apiUrl.replace(/\/+$/, '');
+        return `${this.configService.apiUrl}auth/`;
     }
 
     getStatus(): Observable<FirstSetupStatus> {
         if (!this.statusCache$) {
-            this.statusCache$ = this.http
-                .get<FirstSetupStatus>(`${this.baseUrl}/auth/first-setup/`)
-                .pipe(shareReplay(1));
+            this.statusCache$ = this.http.get<FirstSetupStatus>(`${this.baseUrl}first-setup/`).pipe(
+                catchError((err) => {
+                    this.statusCache$ = null;
+                    return throwError(() => err);
+                }),
+                shareReplay(1)
+            );
         }
         return this.statusCache$;
     }
 
     runSetup(payload: FirstSetupRequest): Observable<FirstSetupResponse> {
-        return this.http.post<FirstSetupResponse>(`${this.baseUrl}/auth/first-setup/`, payload).pipe(
+        return this.http.post<FirstSetupResponse>(`${this.baseUrl}first-setup/`, payload).pipe(
             tap(() => {
                 this.statusCache$ = null;
             })
@@ -53,7 +57,7 @@ export class AuthService {
     }
 
     login(email: string, password: string, rememberMe: boolean = false): Observable<boolean> {
-        return this.http.post<TokenPair>(`${this.baseUrl}/auth/login/`, { email, password }).pipe(
+        return this.http.post<TokenPair>(`${this.baseUrl}login/`, { email, password }).pipe(
             tap((tokens) => this.storeTokens(tokens, rememberMe)),
             map(() => true)
         );
@@ -67,7 +71,7 @@ export class AuthService {
             return of();
         }
 
-        return this.http.post<void>(`${this.baseUrl}/auth/logout/`, { refresh: refreshToken }).pipe(
+        return this.http.post<void>(`${this.baseUrl}logout/`, { refresh: refreshToken }).pipe(
             tap(() => this.removeTokensAndNavToLogin()),
             catchError((err) => throwError(() => err))
         );
@@ -82,7 +86,7 @@ export class AuthService {
         if (!refresh) return of(null);
 
         this.refreshInProgress$ = this.http
-            .post<{ access: string; refresh?: string }>(`${this.baseUrl}/auth/refresh/`, {
+            .post<{ access: string; refresh?: string }>(`${this.baseUrl}refresh/`, {
                 refresh,
             })
             .pipe(
@@ -103,7 +107,7 @@ export class AuthService {
     }
 
     getCurrentUser(): Observable<GetMeResponse> {
-        return this.http.get<GetMeResponse>(`${this.baseUrl}/auth/me/`);
+        return this.http.get<GetMeResponse>(`${this.baseUrl}me/`);
     }
 
     removeTokensAndNavToLogin(): void {
