@@ -68,21 +68,36 @@
             <div class="llm-library__section">
                 <div class="llm-library__section-header">
                     <h4 class="llm-library__section-title">{{ provider.label }}:</h4>
-                    <app-button type="primary" (click)="onAddConfig(provider)">Add Config</app-button>
                 </div>
                 @if (provider.storage.configs().length === 0) {
                     <p class="llm-library__empty-hint">No {{ provider.label }} yet.</p>
                 } @else {
-                    <div class="llm-library__flat-list">
+                    <div class="llm-library__grid">
                         @for (c of provider.storage.configs(); track c.id) {
-                            <div class="llm-library__flat-item">
-                                <span class="llm-library__flat-name">{{ c.custom_name }}</span>
-                                <span class="llm-library__flat-meta">{{ c.model_name }}</span>
-                                <div class="llm-library__flat-actions">
-                                    <app-icon-button icon="edit" (click)="onEditConfig(provider, c)" />
-                                    <app-icon-button icon="delete" (click)="onDeleteConfig(provider, c)" />
+                            <article class="voice-card">
+                                <div class="voice-card__top">
+                                    <span class="voice-card__model">{{ c.model_name }}</span>
+                                    <div class="voice-card__actions">
+                                        <button
+                                            type="button"
+                                            class="voice-card__action"
+                                            title="Edit"
+                                            (click)="onEditConfig(provider, c)"
+                                        >
+                                            <i class="ti ti-pencil" aria-hidden="true"></i>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="voice-card__action voice-card__action--delete"
+                                            title="Delete"
+                                            (click)="onDeleteConfig(provider, c)"
+                                        >
+                                            <i class="ti ti-x" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                                <div class="voice-card__name">{{ c.custom_name }}</div>
+                            </article>
                         }
                     </div>
                 }

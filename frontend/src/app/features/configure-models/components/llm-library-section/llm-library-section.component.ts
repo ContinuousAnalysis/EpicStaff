@@ -38,12 +38,14 @@ import { LLMLibraryService } from '../../services/llms/llm-library.service';
 import { OpenAIRealtimeConfigStorageService } from '../../services/llms/openai-realtime-config-storage.service';
 import { RealtimeConfigStorageService } from '../../services/llms/realtime-config-storage.service';
 import { TranscriptionConfigStorageService } from '../../services/llms/transcription-config-storage.service';
-import { ElevenLabsRealtimeConfigDialogComponent } from '../elevenlabs-realtime-config-dialog/elevenlabs-realtime-config-dialog.component';
+import { AddConfigurationDialogComponent } from '../add-configuration-dialog/add-configuration-dialog.component';
 import { EmbeddingModelConfigDialogComponent } from '../embedding-model-config-dialog/embedding-model-config-dialog.component';
-import { GeminiRealtimeConfigDialogComponent } from '../gemini-realtime-config-dialog/gemini-realtime-config-dialog.component';
 import { LlmLibraryCardComponent } from '../llm-library-card/llm-library-card.component';
 import { LlmModelConfigDialogComponent } from '../llm-model-config-dialog/llm-model-config-dialog.component';
-import { OpenAIRealtimeConfigDialogComponent } from '../openai-realtime-config-dialog/openai-realtime-config-dialog.component';
+import {
+    RealtimeConfigDialogComponent,
+    RealtimeProvider,
+} from '../realtime-config-dialog/realtime-config-dialog.component';
 import { TranscriptionModelConfigDialogComponent } from '../transcription-model-config-dialog/transcription-model-config-dialog.component';
 import { VoiceModelConfigDialogComponent } from '../voice-config-model/voice-model-config-dialog.component';
 
@@ -54,14 +56,13 @@ interface VoiceProviderConfig {
 }
 
 interface VoiceProvider {
-    key: string;
+    key: RealtimeProvider;
     label: string;
     storage: {
         configs: Signal<VoiceProviderConfig[]>;
         getAllConfigs(force?: boolean): Observable<unknown[]>;
         deleteConfig(id: number): Observable<void>;
     };
-    dialogComponent: ComponentType<unknown>;
 }
 
 @Component({
@@ -96,24 +97,9 @@ export class LlmLibrarySectionComponent implements OnInit {
     private readonly toast = inject(ToastService);
 
     readonly voiceProviders: VoiceProvider[] = [
-        {
-            key: 'openai',
-            label: 'OpenAI Voice Configs',
-            storage: this.openaiRealtimeStorage,
-            dialogComponent: OpenAIRealtimeConfigDialogComponent,
-        },
-        {
-            key: 'elevenlabs',
-            label: 'ElevenLabs Voice Configs',
-            storage: this.elevenLabsRealtimeStorage,
-            dialogComponent: ElevenLabsRealtimeConfigDialogComponent,
-        },
-        {
-            key: 'gemini',
-            label: 'Gemini Voice Configs',
-            storage: this.geminiRealtimeStorage,
-            dialogComponent: GeminiRealtimeConfigDialogComponent,
-        },
+        { key: 'openai', label: 'OpenAI Voice Configs', storage: this.openaiRealtimeStorage },
+        { key: 'elevenlabs', label: 'ElevenLabs Voice Configs', storage: this.elevenLabsRealtimeStorage },
+        { key: 'gemini', label: 'Gemini Voice Configs', storage: this.geminiRealtimeStorage },
     ];
 
     public providerGroups = this.llmLibraryService.providerGroups;
@@ -181,16 +167,16 @@ export class LlmLibrarySectionComponent implements OnInit {
     }
 
     onAddConfig(provider: VoiceProvider): void {
-        this.dialog.open(provider.dialogComponent, {
+        this.dialog.open(RealtimeConfigDialogComponent, {
             disableClose: true,
-            data: { config: null, action: 'create' },
+            data: { config: null, action: 'create', provider: provider.key },
         });
     }
 
     onEditConfig(provider: VoiceProvider, config: VoiceProviderConfig): void {
-        this.dialog.open(provider.dialogComponent, {
+        this.dialog.open(RealtimeConfigDialogComponent, {
             disableClose: true,
-            data: { config, action: 'update' },
+            data: { config, action: 'update', provider: provider.key },
         });
     }
 
@@ -212,9 +198,9 @@ export class LlmLibrarySectionComponent implements OnInit {
     }
 
     public onAddModel(): void {
-        this.dialog.open(LlmModelConfigDialogComponent, {
-            height: '90vh',
-            width: '600px',
+        this.dialog.open(AddConfigurationDialogComponent, {
+            width: '560px',
+            height: '800px',
         });
     }
 

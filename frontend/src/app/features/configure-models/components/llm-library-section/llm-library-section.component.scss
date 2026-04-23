@@ -116,9 +116,13 @@
     }
 
     &__section-title {
-        margin-bottom: 1rem;
+        margin: 0 0 12px;
         font-weight: 500;
         color: rgba(217, 217, 222, 0.5);
+    }
+
+    &__section-header &__section-title {
+        margin: 0;
     }
 
     &__provider-group {
@@ -150,7 +154,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
 
     &__empty-hint {
@@ -198,6 +202,88 @@
         align-items: center;
         gap: 4px;
         flex-shrink: 0;
+    }
+}
+
+.voice-card {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: transparent;
+    transition: border-color 0.2s ease;
+
+    &:hover {
+        border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.25rem;
+    }
+
+    &__model {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(217, 217, 222, 0.5);
+        font-family: monospace;
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    &__action {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1px solid rgba(104, 95, 255, 0.4);
+        background: transparent;
+        color: var(--configure-models-dialog-inactive-color, #685fff);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        transition:
+            background 0.2s ease,
+            border-color 0.2s ease;
+
+        i {
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        &:hover {
+            background: rgba(104, 95, 255, 0.12);
+            border-color: rgba(104, 95, 255, 0.7);
+        }
+
+        &--delete {
+            &:hover {
+                background: rgba(255, 80, 80, 0.12);
+                border-color: rgba(255, 80, 80, 0.5);
+                color: #ff5050;
+            }
+        }
+    }
+
+    &__name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--configure-models-dialog-active-color, #d9d9de);
+        word-break: break-word;
     }
 }
 

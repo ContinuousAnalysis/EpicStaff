@@ -12,11 +12,33 @@
         font-weight: 500;
     }
 
+    &__provider-selector {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1.25rem 1.25rem 0;
+    }
+
+    &__provider-label {
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+    }
+
+    &__provider-buttons {
+        display: flex;
+        gap: 0;
+
+        app-tab-button {
+            flex: 1;
+        }
+    }
+
     &__error-message {
         background-color: rgba(255, 77, 79, 0.1);
         color: var(--color-error, #ff4d4f);
         padding: 0.75rem;
         border-radius: 4px;
+
         p {
             margin: 0;
             font-size: 0.875rem;
@@ -28,7 +50,7 @@
         flex-direction: column;
         gap: 1rem;
         padding: 1.25rem;
-        max-height: 75vh;
+        max-height: 65vh;
         overflow-y: auto;
     }
 
