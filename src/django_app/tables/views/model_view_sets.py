@@ -39,6 +39,7 @@ from tables.graph_versioning.services import GraphVersioningService
 from tables.graph_versioning.serializers import (
     GraphVersionCreateSerializer,
     GraphVersionReadSerializer,
+    GraphVersionUpdateSerializer,
 )
 
 from tables.import_export.enums import EntityType
