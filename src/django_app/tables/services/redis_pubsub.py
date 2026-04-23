@@ -602,8 +602,13 @@ class RedisPubSub:
             logger.debug(f"[SchedulePubSub] Received: {message}")
             data = json.loads(message["data"])
             action = data.get("action")
-            node_id = data.get("node_id")
 
+            # node_update messages are Django→Manager; we see the echo of our
+            # own post_save publish and must skip it silently.
+            if action == "node_update":
+                return
+
+            node_id = data.get("node_id")
             if not node_id:
                 logger.warning("[SchedulePubSub] node_id missing in message")
                 return
@@ -641,25 +646,25 @@ class RedisPubSub:
             )
 
     def _handle_schedule_deactivate(self, node_id: int):
-        """
-        Deactivates a schedule node.
-
-        Input:  node_id — PK in table tables_scheduletriggernode
-        Process: UPDATE ... SET is_active=False WHERE id=node_id
-        Output: is_active field updated in DB; Manager stops scheduling.
+        """Flip is_active=False via .save() so post_save publishes node_update
+        back to Manager — keeping QuerySet.update() here would skip the signal
+        and leave Manager unaware via the standard update path.
         """
         try:
             from tables.models.graph_models import ScheduleTriggerNode
 
             close_old_connections()
-            updated = ScheduleTriggerNode.objects.filter(id=node_id).update(
-                is_active=False
-            )
-            if updated:
-                logger.info(f"[SchedulePubSub] Node {node_id} deactivated")
-            else:
+            node = ScheduleTriggerNode.objects.filter(id=node_id).first()
+            if node is None:
                 logger.warning(
                     f"[SchedulePubSub] Node {node_id} not found for deactivation"
                 )
+                return
+            if not node.is_active:
+                logger.info(f"[SchedulePubSub] Node {node_id} already inactive")
+                return
+            node.is_active = False
+            node.save(update_fields=["is_active", "updated_at"])
+            logger.info(f"[SchedulePubSub] Node {node_id} deactivated")
         except Exception as e:
             logger.error(f"[SchedulePubSub] Error deactivating node {node_id}: {e}")
