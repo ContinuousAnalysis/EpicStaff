@@ -1,13 +1,6 @@
 import { CommonModule } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    ChangeDetectorRef,
-    Component,
-    effect,
-    OnDestroy,
-    OnInit,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterModule } from '@angular/router';
 import { AppSvgIconComponent, PaginationControlsComponent } from '@shared/components';
 import { Subject, takeUntil } from 'rxjs';
@@ -54,7 +47,7 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                     Delete Selected ({{ selectedIds().size }})
                 </button>
                 <span [class.invisible]="selectedIds().size > 0" class="results-length">
-                    {{ totalCount }} Results
+                    {{ totalCount() }} Results
                 </span>
             </div>
             <div class="table-container">
@@ -76,11 +69,11 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                 ></app-flow-sessions-table>
             </div>
 
-            @if (isLoaded() && totalCount > pageSize()) {
+            @if (isLoaded() && totalCount() > pageSize()) {
                 <div class="pagination-container">
                     <app-pagination-controls
                         [pageSize]="pageSize()"
-                        [totalCount]="totalCount"
+                        [totalCount]="totalCount()"
                         [currentPage]="currentPage()"
                         [maxPagesToShow]="5"
                         (pageChange)="onPageChange($event)"
@@ -92,7 +85,7 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
     styleUrls: ['./global-sessions-list.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GlobalSessionsListComponent implements OnInit, OnDestroy {
+export class GlobalSessionsListComponent {
     public sessions = signal<GraphSessionLight[]>([]);
     public isLoaded = signal<boolean>(false);
     public currentPage = signal(1);
@@ -103,15 +96,15 @@ export class GlobalSessionsListComponent implements OnInit, OnDestroy {
     public isErrorCauseFilter = signal<boolean>(false);
     public selectedIds = signal<Set<number>>(new Set());
     public availableFlows = signal<GetGraphLightRequest[]>([]);
-    public totalCount = 0;
+    public totalCount = signal(0);
     private reloadTrigger = signal(0);
     private cancelLoad$ = new Subject<void>();
+    private destroyRef = inject(DestroyRef);
 
     constructor(
         private graphSessionService: GraphSessionService,
         private flowsApiService: FlowsApiService,
-        private router: Router,
-        private cdr: ChangeDetectorRef
+        private router: Router
     ) {
         effect(() => {
             const page = this.currentPage();
@@ -123,15 +116,15 @@ export class GlobalSessionsListComponent implements OnInit, OnDestroy {
             this.reloadTrigger();
             this.loadGlobalSessions(size, (page - 1) * size, status, sort, flowName, isErrorCause);
         });
-    }
 
-    public ngOnInit(): void {
-        this.flowsApiService.getGraphsLight().subscribe({
-            next: (flows) => {
-                this.availableFlows.set(flows);
-                this.cdr.markForCheck();
-            },
-        });
+        this.flowsApiService
+            .getGraphsLight()
+            .pipe(takeUntilDestroyed())
+            .subscribe({
+                next: (flows) => {
+                    this.availableFlows.set(flows);
+                },
+            });
     }
 
     public onPageChange(page: number): void {
@@ -171,43 +164,44 @@ export class GlobalSessionsListComponent implements OnInit, OnDestroy {
     }
 
     public onStopSession(sessionId: number): void {
-        this.graphSessionService.stopSessionById(sessionId).subscribe({
-            next: () => {
-                this.sessions.update((list) =>
-                    list.map((s) =>
-                        s.id === sessionId
-                            ? { ...s, status: GraphSessionStatus.STOP, finished_at: new Date().toISOString() }
-                            : s
-                    )
-                );
-                this.cdr.markForCheck();
-            },
-            error: (err) => {
-                console.error('Failed to stop session', err);
-            },
-        });
+        this.graphSessionService
+            .stopSessionById(sessionId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.sessions.update((list) =>
+                        list.map((s) =>
+                            s.id === sessionId
+                                ? { ...s, status: GraphSessionStatus.STOP, finished_at: new Date().toISOString() }
+                                : s
+                        )
+                    );
+                },
+                error: (err) => {
+                    console.error('Failed to stop session', err);
+                },
+            });
     }
 
     public onDeleteSelected(ids: number[]): void {
         if (ids.length === 0) return;
 
-        this.graphSessionService.bulkDeleteSessions(ids).subscribe({
-            next: () => {
-                const remaining = this.sessions().filter((s) => !ids.includes(s.id));
-                if (remaining.length === 0 && this.currentPage() > 1) {
-                    this.currentPage.set(this.currentPage() - 1);
-                } else {
-                    this.reloadTrigger.update((val) => val + 1);
-                }
-            },
-            error: (err) => {
-                console.error('Failed to delete sessions', err);
-            },
-        });
-    }
-
-    public ngOnDestroy(): void {
-        this.cancelLoad$.complete();
+        this.graphSessionService
+            .bulkDeleteSessions(ids)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    const remaining = this.sessions().filter((s) => !ids.includes(s.id));
+                    if (remaining.length === 0 && this.currentPage() > 1) {
+                        this.currentPage.set(this.currentPage() - 1);
+                    } else {
+                        this.reloadTrigger.update((val) => val + 1);
+                    }
+                },
+                error: (err) => {
+                    console.error('Failed to delete sessions', err);
+                },
+            });
     }
 
     private loadGlobalSessions(
@@ -223,15 +217,15 @@ export class GlobalSessionsListComponent implements OnInit, OnDestroy {
         const ordering = sort === 'asc' ? 'created_at' : '-created_at';
         this.graphSessionService
             .getGlobalSessions(limit, offset, status, ordering, graphName, isErrorCause)
-            .pipe(takeUntil(this.cancelLoad$))
+            .pipe(takeUntil(this.cancelLoad$), takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {
                     this.sessions.set(response.results);
-                    this.totalCount = response.count;
+                    this.totalCount.set(response.count);
                     this.isLoaded.set(true);
                 },
                 error: () => {
-                    this.totalCount = 0;
+                    this.totalCount.set(0);
                     this.sessions.set([]);
                     this.isLoaded.set(true);
                     this.pageSize.set(10);
