@@ -1,4 +1,5 @@
 import { computed, Injectable, Signal, signal } from '@angular/core';
+import { Observable, Subject } from 'rxjs';
 
 import { NodeModel } from '../core/models/node.model';
 import { FlowService } from './flow.service';
@@ -12,6 +13,12 @@ export class SidePanelService {
 
     private readonly expandRequestSignal = signal<boolean>(false);
     public readonly expandRequest: Signal<boolean> = this.expandRequestSignal.asReadonly();
+
+    private readonly saveNodeRequestSubject = new Subject<NodeModel>();
+    public readonly saveNodeRequest$: Observable<NodeModel> = this.saveNodeRequestSubject.asObservable();
+
+    private readonly savingNodeIdSignal = signal<string | null>(null);
+    public readonly savingNodeId: Signal<string | null> = this.savingNodeIdSignal.asReadonly();
 
     public readonly selectedNodeId: Signal<string | null> = this.selectedNodeIdSignal.asReadonly();
 
@@ -73,5 +80,17 @@ export class SidePanelService {
 
     public clearAutosaveTrigger(): void {
         this.autosaveTriggerSignal.set(false);
+    }
+
+    public requestSaveNode(node: NodeModel): void {
+        this.saveNodeRequestSubject.next(node);
+    }
+
+    public markNodeSaving(nodeId: string): void {
+        this.savingNodeIdSignal.set(nodeId);
+    }
+
+    public clearNodeSaving(): void {
+        this.savingNodeIdSignal.set(null);
     }
 }

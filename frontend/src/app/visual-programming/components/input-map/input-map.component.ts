@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, Input, OnInit, Output, signal } from '@angular/core';
+import { Component, inject, Input, OnInit, Output } from '@angular/core';
 import { EventEmitter } from '@angular/core';
+import { signal } from '@angular/core';
 import {
     AbstractControl,
     ControlContainer,
@@ -17,11 +18,6 @@ import { ToggleSwitchComponent } from '../../../shared/components/form-controls/
 import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
 import { PythonCodeRunService } from '../../services/python-code-run.service';
 import { SidePanelService } from '../../services/side-panel.service';
-
-interface TestVariable {
-    key: string;
-    value: string;
-}
 
 @Component({
     selector: 'app-input-map',
@@ -88,16 +84,15 @@ interface TestVariable {
                     <app-svg-icon icon="plus" size="16px"></app-svg-icon> Add Input
                 </button>
             } @else {
-                <!-- Test mode: editable test variables -->
-                <div class="input-map-list">
-                    @for (item of testValues(); let i = $index; track i) {
-                        <div class="input-map-item">
+                <!-- Test mode: editable test variables backed by parent form 'test_input' FormArray -->
+                <div formArrayName="test_input" class="input-map-list">
+                    @for (pair of testPairs.controls; let i = $index; track pair) {
+                        <div class="input-map-item" [formGroupName]="i">
                             <div class="input-map-fields">
                                 <div class="input-wrapper">
                                     <input
                                         type="text"
-                                        [value]="item.key"
-                                        (input)="onTestKeyChange(i, $any($event.target).value)"
+                                        formControlName="key"
                                         placeholder="Function Argument Name"
                                         [style.--active-color]="activeColor"
                                         autocomplete="off"
@@ -107,14 +102,18 @@ interface TestVariable {
                                 <div class="input-wrapper">
                                     <input
                                         type="text"
-                                        [value]="item.value"
-                                        (input)="onTestValueChange(i, $any($event.target).value)"
+                                        formControlName="value"
                                         placeholder="Test value"
                                         [style.--active-color]="activeColor"
                                         autocomplete="off"
                                     />
                                 </div>
-                                <i class="ti ti-trash delete-icon" (click)="removeTestVariable(i)"></i>
+                                <app-svg-icon
+                                    icon="trash"
+                                    size="1rem"
+                                    class="delete-icon"
+                                    (click)="removeTestVariable(i)"
+                                ></app-svg-icon>
                             </div>
                         </div>
                     }
@@ -209,7 +208,6 @@ interface TestVariable {
                 flex: 1;
                 min-width: 0;
             }
-
             .equals-sign {
                 color: #fff;
                 font-weight: 500;
@@ -331,56 +329,6 @@ interface TestVariable {
                     cursor: not-allowed;
                 }
             }
-
-            .test-mode-actions {
-                display: flex;
-                gap: 0.5rem;
-                width: 100%;
-                margin-top: 0.75rem;
-            }
-
-            .btn-secondary,
-            .btn-primary {
-                flex: 1;
-                padding: 8px 12px;
-                border: 1px solid var(--color-divider-subtle);
-                border-radius: 4px;
-                font-size: 0.875rem;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                text-align: center;
-            }
-
-            .btn-secondary {
-                background: var(--color-action-btn-background);
-                color: var(--color-text-primary);
-
-                &:hover:not(:disabled) {
-                    background: var(--color-action-btn-background-hover);
-                }
-
-                &:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-            }
-
-            .btn-primary {
-                background: #685fff;
-                color: white;
-                border-color: #685fff;
-
-                &:hover:not(:disabled) {
-                    background: #5a4ade;
-                    border-color: #5a4ade;
-                }
-
-                &:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-            }
         `,
     ],
 })
@@ -391,10 +339,8 @@ export class InputMapComponent implements OnInit {
     @Output() testModeChange = new EventEmitter<boolean>();
     @Output() runTest = new EventEmitter<Record<string, string>>();
 
-    showTestInputs = signal(false);
-    testValues = signal<TestVariable[]>([]);
     fillLoading = signal(false);
-    private normalModeSnapshot = signal<{ key: string; value: string }[]>([]);
+    private normalModeSnapshot: { key: string; value: string }[] = [];
 
     private readonly pythonCodeRunService = inject(PythonCodeRunService);
 
@@ -424,6 +370,10 @@ export class InputMapComponent implements OnInit {
         return this.parentForm.get('input_map') as FormArray;
     }
 
+    get testPairs(): FormArray {
+        return this.parentForm.get('test_input') as FormArray;
+    }
+
     addPair() {
         this.pairs.push(
             this.fb.group({
@@ -444,10 +394,8 @@ export class InputMapComponent implements OnInit {
         const keyboardEvent = event as KeyboardEvent;
         keyboardEvent.preventDefault();
 
-        // Add a new pair after the current one
         this.addPair();
 
-        // Focus on the key input of the newly added pair
         setTimeout(() => {
             const newIndex = currentIndex + 1;
             const newPairElement = document.querySelector(
@@ -461,23 +409,28 @@ export class InputMapComponent implements OnInit {
 
     onTestModeToggle(value: boolean): void {
         if (value) {
-            const snapshot = this.pairs.controls.map((c) => ({
+            this.normalModeSnapshot = this.pairs.controls.map((c) => ({
                 key: c.value.key as string,
                 value: c.value.value as string,
             }));
-            this.normalModeSnapshot.set(snapshot);
 
-            const testVars = snapshot
+            this.testPairs.clear({ emitEvent: false });
+            this.normalModeSnapshot
                 .filter((item) => item.key?.trim() !== '')
-                .map((item) => ({ key: item.key, value: '' }));
-            this.testValues.set(testVars);
-            this.showTestInputs.set(true);
+                .forEach((item) => {
+                    this.testPairs.push(
+                        this.fb.group({
+                            key: [item.key],
+                            value: [''],
+                        }),
+                        { emitEvent: false }
+                    );
+                });
+            this.testPairs.markAsPristine();
         } else {
             const changed = this.syncTestKeysToNormalMode();
-            // ВАЖНО: сигналы очищаем ПОСЛЕ sync — иначе diff-логика потеряет snapshot.
-            this.showTestInputs.set(false);
-            this.testValues.set([]);
-            this.normalModeSnapshot.set([]);
+            this.testPairs.clear({ emitEvent: false });
+            this.normalModeSnapshot = [];
             if (changed) {
                 this.sidePanelService.triggerAutosave();
             }
@@ -487,15 +440,17 @@ export class InputMapComponent implements OnInit {
     }
 
     canRunTest(): boolean {
-        const validTestVars = this.testValues().filter((item) => item.key?.trim() !== '');
+        const validTestVars = this.testPairs.controls.filter((c) => (c.value.key as string)?.trim() !== '');
         if (validTestVars.length === 0) {
             return true;
         }
-        return validTestVars.every((item) => item.value?.trim() !== '');
+        return validTestVars.every((c) => (c.value.value as string)?.trim() !== '');
     }
 
     onRunTest(): void {
-        const inputs = Object.fromEntries(this.testValues().map((item) => [item.key, item.value]));
+        const inputs = Object.fromEntries(
+            this.testPairs.controls.map((c) => [c.value.key as string, c.value.value as string])
+        );
         this.runTest.emit(inputs);
     }
 
@@ -507,45 +462,51 @@ export class InputMapComponent implements OnInit {
             .pipe(finalize(() => this.fillLoading.set(false)))
             .subscribe({
                 next: ({ input }) => {
-                    const current = [...this.testValues()];
                     for (const [key, value] of Object.entries(input)) {
-                        const existing = current.find((v) => v.key === key);
+                        const existing = this.testPairs.controls.find((c) => c.value.key === key);
                         if (existing) {
-                            if (!existing.value) {
-                                existing.value = String(value);
+                            if (!existing.value.value) {
+                                existing.get('value')?.setValue(String(value));
                             }
                         } else {
-                            current.push({ key, value: String(value) });
+                            this.testPairs.push(
+                                this.fb.group({
+                                    key: [key],
+                                    value: [String(value)],
+                                })
+                            );
                         }
                     }
-                    this.testValues.set(current);
+                    this.testPairs.markAsDirty();
                 },
             });
     }
 
     onClearAll(): void {
-        this.testValues.update((vars) => vars.map((v) => ({ ...v, value: '' })));
+        this.testPairs.controls.forEach((c) => c.get('value')?.setValue(''));
+        this.testPairs.markAsDirty();
     }
 
     addTestVariable(): void {
-        this.testValues.update((vars) => [...vars, { key: '', value: '' }]);
+        this.testPairs.push(
+            this.fb.group({
+                key: [''],
+                value: [''],
+            })
+        );
     }
 
     removeTestVariable(index: number): void {
-        this.testValues.update((vars) => vars.filter((_, i) => i !== index));
-    }
-
-    onTestKeyChange(index: number, newKey: string): void {
-        this.testValues.update((vars) => vars.map((v, i) => (i === index ? { ...v, key: newKey } : v)));
-    }
-
-    onTestValueChange(index: number, newValue: string): void {
-        this.testValues.update((vars) => vars.map((v, i) => (i === index ? { ...v, value: newValue } : v)));
+        this.testPairs.removeAt(index);
+        this.testPairs.markAsDirty();
     }
 
     private syncTestKeysToNormalMode(): boolean {
-        const snapshot = this.normalModeSnapshot();
-        const testValues = this.testValues();
+        const snapshot = this.normalModeSnapshot;
+        const testValues = this.testPairs.controls.map((c) => ({
+            key: (c.value.key as string) ?? '',
+            value: (c.value.value as string) ?? '',
+        }));
 
         if (snapshot.length === 0 && testValues.length === 0) {
             return false;
@@ -583,7 +544,6 @@ export class InputMapComponent implements OnInit {
             changed = true;
         }
 
-        // UX: always keep at least one (possibly empty) row visible.
         if (this.pairs.length === 0) {
             this.addPair();
         }

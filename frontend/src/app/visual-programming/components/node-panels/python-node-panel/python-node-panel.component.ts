@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, input, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -143,13 +143,58 @@ interface InputMapPair {
                     </div>
                 </form>
             </div>
+
+            @if (isDirty()) {
+                <button
+                    type="button"
+                    class="save-node-btn"
+                    [disabled]="form.invalid || isSaving()"
+                    [style.border-color]="activeColor"
+                    [style.color]="activeColor"
+                    (click)="onSaveClick()"
+                >
+                    <app-svg-icon icon="floppy" size="1.25rem" />
+                    {{ isSaving() ? 'Saving…' : 'Save' }}
+                </button>
+            }
         </div>
     `,
     styles: [
         `
             @use '../../../styles/node-panel-mixins.scss' as mixins;
 
+            .save-node-btn {
+                position: absolute;
+                right: 1rem;
+                bottom: 1rem;
+                z-index: 20;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 0 0.75rem;
+                height: 36px;
+                border-radius: 6px;
+                background-color: #1a1a1a;
+                border: 1px solid transparent;
+                font-size: 14px;
+                font-weight: 400;
+                cursor: pointer;
+                transition: all 0.2s ease-in-out;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+
+                &:hover:not(:disabled) {
+                    background-color: #262626;
+                }
+
+                &:disabled {
+                    cursor: not-allowed;
+                    opacity: 0.7;
+                }
+            }
+
             .panel-container {
+                position: relative;
                 display: flex;
                 flex-direction: column;
                 height: 100%;
@@ -379,6 +424,14 @@ interface InputMapPair {
                     cursor: pointer;
                 }
             }
+
+            .panel-header {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                padding: 0 0 0.75rem 0;
+                flex-shrink: 0;
+            }
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -396,9 +449,20 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
     pythonCode: string = '';
     initialPythonCode: string = '';
+    private initialFormValue: string = '';
     codeEditorHasError: boolean = false;
     private readonly pythonCodeChange$ = new Subject<string>();
     private readonly destroyRef = inject(DestroyRef);
+
+    private readonly formDirtyTick = signal(0);
+    public readonly isDirty = computed(() => {
+        this.formDirtyTick();
+        if (!this.form) return false;
+        const currentFormValue = JSON.stringify(this.form.getRawValue());
+        return currentFormValue !== this.initialFormValue || this.pythonCode !== this.initialPythonCode;
+    });
+    public readonly isSaving = computed(() => this.sidePanelService.savingNodeId() === this.node().id);
+    private wasSaving = false;
 
     constructor(
         private readonly sidePanelService: SidePanelService,
@@ -414,6 +478,21 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
                 this.isCodeEditorFullWidth.set(false);
             }
         });
+        effect(() => {
+            const saving = this.isSaving();
+            if (this.wasSaving && !saving) {
+                this.resetDirtyAfterSave();
+            }
+            this.wasSaving = saving;
+        });
+    }
+
+    private resetDirtyAfterSave(): void {
+        if (!this.form) return;
+        this.form.markAsPristine();
+        this.initialPythonCode = this.pythonCode;
+        this.initialFormValue = JSON.stringify(this.form.getRawValue());
+        this.formDirtyTick.update((v) => v + 1);
     }
 
     get activeColor(): string {
@@ -427,6 +506,13 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     onPythonCodeChange(code: string): void {
         this.pythonCode = code;
         this.pythonCodeChange$.next(code);
+        this.formDirtyTick.update((v) => v + 1);
+    }
+
+    onSaveClick(): void {
+        if (!this.form || this.form.invalid || this.isSaving()) return;
+        const updatedNode = this.createUpdatedNode();
+        this.sidePanelService.requestSaveNode(updatedNode);
     }
 
     onCodeErrorChange(hasError: boolean): void {
@@ -444,12 +530,19 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             stream_config: this.fb.group({
                 execution_status: [sc?.['execution_status'] ?? true],
             }),
+            test_input: this.fb.array([]),
         });
 
         this.initializeInputMap(form);
+        this.initializeTestInput(form);
 
         this.pythonCode = this.node().data.code || '';
         this.initialPythonCode = this.pythonCode;
+        this.initialFormValue = JSON.stringify(form.getRawValue());
+
+        form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formDirtyTick.update((v) => v + 1);
+        });
 
         return form;
     }
@@ -472,13 +565,40 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             output_variable_path: this.form.value.output_variable_path || null,
             data: {
                 ...this.node().data,
-                name: this.node().data.name || 'Python Code',
+                name: this.form.value.node_name || 'Python Code',
                 code: this.pythonCode,
                 entrypoint: 'main',
                 libraries: librariesArray,
             },
             stream_config: this.form.value.stream_config || {},
+            test_input: this.getTestInputValue(),
         };
+    }
+
+    private getTestInputValue(): Record<string, string> {
+        const testArray = this.form.get('test_input') as FormArray;
+        return testArray.controls.reduce((acc: Record<string, string>, c) => {
+            const key = (c.value.key as string)?.trim();
+            if (key) {
+                acc[key] = (c.value.value as string) ?? '';
+            }
+            return acc;
+        }, {});
+    }
+
+    private initializeTestInput(form: FormGroup): void {
+        const testArray = form.get('test_input') as FormArray;
+        const data = this.node().test_input;
+        if (data && typeof data === 'object') {
+            Object.entries(data).forEach(([key, value]) => {
+                testArray.push(
+                    this.fb.group({
+                        key: [key],
+                        value: [String(value ?? '')],
+                    })
+                );
+            });
+        }
     }
 
     private initializeInputMap(form: FormGroup): void {
@@ -564,7 +684,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
         );
 
         const payload: RunPythonCodeRequest = {
-            python_code_id: this.node().data.id ?? null,
+            python_code_id: this.node().python_code_id ?? null,
             code: this.pythonCode,
             entrypoint: 'main',
             libraries,
