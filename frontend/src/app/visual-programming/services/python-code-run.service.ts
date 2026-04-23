@@ -66,7 +66,7 @@ export class PythonCodeRunService {
 
     getLastTestInput(pythonNodeId: number): Observable<{ detail: string; input: Record<string, string> }> {
         return this.http.get<{ detail: string; input: Record<string, string> }>(
-            `${this.apiUrl}pythonnodes/${pythonNodeId}/last-test-input/`
+            `${this.apiUrl}pythonnodes/${pythonNodeId}/last-session-input/`
         );
     }
 

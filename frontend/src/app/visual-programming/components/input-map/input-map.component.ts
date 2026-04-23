@@ -414,22 +414,41 @@ export class InputMapComponent implements OnInit {
                 value: c.value.value as string,
             }));
 
+            const existingTestValues = new Map<string, string>();
+            this.testPairs.controls.forEach((c) => {
+                const key = (c.value.key as string)?.trim();
+                if (key) {
+                    existingTestValues.set(key, (c.value.value as string) ?? '');
+                }
+            });
+
+            const snapshotKeySet = new Set(
+                this.normalModeSnapshot.map((item) => item.key?.trim()).filter((k): k is string => !!k)
+            );
+
             this.testPairs.clear({ emitEvent: false });
             this.normalModeSnapshot
                 .filter((item) => item.key?.trim() !== '')
                 .forEach((item) => {
+                    const preserved = existingTestValues.get(item.key);
                     this.testPairs.push(
                         this.fb.group({
                             key: [item.key],
-                            value: [''],
+                            value: [preserved ?? ''],
                         }),
                         { emitEvent: false }
                     );
                 });
+
+            existingTestValues.forEach((value, key) => {
+                if (!snapshotKeySet.has(key)) {
+                    this.testPairs.push(this.fb.group({ key: [key], value: [value] }), { emitEvent: false });
+                }
+            });
+
             this.testPairs.markAsPristine();
         } else {
             const changed = this.syncTestKeysToNormalMode();
-            this.testPairs.clear({ emitEvent: false });
             this.normalModeSnapshot = [];
             if (changed) {
                 this.sidePanelService.triggerAutosave();
