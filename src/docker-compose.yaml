@@ -7,6 +7,7 @@ x-common-env: &common_env
   SESSION_EVENT_CHANNEL: session:event
   SESSION_STATUS_CHANNEL: sessions:session_status
   MEMORY_UPDATE_CHANNEL: memory:update
+  SCHEDULE_CHANNEL: schedule_channel
   REDIS_HOST: ${REDIS_HOST:-redis}
   REDIS_PORT: ${REDIS_PORT:-6379}
   REDIS_PASSWORD: ${REDIS_PASSWORD:-}

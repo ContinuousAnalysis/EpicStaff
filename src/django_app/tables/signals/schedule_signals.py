@@ -3,6 +3,8 @@ import json
 from loguru import logger
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+
+from django_app.settings import SCHEDULE_CHANNEL
 from tables.models.graph_models import ScheduleTriggerNode
 from tables.services.redis_service import RedisService
 
@@ -52,7 +54,7 @@ def schedule_trigger_post_save_handler(
                 "node": _flat_schedule_payload(instance),
             },
         }
-        redis_service.redis_client.publish("schedule_channel", json.dumps(payload))
+        redis_service.redis_client.publish(SCHEDULE_CHANNEL, json.dumps(payload))
         logger.info(f"[ScheduleSignal] Published '{action}' for node ID: {node_id}")
     except Exception:
         logger.exception(
@@ -77,7 +79,7 @@ def schedule_trigger_post_delete_handler(
                 "node": {"id": node_id},
             },
         }
-        redis_service.redis_client.publish("schedule_channel", json.dumps(payload))
+        redis_service.redis_client.publish(SCHEDULE_CHANNEL, json.dumps(payload))
         logger.info(f"[ScheduleSignal] Published 'delete' for node ID: {node_id}")
     except Exception:
         logger.exception(

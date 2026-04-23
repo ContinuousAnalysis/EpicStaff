@@ -258,6 +258,7 @@ GRAPH_MESSAGE_UPDATE_CHANNEL = os.environ.get(
 )
 WEBHOOK_MESSAGE_CHANNEL = os.environ.get("WEBHOOK_MESSAGE_CHANNEL", "webhooks")
 TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
+SCHEDULE_CHANNEL = os.environ.get("SCHEDULE_CHANNEL", "schedule_channel")
 
 
 WEBHOOK_HOST_NAME = os.getenv("WEBHOOK_HOST_NAME", "localhost")

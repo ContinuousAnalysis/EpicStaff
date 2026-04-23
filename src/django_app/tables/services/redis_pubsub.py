@@ -20,6 +20,7 @@ from django_app.settings import (
     CODE_RESULT_CHANNEL,
     GRAPH_MESSAGE_UPDATE_CHANNEL,
     GRAPH_MESSAGES_CHANNEL,
+    SCHEDULE_CHANNEL,
     SESSION_STATUS_CHANNEL,
     TELEGRAM_TRIGGER_PREFIX,
     WEBHOOK_MESSAGE_CHANNEL,
@@ -336,7 +337,7 @@ class RedisPubSub:
         self.set_handler(
             REQUEST_WEBHOOK_UPDATE_CHANNEL, self.request_webhook_update_handler
         )
-        self.set_handler("schedule_channel", self.schedule_channel_handler)
+        self.set_handler(SCHEDULE_CHANNEL, self.schedule_channel_handler)
         self.subscribe_to_channels()
 
         while True:
@@ -635,7 +636,9 @@ class RedisPubSub:
             ScheduleTriggerService().handle_schedule_trigger(node_id)
             logger.info(f"[SchedulePubSub] run_session completed for node {node_id}")
         except Exception as e:
-            logger.error(f"[SchedulePubSub] Error in run_session for node {node_id}: {e}")
+            logger.error(
+                f"[SchedulePubSub] Error in run_session for node {node_id}: {e}"
+            )
 
     def _handle_schedule_deactivate(self, node_id: int):
         """
@@ -649,10 +652,14 @@ class RedisPubSub:
             from tables.models.graph_models import ScheduleTriggerNode
 
             close_old_connections()
-            updated = ScheduleTriggerNode.objects.filter(id=node_id).update(is_active=False)
+            updated = ScheduleTriggerNode.objects.filter(id=node_id).update(
+                is_active=False
+            )
             if updated:
                 logger.info(f"[SchedulePubSub] Node {node_id} deactivated")
             else:
-                logger.warning(f"[SchedulePubSub] Node {node_id} not found for deactivation")
+                logger.warning(
+                    f"[SchedulePubSub] Node {node_id} not found for deactivation"
+                )
         except Exception as e:
             logger.error(f"[SchedulePubSub] Error deactivating node {node_id}: {e}")

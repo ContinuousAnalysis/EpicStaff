@@ -43,12 +43,12 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
                 return
 
             if (
-                node.end_type == "on_date"
+                node.end_type == ScheduleTriggerNode.EndType.ON_DATE
                 and node.end_date_time
                 and node.end_date_time <= now
             ):
                 RedisService().redis_client.publish(
-                    "schedule_channel",
+                    SCHEDULE_CHANNEL,
                     json.dumps({"action": "deactivate", "node_id": node.pk}),
                 )
                 logger.info(
@@ -59,7 +59,7 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
                 return
 
             if (
-                node.end_type == "after_n_runs"
+                node.end_type == ScheduleTriggerNode.EndType.AFTER_N_RUNS
                 and node.max_runs is not None
                 and node.current_runs >= node.max_runs
             ):
@@ -85,12 +85,12 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
 
             node.refresh_from_db()
             if (
-                node.end_type == "after_n_runs"
+                node.end_type == ScheduleTriggerNode.EndType.AFTER_N_RUNS
                 and node.max_runs is not None
                 and node.current_runs >= node.max_runs
             ):
                 RedisService().redis_client.publish(
-                    "schedule_channel",
+                    SCHEDULE_CHANNEL,
                     json.dumps({"action": "deactivate", "node_id": node.pk}),
                 )
                 logger.info(
