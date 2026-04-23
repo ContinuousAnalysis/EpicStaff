@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -11,11 +11,10 @@ import {
     ValidationErrorsComponent,
 } from '@shared/components';
 import { notNumericOnlyValidator, strictEmailValidator } from '@shared/form-validators';
-import { applyApiErrors } from '@shared/utils';
+import { ApiErrorItem } from '@shared/models';
 import { forkJoin, timer } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
-import { ToastService } from '../../../../services/notifications';
 
 type PageState = 'form' | 'loading' | 'success';
 
@@ -33,11 +32,11 @@ type PageState = 'form' | 'loading' | 'success';
     ],
     templateUrl: './sign-up-page.component.html',
     styleUrls: ['../login-page/login-page.component.scss', './sign-up-page.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SignUpPageComponent {
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
-    private readonly toast = inject(ToastService);
 
     termsControl = new FormControl(false);
 
@@ -45,17 +44,24 @@ export class SignUpPageComponent {
         email: new FormControl('', { nonNullable: true, validators: [Validators.required, strictEmailValidator()] }),
         password: new FormControl('', {
             nonNullable: true,
-            validators: [Validators.required, Validators.minLength(8), notNumericOnlyValidator()],
+            validators: [
+                Validators.required,
+                Validators.minLength(8),
+                Validators.maxLength(40),
+                notNumericOnlyValidator(),
+            ],
         }),
     });
 
     state = signal<PageState>('form');
+    fieldErrors = signal<Record<string, string>>({});
 
     get password(): string {
         return this.form.get('password')!.value;
     }
 
     onSubmit(): void {
+        this.fieldErrors.set({});
         this.form.markAllAsTouched();
         if (this.form.invalid) return;
 
@@ -71,11 +77,15 @@ export class SignUpPageComponent {
                 });
             },
             error: (err) => {
-                this.toast.error(err.error.message);
                 this.state.set('form');
-                setTimeout(() => applyApiErrors(this.form, err?.error.errors));
+                const errors: ApiErrorItem[] = err?.error?.errors ?? [];
+                this.setApiErrors(errors);
             },
         });
+    }
+
+    private setApiErrors(errors: ApiErrorItem[]): void {
+        this.fieldErrors.set(Object.fromEntries(errors.map(({ field, reason }) => [field, reason])));
     }
 
     navToLogin(): void {

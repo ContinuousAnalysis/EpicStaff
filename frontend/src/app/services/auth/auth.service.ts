@@ -85,23 +85,23 @@ export class AuthService {
         const refresh = this.getRefreshToken();
         if (!refresh) return of(null);
 
-        this.refreshInProgress$ = this.http
-            .post<{ access: string; refresh?: string }>(`${this.baseUrl}refresh/`, {
-                refresh,
-            })
-            .pipe(
-                tap((resp) => {
-                    this.setCookie(this.accessKey, resp.access, this.getTokenExpiry(resp.access));
-                    if (resp.refresh) {
-                        this.setCookie(this.refreshKey, resp.refresh, this.getTokenExpiry(resp.refresh));
-                    }
-                }),
-                map((resp) => resp.access),
-                finalize(() => {
-                    this.refreshInProgress$ = null;
-                }),
-                shareReplay(1)
-            );
+        this.refreshInProgress$ = this.http.post<TokenPair>(`${this.baseUrl}refresh/`, { refresh }).pipe(
+            tap((resp) => {
+                this.setCookie(this.accessKey, resp.access, this.getTokenExpiry(resp.access));
+                if (resp.refresh) {
+                    this.setCookie(this.refreshKey, resp.refresh, this.getTokenExpiry(resp.refresh));
+                }
+            }),
+            map((resp) => resp.access),
+            catchError((err) => {
+                this.removeTokensAndNavToLogin();
+                return throwError(() => err);
+            }),
+            finalize(() => {
+                this.refreshInProgress$ = null;
+            }),
+            shareReplay(1)
+        );
 
         return this.refreshInProgress$;
     }

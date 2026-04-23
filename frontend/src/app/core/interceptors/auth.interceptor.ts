@@ -7,7 +7,7 @@ import { AuthService } from '../../services/auth/auth.service';
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
     const authService = inject(AuthService);
 
-    const isAuthEndpoint = req.url.includes('/auth/token/') || req.url.includes('/auth/token/refresh/');
+    const isAuthEndpoint = req.url.includes('/auth/login/') || req.url.includes('/auth/refresh/');
 
     const access = authService.getAccessToken();
     const authReq = access && !isAuthEndpoint ? req.clone({ setHeaders: { Authorization: `Bearer ${access}` } }) : req;
@@ -29,11 +29,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
                     });
                     return next(retryReq);
                 }),
-                catchError(() => {
-                    authService.removeTokensAndNavToLogin();
-
-                    return throwError(() => err);
-                })
+                catchError(() => throwError(() => err))
             );
         })
     );

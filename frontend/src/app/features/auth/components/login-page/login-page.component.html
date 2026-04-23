@@ -41,16 +41,20 @@
             </div>
         </form>
 
-        @if (serverError()) {
+        @if (serverError() || throttleSecondsLeft() > 0) {
             <div class="server-error">
-                {{ serverError() }}
+                @if (throttleSecondsLeft() > 0) {
+                    Too many login attempts. Please try again in {{ throttleSecondsLeft() }}s.
+                } @else {
+                    {{ serverError() }}
+                }
             </div>
         }
 
         <app-button
             class="btn"
             (click)="onSubmit()"
-            [disabled]="loading || form.invalid"
+            [disabled]="loading || form.invalid || throttleSecondsLeft() > 0"
         >
             Login
         </app-button>
