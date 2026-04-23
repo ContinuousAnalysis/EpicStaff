@@ -869,30 +869,6 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
         refreshed = self.get_queryset().get(pk=pk)
         return Response(GraphSerializer(refreshed).data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=["post"], url_path="save-version")
-    def save_version(self, request, pk=None):
-        graph = self.get_object()
-        serializer = GraphVersionCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        version = GraphVersioningService().save_version(
-            graph=graph,
-            name=serializer.validated_data["name"],
-            description=serializer.validated_data.get("description", ""),
-        )
-
-        return Response(
-            GraphVersionReadSerializer(version).data,
-            status=status.HTTP_201_CREATED,
-        )
-
-    @action(detail=True, methods=["get"], url_path="versions")
-    def list_versions(self, request, pk=None):
-        graph = self.get_object()
-        versions = GraphVersioningService().list_versions(graph)
-        serializer = GraphVersionReadSerializer(versions, many=True)
-        return Response(serializer.data)
-
 
 class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GraphLightSerializer
