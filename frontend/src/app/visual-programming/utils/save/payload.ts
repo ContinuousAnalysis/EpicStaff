@@ -132,6 +132,7 @@ export function buildBulkSavePayload(
             input_map: n.input_map || {},
             output_variable_path: n.output_variable_path || null,
             stream_config: n.stream_config ?? {},
+            test_input: n.test_input ?? {},
             metadata: toNodeMetadata(n),
         })),
         llm_node_list: nodeItems(nodeDiff.llmNodes, (n) => ({

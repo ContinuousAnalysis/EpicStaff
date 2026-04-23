@@ -6,6 +6,7 @@ export interface PythonNode {
     graph: number;
     python_code: GetPythonCodeRequest;
     input_map: Record<string, unknown>;
+    test_input: Record<string, string | number | boolean>;
     output_variable_path: string | null;
     stream_config?: Record<string, boolean>;
     metadata: Record<string, unknown>;
