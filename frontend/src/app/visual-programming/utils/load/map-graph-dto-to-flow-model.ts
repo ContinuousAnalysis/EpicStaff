@@ -13,6 +13,7 @@ import { mapFileExtractorNodeToModel } from './nodes/file-extractor-node.mapper'
 import { mapGraphNoteToModel } from './nodes/graph-note.mapper';
 import { mapLLMNodeToModel } from './nodes/llm-node.mapper';
 import { mapPythonNodeToModel } from './nodes/python-node.mapper';
+import { mapScheduleTriggerNodeToModel } from './nodes/schedule-trigger-node.mapper';
 import { mapStartNodeToModel } from './nodes/start-node.mapper';
 import { mapSubGraphNodeToModel } from './nodes/subgraph-node.mapper';
 import { mapTelegramTriggerNodeToModel } from './nodes/telegram-trigger-node.mapper';
@@ -44,6 +45,7 @@ export function mapGraphDtoToFlowModel(graph: GraphDto): FlowModel {
     const noteNodes = (graph.graph_note_list ?? []).map((n) => mapGraphNoteToModel(n));
     const webhookTriggerNodes = (graph.webhook_trigger_node_list ?? []).map((n) => mapWebhookTriggerNodeToModel(n));
     const telegramTriggerNodes = (graph.telegram_trigger_node_list ?? []).map((n) => mapTelegramTriggerNodeToModel(n));
+    const scheduleTriggerNodes = (graph.schedule_trigger_node_list ?? []).map((n) => mapScheduleTriggerNodeToModel(n));
     const endNodes = (graph.end_node_list ?? []).map((n) => mapEndNodeToModel(n));
     const codeAgentNodes = (graph.code_agent_node_list ?? []).map((n) => mapCodeAgentNodeToModel(n));
     const decisionTableNodes = (graph.decision_table_node_list ?? []).map((n) => mapDecisionTableNodeToModel(n));
@@ -60,6 +62,7 @@ export function mapGraphDtoToFlowModel(graph: GraphDto): FlowModel {
         ...noteNodes,
         ...webhookTriggerNodes,
         ...telegramTriggerNodes,
+        ...scheduleTriggerNodes,
         ...endNodes,
         ...codeAgentNodes,
         ...decisionTableNodes,
