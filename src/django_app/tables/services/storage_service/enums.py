@@ -3,6 +3,7 @@ from enum import Enum
 
 class StorageAction(str, Enum):
     LIST = "list_"
+    LIST_TREE = "list_tree"
     UPLOAD = "upload"
     DOWNLOAD = "download"
     DELETE = "delete"

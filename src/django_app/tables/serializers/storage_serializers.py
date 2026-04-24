@@ -284,3 +284,33 @@ class StorageGraphFilesQuerySerializer(serializers.Serializer):
         required=True,
         help_text="Graph ID to list attached files for",
     )
+
+
+class StorageTreeQuerySerializer(serializers.Serializer):
+    path = serializers.CharField(required=False, default="")
+    max_depth = serializers.IntegerField(
+        required=False, min_value=1, allow_null=True, default=None
+    )
+
+    def validate_path(self, value: str) -> str:
+        return _normalize_path(value)
+
+
+class TreeNodeSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    path = serializers.CharField()
+    type = serializers.ChoiceField(choices=["file", "folder"])
+    size = serializers.IntegerField()
+    modified = serializers.CharField(allow_null=True)
+    children = serializers.ListField(
+        child=serializers.DictField(),
+        allow_null=True,
+        required=False,
+        help_text="Nested TreeNode objects; null for files.",
+    )
+
+
+class StorageTreeResponseSerializer(serializers.Serializer):
+    path = serializers.CharField()
+    truncated = serializers.BooleanField()
+    tree = TreeNodeSerializer()
