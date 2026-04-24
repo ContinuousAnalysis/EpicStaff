@@ -900,11 +900,6 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
             qs = qs.defer("snapshot", "dependencies")
         return qs
 
-    def get_permissions(self):
-        if self.action == "all":
-            return [IsAdminUser()]
-        return [IsAuthenticated()]
-
     def get_serializer_class(self):
         if self.action == "create":
             return GraphVersionCreateSerializer
