@@ -393,7 +393,7 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WebhookTriggerNodePanelComponent extends BaseSidePanel<WebhookTriggerNodeModel> {
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
 
     pythonCode: string = '';

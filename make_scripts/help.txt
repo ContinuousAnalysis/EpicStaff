@@ -79,6 +79,25 @@
    Restores the DB volume from make_scripts/backups/<branch>.tar.
    If no backup file exists for this branch, nothing is restored.
 
+ LOCAL DJANGO DEVELOPMENT
+----------------------------------------------------------------
+ make django-tests ARGS=<pytest-args>
+   Run pytest against the Django app locally (uses local .venv).
+   Example: make django-tests
+   Example: make django-tests ARGS="tests/api_tests/quickstart_test.py -v"
+   Example: make django-tests ARGS="tests/api_tests/quickstart_test.py::test_post_quickstart_success -v"
+
+ make django-makemigrations ARGS=<app>
+   Run makemigrations locally.
+   Example: make django-makemigrations ARGS=tables
+
+ make django-migrate ARGS=<args>
+   Run migrate locally.
+
+ make django-manage CMD=<command>
+   Run any manage.py command locally.
+   Example: make django-manage CMD=shell
+
  UTILITIES
 ----------------------------------------------------------------
  make clean

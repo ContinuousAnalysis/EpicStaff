@@ -1,5 +1,5 @@
 from django.db import models
-from tables.models.tag_models import EmbeddingModelTag
+from tables.models.tag_models import EmbeddingModelTag, EmbeddingConfigTag
 from tables.models import DefaultBaseModel
 from tables.models import EmbedderTask
 
@@ -15,9 +15,7 @@ class EmbeddingModel(models.Model):
     is_visible = models.BooleanField(default=True)
     is_custom = models.BooleanField(default=False)
     tags = models.ManyToManyField(
-        EmbeddingModelTag,
-        blank=True,
-        related_name="embedding_models"
+        EmbeddingModelTag, blank=True, related_name="embedding_models"
     )
 
     class Meta:
@@ -25,7 +23,6 @@ class EmbeddingModel(models.Model):
             "name",
             "embedding_provider",
         )
-
 
 
 class EmbeddingConfig(models.Model):
@@ -36,6 +33,9 @@ class EmbeddingConfig(models.Model):
     )
     api_key = models.TextField(null=True, blank=True)
     is_visible = models.BooleanField(default=True)
+    tags = models.ManyToManyField(
+        EmbeddingConfigTag, blank=True, related_name="embedding_configs"
+    )
 
     def delete(self, *args, **kwargs):
         from tables.models import set_field_value_null_in_tool_configs

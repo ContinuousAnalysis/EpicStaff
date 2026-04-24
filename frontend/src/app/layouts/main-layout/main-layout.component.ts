@@ -1,5 +1,6 @@
 import { Component, HostListener } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+
 import { EpicChatService } from '../../features/epic-chat/epic-chat.service';
 import { LeftSidebarComponent } from './sidenav/sidenav.component';
 
@@ -11,8 +12,9 @@ import { LeftSidebarComponent } from './sidenav/sidenav.component';
         `
             :host {
                 display: flex;
-                height: 100%;
+                flex: 1;
                 width: 100%;
+                min-height: 0;
             }
 
             .sidebar-wrapper {
@@ -51,14 +53,8 @@ import { LeftSidebarComponent } from './sidenav/sidenav.component';
         </div>
 
         @if (epicChatService.isDocked() && epicChatService.isChatOpen()) {
-            <div
-                class="chat-dock-spacer"
-                [style.width.px]="epicChatService.dockWidth()"
-            >
-                <div
-                    class="chat-dock-resizer"
-                    (mousedown)="onDockResizeStart($event)"
-                ></div>
+            <div class="chat-dock-spacer" [style.width.px]="epicChatService.dockWidth()">
+                <div class="chat-dock-resizer" (mousedown)="onDockResizeStart($event)"></div>
             </div>
         }
 

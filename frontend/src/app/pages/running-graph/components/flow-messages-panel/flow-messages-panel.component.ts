@@ -1,31 +1,26 @@
+import { CommonModule } from '@angular/common';
 import {
-    Component,
-    Input,
-    Output,
-    EventEmitter,
-    OnInit,
-    OnChanges,
-    SimpleChanges,
     ChangeDetectionStrategy,
     ChangeDetectorRef,
+    Component,
+    EventEmitter,
+    Input,
+    OnChanges,
     OnDestroy,
+    OnInit,
+    Output,
+    SimpleChanges,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatSelectModule } from '@angular/material/select';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
-import {
-    GraphSessionService,
-    GraphSessionLight,
-    GraphSessionStatus,
-} from '../../../../features/flows/services/flows-sessions.service';
+import { GraphSessionLight, GraphSessionService } from '../../../../features/flows/services/flows-sessions.service';
+import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { GraphMessagesComponent } from '../graph-messages/graph-messages.component';
-import { AppIconComponent } from '@shared/components';
 
 @Component({
     selector: 'app-flow-messages-panel',
@@ -34,11 +29,11 @@ import { AppIconComponent } from '@shared/components';
         CommonModule,
         FormsModule,
         MatSelectModule,
-        MatIconModule,
+        MatSelectModule,
         MatButtonModule,
         MatTooltipModule,
         GraphMessagesComponent,
-        AppIconComponent,
+        AppSvgIconComponent,
     ],
     templateUrl: './flow-messages-panel.component.html',
     styleUrls: ['./flow-messages-panel.component.scss'],
@@ -60,16 +55,14 @@ export class FlowMessagesPanelComponent implements OnInit, OnChanges, OnDestroy 
     constructor(
         private readonly graphSessionService: GraphSessionService,
         private readonly cdr: ChangeDetectorRef,
-        private readonly router: Router,
+        private readonly router: Router
     ) {}
 
     public ngOnInit(): void {
         this.selectedSessionId = this.sessionId;
         this.loadSessions();
 
-        this.graphSessionService.sessionsChanged$
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(() => this.loadSessions());
+        this.graphSessionService.sessionsChanged$.pipe(takeUntil(this.destroy$)).subscribe(() => this.loadSessions());
     }
 
     public ngOnChanges(changes: SimpleChanges): void {
@@ -108,15 +101,11 @@ export class FlowMessagesPanelComponent implements OnInit, OnChanges, OnDestroy 
 
     public get filteredSessions(): GraphSessionLight[] {
         if (!this.searchQuery) return this.sessions;
-        return this.sessions.filter(
-            (s) => s.id.toString().includes(this.searchQuery),
-        );
+        return this.sessions.filter((s) => s.id.toString().includes(this.searchQuery));
     }
 
     public get selectedSessionLabel(): string {
-        const session = this.sessions.find(
-            (s) => s.id.toString() === this.selectedSessionId,
-        );
+        const session = this.sessions.find((s) => s.id.toString() === this.selectedSessionId);
         return session ? `ID ${session.id}` : `ID -`;
     }
 
@@ -172,25 +161,24 @@ export class FlowMessagesPanelComponent implements OnInit, OnChanges, OnDestroy 
 
     private getCurrentSessionIndex(): number {
         if (!this.selectedSessionId) return -1;
-        return this.sessions.findIndex(
-            (s) => s.id.toString() === this.selectedSessionId,
-        );
+        return this.sessions.findIndex((s) => s.id.toString() === this.selectedSessionId);
     }
 
     private loadSessions(): void {
-        if (!this.graphId) return;
+        const graphId = this.graphId;
+        if (graphId == null || !isFinite(graphId)) return;
 
         this.graphSessionService
-            .getSessionsByGraphId(this.graphId, false)
+            .getSessionsByGraphId(graphId, false)
             .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: (response) => {
                     this.sessions = (response.results as GraphSessionLight[]).sort(
-                        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+                        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                     );
 
-                    const selectedStillExists = this.selectedSessionId &&
-                        this.sessions.some(s => s.id.toString() === this.selectedSessionId);
+                    const selectedStillExists =
+                        this.selectedSessionId && this.sessions.some((s) => s.id.toString() === this.selectedSessionId);
 
                     if (!selectedStillExists) {
                         if (this.sessions.length > 0) {

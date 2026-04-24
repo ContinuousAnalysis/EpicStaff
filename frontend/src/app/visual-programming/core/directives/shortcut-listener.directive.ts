@@ -1,11 +1,4 @@
-import {
-    Directive,
-    EventEmitter,
-    OnDestroy,
-    OnInit,
-    Output,
-    NgZone,
-} from '@angular/core';
+import { Directive, EventEmitter, NgZone, OnDestroy, OnInit, Output } from '@angular/core';
 import { fromEvent, Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
@@ -60,14 +53,19 @@ export class ShortcutListenerDirective implements OnInit, OnDestroy {
                             return true;
                         }
 
+                        if (mod && evt.code === 'KeyS') {
+                            const el = evt.target as HTMLElement;
+                            if (el.matches('input,textarea,select,[contenteditable="true"]')) {
+                                return false;
+                            }
+                            return true;
+                        }
+
                         // 1) only keep delete/backspace/escape OR keys with ctrl/meta
                         if (
                             !(
                                 this.allowedKeys.has(key) &&
-                                (key === 'delete' ||
-                                    key === 'backspace' ||
-                                    key === 'escape' ||
-                                    mod)
+                                (key === 'delete' || key === 'backspace' || key === 'escape' || mod)
                             )
                         ) {
                             return false;
@@ -75,12 +73,7 @@ export class ShortcutListenerDirective implements OnInit, OnDestroy {
 
                         // 2) bail if user is typing in a form or contenteditable, except for Escape
                         const el = evt.target as HTMLElement;
-                        if (
-                            key !== 'escape' &&
-                            el.matches(
-                                'input,textarea,select,[contenteditable="true"]'
-                            )
-                        ) {
+                        if (key !== 'escape' && el.matches('input,textarea,select,[contenteditable="true"]')) {
                             return false;
                         }
 
@@ -107,13 +100,16 @@ export class ShortcutListenerDirective implements OnInit, OnDestroy {
             this.escape.emit();
             return;
         }
-        if (
-            (event.code === 'Slash' || key === '/') && 
-            (event.ctrlKey || event.metaKey)
-        ) {
+        if ((event.code === 'Slash' || key === '/') && (event.ctrlKey || event.metaKey)) {
             event.preventDefault();
             event.stopPropagation();
             this.openShortcuts.emit();
+            return;
+        }
+        if (event.code === 'KeyS' && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.save.emit();
             return;
         }
         const mod = event.ctrlKey || event.metaKey;

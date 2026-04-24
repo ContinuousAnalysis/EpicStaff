@@ -48,13 +48,12 @@
                     <div class="create-project__setting">
                         <div class="create-project__setting-label">
                             Memory
-                            <app-svg-icon
-                                icon="help"
-                                size="18px"
+                            <app-help-tooltip
                                 class="create-project__help-icon"
-                                matTooltip="Enable persistent memory for agents to remember information across conversations and tasks."
-                                matTooltipPosition="above"
-                                matTooltipClass="create-project__tooltip"
+                                text="Enable persistent memory for agents to remember information across conversations and tasks."
+                                position="right"
+                                tooltipClass="create-project__tooltip"
+                                size="18px"
                             />
                         </div>
                         <mat-slide-toggle formControlName="memory" class="create-project__setting-toggle">
@@ -64,13 +63,12 @@
                     <div class="create-project__setting">
                         <div class="create-project__setting-label">
                             Cache
-                            <app-svg-icon
-                                icon="help"
-                                size="18px"
+                            <app-help-tooltip
                                 class="create-project__help-icon"
-                                matTooltip="Enable caching of API responses to improve performance and reduce costs for repeated requests."
-                                matTooltipPosition="above"
-                                matTooltipClass="create-project__tooltip"
+                                text="Enable caching of API responses to improve performance and reduce costs for repeated requests."
+                                position="right"
+                                tooltipClass="create-project__tooltip"
+                                size="18px"
                             />
                         </div>
                         <mat-slide-toggle formControlName="cache" class="create-project__setting-toggle">
@@ -81,13 +79,12 @@
                         <div class="create-project__setting-header">
                             <div class="create-project__setting-label">
                                 Max RPM
-                                <app-svg-icon
-                                    icon="help"
-                                    size="18px"
+                                <app-help-tooltip
                                     class="create-project__help-icon"
-                                    matTooltip="Maximum requests per minute for API calls. Higher values allow faster processing but may hit rate limits."
-                                    matTooltipPosition="above"
-                                    matTooltipClass="create-project__tooltip"
+                                    text="Maximum requests per minute for API calls. Higher values allow faster processing but may hit rate limits."
+                                    position="right"
+                                    tooltipClass="create-project__tooltip"
+                                    size="18px"
                                 />
                             </div>
                             <div class="create-project__setting-value">{{ maxRpmField.value }} RPM</div>
@@ -103,13 +100,12 @@
                         <div class="create-project__setting-header">
                             <div class="create-project__setting-label">
                                 Search Limit
-                                <app-svg-icon
-                                    icon="help"
-                                    size="18px"
+                                <app-help-tooltip
                                     class="create-project__help-icon"
-                                    matTooltip="Maximum number of search results to retrieve from the knowledge base. Higher values provide more context but may slow down processing."
-                                    matTooltipPosition="above"
-                                    matTooltipClass="create-project__tooltip"
+                                    text="Maximum number of search results to retrieve from the knowledge base. Higher values provide more context but may slow down processing."
+                                    position="right"
+                                    tooltipClass="create-project__tooltip"
+                                    size="18px"
                                 />
                             </div>
                             <div class="create-project__setting-value">
@@ -127,13 +123,12 @@
                         <div class="create-project__setting-header">
                             <div class="create-project__setting-label">
                                 Similarity Threshold
-                                <app-svg-icon
-                                    icon="help"
-                                    size="18px"
+                                <app-help-tooltip
                                     class="create-project__help-icon"
-                                    matTooltip="Minimum similarity score (0.1-1.0) for knowledge base search results. Higher values return more relevant but fewer results."
-                                    matTooltipPosition="above"
-                                    matTooltipClass="create-project__tooltip"
+                                    text="Minimum similarity score (0.1-1.0) for knowledge base search results. Higher values return more relevant but fewer results."
+                                    position="right"
+                                    tooltipClass="create-project__tooltip"
+                                    size="18px"
                                 />
                             </div>
                             <div class="create-project__setting-value">

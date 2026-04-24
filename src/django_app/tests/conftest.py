@@ -1,9 +1,17 @@
 from pathlib import Path
 import pytest
+from django.core.management import call_command
 from rest_framework.test import APIClient
 
 # Import shared fixtures (graph, crew, session_data, etc.)
 from .fixtures import *  # noqa: F401,F403
+
+
+@pytest.fixture(scope="session", autouse=True)
+def flush_test_db_once(django_db_setup, django_db_blocker):
+    """Flush the test DB once per session to remove stale data from previous runs."""
+    with django_db_blocker.unblock():
+        call_command("flush", "--noinput")
 
 
 @pytest.fixture

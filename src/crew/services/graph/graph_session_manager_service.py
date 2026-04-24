@@ -91,6 +91,7 @@ class GraphSessionManagerService(metaclass=SingletonMeta):
                 "state_history": [],
                 "variables": DotDict(initial_state),
                 "system_variables": {"nodes": {}},
+                "execution_counts": {},
             }
             await self.redis_service.aupdate_session_status(
                 session_id=session_id, status="run"

@@ -26,12 +26,31 @@ class Settings(BaseSettings):
     MANAGER_HOST: str
     MANAGER_PORT: int
 
+    # --- Django Auth ---
+    DJANGO_AUTH_URL: str
+    DJANGO_API_KEY: str
+    DJANGO_AUTH_TIMEOUT: int = 5
+
     # --- Database (PostgreSQL) ---
     DB_HOST_NAME: str
     DB_PORT: int = 5432
     DB_NAME: str = "crew"
     DB_REALTIME_USER: str
     DB_REALTIME_PASSWORD: str
+
+    # --- Twilio ---
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    VOICE_AGENT_ID: int = 0
+    VOICE_STREAM_URL: str = ""
+
+    # --- Django (for init-realtime HTTP call) ---
+    DJANGO_HOST: str = "django_app"
+    DJANGO_PORT: int = 8000
+
+    @property
+    def INIT_API_URL(self) -> str:
+        return f"http://{self.DJANGO_HOST}:{self.DJANGO_PORT}/api/init-realtime/"
 
     @property
     def DATABASE_URL(self) -> str:

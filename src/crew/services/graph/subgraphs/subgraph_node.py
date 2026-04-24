@@ -150,6 +150,7 @@ class SubGraphNode:
             "variables": DotDict(variables),
             "state_history": [],
             "system_variables": deepcopy(state.get("system_variables", {})),
+            "execution_counts": {},
         }
 
     async def _execute_subgraph(
@@ -214,10 +215,14 @@ class SubGraphNode:
             subgraph_input, subgraph_output, dict(temp_state["variables"])
         )
 
+        counts = dict(state.get("execution_counts", {}))
+        counts[self.node_name] = counts.get(self.node_name, 0) + 1
+
         return {
             "variables": temp_state["variables"],
             "state_history": state["state_history"] + [state_history_item],
             "system_variables": state.get("system_variables", {}),
+            "execution_counts": counts,
         }
 
     def _create_state_history_item(

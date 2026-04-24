@@ -1,0 +1,24 @@
+<div class="stepper">
+    @for (step of steps(); track step; let i = $index) {
+        <div
+            class="stepper__step"
+            [ngClass]="{
+                'stepper__step--active': i === currentStep(),
+                'stepper__step--completed': i < currentStep(),
+            }"
+            [ngStyle]="{ width: `calc(100% / ${steps().length})` }"
+        >
+            <div class="stepper__circle">
+                @if (i < currentStep()) {
+                    <app-svg-icon icon="check" size="15px"></app-svg-icon>
+                } @else {
+                    {{ i + 1 }}
+                }
+            </div>
+
+            <div class="stepper__label">
+                {{ step }}
+            </div>
+        </div>
+    }
+</div>

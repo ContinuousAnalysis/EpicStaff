@@ -1,6 +1,8 @@
 from django.core.validators import RegexValidator
 from django.db import models
 
+from tables.models.base_models import DefaultBaseModel
+
 
 class NgrokWebhookConfig(models.Model):
     class Region(models.TextChoices):
@@ -51,3 +53,21 @@ class WebhookTrigger(models.Model):
 
     def __str__(self):
         return self.path
+
+
+class VoiceSettings(DefaultBaseModel):
+    class Meta:
+        db_table = "voice_settings"
+
+    twilio_account_sid = models.CharField(max_length=255, blank=True, default="")
+    twilio_auth_token = models.CharField(max_length=255, blank=True, default="")
+    voice_agent = models.ForeignKey(
+        "RealtimeAgent", on_delete=models.SET_NULL, null=True, blank=True, default=None
+    )
+    ngrok_config = models.ForeignKey(
+        NgrokWebhookConfig,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        default=None,
+    )

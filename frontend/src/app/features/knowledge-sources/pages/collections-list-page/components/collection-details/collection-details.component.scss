@@ -15,7 +15,7 @@
     }
 
     &__header {
-        padding: 1.5rem 3.75rem 1.5rem 1.875rem;
+        padding: 1rem 3rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -31,7 +31,7 @@
 
     &__header-label {
         font-size: 14px;
-        color: var(--color-ks-text)
+        color: var(--color-ks-text);
     }
 
     &__name-input {
@@ -89,9 +89,10 @@
 
     &__main-content {
         display: flex;
-        width: calc(100% - 3rem);
+        width: 100%;
+        min-width: 0;
         flex-direction: column;
-        margin: 1.5rem 1.175rem 1.5rem 1.875rem;
+        margin: 1.5rem 3rem;
         row-gap: 1.875rem;
     }
 
@@ -141,7 +142,7 @@
         justify-content: center;
         height: 100%;
         text-align: center;
-        padding: 32px;
+        padding: 2rem 3rem;
     }
 
     &__empty-text {

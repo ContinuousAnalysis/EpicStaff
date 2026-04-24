@@ -4,8 +4,8 @@ from src.shared.models import (
     ConfiguredToolData,
     ToolInitConfigurationModel,
 )
-from models.response_models import ToolResponse
-from models.ai_models import RealtimeTool, ToolParameters
+from domain.models.response_models import ToolResponse
+from domain.models.realtime_tool import RealtimeTool, ToolParameters
 
 from utils.pickle_encode import txt_to_obj
 from utils.request_utils import post_data_with_retry

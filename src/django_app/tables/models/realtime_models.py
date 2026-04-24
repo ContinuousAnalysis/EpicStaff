@@ -1,7 +1,7 @@
-from django.utils import timezone
 from django.db import models
+from django.utils import timezone
 
-from tables.models import DefaultBaseModel, AbstractDefaultFillableModel
+from tables.models import AbstractDefaultFillableModel, DefaultBaseModel
 
 
 class VoiceChoices(models.TextChoices):
@@ -47,9 +47,7 @@ class RealtimeAgent(AbstractDefaultFillableModel):
         blank=True,
         help_text="The prompt to use for the transcription, to guide the model (e.g. 'Expect words related to technology')",
     )
-    voice = models.CharField(
-        max_length=20, choices=VoiceChoices.choices, default=VoiceChoices.ALLOY
-    )
+    voice = models.CharField(max_length=100, default=VoiceChoices.ALLOY)
     realtime_config = models.ForeignKey(
         "RealtimeConfig", on_delete=models.SET_NULL, null=True, default=None
     )
@@ -95,9 +93,7 @@ class RealtimeAgentChat(models.Model):
         blank=True,
         help_text="The prompt to use for the transcription, to guide the model (e.g. 'Expect words related to technology')",
     )
-    voice = models.CharField(
-        max_length=20, choices=VoiceChoices.choices, default=VoiceChoices.ALLOY
-    )
+    voice = models.CharField(max_length=100, default=VoiceChoices.ALLOY)
     realtime_config = models.ForeignKey(
         "RealtimeConfig", on_delete=models.SET_NULL, null=True, default=None
     )
@@ -146,9 +142,7 @@ class DefaultRealtimeAgentConfig(DefaultBaseModel):
         blank=True,
         help_text="The prompt to use for the transcription, to guide the model (e.g. 'Expect words related to technology')",
     )
-    voice = models.CharField(
-        max_length=20, choices=VoiceChoices.choices, default=VoiceChoices.ALLOY
-    )
+    voice = models.CharField(max_length=100, default=VoiceChoices.ALLOY)
     realtime_config = models.ForeignKey(
         "RealtimeConfig", on_delete=models.SET_NULL, null=True, default=None
     )

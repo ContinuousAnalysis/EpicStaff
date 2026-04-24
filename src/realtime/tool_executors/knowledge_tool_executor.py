@@ -1,8 +1,8 @@
 import asyncio
 from typing import Dict, Any
 from loguru import logger
-from models.ai_models import RealtimeTool, ToolParameters
-from services.redis_service import RedisService
+from domain.models.realtime_tool import RealtimeTool, ToolParameters
+from domain.ports.i_redis_messaging_service import IRedisMessagingService
 from uuid import uuid4
 
 from .base_tool_executor import BaseToolExecutor
@@ -22,7 +22,7 @@ class KnowledgeSearchToolExecutor(BaseToolExecutor):
         knowledge_collection_id: int,
         rag_type_id: str,
         rag_search_config: Dict[str, Any],
-        redis_service: RedisService,
+        redis_service: IRedisMessagingService,
         knowledge_search_get_channel: str,
         knowledge_search_response_channel: str,
     ):

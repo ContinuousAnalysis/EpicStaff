@@ -73,6 +73,11 @@
     { "name": "fireworks_ai/thenlper/gte-large", "recommended": false },
     { "name": "fireworks_ai/thenlper/gte-base", "recommended": false }
   ],
+  "gemini": [
+    { "name": "gemini/gemini-embedding-exp-03-07", "recommended": true },
+    { "name": "gemini/text-embedding-004", "recommended": true },
+    { "name": "gemini/text-embedding-005", "recommended": false }
+  ],
   "voyage": [
     { "name": "voyage/voyage-3.5", "recommended": false },
     { "name": "voyage/voyage-3.5-lite", "recommended": false },

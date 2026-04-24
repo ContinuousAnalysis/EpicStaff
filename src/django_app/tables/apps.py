@@ -17,6 +17,7 @@ class TablesConfig(AppConfig):
         import tables.signals.python_code_tool_config_signals
         import tables.signals.naive_rag_signals
         import tables.signals.webhook_signals
+        import tables.import_export.version_conversions.convertions
         from tables.services.config_service import YamlConfigService
         from tables.services.converter_service import ConverterService
         from tables.services.redis_service import RedisService

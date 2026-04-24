@@ -1,6 +1,5 @@
 from .agents import (
     AgentData,
-    RealtimeAgentData,
     RealtimeAgentChatData,
     CrewData,
     TaskData,
@@ -39,6 +38,8 @@ from .knowledge import (
     BaseRagSearchConfig,
     NaiveRagSearchConfig,
     GraphRagSearchConfig,
+    GraphRagBasicSearchParams,
+    GraphRagLocalSearchParams,
     RagSearchConfig,  # anotation
     BaseKnowledgeSearchMessage,
     KnowledgeChunkResponse,
@@ -71,7 +72,6 @@ from .tools import (
 __all__ = [
     # agents
     "AgentData",
-    "RealtimeAgentData",
     "RealtimeAgentChatData",
     "CrewData",
     "TaskData",
@@ -107,6 +107,8 @@ __all__ = [
     "BaseRagSearchConfig",
     "NaiveRagSearchConfig",
     "GraphRagSearchConfig",
+    "GraphRagBasicSearchParams",
+    "GraphRagLocalSearchParams",
     "RagSearchConfig",  # anotation
     "BaseKnowledgeSearchMessage",
     "KnowledgeChunkResponse",

@@ -19,3 +19,4 @@ class State(TypedDict):
     state_history: list["StateHistoryItem"] = []
     variables: DotDict
     system_variables: Any
+    execution_counts: dict

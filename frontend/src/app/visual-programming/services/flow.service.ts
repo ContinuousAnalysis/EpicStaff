@@ -1,12 +1,9 @@
-import { computed,Injectable, signal } from '@angular/core';
-import { IPoint, IRect } from '@foblex/2d';
-import { Observable, of } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { computed, Injectable, signal } from '@angular/core';
 
 import { NodeType } from '../core/enums/node-type';
-import { generatePortsForDecisionTableNode } from '../core/helpers/helpers';
+import { generatePortsForDecisionTableNode, isDecisionPortRole } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
-import { ConditionGroup,DecisionTableNode } from '../core/models/decision-table.model';
+import { ConditionGroup, DecisionTableNode } from '../core/models/decision-table.model';
 import { FlowModel } from '../core/models/flow.model';
 import { DecisionTableNodeModel, NodeModel, StartNodeModel } from '../core/models/node.model';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
@@ -24,6 +21,8 @@ export class FlowService {
         nodes: [],
         connections: [],
     });
+
+    private _nextNodeNumber = 1;
 
     public readonly nodes = computed(() => this.flowSignal().nodes);
     public readonly connections = computed(() => this.flowSignal().connections);
@@ -47,14 +46,6 @@ export class FlowService {
         return this.connections();
     });
 
-    public visibleNodes = computed(() => {
-        return this.nodes().filter((node) => node.category !== 'vscode');
-    });
-
-    // Add a new computed property for vscode nodes
-    public vscodeNodes = computed(() => {
-        return this.nodes().filter((node) => node.category === 'vscode');
-    });
     // Selector to get connections for a given port.
     public getConnectionsForPort(portId: CustomPortId): CustomPortId[] {
         return this.portConnectionsMap()[portId] || [];
@@ -68,6 +59,19 @@ export class FlowService {
 
     public setFlow(flow: FlowModel) {
         this.flowSignal.set(flow);
+        // Re-seed the counter above the highest existing nodeNumber
+        let max = 0;
+        for (const n of flow.nodes) {
+            if (n.nodeNumber != null && n.nodeNumber > max) {
+                max = n.nodeNumber;
+            }
+        }
+        this._nextNodeNumber = max + 1;
+    }
+
+    /** Returns the next node number and increments the counter. */
+    public getNextNodeNumber(): number {
+        return this._nextNodeNumber++;
     }
 
     public addNode(node: NodeModel) {
@@ -83,8 +87,6 @@ export class FlowService {
             connections: [...flow.connections, conn],
         }));
 
-        console.log('New connection added to the flow state:', conn);
-
         this.updateDecisionTableNextNodeFromConnection(conn);
     }
     public addConnectionsInBatch(connections: ConnectionModel[]): void {
@@ -96,8 +98,6 @@ export class FlowService {
             ...flow,
             connections: [...flow.connections, ...connections],
         }));
-
-        console.log(`Batch added ${connections.length} connections`);
     }
     public removeConnectionsInBatch(connectionIds: string[]): void {
         if (!connectionIds || connectionIds.length === 0) {
@@ -108,8 +108,6 @@ export class FlowService {
             ...flow,
             connections: flow.connections.filter((conn) => !connectionIds.includes(conn.id)),
         }));
-
-        console.log(`Batch removed ${connectionIds.length} connections`);
 
         const remainingConnections = this.connections();
         connectionIds.forEach((connectionId) => {
@@ -210,9 +208,6 @@ export class FlowService {
                 // Otherwise return the existing node unchanged
                 return existingNode;
             });
-
-            // Log the batch update
-            console.log(`Batch updated ${nodes.length} nodes`);
 
             // Return updated flow state
             return {
@@ -318,9 +313,6 @@ export class FlowService {
                 return existingConn;
             });
 
-            // Log the batch update
-            console.log(`Batch updated ${connections.length} connections`);
-
             // Return updated flow state
             return {
                 ...flow,
@@ -367,6 +359,7 @@ export class FlowService {
                 targetPortId,
                 behavior: 'fixed',
                 type: 'segment',
+                data: null,
             };
 
             this.addConnection(newConnection);
@@ -582,34 +575,36 @@ export class FlowService {
         return portIdValue.startsWith(`${tableNodeId}_decision-`);
     }
 
-    private canPortsConnect(portA: FlattenedPort, portB: FlattenedPort, connections: ConnectionModel[]): boolean {
+    private canPortsConnect(portA: FlattenedPort, portB: FlattenedPort): boolean {
         // Prevent connecting ports on the same node.
         if (portA.nodeId === portB.nodeId) {
-            return false;
-        }
-
-        // If any connection already exists between the two nodes, do not allow any further connections.
-        const alreadyConnected = connections.some(
-            (conn) =>
-                (conn.sourceNodeId === portA.nodeId && conn.targetNodeId === portB.nodeId) ||
-                (conn.sourceNodeId === portB.nodeId && conn.targetNodeId === portA.nodeId)
-        );
-        if (alreadyConnected) {
             return false;
         }
 
         const a = portA.port;
         const b = portB.port;
         if (a.port_type === 'input' && b.port_type === 'output') {
-            return a.allowedConnections.includes(b.role);
+            return this.isAllowedRole(a.allowedConnections, b.role);
         }
         if (a.port_type === 'output' && b.port_type === 'input') {
-            return b.allowedConnections.includes(a.role);
+            return this.isAllowedRole(b.allowedConnections, a.role);
         }
         if (a.port_type === 'input-output' && b.port_type === 'input-output') {
-            return a.allowedConnections.includes(b.role) || b.allowedConnections.includes(a.role);
+            return this.isAllowedRole(a.allowedConnections, b.role) || this.isAllowedRole(b.allowedConnections, a.role);
         }
         return false;
+    }
+
+    private isAllowedRole(allowedRoles: string[], targetRole: string): boolean {
+        return allowedRoles.some((allowedRole) => {
+            if (allowedRole === targetRole) {
+                return true;
+            }
+            if (allowedRole === 'table-out' && isDecisionPortRole(targetRole)) {
+                return true;
+            }
+            return false;
+        });
     }
     public deleteSelections(selections: { fNodeIds: string[]; fConnectionIds: string[] }): void {
         this.flowSignal.update((flow: FlowModel) => {
@@ -698,12 +693,7 @@ export class FlowService {
                     }
                 }
 
-                const updatedPorts = generatePortsForDecisionTableNode(
-                    sourceNode.id,
-                    updatedTable.condition_groups,
-                    !!updatedTable.default_next_node,
-                    !!updatedTable.next_error_node
-                );
+                const updatedPorts = generatePortsForDecisionTableNode(sourceNode.id, updatedTable.condition_groups);
 
                 decisionTableUpdates.set(sourceNode.id, {
                     table: updatedTable,
@@ -780,7 +770,7 @@ export class FlowService {
                 if (current.port.id === other.port.id) return;
 
                 // Pass the full connections array to our updated canPortsConnect check.
-                if (this.canPortsConnect(current, other, connections)) {
+                if (this.canPortsConnect(current, other)) {
                     const otherConnCount = connectionCount[other.port.id] || 0;
                     if (!other.port.multiple && otherConnCount > 0) {
                         return;

@@ -1,69 +1,58 @@
-import {
-    Component,
-    Input,
-    Output,
-    EventEmitter,
-    forwardRef,
-} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-    ControlValueAccessor,
-    FormsModule,
-    NG_VALUE_ACCESSOR,
-} from '@angular/forms';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatIconModule } from '@angular/material/icon';
+import { Component, forwardRef, Input } from '@angular/core';
+import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+
+import { HelpTooltipComponent } from '../help-tooltip/help-tooltip.component';
 
 @Component({
     selector: 'app-custom-input',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatTooltipModule, MatIconModule],
+    imports: [CommonModule, FormsModule, HelpTooltipComponent],
     template: `
         <div class="form-group">
-            <div class="label-container" *ngIf="label">
-                <label [for]="id">{{ label }}</label>
-                <span
-                    *ngIf="required"
-                    class="required"
-                >
-                    *
-                </span>
-                <ng-container *ngIf="tooltipText">
-                    <mat-icon
-                        *ngIf="!isClassIcon"
-                        [matTooltip]="tooltipText"
-                        matTooltipPosition="right"
-                        matTooltipClass="custom-tooltip"
-                        class="help-icon"
-                    >
-                        {{ icon }}
-                    </mat-icon>
-                    <i
-                        *ngIf="isClassIcon"
-                        [class]="icon"
-                        [matTooltip]="tooltipText"
-                        matTooltipPosition="right"
-                        matTooltipClass="custom-tooltip"
-                        class="help-icon class-icon"
-                    ></i>
-                </ng-container>
+            @if (label) {
+                <div class="label-container">
+                    <label [for]="id">{{ label }}</label>
+                    @if (required) {
+                        <span class="required">*</span>
+                    }
+                    @if (tooltipText) {
+                        <app-help-tooltip
+                            [text]="tooltipText"
+                            position="right"
+                            [icon]="isClassIcon ? 'help' : icon"
+                            [iconClass]="isClassIcon ? icon : ''"
+                            size="18px"
+                        />
+                    }
+                </div>
+            }
+            <div class="input-wrapper">
+                <input
+                    [type]="effectiveType"
+                    [id]="id"
+                    [name]="name"
+                    [placeholder]="placeholder"
+                    [(ngModel)]="value"
+                    (blur)="onTouched()"
+                    class="text-input"
+                    [class.has-toggle]="type === 'password'"
+                    [class.error]="errorMessage"
+                    [disabled]="disabled"
+                    [autofocus]="autofocus"
+                    [style.--active-color]="activeColor"
+                />
+                @if (type === 'password') {
+                    <button type="button" class="toggle-visibility" (click)="togglePasswordVisibility()" tabindex="-1">
+                        <i [class]="'ti ' + (passwordVisible ? 'ti-eye' : 'ti-eye-off')"></i>
+                    </button>
+                }
             </div>
-            <input
-                [type]="type"
-                [id]="id"
-                [name]="name"
-                [placeholder]="placeholder"
-                [(ngModel)]="value"
-                (blur)="onTouched()"
-                class="text-input"
-                [class.error]="errorMessage"
-                [disabled]="disabled"
-                [autofocus]="autofocus"
-                [style.--active-color]="activeColor"
-            />
-            <div class="error-message" *ngIf="errorMessage">
-                {{ errorMessage }}
-            </div>
+            @if (errorMessage) {
+                <div class="error-message">
+                    {{ errorMessage }}
+                </div>
+            }
         </div>
     `,
     styles: [
@@ -80,7 +69,7 @@ import { MatIconModule } from '@angular/material/icon';
                     margin-bottom: 8px;
 
                     .required {
-                        color: #ef4444;
+                        color: var(--color-required-asterisk, var(--accent-color));
                     }
                 }
 
@@ -92,23 +81,10 @@ import { MatIconModule } from '@angular/material/icon';
                     margin: 0;
                 }
 
-                .help-icon {
-                    font-size: 18px;
-                    width: 18px;
-                    height: 18px;
-                    color: var(--accent-color);
-                    cursor: help;
-                    transition: color 0.2s ease;
-
-                    &:hover {
-                        color: var(--accent-color-hover);
-                    }
-
-                    &.class-icon {
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                    }
+                .input-wrapper {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
                 }
 
                 .text-input {
@@ -125,6 +101,10 @@ import { MatIconModule } from '@angular/material/icon';
                         color: var(--color-input-text-placeholder);
                     }
 
+                    &.has-toggle {
+                        padding-right: 36px;
+                    }
+
                     &:focus {
                         outline: none;
                         border-color: var(--active-color, #685fff);
@@ -135,21 +115,33 @@ import { MatIconModule } from '@angular/material/icon';
                     }
                 }
 
+                .toggle-visibility {
+                    position: absolute;
+                    right: 13px;
+                    background: none;
+                    border: none;
+                    padding: 0;
+                    cursor: pointer;
+                    color: rgba(255, 255, 255, 0.5);
+                    display: flex;
+                    align-items: center;
+                    transition: color 0.2s ease;
+
+                    &:hover {
+                        color: rgba(255, 255, 255, 0.9);
+                    }
+
+                    i {
+                        font-size: 16px;
+                    }
+                }
+
                 .error-message {
                     color: #ef4444;
                     font-size: 12px;
                     margin-top: 4px;
                     line-height: 1.4;
                 }
-            }
-
-            :host ::ng-deep .custom-tooltip {
-                background: #232323 !important;
-                color: #fff !important;
-                font-size: 0.9rem !important;
-                max-width: 300px !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
             }
         `,
     ],
@@ -169,16 +161,18 @@ export class CustomInputComponent implements ControlValueAccessor {
     @Input() name: string = '';
     @Input() autofocus: boolean = false;
     @Input() tooltipText: string = '';
-    @Input() icon: string = 'help_outline';
+    @Input() icon: string = 'help';
     @Input() required: boolean = false;
     @Input() activeColor: string = '#685fff';
     @Input() errorMessage: string = '';
 
+    passwordVisible: boolean = false;
+
     private _value: string = '';
     private _disabled: boolean = false;
 
-    onChange: any = () => {};
-    onTouched: any = () => {};
+    onChange: (value: string) => void = () => {};
+    onTouched: () => void = () => {};
 
     get value(): string {
         return this._value;
@@ -198,19 +192,27 @@ export class CustomInputComponent implements ControlValueAccessor {
         this._disabled = val;
     }
 
+    get effectiveType(): string {
+        return this.type === 'password' && this.passwordVisible ? 'text' : this.type;
+    }
+
     get isClassIcon(): boolean {
         return !!this.icon && this.icon.trim().includes(' ');
+    }
+
+    togglePasswordVisibility(): void {
+        this.passwordVisible = !this.passwordVisible;
     }
 
     writeValue(value: string): void {
         this._value = value || '';
     }
 
-    registerOnChange(fn: any): void {
+    registerOnChange(fn: (value: string) => void): void {
         this.onChange = fn;
     }
 
-    registerOnTouched(fn: any): void {
+    registerOnTouched(fn: () => void): void {
         this.onTouched = fn;
     }
 

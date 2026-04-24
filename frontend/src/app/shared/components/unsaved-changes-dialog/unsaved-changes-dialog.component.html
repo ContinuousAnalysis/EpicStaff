@@ -2,12 +2,12 @@
     <div class="dialog-header">
         <div class="dialog-title-row">
             <span class="dialog-icon">
-                <i class="ti ti-alert-circle"></i>
+                <app-svg-icon icon="alert-circle" size="2.2rem" />
             </span>
             <h2 class="dialog-title">{{ data.title }}</h2>
         </div>
         <app-icon-button
-            icon="ui/x"
+            icon="x"
             size="2rem"
             ariaLabel="Close"
             (click)="onClose()"
@@ -18,14 +18,10 @@
 
     <div class="dialog-actions">
         <button type="button" class="button cancel-button" (click)="onCancel()">
-            {{ data.cancelText || "Cancel" }}
+            {{ data.cancelText || 'Cancel' }}
         </button>
         <div class="right-buttons">
-            <button
-                type="button"
-                class="button dont-save-button"
-                (click)="onDontSave()"
-            >
+            <button type="button" class="button dont-save-button" (click)="onDontSave()">
                 {{ data.dontSaveText || "Don't Save" }}
             </button>
             <button
@@ -35,9 +31,9 @@
                 (click)="onSave()"
                 [disabled]="isSaving"
             >
-                <span *ngIf="!isSaving">{{ data.saveText || "Save" }}</span>
+                <span *ngIf="!isSaving">{{ data.saveText || 'Save' }}</span>
                 <span *ngIf="isSaving" class="loading-content">
-                    <i class="ti ti-loader-2 ti-spin"></i>
+                    <app-spinner2 [size]="16" />
                 </span>
             </button>
         </div>

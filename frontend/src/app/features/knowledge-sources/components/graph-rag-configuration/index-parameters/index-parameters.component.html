@@ -1,0 +1,107 @@
+<div class="wrapper">
+    <form class="form" [formGroup]="form">
+        <div class="tooltip">Index Parameters</div>
+        <div></div>
+
+        <div class="tooltip">
+            <label>Chunk Strategy</label>
+            <app-help-tooltip
+                class="icon"
+                text="Choose how to split your document into chunks. Different strategies work better for different document types."
+                position="right"
+            />
+        </div>
+        <div class="control">
+            <app-radio-button formControlName="chunk_strategy" [options]="chunkStrategyOptions" />
+            <app-validation-errors [control]="getControl('chunk_strategy')!" />
+        </div>
+
+        <div class="tooltip">
+            <label>Chunk Size</label>
+            <app-help-tooltip
+                class="icon"
+                text="The maximum size of each document chunk. Smaller chunks are more precise but may lose context. Larger chunks preserve more context but may be less precise."
+                position="right"
+            />
+        </div>
+        <div class="control">
+            <app-input-number
+                formControlName="chunk_size"
+                [min]="100"
+                [max]="10000"
+                [invalid]="!!getControl('chunk_size')?.invalid"
+                [alwaysShowSteps]="true"
+            />
+            <app-validation-errors [control]="getControl('chunk_size')!" />
+        </div>
+
+        <div class="tooltip">
+            <label>Chunk Overlap</label>
+            <app-help-tooltip
+                class="icon"
+                text="The number of characters or tokens that overlap between chunks. Helps maintain context between chunks. Must be smaller than chunk size."
+                position="right"
+            />
+        </div>
+        <div class="control">
+            <app-input-number
+                formControlName="chunk_overlap"
+                [min]="0"
+                [max]="5000"
+                [invalid]="!!getControl('chunk_overlap')?.invalid"
+                [alwaysShowSteps]="true"
+            />
+            <app-validation-errors [control]="getControl('chunk_overlap')!" />
+        </div>
+
+        <div class="tooltip">
+            <label>Entity Types</label>
+            <app-help-tooltip class="icon" text="The entity types to identify." position="right" />
+        </div>
+        <div>
+            <app-chips-input formControlName="entity_types" [minItemLength]="1" [maxItemLength]="20" />
+            <app-validation-errors [control]="getControl('entity_types')!" />
+        </div>
+
+        <div class="tooltip">
+            <label>Max Gleanings</label>
+            <app-help-tooltip class="icon" text="The maximum number of gleaning cycles to use." position="right" />
+        </div>
+        <div class="control">
+            <app-input-number
+                formControlName="max_gleanings"
+                [invalid]="!!getControl('max_gleanings')?.invalid"
+                [alwaysShowSteps]="true"
+                [min]="1"
+                [max]="10"
+            />
+            <app-validation-errors [control]="getControl('max_gleanings')!" />
+        </div>
+
+        <div class="tooltip">
+            <label>Max Cluster Size</label>
+            <app-help-tooltip class="icon" text="The maximum cluster size to export." position="right" />
+        </div>
+        <div class="control">
+            <app-input-number
+                formControlName="max_cluster_size"
+                [min]="1"
+                [max]="100"
+                [invalid]="!!getControl('max_cluster_size')?.invalid"
+                [alwaysShowSteps]="true"
+            />
+            <app-validation-errors [control]="getControl('max_cluster_size')!" />
+        </div>
+    </form>
+
+    <div class="json-wrapper">
+        <app-json-editor
+            class="editor"
+            [allowCopy]="true"
+            [collapsible]="true"
+            [fullHeight]="true"
+            [jsonData]="jsonData()"
+            [editorOptions]="editorOptions"
+        />
+    </div>
+</div>

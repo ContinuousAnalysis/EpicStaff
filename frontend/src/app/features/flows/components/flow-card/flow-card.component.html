@@ -28,11 +28,11 @@
                     mod="small"
                     (click)="toggleSubflows($event)"
                     >Subflows
-                    <app-icon
-                        icon="ui/chevron-down"
+                    <app-svg-icon
+                        icon="chevron-down"
                         size="16px"
                         [style.transform]="isExpanded() ? 'rotate(180deg)' : ''"
-                    ></app-icon>
+                    />
                 </app-button>
             }
             <app-flow-menu
@@ -48,7 +48,7 @@
             @for (labelId of flow.label_ids || []; track labelId) {
                 @let labelName = getLabelName(labelId);
                 @if (labelName) {
-                    <span class="label-chip">{{ labelName }}</span>
+                    <span class="label-chip" [ngStyle]="getLabelChipStyles(labelId)">{{ labelName }}</span>
                 }
             }
         </div>
@@ -83,7 +83,9 @@
                             @for (labelId of subflow.label_ids || []; track labelId) {
                                 @let labelName = getLabelName(labelId);
                                 @if (labelName) {
-                                    <span class="label-chip">{{ labelName }}</span>
+                                    <span class="label-chip" [ngStyle]="getLabelChipStyles(labelId)">{{
+                                        labelName
+                                    }}</span>
                                 }
                             }
                         </div>

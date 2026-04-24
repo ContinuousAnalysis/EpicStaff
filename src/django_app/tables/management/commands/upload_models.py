@@ -66,7 +66,6 @@ PROVIDER_MODELS_DIR = BASE_DIR / "provider_models"
 
 
 def upload_tags():
-
     llm_tag_names = PREDEFINED_TAGS["llm_model"]
 
     for tag in llm_tag_names:
@@ -100,7 +99,7 @@ def upload_providers():
     for name in current_provider_names:
         Provider.objects.get_or_create(name=name)
 
-    Provider.objects.exclude(name__in=current_provider_names).delete()
+    # Provider.objects.exclude(name__in=current_provider_names).delete()
 
 
 def upload_llm_models():

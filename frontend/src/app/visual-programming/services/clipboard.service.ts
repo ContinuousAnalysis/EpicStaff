@@ -1,13 +1,10 @@
 import { Injectable } from '@angular/core';
-import { FSelectionChangeEvent } from '@foblex/flow';
+import { ICurrentSelection } from '@foblex/flow';
 import { v4 as uuidv4 } from 'uuid';
 
 import { NodeType } from '../core/enums/node-type';
-import {
-    generateMultipleNodeDisplayNames,
-    generateNodeDisplayName,
-} from '../core/helpers/generate-node-display-name.util';
-import { generatePortsForNode,getPortsForType, parsePortId } from '../core/helpers/helpers';
+import { generateMultipleNodeDisplayNames } from '../core/helpers/generate-node-display-name.util';
+import { generatePortsForNode, parsePortId } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
 import { NodeModel } from '../core/models/node.model';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
@@ -35,7 +32,7 @@ export class ClipboardService {
         return this.clipboard;
     }
 
-    public copy(selection: FSelectionChangeEvent): void {
+    public copy(selection: ICurrentSelection): void {
         if (!selection || selection.fNodeIds.length === 0) {
             return;
         }
@@ -98,26 +95,26 @@ export class ClipboardService {
 
         const oldToNewIdMap = new Map<string, string>();
 
-        // Generate display names for all nodes at once
-        const currentNodes = this.flowService.getFlowState().nodes;
+        // Assign sequential badge numbers and generate names in one pass
         const nodesToCreate = clipboardNodes.map((oldNode) => ({
             type: oldNode.type,
             data: oldNode.data,
         }));
-
-        const displayNames = generateMultipleNodeDisplayNames(nodesToCreate, currentNodes);
+        const nodeNumbers = nodesToCreate.map(() => this.flowService.getNextNodeNumber());
+        const displayNames = generateMultipleNodeDisplayNames(nodesToCreate, nodeNumbers);
 
         // Create new nodes with backendId: null for diff-save support
         const newNodes: NodeModel[] = clipboardNodes.map((oldNode, index) => {
             const newNodeId = uuidv4();
             oldToNewIdMap.set(oldNode.id, newNodeId);
 
-            const newPorts: ViewPort[] = generatePortsForNode(newNodeId, oldNode.type);
+            const newPorts: ViewPort[] = generatePortsForNode(newNodeId, oldNode.type, oldNode.data);
 
             return {
                 ...oldNode,
                 id: newNodeId,
                 backendId: null,
+                nodeNumber: nodeNumbers[index],
                 position: {
                     x: oldNode.position.x + offsetX,
                     y: oldNode.position.y + offsetY,

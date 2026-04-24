@@ -1,16 +1,14 @@
 import { GetGraphLightRequest } from '../../../features/flows/models/graph.model';
 import { GetProjectRequest } from '../../../features/projects/models/project.model';
-import { GetLlmConfigRequest } from '../../../features/settings-dialog/models/llms/LLM_config.model';
 import { GetAgentRequest } from '../../../features/staff/models/agent.model';
 import { CreateTaskRequest } from '../../../features/tasks/models/task.model';
-import { CreatePythonCodeRequest, CustomPythonCode } from '../../../features/tools/models/python-code.model';
-import { GetPythonCodeToolRequest } from '../../../features/tools/models/python-code-tool.model';
+import { CustomPythonCode } from '../../../features/tools/models/python-code.model';
 import { ToolConfig } from '../../../features/tools/models/tool-config.model';
 import { CodeAgentNodeData } from '../../../pages/flows-page/components/flow-visual-programming/models/code-agent-node.model';
 import { CustomConditionalEdgeModelForNode } from '../../../pages/flows-page/components/flow-visual-programming/models/conditional-edge.model';
 import { TelegramTriggerNodeField } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
+import { GetLlmConfigRequest } from '../../../shared/models/llms/llm-config.model';
 import { NodeType } from '../enums/node-type';
-import { ConnectionModel } from './connection.model';
 import { DecisionTableNode } from './decision-table.model';
 import { ViewPort } from './port.model';
 import { WebhookTriggerModel } from './webhook-trigger.model';
@@ -19,7 +17,6 @@ export interface BaseNodeModel {
     id: string;
     /** Backend primary key — set on load, null for newly created nodes. */
     backendId: number | null;
-    category: 'web' | 'vscode';
     position: { x: number; y: number };
     ports: ViewPort[] | null;
     node_name: string;
@@ -29,11 +26,12 @@ export interface BaseNodeModel {
         width: number;
         height: number;
     };
-    // UI-only flag for invalid references (e.g. deleted subgraph)
-    isBlocked?: boolean;
-    // New fields
     input_map: Record<string, unknown>;
     output_variable_path: string | null;
+    /** Unique incrementing number per graph, displayed as the #N badge. */
+    nodeNumber?: number;
+    // UI-only flag for invalid references (e.g. deleted subgraph)
+    isBlocked?: boolean;
 }
 export interface StartNodeData {
     initialState: Record<string, unknown>;

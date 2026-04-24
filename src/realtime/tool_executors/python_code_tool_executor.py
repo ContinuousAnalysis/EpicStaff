@@ -1,8 +1,8 @@
 from src.shared.models import (
     PythonCodeToolData,
 )
-from services.python_code_executor_service import PythonCodeExecutorService
-from models.ai_models import RealtimeTool, ToolParameters
+from domain.ports.i_python_code_executor_service import IPythonCodeExecutorService
+from domain.models.realtime_tool import RealtimeTool, ToolParameters
 from .base_tool_executor import BaseToolExecutor
 
 
@@ -10,7 +10,7 @@ class PythonCodeToolExecutor(BaseToolExecutor):
     def __init__(
         self,
         python_code_tool_data: PythonCodeToolData,
-        python_code_executor_service: PythonCodeExecutorService,
+        python_code_executor_service: IPythonCodeExecutorService,
     ):
         name = python_code_tool_data.name.replace(" ", "_")
         super().__init__(tool_name=name)

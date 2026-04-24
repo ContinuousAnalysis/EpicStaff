@@ -1,8 +1,18 @@
 import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    effect,
+    ElementRef,
+    inject,
+    signal,
+    viewChild,
+} from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 
 import { ImportExportService } from '../../../../../../core/services/import-export.service';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
@@ -10,9 +20,7 @@ import {
     ConfirmationDialogService,
     ConfirmationResult,
 } from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
-import { ConfirmationDialogComponent } from '../../../../../../shared/components/cofirm-dialog/confirmation-dialog.component';
 import { LoadingSpinnerComponent } from '../../../../../../shared/components/loading-spinner/loading-spinner.component';
-import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
 import { FlowCardAction, FlowCardComponent } from '../../../../components/flow-card/flow-card.component';
 import { FlowRenameDialogComponent } from '../../../../components/flow-rename-dialog/flow-rename-dialog.component';
 import { FlowSessionsListComponent } from '../../../../components/flow-sessions-dialog/flow-sessions-list.component';
@@ -28,11 +36,10 @@ import { RunGraphService } from '../../../../services/run-graph-session.service'
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './my-flows.component.html',
     styleUrls: ['./my-flows.component.scss'],
-    imports: [CommonModule, FlowCardComponent, LoadingSpinnerComponent, DialogModule],
+    imports: [CommonModule, FlowCardComponent, LoadingSpinnerComponent, DialogModule, RouterLink],
 })
 export class MyFlowsComponent {
     private readonly flowsService = inject(FlowsStorageService);
-    private readonly graphUpdateService = inject(GraphUpdateService);
     private readonly flowsApiService = inject(FlowsApiService);
     private readonly runGraphService = inject(RunGraphService);
     private readonly router = inject(Router);
@@ -41,6 +48,14 @@ export class MyFlowsComponent {
     private readonly confirmationDialogService = inject(ConfirmationDialogService);
     private readonly importExportService = inject(ImportExportService);
     private readonly labelsStorage = inject(LabelsStorageService);
+    private readonly destroyRef = inject(DestroyRef);
+
+    private readonly recentSection = viewChild<ElementRef<HTMLElement>>('recentSection');
+    private readonly containerWidth = signal(0);
+    private resizeObserver: ResizeObserver | null = null;
+
+    private static readonly CARD_WIDTH = 87;
+    private static readonly GAP = 8;
 
     public readonly activeLabelFilter = this.labelsStorage.activeLabelFilter;
 
@@ -50,7 +65,22 @@ export class MyFlowsComponent {
     public readonly selectMode = this.flowsService.selectMode;
     public readonly selectedFlowIds = this.flowsService.selectedFlowIds;
 
-    constructor() {
+    private readonly maxVisibleRecent = computed(() => {
+        const width = this.containerWidth();
+        if (width <= 0) return 0;
+        return Math.floor((width + MyFlowsComponent.GAP) / (MyFlowsComponent.CARD_WIDTH + MyFlowsComponent.GAP));
+    });
+
+    public readonly recentFlows = computed(() => {
+        const max = this.maxVisibleRecent();
+        return this.filteredFlows()
+            .filter((filtered) => filtered.updated_at)
+            .slice()
+            .sort((a, b) => new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime())
+            .slice(0, max);
+    });
+
+    constructor(private flowApiService: FlowsApiService) {
         effect(() => {
             const filter = this.labelsStorage.activeLabelFilter();
             this.flowsService.getFlows(true, filter).subscribe({
@@ -61,6 +91,21 @@ export class MyFlowsComponent {
                 },
             });
         });
+
+        effect(() => {
+            const el = this.recentSection()?.nativeElement;
+            if (!el) return;
+
+            this.resizeObserver?.disconnect();
+            this.containerWidth.set(el.clientWidth);
+            this.resizeObserver = new ResizeObserver((entries) => {
+                const width = entries[0]?.contentRect.width ?? 0;
+                this.containerWidth.set(width);
+            });
+            this.resizeObserver.observe(el);
+        });
+
+        this.destroyRef.onDestroy(() => this.resizeObserver?.disconnect());
     }
 
     public retryLoad(): void {
@@ -98,11 +143,18 @@ export class MyFlowsComponent {
                 break;
 
             case 'viewSessions':
-                console.log('View sessions for flow:', flow.name);
-                this.dialog.open(FlowSessionsListComponent, {
-                    data: { flow },
-                    panelClass: 'custom-dialog-panel',
+                this.flowApiService.getGraphById(event.flow.id, false).subscribe({
+                    next: (graph) => {
+                        this.dialog.open(FlowSessionsListComponent, {
+                            data: { flow: graph },
+                            panelClass: 'custom-dialog-panel',
+                        });
+                    },
+                    error: () => {
+                        this.toastService.error('Failed to load graph');
+                    },
                 });
+
                 break;
 
             case 'rename':
@@ -133,7 +185,6 @@ export class MyFlowsComponent {
                 if (result === true) {
                     this.flowsService.deleteFlow(flow.id).subscribe({
                         next: () => {
-                            console.log(`Flow ${flow.id} - ${flow.name} deleted successfully.`);
                             this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe();
                         },
                         error: (err) => {
@@ -163,17 +214,6 @@ export class MyFlowsComponent {
             this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe();
         });
     }
-    private saving(flowState: GraphDto['metadata'], graph: GraphDto): void {
-        this.graphUpdateService.saveGraph(flowState, graph).subscribe({
-            next: (result) => {
-                this.toastService.success(`Flow copied and saved as "${result.graph.name}"`);
-            },
-            error: (err) => {
-                this.toastService.error('Failed to save graph for copied flow');
-                console.error('Save graph error', err);
-            },
-        });
-    }
 
     private openCopyDialog(flow: GetGraphLightRequest): void {
         const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
@@ -184,7 +224,8 @@ export class MyFlowsComponent {
             if (newName && newName.trim().length > 0) {
                 this.flowsService.copyFlow(flow.id, newName.trim()).subscribe({
                     next: (graph) => {
-                        this.saving(graph.metadata, graph);
+                        this.toastService.success(`Flow copied and saved as "${graph.name}"`);
+                        this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe();
                     },
                     error: (err) => {
                         this.toastService.error('Failed to copy flow');
@@ -201,8 +242,6 @@ export class MyFlowsComponent {
 
         this.runGraphService.runGraph(flow.id, inputs).subscribe({
             next: (response) => {
-                console.log('Flow execution started:', response);
-
                 if (response && response.session_id) {
                     this.router.navigate(['/graph', flow.id, 'session', response.session_id]);
                 } else {

@@ -1,20 +1,15 @@
 <div class="dialog">
     <div class="dialog__header">
-        <span class="dialog__header-title">
-            Create New Collection
-        </span>
+        <span class="dialog__header-title"> Create New Collection </span>
 
         <div class="dialog__stepper">
-            <app-stepper
-                [steps]="stepLabels()"
-                [currentStep]="currentStepIndex()"
-            />
+            <app-stepper [steps]="stepLabels()" [currentStep]="currentStepIndex()" />
         </div>
 
         <div class="dialog__actions">
             <app-button
                 type="outline-primary"
-                [leftIcon]="'ui/arrow-left'"
+                [leftIcon]="'arrow-left'"
                 [disabled]="!this.currentStepIndex()"
                 (click)="prevStep()"
             >
@@ -22,16 +17,16 @@
             </app-button>
             <app-button
                 type="primary"
-                [rightIcon]="currentStepIndex() < 2 ? 'ui/arrow-right' : ''"
-                [disabled]="nextStepDisabled()"
+                [rightIcon]="currentStepIndex() < 2 ? 'arrow-right' : ''"
+                [disabled]="nextDisabled()"
                 (click)="nextStep()"
             >
-                {{ nextButtonText() }}
+                {{ nextText() }}
             </app-button>
-            <app-icon
-                [icon]="'ui/close'"
+            <app-svg-icon
+                icon="x"
                 class="dialog__actions--close"
-                [size]="'1.5rem'"
+                size="1.5rem"
                 (click)="onClose()"
             />
         </div>
@@ -47,16 +42,20 @@
         }
         @case (CreateCollectionStep.SELECT_RAG) {
             <app-step-select-rag
+                [forceType]="data.forceType"
                 [(selectedRag)]="selectedRagType"
                 [(selectedEmbedder)]="selectedEmbedder"
+                [(selectedLLM)]="selectedLLM"
             />
         }
         @case (CreateCollectionStep.CONFIGURE) {
-            <app-rag-configuration
-                class="dialog__content"
-                [naiveRagId]="naiveRagId()!"
-                [collection]="collection()"
-            />
+            <div class="dialog__content">
+                @if (configurationComponent()) {
+                    <ng-container
+                        *ngComponentOutlet="configurationComponent(); inputs: configurationInputs()"
+                    ></ng-container>
+                }
+            </div>
         }
     }
 </div>

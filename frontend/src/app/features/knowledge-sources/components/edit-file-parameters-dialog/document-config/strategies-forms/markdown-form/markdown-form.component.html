@@ -2,14 +2,12 @@
     <div class="config__grid config__grid--pt-0" formGroupName="mainParams">
         <div class="config__grid-item">
             <label>Chunk Size</label>
-            <mat-icon
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="The maximum size of each document chunk. Smaller chunks are more precise but may lose context. Larger chunks preserve more context but may be less precise."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
-            >
-                help_outline
-            </mat-icon>
+                text="The maximum size of each document chunk. Smaller chunks are more precise but may lose context. Larger chunks preserve more context but may be less precise."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
+            />
         </div>
         <div class="config__grid-item config__grid-item--short">
             <app-input-number
@@ -17,19 +15,17 @@
                 [alwaysShowSteps]="true"
                 [invalid]="!!getMainParamControl('chunk_size')?.invalid"
             />
-            <app-validation-errors [control]="getMainParamControl('chunk_size')!"/>
+            <app-validation-errors [control]="getMainParamControl('chunk_size')!" />
         </div>
 
         <div class="config__grid-item">
             <label>Chunk Overlap</label>
-            <mat-icon
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="The number of characters or tokens that overlap between chunks. Helps maintain context between chunks. Must be smaller than chunk size. "
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
-            >
-                help_outline
-            </mat-icon>
+                text="The number of characters or tokens that overlap between chunks. Helps maintain context between chunks. Must be smaller than chunk size. "
+                position="right"
+                tooltipClass="dialog__label-tooltip"
+            />
         </div>
         <div class="config__grid-item config__grid-item--short">
             <app-input-number
@@ -37,7 +33,7 @@
                 [alwaysShowSteps]="true"
                 [invalid]="!!getMainParamControl('chunk_overlap')?.invalid"
             />
-            <app-validation-errors [control]="getMainParamControl('chunk_overlap')!"/>
+            <app-validation-errors [control]="getMainParamControl('chunk_overlap')!" />
         </div>
     </div>
 
@@ -49,51 +45,39 @@
 
         <div class="config__grid-item">
             <label>Headers to Split On</label>
-            <mat-icon
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="Specifies which Markdown header levels (e.g., H1, H2, H3) should be used to divide the document into chunks."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
-            >
-                help_outline
-            </mat-icon>
-        </div>
-        <div class="config__grid-item">
-            <app-chips-input
-                [chips]="headerItems"
+                text="Specifies which Markdown header levels (e.g., H1, H2, H3) should be used to divide the document into chunks."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
         </div>
         <div class="config__grid-item">
-            <label>Return Each Line</label>
-            <mat-icon
-                class="config__tooltip"
-                matTooltip="Treats each line of the Markdown file as a separate chunk. Useful for structured or list-based content."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
-            >
-                help_outline
-            </mat-icon>
+            <app-chips-select [chips]="headerItems" />
         </div>
         <div class="config__grid-item">
-            <app-toggle-switch
-                formControlName="return_each_line"
-            ></app-toggle-switch>
+            <label>Return Each Line</label>
+            <app-help-tooltip
+                class="config__tooltip"
+                text="Treats each line of the Markdown file as a separate chunk. Useful for structured or list-based content."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
+            />
+        </div>
+        <div class="config__grid-item">
+            <app-toggle-switch formControlName="return_each_line"></app-toggle-switch>
         </div>
         <div class="config__grid-item">
             <label>Strip Headers</label>
-            <mat-icon
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="Removes Markdown header syntax (e.g., #, ##) from the chunk content while preserving the text."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
-            >
-                help_outline
-            </mat-icon>
+                text="Removes Markdown header syntax (e.g., #, ##) from the chunk content while preserving the text."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
+            />
         </div>
         <div class="config__grid-item">
-            <app-toggle-switch
-                formControlName="strip_headers"
-            ></app-toggle-switch>
+            <app-toggle-switch formControlName="strip_headers"></app-toggle-switch>
         </div>
     </div>
 </form>

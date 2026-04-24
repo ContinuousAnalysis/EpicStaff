@@ -1,0 +1,107 @@
+:host {
+    display: flex;
+}
+
+.default-llms-card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 176px;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+
+    &--active {
+        border: 1px solid var(--accent-color);
+    }
+
+    &__top {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    &__icon {
+        width: 2rem;
+        height: 2rem;
+        color: var(--color-ks-text);
+    }
+
+    &__close-icon {
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 50%;
+        border: 1px solid var(--accent-color);
+        color: var(--accent-color);
+    }
+
+    &__title {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--configure-models-dialog-inactive-color, #685fff);
+    }
+
+    &__controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    &__select-wrapper {
+        overflow: hidden;
+        flex-grow: 1;
+    }
+
+    &__divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    &__add {
+        height: 40px;
+        aspect-ratio: 1;
+        border-radius: 6px;
+        border: none;
+        background: var(--configure-models-dialog-inactive-color, #685fff);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        transition:
+            transform 0.1s ease,
+            background 0.2s ease;
+
+        i {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        &:hover {
+            background: #716bff;
+        }
+
+        &:active {
+            transform: scale(0.96);
+        }
+    }
+
+    &__description {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 1;
+        color: rgba(217, 217, 222, 0.6);
+    }
+}

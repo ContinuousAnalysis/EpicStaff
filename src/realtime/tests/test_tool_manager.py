@@ -8,13 +8,13 @@ from tests.conftest import CONNECTION_KEY
 def test_register_tools(tool_manager, sample_chat_data):
     tool_manager.connection_tool_executors = {}
     tool_manager.register_tools_from_rt_agent_chat_data(
-        sample_chat_data, chat_executor=MagicMock()
+        sample_chat_data, chat_mode_controller=MagicMock()
     )
 
     assert CONNECTION_KEY in tool_manager.connection_tool_executors
     executors = tool_manager.connection_tool_executors[CONNECTION_KEY]
     assert any(
-        exec.tool_name == "stop_agent" or exec.tool_name == "knowledge_tool"
+        exec.tool_name == "stop_agent_tool" or exec.tool_name == "knowledge_tool"
         for exec in executors
     )
 
@@ -56,16 +56,3 @@ async def test_get_realtime_tool_models(tool_manager):
     assert models[1]["name"] == "t2"
 
 
-@pytest.mark.asyncio
-async def test_register_tools_websocket(tool_manager, sample_chat_data):
-    tool_manager.connection_tool_executors = {}
-    tool_manager.register_tools_from_rt_agent_chat_data(
-        sample_chat_data, chat_executor=MagicMock()
-    )
-
-    assert CONNECTION_KEY in tool_manager.connection_tool_executors
-    executors = tool_manager.connection_tool_executors[CONNECTION_KEY]
-    assert any(
-        exec.tool_name == "stop_agent" or exec.tool_name == "knowledge_tool"
-        for exec in executors
-    )

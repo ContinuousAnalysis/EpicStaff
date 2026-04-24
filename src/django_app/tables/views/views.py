@@ -17,8 +17,8 @@ from tables.models.llm_models import DefaultLLMConfig
 from tables.services.realtime_service import RealtimeService
 from utils.logger import logger
 
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, inline_serializer
+from rest_framework import serializers as drf_serializers
 from django.db import transaction
 from django.db.models import Count
 from django.conf import settings
@@ -74,8 +74,13 @@ from tables.serializers.serializers import (
     RegisterTelegramTriggerSerializer,
 )
 
-# from tables.serializers.knowledge_serializers import CollectionStatusSerializer
-from tables.serializers.quickstart_serializers import QuickstartSerializer
+from tables.serializers.quickstart_serializers import (
+    QuickstartSerializer,
+    QuickstartConfigSerializer,
+    QuickstartStatusSerializer,
+)
+from tables.serializers.default_config_serializers import DefaultModelsSerializer
+from tables.models.default_models import DefaultModels
 from tables.filters import SessionFilter  # CollectionFilter,
 
 from .default_config import *
@@ -118,16 +123,15 @@ class SessionViewSet(
     ]  # allowed fields
     ordering = ["-created_at", "id"]  # default ordering
 
-    @swagger_auto_schema(
-        operation_description="Retrieve a list of sessions.",
-        manual_parameters=[
-            openapi.Parameter(
+    @extend_schema(
+        description="Retrieve a list of sessions.",
+        parameters=[
+            OpenApiParameter(
                 name="detailed",
-                in_=openapi.IN_QUERY,
+                location=OpenApiParameter.QUERY,
                 description="Whether to include all session details. Set to `false` to return only minimal fields. The `true` value is deprecated and will be removed in a future version.",
                 required=False,
-                type=openapi.TYPE_BOOLEAN,
-                default=True,
+                type=drf_serializers.BooleanField(),
             )
         ],
     )
@@ -143,25 +147,10 @@ class SessionViewSet(
     def get_queryset(self):
         return Session.objects.select_related("graph")
 
-    @swagger_auto_schema(
-        operation_description="Get counts of each status grouped by graph ID",
+    @extend_schema(
+        description="Get counts of each status grouped by graph ID",
         responses={
-            200: openapi.Schema(
-                type=openapi.TYPE_OBJECT,
-                properties={
-                    "graph_id": openapi.Schema(
-                        type=openapi.TYPE_OBJECT,
-                        properties={
-                            choice.value: openapi.Schema(
-                                type=openapi.TYPE_INTEGER, description=choice.label
-                            )
-                            for choice in Session.SessionStatus
-                        },
-                        description="Status counts",
-                    ),
-                },
-                description="Mapping of graph_id to status counts",
-            )
+            200: OpenApiResponse(description="Mapping of graph_id to status counts"),
         },
     )
     @action(detail=False, methods=["GET"])
@@ -179,21 +168,15 @@ class SessionViewSet(
 
         return Response(data)
 
-    @swagger_auto_schema(
-        method="post",
-        operation_description="Delete multiple sessions by IDs",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            required=["ids"],
-            properties={
-                "ids": openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Items(type=openapi.TYPE_INTEGER),
-                    description="List of session IDs to delete",
-                )
+    @extend_schema(
+        description="Delete multiple sessions by IDs",
+        request=inline_serializer(
+            name="SessionBulkDeleteRequest",
+            fields={
+                "ids": drf_serializers.ListField(child=drf_serializers.IntegerField()),
             },
         ),
-        responses={200: openapi.Response("Successfully deleted IDs")},
+        responses={200: OpenApiResponse(description="Successfully deleted IDs")},
     )
     @action(detail=False, methods=["post"], url_path="bulk_delete")
     def bulk_delete(self, request):
@@ -214,14 +197,11 @@ class SessionViewSet(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
 
-    @swagger_auto_schema(
-        method="get",
+    @extend_schema(
         responses={
-            200: openapi.Response(
-                description="Session warnings retrieved successfully"
-            ),
-            400: openapi.Response(description="Session is required"),
-            404: openapi.Response(description="Session not found"),
+            200: OpenApiResponse(description="Session warnings retrieved successfully"),
+            400: OpenApiResponse(description="Session is required"),
+            404: OpenApiResponse(description="Session not found"),
         },
     )
     @action(detail=True, methods=["get"], url_path="warnings")
@@ -238,14 +218,11 @@ class SessionViewSet(
 
 
 class RunSession(APIView):
-    @swagger_auto_schema(
-        request_body=RunSessionSerializer,
+    @extend_schema(
+        request=RunSessionSerializer,
         responses={
-            201: openapi.Response(
-                description="Session Started",
-                examples={"application/json": {"session_id": 123}},
-            ),
-            400: "Bad Request - Invalid Input",
+            201: OpenApiResponse(description="Session Started"),
+            400: OpenApiResponse(description="Bad Request - Invalid Input"),
         },
     )
     def post(self, request):
@@ -381,20 +358,10 @@ class RunSession(APIView):
 
 
 class GetUpdates(APIView):
-    @swagger_auto_schema(
+    @extend_schema(
         responses={
-            200: openapi.Response(
-                description="Session details retrieved successfully",
-                examples={
-                    "application/json": {
-                        "status": "run",
-                        "conversation": "Sample conversation",
-                    }
-                },
-            ),
-            404: openapi.Response(
-                description="Session not found or session ID missing"
-            ),
+            200: OpenApiResponse(description="Session details retrieved successfully"),
+            404: OpenApiResponse(description="Session not found or session ID missing"),
         }
     )
     def get(self, request, *args, **kwargs):
@@ -416,12 +383,10 @@ class GetUpdates(APIView):
 
 
 class StopSession(APIView):
-    @swagger_auto_schema(
+    @extend_schema(
         responses={
-            204: openapi.Response(description="Session stoped"),
-            404: openapi.Response(
-                description="Session not found or session ID missing"
-            ),
+            204: OpenApiResponse(description="Session stopped"),
+            404: OpenApiResponse(description="Session not found or session ID missing"),
         },
     )
     def post(self, request, *args, **kwargs):
@@ -447,12 +412,9 @@ class StopSession(APIView):
 
 
 class EnvironmentConfig(APIView):
-    @swagger_auto_schema(
+    @extend_schema(
         responses={
-            200: openapi.Response(
-                description="Config retrieved successfully",
-                examples={"application/json": {"data": {"key": "value"}}},
-            ),
+            200: OpenApiResponse(description="Config retrieved successfully"),
         },
     )
     def get(self, request, format=None):
@@ -461,14 +423,11 @@ class EnvironmentConfig(APIView):
 
         return Response(status=status.HTTP_200_OK, data={"data": config_dict})
 
-    @swagger_auto_schema(
-        request_body=EnvironmentConfigSerializer,
+    @extend_schema(
+        request=EnvironmentConfigSerializer,
         responses={
-            201: openapi.Response(
-                description="Config updated successfully",
-                examples={"application/json": {"data": {"key": "value"}}},
-            ),
-            400: openapi.Response(description="Invalid config data provided"),
+            201: OpenApiResponse(description="Config updated successfully"),
+            400: OpenApiResponse(description="Invalid config data provided"),
         },
     )
     def post(self, request, *args, **kwargs):
@@ -485,12 +444,11 @@ class EnvironmentConfig(APIView):
         return Response(data={"data": updated_config}, status=status.HTTP_201_CREATED)
 
 
-@swagger_auto_schema(
-    method="delete",
+@extend_schema(
     responses={
-        204: openapi.Response(description="Config deleted successfully"),
-        400: openapi.Response(description="No key provided"),
-        404: openapi.Response(description="Key not found"),
+        204: OpenApiResponse(description="Config deleted successfully"),
+        400: OpenApiResponse(description="No key provided"),
+        404: OpenApiResponse(description="Key not found"),
     },
 )
 @api_view(["DELETE"])
@@ -512,13 +470,13 @@ def delete_environment_config(request, *args, **kwargs):
 
 
 class AnswerToLLM(APIView):
-    @swagger_auto_schema(
-        request_body=AnswerToLLMSerializer,
+    @extend_schema(
+        request=AnswerToLLMSerializer,
         responses={
-            202: openapi.Response(description="User input sent"),
-            400: openapi.Response(description="Invalid data provided"),
-            404: openapi.Response(description="Session not found"),
-            418: openapi.Response(description="Session status is not wait_for_input"),
+            202: OpenApiResponse(description="User input sent"),
+            400: OpenApiResponse(description="Invalid data provided"),
+            404: OpenApiResponse(description="Session not found"),
+            418: OpenApiResponse(description="Session status is not wait_for_input"),
         },
     )
     def post(self, request, *args, **kwargs):
@@ -579,20 +537,20 @@ class AnswerToLLM(APIView):
 
 
 class CrewDeleteAPIView(APIView):
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
                 name="delete_sessions",
-                in_=openapi.IN_QUERY,
-                type=openapi.TYPE_STRING,
+                location=OpenApiParameter.QUERY,
+                type=drf_serializers.CharField(),
                 description="Delete all sessions associated (true/false). Default is false.",
                 required=False,
             )
         ],
         responses={
-            200: "Crew deleted successfully",
-            400: "Invalid value for delete_sessions",
-            404: "Crew not found",
+            200: OpenApiResponse(description="Crew deleted successfully"),
+            400: OpenApiResponse(description="Invalid value for delete_sessions"),
+            404: OpenApiResponse(description="Crew not found"),
         },
     )
     def delete(self, request, id):
@@ -627,11 +585,11 @@ class CrewDeleteAPIView(APIView):
 
 
 class DefaultLLMConfigAPIView(APIView):
-    @swagger_auto_schema(
-        operation_summary="Get llm config defaults",
+    @extend_schema(
+        summary="Get llm config defaults",
         responses={
             200: DefaultLLMConfigSerializer,
-            404: openapi.Response(description="Object not found"),
+            404: OpenApiResponse(description="Object not found"),
         },
     )
     def get(self, request, *args, **kwargs):
@@ -640,13 +598,13 @@ class DefaultLLMConfigAPIView(APIView):
 
         return Response(serializer.data)
 
-    @swagger_auto_schema(
-        operation_summary="Update llm config defaults",
-        request_body=DefaultLLMConfigSerializer,
+    @extend_schema(
+        summary="Update llm config defaults",
+        request=DefaultLLMConfigSerializer,
         responses={
             200: DefaultLLMConfigSerializer,
-            404: openapi.Response(description="Object not found"),
-            400: openapi.Response(description="Validation Error"),
+            404: OpenApiResponse(description="Object not found"),
+            400: OpenApiResponse(description="Validation Error"),
         },
     )
     def put(self, request, *args, **kwargs):
@@ -665,11 +623,11 @@ class DefaultLLMConfigAPIView(APIView):
 
 
 class DefaultEmbeddingConfigAPIView(APIView):
-    @swagger_auto_schema(
-        operation_summary="Get embedding config defaults",
+    @extend_schema(
+        summary="Get embedding config defaults",
         responses={
             200: DefaultEmbeddingConfigSerializer,
-            404: openapi.Response(description="Object not found"),
+            404: OpenApiResponse(description="Object not found"),
         },
     )
     def get(self, request, *args, **kwargs):
@@ -678,13 +636,13 @@ class DefaultEmbeddingConfigAPIView(APIView):
 
         return Response(serializer.data)
 
-    @swagger_auto_schema(
-        operation_summary="Update embedding config defaults",
-        request_body=DefaultEmbeddingConfigSerializer,
+    @extend_schema(
+        summary="Update embedding config defaults",
+        request=DefaultEmbeddingConfigSerializer,
         responses={
             200: DefaultEmbeddingConfigSerializer,
-            404: openapi.Response(description="Object not found"),
-            400: openapi.Response(description="Validation Error"),
+            404: OpenApiResponse(description="Object not found"),
+            400: OpenApiResponse(description="Validation Error"),
         },
     )
     def put(self, request, *args, **kwargs):
@@ -710,36 +668,25 @@ class ToolListRetrieveUpdateGenericViewSet(
 
 
 class RunPythonCodeAPIView(APIView):
-    @swagger_auto_schema(
-        operation_summary="Run Python Code",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                "python_code_id": openapi.Schema(
-                    type=openapi.TYPE_INTEGER,
-                    description="ID of the Python code to execute",
-                ),
-                "variables": openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    additional_properties=openapi.Schema(type=openapi.TYPE_STRING),
-                    description="Key-value arguments for the code",
+    @extend_schema(
+        summary="Run Python Code",
+        request=inline_serializer(
+            name="RunPythonCodeRequest",
+            fields={
+                "python_code_id": drf_serializers.IntegerField(),
+                "variables": drf_serializers.DictField(
+                    child=drf_serializers.CharField(), required=False
                 ),
             },
-            required=["python_code_id"],
         ),
         responses={
-            200: openapi.Response(
-                description="Execution ID",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "execution_id": openapi.Schema(
-                            type=openapi.TYPE_INTEGER, description="ID of the execution"
-                        )
-                    },
-                ),
+            200: inline_serializer(
+                name="RunPythonCodeResponse",
+                fields={
+                    "execution_id": drf_serializers.IntegerField(),
+                },
             ),
-            400: "Bad Request",
+            400: OpenApiResponse(description="Bad Request"),
         },
     )
     def post(self, request):
@@ -757,18 +704,11 @@ class RunPythonCodeAPIView(APIView):
 
 
 class InitRealtimeAPIView(APIView):
-    @swagger_auto_schema(
-        request_body=InitRealtimeSerializer,
+    @extend_schema(
+        request=InitRealtimeSerializer,
         responses={
-            201: openapi.Response(
-                description="Realtime agent created successfully",
-                examples={
-                    "application/json": {
-                        "connection_key": "d8cb1ef6-28a3-4689-a0b6-4faeb05a4f2b"
-                    }
-                },
-            ),
-            400: "Bad Request - Invalid Input",
+            201: OpenApiResponse(description="Realtime agent created successfully"),
+            400: OpenApiResponse(description="Bad Request - Invalid Input"),
         },
     )
     def post(self, request):
@@ -808,38 +748,37 @@ class QuickstartView(APIView):
     API endpoint for managing quickstart configurations
     """
 
-    @swagger_auto_schema(
-        operation_description="Get list of supported providers",
-        responses={200: openapi.Response(description="List of supported providers")},
+    @extend_schema(
+        description="Get list of supported providers",
+        responses={200: OpenApiResponse(description="List of supported providers")},
     )
     def get(self, request):
-        """
-        Get list of supported providers for quickstart configuration
-        """
         try:
             supported_providers = list(quickstart_service.get_supported_providers())
-
-            return Response(
-                data={
-                    "supported_providers": supported_providers,
-                    "count": len(supported_providers),
-                },
-                status=status.HTTP_200_OK,
+            last_config = quickstart_service.get_last_quickstart()
+            is_synced = (
+                quickstart_service.is_synced(last_config) if last_config else False
             )
 
+            data = QuickstartStatusSerializer(
+                {
+                    "supported_providers": supported_providers,
+                    "last_config": last_config,
+                    "is_synced": is_synced,
+                }
+            ).data
+            return Response(data, status=status.HTTP_200_OK)
+
         except Exception as e:
-            logger.error(f"Error getting supported providers: {str(e)}")
+            logger.error(f"Error getting quickstart status: {str(e)}")
             return Response(
-                data={
-                    "detail": "Failed to retrieve supported providers",
-                    "error": "An unexpected error occurred",
-                },
+                data={"detail": "Failed to retrieve quickstart status"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @swagger_auto_schema(
-        request_body=QuickstartSerializer,
-        responses={202: openapi.Response(description="Chunking operation accepted")},
+    @extend_schema(
+        request=QuickstartSerializer,
+        responses={202: OpenApiResponse(description="Chunking operation accepted")},
     )
     def post(self, request):
         serializer = QuickstartSerializer(data=request.data)
@@ -847,24 +786,56 @@ class QuickstartView(APIView):
             provider = serializer.validated_data["provider"]
             api_key = serializer.validated_data["api_key"]
 
-            quickstart = quickstart_service.quickstart(provider, api_key)
+            result = quickstart_service.quickstart(provider, api_key)
 
-            if quickstart.get("success", False):
-                config_name = quickstart.get("config_name")
+            if result.get("success", False):
+                config_name = result["config_name"]
+                configs = QuickstartConfigSerializer(
+                    {
+                        "config_name": config_name,
+                        "llm_config": result["llm_config"],
+                        "embedding_config": result["embedding_config"],
+                        "realtime_config": result["realtime_config"],
+                        "realtime_transcription_config": result[
+                            "realtime_transcription_config"
+                        ],
+                    }
+                ).data
                 return Response(
                     data={
                         "detail": "Quickstart initiated successfully!",
                         "config_name": config_name,
+                        "configs": configs,
                     },
                     status=status.HTTP_200_OK,
                 )
             else:
-                error = quickstart.get("error")
                 return Response(
-                    data={"detail": "Error quickstart", "error": error},
+                    data={"detail": "Error quickstart", "error": result.get("error")},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class QuickstartApplyView(APIView):
+    """
+    Applies a quickstart config to DefaultModels.
+    If config_name is omitted, the most recently created quickstart config is used.
+    """
+
+    @extend_schema(
+        responses={200: DefaultModelsSerializer},
+    )
+    def post(self, request):
+        last = quickstart_service.get_last_quickstart()
+        if not last:
+            return Response(
+                {"detail": "No quickstart config found. Run POST /quickstart/ first."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        dm = quickstart_service.apply_to_default_models(last["config_name"])
+        return Response(DefaultModelsSerializer(dm).data, status=status.HTTP_200_OK)
 
 
 class ProcessRagIndexingView(APIView):
@@ -873,12 +844,12 @@ class ProcessRagIndexingView(APIView):
     All business logic is handled by IndexingService.
     """
 
-    @swagger_auto_schema(
-        request_body=ProcessRagIndexingSerializer,
+    @extend_schema(
+        request=ProcessRagIndexingSerializer,
         responses={
-            202: "Indexing process accepted and queued",
-            400: "Invalid request or RAG not ready for indexing",
-            404: "RAG configuration not found",
+            202: OpenApiResponse(description="Indexing process accepted and queued"),
+            400: OpenApiResponse(description="Invalid request or RAG not ready for indexing"),
+            404: OpenApiResponse(description="RAG configuration not found"),
         },
     )
     def post(self, request):
@@ -915,18 +886,18 @@ class ProcessRagIndexingView(APIView):
             raise
 
 
-class ProcessCollectionEmbeddingView(APIView):
-    @swagger_auto_schema(request_body=ProcessCollectionEmbeddingSerializer)
-    def post(self, request):
-        serializer = ProcessCollectionEmbeddingSerializer(data=request.data)
-        if serializer.is_valid():
-            collection_id = serializer["collection_id"].value
-            if not SourceCollection.objects.filter(
-                collection_id=collection_id
-            ).exists():
-                return Response(status=status.HTTP_404_NOT_FOUND)
-            redis_service.publish_source_collection(collection_id=collection_id)
-            return Response(status=status.HTTP_202_ACCEPTED)
+# class ProcessCollectionEmbeddingView(APIView):
+#     @extend_schema(request=ProcessCollectionEmbeddingSerializer)
+#     def post(self, request):
+#         serializer = ProcessCollectionEmbeddingSerializer(data=request.data)
+#         if serializer.is_valid():
+#             collection_id = serializer["collection_id"].value
+#             if not SourceCollection.objects.filter(
+#                 collection_id=collection_id
+#             ).exists():
+#                 return Response(status=status.HTTP_404_NOT_FOUND)
+#             redis_service.publish_source_collection(collection_id=collection_id)
+#             return Response(status=status.HTTP_202_ACCEPTED)
 
 
 class TelegramTriggerNodeAvailableFieldsView(APIView):
@@ -942,12 +913,12 @@ class TelegramTriggerNodeAvailableFieldsView(APIView):
 
 
 class RegisterTelegramTriggerApiView(APIView):
-    @swagger_auto_schema(
-        request_body=RegisterTelegramTriggerSerializer,
+    @extend_schema(
+        request=RegisterTelegramTriggerSerializer,
         responses={
-            200: "OK",
-            404: "TelegramTriggerNode not found",
-            503: "No webhook tunnel available",
+            200: OpenApiResponse(description="OK"),
+            404: OpenApiResponse(description="TelegramTriggerNode not found"),
+            503: OpenApiResponse(description="No webhook tunnel available"),
         },
     )
     def post(self, request):
@@ -975,8 +946,8 @@ class RegisterTelegramTriggerApiView(APIView):
 
 
 class RegisterWebhooksApiView(APIView):
-    @swagger_auto_schema(
-        responses={200: "OK"},
+    @extend_schema(
+        responses={200: OpenApiResponse(description="OK")},
     )
     def post(self, request):
         webhook_trigger_service = WebhookTriggerService()
