@@ -92,7 +92,11 @@
         }
 
         @if (user(); as user) {
-            <li class="sidenav-nav-item user-menu-item">
+            <li
+                class="sidenav-nav-item user-menu-item"
+                appClickOutside
+                (appClickOutside)="closeUserMenu()"
+            >
                 <div class="tooltip-wrapper user-avatar-wrapper">
                     <div
                         class="user-avatar-btn"
