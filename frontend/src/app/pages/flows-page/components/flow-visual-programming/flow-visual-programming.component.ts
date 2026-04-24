@@ -1,4 +1,5 @@
 import { Dialog as CdkDialog } from '@angular/cdk/dialog';
+import { Overlay } from '@angular/cdk/overlay';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -16,7 +17,19 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, defaultIfEmpty, EMPTY, finalize, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
+import {
+    catchError,
+    defaultIfEmpty,
+    EMPTY,
+    filter,
+    finalize,
+    forkJoin,
+    map,
+    Observable,
+    of,
+    switchMap,
+    tap,
+} from 'rxjs';
 
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
@@ -25,6 +38,7 @@ import {
     SaveVersionDialogComponent,
     SaveVersionDialogResult,
 } from '../../../../features/flows/components/save-version-dialog/save-version-dialog.component';
+import { VersionHistoryPanelComponent } from '../../../../features/flows/components/version-history-panel/version-history-panel.component';
 import { GetGraphLightRequest, GraphDto } from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
@@ -127,6 +141,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly toastService: ToastService,
         private readonly runGraphService: RunGraphService,
         private readonly dialog: CdkDialog,
+        private readonly overlay: Overlay,
         private readonly configService: ConfigService,
         private readonly elementRef: ElementRef,
         private readonly epicChatService: EpicChatService,
@@ -587,7 +602,16 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     }
 
     public onViewVersionHistory(): void {
-        // TODO: implement version history panel/dialog
+        if (!this.graph?.id) return;
+
+        const positionStrategy = this.overlay.position().global().right('0').top('5rem');
+
+        this.dialog.open(VersionHistoryPanelComponent, {
+            positionStrategy,
+            height: 'calc(100% - 5rem)',
+            width: '380px',
+            data: { graphId: this.graph.id },
+        });
     }
 
     public onSaveVersion(): void {
@@ -599,17 +623,27 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                 data: {},
             });
 
-            dialogRef.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
-                if (!result) return;
-
-                this.flowApiService
-                    .saveGraphVersion({ graph_id: this.graph.id, name: result.name, description: result.description })
-                    .pipe(takeUntilDestroyed(this.destroyRef))
-                    .subscribe({
-                        next: () => this.toastService.success(`Version '${result.name}' saved`),
-                        error: () => this.toastService.error('Failed to save version'),
-                    });
-            });
+            dialogRef.closed
+                .pipe(
+                    takeUntilDestroyed(this.destroyRef),
+                    filter((result): result is SaveVersionDialogResult => !!result),
+                    switchMap((result) =>
+                        this.flowApiService
+                            .saveGraphVersion({
+                                graph_id: this.graph.id,
+                                name: result.name,
+                                description: result.description,
+                            })
+                            .pipe(
+                                tap(() => this.toastService.success(`Version '${result.name}' saved`)),
+                                catchError(() => {
+                                    this.toastService.error('Failed to save version');
+                                    return EMPTY;
+                                })
+                            )
+                    )
+                )
+                .subscribe();
         };
 
         if (!this.hasUnsavedChanges()) {

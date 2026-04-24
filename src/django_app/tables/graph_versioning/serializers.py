@@ -21,3 +21,13 @@ class GraphVersionReadSerializer(serializers.ModelSerializer):
             "description",
             "created_at",
         ]
+
+
+class GraphVersionUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GraphVersion
+        fields = ["name", "description"]
+        extra_kwargs = {
+            "name": {"required": False},
+            "description": {"required": False, "allow_blank": True},
+        }
