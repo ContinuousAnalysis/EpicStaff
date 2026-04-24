@@ -9,7 +9,13 @@
     >
         <app-svg-icon icon="dots-vertical" size="1rem"></app-svg-icon>
     </button>
-    <div class="context-menu" *ngIf="isMenuOpen()" (mouseenter)="onMenuEnter()" (mouseleave)="onMenuLeave()">
+    <div
+        class="context-menu"
+        [class.open-upwards]="openUpwards()"
+        *ngIf="isMenuOpen()"
+        (mouseenter)="onMenuEnter()"
+        (mouseleave)="onMenuLeave()"
+    >
         <app-flow-menu-item
             label="View Sessions"
             (itemClick)="onActionClick($event, 'viewSessions')"
