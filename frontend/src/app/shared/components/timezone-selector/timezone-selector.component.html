@@ -1,0 +1,56 @@
+<button
+    #triggerBtn
+    class="tz-selector__btn"
+    type="button"
+    [disabled]="isDisabled()"
+    [class.tz-selector__btn--open]="open()"
+    [class.tz-selector__btn--placeholder]="!selectedOption()"
+    (click)="toggle()"
+>
+    <span class="tz-selector__text">{{ selectedOption()?.displayLabel ?? 'Timezone' }}</span>
+    <svg
+        class="tz-selector__chevron"
+        [class.tz-selector__chevron--open]="open()"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+    >
+        <path
+            d="M6 9l6 6 6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+        />
+    </svg>
+</button>
+
+<ng-template #dropdownTemplate>
+    <div class="tz-selector__dropdown">
+        <div class="tz-selector__search-wrap">
+            <input
+                #searchInput
+                class="tz-selector__search"
+                type="text"
+                placeholder="Search timezone..."
+                [ngModel]="searchQuery()"
+                (ngModelChange)="searchQuery.set($event)"
+            />
+        </div>
+        <div class="tz-selector__list">
+            @for (tz of filteredOptions(); track tz.iana) {
+                <div
+                    class="tz-selector__option"
+                    [class.tz-selector__option--selected]="tz.iana === selectedValue()"
+                    (click)="onSelect(tz)"
+                >
+                    <span class="tz-selector__iana">{{ tz.iana }}</span>
+                    <span class="tz-selector__offset">{{ tz.offsetLabel }}</span>
+                </div>
+            }
+            @if (!filteredOptions().length) {
+                <div class="tz-selector__empty">No timezones found</div>
+            }
+        </div>
+    </div>
+</ng-template>

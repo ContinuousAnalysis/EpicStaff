@@ -45,6 +45,7 @@ export * from './status-badge/status-badge.component';
 export * from './tab-button/tab-button.component';
 export * from './textarea/textarea.component';
 export * from './time-picker/time-picker.component';
+export * from './timezone-selector/timezone-selector.component';
 export * from './tools-selector/tools-selector.component';
 export * from './tooltip/tooltip.component';
 export * from './unsaved-changes-dialog';

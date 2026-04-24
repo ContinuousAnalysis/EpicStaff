@@ -211,6 +211,7 @@ function toScheduleComparable(node: ScheduleTriggerNodeModel): unknown {
         endType: node.data.endType,
         endDateTime: node.data.endDateTime,
         maxRuns: node.data.maxRuns,
+        timezone: node.data.timezone,
         // currentRuns is excluded: it is a read-only backend counter, not user-configurable.
         // Including it would mark nodes as dirty after every server response.
         metadata: toNodeMetadata(node),

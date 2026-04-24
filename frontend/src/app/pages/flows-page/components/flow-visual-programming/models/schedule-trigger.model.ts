@@ -23,6 +23,7 @@ export interface ScheduleBlock {
     start_date_time: string;
     interval: ScheduleIntervalBlock | null;
     end: ScheduleEndBlock;
+    timezone: string;
 }
 
 /** Shape returned by GET /api/schedule-trigger-nodes/{id}/ and as the response body of POST/PUT/PATCH. */
@@ -68,4 +69,5 @@ export interface ScheduleTriggerNodeData {
     endDateTime: string | null;
     maxRuns: number | null;
     currentRuns?: number;
+    timezone: string;
 }

@@ -1,7 +1,14 @@
 <div class="panel-container">
     <div class="panel-content">
-        <form [formGroup]="form" class="form-container">
-            <div class="form-layout" [class.expanded]="isExpanded()" [class.collapsed]="!isExpanded()">
+        <form
+            [formGroup]="form"
+            class="form-container"
+        >
+            <div
+                class="form-layout"
+                [class.expanded]="isExpanded()"
+                [class.collapsed]="!isExpanded()"
+            >
                 <div class="form-fields">
                     <!-- Node Name -->
                     <app-custom-input
@@ -16,7 +23,10 @@
                     <div class="section">
                         <div class="section-header">Start</div>
                         <div class="date-time-row">
-                            <div class="field-col" [class.has-row-error]="startRowError()">
+                            <div
+                                class="field-col"
+                                [class.has-row-error]="startRowError()"
+                            >
                                 <div class="field-label">
                                     Start time
                                     <mat-icon
@@ -24,11 +34,15 @@
                                         matTooltipPosition="right"
                                         matTooltipClass="custom-tooltip"
                                         class="help-icon"
-                                    >help_outline</mat-icon>
+                                        >help_outline</mat-icon
+                                    >
                                 </div>
                                 <app-time-picker formControlName="start_time" />
                             </div>
-                            <div class="field-col" [class.has-row-error]="startRowError()">
+                            <div
+                                class="field-col"
+                                [class.has-row-error]="startRowError()"
+                            >
                                 <div class="field-label">
                                     Start date
                                     <mat-icon
@@ -36,7 +50,8 @@
                                         matTooltipPosition="right"
                                         matTooltipClass="custom-tooltip"
                                         class="help-icon"
-                                    >help_outline</mat-icon>
+                                        >help_outline</mat-icon
+                                    >
                                 </div>
                                 <app-date-picker formControlName="start_date" />
                             </div>
@@ -44,6 +59,21 @@
                         @if (startRowError()) {
                             <div class="row-error">{{ startRowError() }}</div>
                         }
+
+                        <!-- Timezone -->
+                        <div class="field-col-full">
+                            <div class="field-label">
+                                Timezone
+                                <mat-icon
+                                    matTooltip="The timezone used for scheduling. Stored as an IANA timezone name (e.g. Europe/Kyiv)."
+                                    matTooltipPosition="right"
+                                    matTooltipClass="custom-tooltip"
+                                    class="help-icon"
+                                    >help_outline</mat-icon
+                                >
+                            </div>
+                            <app-timezone-selector formControlName="timezone" />
+                        </div>
                     </div>
 
                     <!-- Run mode -->
@@ -55,9 +85,14 @@
                                 matTooltipPosition="right"
                                 matTooltipClass="custom-tooltip"
                                 class="help-icon"
-                            >help_outline</mat-icon>
+                                >help_outline</mat-icon
+                            >
                         </div>
-                        <app-radio-button [mod]="'segmented'" formControlName="run_mode" [options]="runModeOptions" />
+                        <app-radio-button
+                            [mod]="'segmented'"
+                            formControlName="run_mode"
+                            [options]="runModeOptions"
+                        />
                     </div>
 
                     <!-- Repeat settings (visible when run_mode = repeat) -->
@@ -70,10 +105,14 @@
                                     matTooltipPosition="right"
                                     matTooltipClass="custom-tooltip"
                                     class="help-icon"
-                                >help_outline</mat-icon>
+                                    >help_outline</mat-icon
+                                >
                             </div>
                             <div class="repeat-row">
-                                <app-number-stepper formControlName="repeat_every" [min]="1" />
+                                <app-number-stepper
+                                    formControlName="repeat_every"
+                                    [min]="1"
+                                />
                                 <app-select
                                     formControlName="repeat_unit"
                                     [items]="repeatUnitItems"
@@ -91,7 +130,8 @@
                                     matTooltipPosition="right"
                                     matTooltipClass="custom-tooltip"
                                     class="help-icon"
-                                >help_outline</mat-icon>
+                                    >help_outline</mat-icon
+                                >
                             </div>
                             <div class="weekday-row">
                                 @for (wd of weekdays; track wd.value) {
@@ -114,16 +154,24 @@
                                     matTooltipPosition="right"
                                     matTooltipClass="custom-tooltip"
                                     class="help-icon"
-                                >help_outline</mat-icon>
+                                    >help_outline</mat-icon
+                                >
                             </div>
-                            <app-radio-button [mod]="'segmented'" formControlName="end_mode" [options]="endModeOptions" />
+                            <app-radio-button
+                                [mod]="'segmented'"
+                                formControlName="end_mode"
+                                [options]="endModeOptions"
+                            />
                         </div>
 
                         <!-- End date/time (visible when end_mode = on_date) -->
                         @if (showEndDateTime()) {
                             <div class="section">
                                 <div class="date-time-row">
-                                    <div class="field-col" [class.has-row-error]="endRowError()">
+                                    <div
+                                        class="field-col"
+                                        [class.has-row-error]="endRowError()"
+                                    >
                                         <div class="field-label">
                                             End time
                                             <mat-icon
@@ -131,11 +179,15 @@
                                                 matTooltipPosition="right"
                                                 matTooltipClass="custom-tooltip"
                                                 class="help-icon"
-                                            >help_outline</mat-icon>
+                                                >help_outline</mat-icon
+                                            >
                                         </div>
                                         <app-time-picker formControlName="end_time" />
                                     </div>
-                                    <div class="field-col" [class.has-row-error]="endRowError()">
+                                    <div
+                                        class="field-col"
+                                        [class.has-row-error]="endRowError()"
+                                    >
                                         <div class="field-label">
                                             End date
                                             <mat-icon
@@ -143,7 +195,8 @@
                                                 matTooltipPosition="right"
                                                 matTooltipClass="custom-tooltip"
                                                 class="help-icon"
-                                            >help_outline</mat-icon>
+                                                >help_outline</mat-icon
+                                            >
                                         </div>
                                         <app-date-picker formControlName="end_date" />
                                     </div>
@@ -164,9 +217,13 @@
                                         matTooltipPosition="right"
                                         matTooltipClass="custom-tooltip"
                                         class="help-icon"
-                                    >help_outline</mat-icon>
+                                        >help_outline</mat-icon
+                                    >
                                 </div>
-                                <app-number-stepper formControlName="max_runs" [min]="1" />
+                                <app-number-stepper
+                                    formControlName="max_runs"
+                                    [min]="1"
+                                />
                             </div>
                         }
                     }
@@ -180,7 +237,8 @@
                                 matTooltipPosition="right"
                                 matTooltipClass="custom-tooltip"
                                 class="help-icon"
-                            >help_outline</mat-icon>
+                                >help_outline</mat-icon
+                            >
                         </div>
                         <app-toggle-switch formControlName="is_active" />
                     </div>

@@ -71,6 +71,7 @@ function buildScheduleBlock(node: ScheduleTriggerNodeModel): Record<string, unkn
             start_date_time: d.startDateTime,
             interval: null,
             end: { type: 'never', date_time: null, max_runs: null },
+            timezone: d.timezone,
         };
     }
 
@@ -90,7 +91,7 @@ function buildScheduleBlock(node: ScheduleTriggerNodeModel): Record<string, unkn
         end = { type: 'never', date_time: null, max_runs: null };
     }
 
-    return { run_mode: 'repeat', start_date_time: d.startDateTime, interval, end };
+    return { run_mode: 'repeat', start_date_time: d.startDateTime, interval, end, timezone: d.timezone };
 }
 
 export function buildBulkSavePayload(

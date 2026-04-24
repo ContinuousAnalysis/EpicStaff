@@ -12,6 +12,7 @@ import {
     SelectComponent,
     SelectItem,
     TimePickerComponent,
+    TimezoneSelectorComponent,
     ToggleSwitchComponent,
 } from '@shared/components';
 
@@ -35,6 +36,7 @@ import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
         CustomInputComponent,
         DatePickerComponent,
         TimePickerComponent,
+        TimezoneSelectorComponent,
         RadioButtonComponent,
         SelectComponent,
         NumberStepperComponent,
@@ -142,6 +144,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             end_time: [this.parseIsoToTime(data.endDateTime ?? '')],
             max_runs: [data.maxRuns ?? null],
             is_active: [data.isActive ?? true],
+            timezone: [this.normalizeTimezone(data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone)],
         });
 
         fg.get('run_mode')!
@@ -317,6 +320,9 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             endDateTime,
             maxRuns,
             currentRuns: this.node().data.currentRuns ?? 0,
+            timezone: this.normalizeTimezone(
+                (f.timezone as string | null) ?? Intl.DateTimeFormat().resolvedOptions().timeZone
+            ),
         };
 
         return {
@@ -324,6 +330,11 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             node_name: f.node_name ?? this.node().node_name,
             data,
         };
+    }
+
+    private normalizeTimezone(iana: string): string {
+        // Europe/Kiev is the pre-2022 IANA alias — normalize to the canonical name.
+        return iana === 'Europe/Kiev' ? 'Europe/Kyiv' : iana;
     }
 
     private normalizeEndType(raw: string | null | undefined): ScheduleEndType {
