@@ -79,3 +79,29 @@ class ArchiveUploadResult:
 
 
 UploadFileResult = FileUploadResult | ArchiveUploadResult
+
+
+@dataclass(frozen=True, slots=True)
+class TreeNode:
+    name: str
+    path: str
+    type: Literal["file", "folder"]
+    size: int
+    modified: str | None
+    children: (
+        list["TreeNode"] | None
+    )  # None for files, list for folders (possibly empty)
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "path": self.path,
+            "type": self.type,
+            "size": self.size,
+            "modified": self.modified,
+            "children": (
+                [child.to_dict() for child in self.children]
+                if self.children is not None
+                else None
+            ),
+        }

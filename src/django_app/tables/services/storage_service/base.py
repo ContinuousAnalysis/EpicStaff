@@ -7,6 +7,7 @@ from tables.services.storage_service.dataclasses import (
     FileInfo,
     FolderInfo,
     FileListItem,
+    TreeNode,
     UploadResult,
 )
 
@@ -147,3 +148,9 @@ class AbstractStorageBackend(ABC):
     @abstractmethod
     def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
         """Extract archive into prefix. Returns list of extracted paths."""
+
+    @abstractmethod
+    def list_tree(
+        self, prefix: str, max_depth: int | None = None, max_entries: int = 50_000
+    ) -> tuple[TreeNode, bool]:
+        """Return (root_node, truncated). Root path ends with '/'."""
