@@ -604,11 +604,11 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     public onViewVersionHistory(): void {
         if (!this.graph?.id) return;
 
-        const positionStrategy = this.overlay.position().global().right('80px').top('0');
+        const positionStrategy = this.overlay.position().global().right('0').top('5rem');
 
         this.dialog.open(VersionHistoryPanelComponent, {
             positionStrategy,
-            height: '100%',
+            height: 'calc(100% - 5rem)',
             width: '380px',
             data: { graphId: this.graph.id },
         });

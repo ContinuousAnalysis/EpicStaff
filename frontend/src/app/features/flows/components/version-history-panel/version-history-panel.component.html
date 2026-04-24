@@ -19,16 +19,28 @@
         @for (version of versionsList; track version.id) {
             <div class="version-card">
                 <div class="version-info">
-                    <div class="version-name">{{ version.name }}</div>
-                    @if (version.description) {
+                    @if (editingVersionId === version.id && editingField === 'name') {
+                        <input
+                            class="version-edit-input"
+                            [(ngModel)]="editingValue"
+                            (keydown)="onEditKeydown($event, version)"
+                        />
+                    } @else {
+                        <div class="version-name">{{ version.name }}</div>
+                    }
+                    @if (editingVersionId === version.id && editingField === 'description') {
+                        <textarea
+                            class="version-edit-input version-edit-textarea"
+                            rows="1"
+                            [(ngModel)]="editingValue"
+                            (keydown)="onEditKeydown($event, version)"
+                        ></textarea>
+                    } @else if (version.description) {
                         <div class="version-description">{{ version.description }}</div>
                     }
                     <div class="version-date">{{ version.created_at | date: 'MMM d, yyyy, h:mm a' }}</div>
                 </div>
-                <div
-                    class="version-menu"
-                    (click)="$event.stopPropagation()"
-                >
+                <div class="version-menu">
                     <app-icon-button
                         icon="dots-vertical"
                         size="1.5rem"
@@ -38,8 +50,18 @@
                     @if (openMenuId === version.id) {
                         <div class="dropdown-menu">
                             <button class="dropdown-item">Restore</button>
-                            <button class="dropdown-item">Rename</button>
-                            <button class="dropdown-item">Change Description</button>
+                            <button
+                                class="dropdown-item"
+                                (click)="startEdit(version, 'name')"
+                            >
+                                Rename
+                            </button>
+                            <button
+                                class="dropdown-item"
+                                (click)="startEdit(version, 'description')"
+                            >
+                                Change Description
+                            </button>
                             <button class="dropdown-item dropdown-item--danger">Delete</button>
                         </div>
                     }
