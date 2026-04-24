@@ -291,6 +291,28 @@ class StorageManager:
         )
         return dataclasses.replace(node, path=stripped_path, children=children)
 
+    @check_permission
+    def search(
+        self,
+        user_name: str,
+        org_id: int,
+        q: str,
+        path: str = "",
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[dict], int]:
+        """Substring search on filename within an org."""
+        from tables.models import StorageFile
+
+        qs = StorageFile.objects.filter(org_id=org_id, name__icontains=q)
+
+        if path:
+            qs = qs.filter(path__startswith=path.rstrip("/") + "/")
+
+        total = qs.count()
+        rows = list(qs.order_by("path").values("path", "name")[offset : offset + limit])
+        return rows, total
+
     # --- Cross-org operations ---
 
     def copy_cross_org(

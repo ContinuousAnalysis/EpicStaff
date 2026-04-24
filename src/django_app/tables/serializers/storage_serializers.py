@@ -314,3 +314,27 @@ class StorageTreeResponseSerializer(serializers.Serializer):
     path = serializers.CharField()
     truncated = serializers.BooleanField()
     tree = TreeNodeSerializer()
+
+
+class StorageSearchQuerySerializer(serializers.Serializer):
+    q = serializers.CharField(min_length=2, max_length=100)
+    path = serializers.CharField(required=False, default="")
+    limit = serializers.IntegerField(
+        required=False, default=50, min_value=1, max_value=200
+    )
+    offset = serializers.IntegerField(required=False, default=0, min_value=0)
+
+    def validate_path(self, value: str) -> str:
+        return _normalize_path(value)
+
+
+class StorageSearchResultSerializer(serializers.Serializer):
+    path = serializers.CharField()
+    name = serializers.CharField()
+
+
+class StorageSearchResponseSerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+    offset = serializers.IntegerField()
+    limit = serializers.IntegerField()
+    results = StorageSearchResultSerializer(many=True)

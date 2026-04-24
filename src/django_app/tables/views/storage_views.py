@@ -21,6 +21,7 @@ from tables.serializers.storage_serializers import (
     StoragePathQuerySerializer,
     StorageRemoveFromGraphSerializer,
     StorageRenameSerializer,
+    StorageSearchQuerySerializer,
     StorageTreeQuerySerializer,
     StorageUploadSerializer,
 )
@@ -40,6 +41,7 @@ from tables.swagger_schemas.storage_schema import (
     STORAGE_MOVE_SWAGGER,
     STORAGE_REMOVE_FROM_GRAPH_SWAGGER,
     STORAGE_RENAME_SWAGGER,
+    STORAGE_SEARCH_SWAGGER,
     STORAGE_TREE_SWAGGER,
     STORAGE_UPLOAD_SWAGGER,
 )
@@ -367,3 +369,26 @@ class StorageAPIView(ViewSet):
             .order_by("added_at")
         )
         return Response(GraphStorageFileSerializer(qs, many=True).data)
+
+    @action(detail=False, methods=["get"], url_path="search")
+    @swagger_auto_schema(**STORAGE_SEARCH_SWAGGER)
+    def search(self, request):
+        user_name, org_id = self._resolve_context(request)
+        params = StorageSearchQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        results, total = self.manager.search(
+            user_name,
+            org_id,
+            q=params.validated_data["q"],
+            path=params.validated_data["path"],
+            limit=params.validated_data["limit"],
+            offset=params.validated_data["offset"],
+        )
+        return Response(
+            {
+                "total": total,
+                "offset": params.validated_data["offset"],
+                "limit": params.validated_data["limit"],
+                "results": results,
+            }
+        )
