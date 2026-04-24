@@ -48,13 +48,22 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                 <tbody>
                     @if (isLoading) {
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px;">
-                                <app-loading-spinner size="md" message="Loading sessions..." />
+                            <td
+                                colspan="7"
+                                style="text-align: center; padding: 40px;"
+                            >
+                                <app-loading-spinner
+                                    size="md"
+                                    message="Loading sessions..."
+                                />
                             </td>
                         </tr>
                     } @else if (showEmptyState) {
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px;">
+                            <td
+                                colspan="7"
+                                style="text-align: center; padding: 40px;"
+                            >
                                 <div class="no-sessions-message">
                                     <p>No sessions found for the selected filters.</p>
                                     <small>Try adjusting your filter criteria or create a new session.</small>
@@ -116,8 +125,14 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                                 </td>
                             </tr>
 
-                            <tr *ngIf="expandedSessionId() === session.id" class="preview-row">
-                                <td colspan="6" class="preview-cell">
+                            <tr
+                                *ngIf="expandedSessionId() === session.id"
+                                class="preview-row"
+                            >
+                                <td
+                                    colspan="6"
+                                    class="preview-cell"
+                                >
                                     <div class="preview-content">
                                         <app-graph-messages
                                             [graphId]="flow.id"

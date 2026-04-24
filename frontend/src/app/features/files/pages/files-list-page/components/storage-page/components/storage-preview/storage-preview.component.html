@@ -1,4 +1,7 @@
-<div class="storage-preview" [class.storage-preview--empty]="!item()">
+<div
+    class="storage-preview"
+    [class.storage-preview--empty]="!item()"
+>
     <div class="storage-preview__header">
         <div class="storage-preview__header-left">
             <button
@@ -7,7 +10,10 @@
                 (click)="toggleSidebar.emit()"
                 title="Toggle Folder Branches"
             >
-                <app-svg-icon icon="expand-sidebar" size="0.85rem"></app-svg-icon>
+                <app-svg-icon
+                    icon="expand-sidebar"
+                    size="0.85rem"
+                ></app-svg-icon>
             </button>
             @if (item()) {
                 <div class="storage-preview__breadcrumbs">
@@ -39,40 +45,76 @@
             >
                 Add to flow
             </app-button>
-            <button class="storage-preview__kebab" aria-label="More actions" (click)="onKebabClick($event)">
-                <app-svg-icon icon="dots-vertical" size="1rem"></app-svg-icon>
+            <button
+                class="storage-preview__kebab"
+                aria-label="More actions"
+                (click)="onKebabClick($event)"
+            >
+                <app-svg-icon
+                    icon="dots-vertical"
+                    size="1rem"
+                ></app-svg-icon>
             </button>
         }
     </div>
 
     @if (item()) {
         @if (kebabMenuOpen()) {
-            <div class="storage-preview__overlay" (click)="closeKebabMenu()"></div>
+            <div
+                class="storage-preview__overlay"
+                (click)="closeKebabMenu()"
+            ></div>
             <div
                 class="storage-preview__context-menu"
                 [style.right.px]="kebabMenuPosition().right"
                 [style.top.px]="kebabMenuPosition().top"
             >
-                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('download')">
+                <button
+                    class="storage-preview__context-menu-item"
+                    (click)="onKebabMenuAction('download')"
+                >
                     Download
                 </button>
-                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('copy')">
+                <button
+                    class="storage-preview__context-menu-item"
+                    (click)="onKebabMenuAction('copy')"
+                >
                     Copy to...
                 </button>
-                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('rename')">Rename</button>
-                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('view-details')">
+                <button
+                    class="storage-preview__context-menu-item"
+                    (click)="onKebabMenuAction('rename')"
+                >
+                    Rename
+                </button>
+                <button
+                    class="storage-preview__context-menu-item"
+                    (click)="onKebabMenuAction('view-details')"
+                >
                     View details
                 </button>
                 <div class="storage-preview__context-menu-divider"></div>
-                <button class="storage-preview__context-menu-item" (click)="onKebabMenuAction('delete')">Delete</button>
+                <button
+                    class="storage-preview__context-menu-item"
+                    (click)="onKebabMenuAction('delete')"
+                >
+                    Delete
+                </button>
             </div>
         }
     }
 
-    <div class="storage-preview__body" [class.storage-preview__body--no-content]="!item() || !hasFileSelected">
+    <div
+        class="storage-preview__body"
+        [class.storage-preview__body--no-content]="!item() || !hasFileSelected"
+    >
         @if (!item() || !hasFileSelected) {
             <div class="storage-preview__empty-state">
-                <app-svg-icon icon="file-empty-state" size="66px" class="storage-preview__empty-icon"></app-svg-icon>
+                <app-svg-icon
+                    icon="file-empty-state"
+                    size="66px"
+                    class="storage-preview__empty-icon"
+                ></app-svg-icon>
                 <p class="storage-preview__empty-text">Select a file to preview</p>
             </div>
         } @else {
@@ -87,9 +129,16 @@
                     <div class="storage-preview__loading">Loading preview...</div>
                 } @else if (previewError()) {
                     <div class="storage-preview__error">
-                        <app-svg-icon icon="alert-triangle" size="1.5rem"></app-svg-icon>
+                        <app-svg-icon
+                            icon="alert-triangle"
+                            size="1.5rem"
+                        ></app-svg-icon>
                         <p>{{ previewError() }}</p>
-                        <app-button type="ghost" (click)="onDownload()">Download file</app-button>
+                        <app-button
+                            type="ghost"
+                            (click)="onDownload()"
+                            >Download file</app-button
+                        >
                     </div>
                 } @else {
                     @switch (previewType()) {
@@ -101,12 +150,20 @@
                         }
                         @case ('pdf') {
                             @if (pdfUrl()) {
-                                <embed class="storage-preview__pdf" [attr.src]="pdfUrl()" type="application/pdf" />
+                                <embed
+                                    class="storage-preview__pdf"
+                                    [attr.src]="pdfUrl()"
+                                    type="application/pdf"
+                                />
                             }
                         }
                         @case ('image') {
                             @if (imageUrl()) {
-                                <img class="storage-preview__image" [src]="imageUrl()" [alt]="item()!.name" />
+                                <img
+                                    class="storage-preview__image"
+                                    [src]="imageUrl()"
+                                    [alt]="item()!.name"
+                                />
                             }
                         }
                         @case ('sheet') {
@@ -172,17 +229,27 @@
                         }
                         @case ('docx') {
                             @if (docxHtml()) {
-                                <div class="storage-preview__docx" [innerHTML]="docxHtml()"></div>
+                                <div
+                                    class="storage-preview__docx"
+                                    [innerHTML]="docxHtml()"
+                                ></div>
                             }
                         }
                         @case ('unsupported') {
                             <div class="storage-preview__unsupported">
-                                <app-svg-icon icon="file-empty-state" size="66px"></app-svg-icon>
+                                <app-svg-icon
+                                    icon="file-empty-state"
+                                    size="66px"
+                                ></app-svg-icon>
                                 <p class="storage-preview__unsupported-name">{{ item()!.name }}</p>
                                 @if (item()!.size) {
                                     <p class="storage-preview__unsupported-size">{{ item()!.size | number }} bytes</p>
                                 }
-                                <app-button type="ghost" [leftIcon]="'download'" (click)="onDownload()">
+                                <app-button
+                                    type="ghost"
+                                    [leftIcon]="'download'"
+                                    (click)="onDownload()"
+                                >
                                     Download
                                 </app-button>
                             </div>

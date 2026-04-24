@@ -295,9 +295,7 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
 
                         this.cdr.markForCheck();
                     },
-                    error: (err) => {
-                        console.error('loadData - Failed to fetch project data', err);
-                        console.error('Error details:', err.message, err.status);
+                    error: () => {
                         this.toastService.error('Failed to load project data');
                         this.isLoading.set(false);
                         this.cdr.markForCheck();

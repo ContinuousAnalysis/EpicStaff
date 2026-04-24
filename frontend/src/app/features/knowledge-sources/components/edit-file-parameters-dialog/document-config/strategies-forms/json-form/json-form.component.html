@@ -1,13 +1,15 @@
 <form [formGroup]="strategyForm">
-    <div class="config__grid config__grid--pt-0" formGroupName="mainParams">
+    <div
+        class="config__grid config__grid--pt-0"
+        formGroupName="mainParams"
+    >
         <div class="config__grid-item">
             <label>Chunk Size</label>
-            <app-svg-icon
-                icon="help"
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="The maximum size of each document chunk. Smaller chunks are more precise but may lose context. Larger chunks preserve more context but may be less precise."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
+                text="The maximum size of each document chunk. Smaller chunks are more precise but may lose context. Larger chunks preserve more context but may be less precise."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
         </div>
         <div class="config__grid-item config__grid-item--short">
@@ -21,12 +23,11 @@
 
         <div class="config__grid-item">
             <label>Chunk Overlap</label>
-            <app-svg-icon
-                icon="help"
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="The number of characters or tokens that overlap between chunks. Helps maintain context between chunks. Must be smaller than chunk size."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
+                text="The number of characters or tokens that overlap between chunks. Helps maintain context between chunks. Must be smaller than chunk size."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
         </div>
         <div class="config__grid-item config__grid-item--short">

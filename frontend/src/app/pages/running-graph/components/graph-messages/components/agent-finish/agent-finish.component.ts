@@ -16,7 +16,10 @@ import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../m
     template: `
         <div class="agent-flow-container">
             <!-- Agent Message Header with Toggle -->
-            <div class="agent-header" (click)="toggleMessage()">
+            <div
+                class="agent-header"
+                (click)="toggleMessage()"
+            >
                 <div class="play-arrow">
                     <app-svg-icon
                         [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
@@ -24,7 +27,10 @@ import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../m
                     />
                 </div>
                 <div class="icon-container">
-                    <app-svg-icon icon="robot" size="1.25rem" />
+                    <app-svg-icon
+                        icon="robot"
+                        size="1.25rem"
+                    />
                 </div>
                 <h3>
                     Agent <span class="agent-name">{{ getAgentName() }}</span> finished doing the assigned task.
@@ -32,11 +38,20 @@ import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../m
             </div>
 
             <!-- Collapsible Agent Content - Thought Section Only -->
-            <div class="collapsible-content" [@expandCollapse]="isMessageExpanded ? 'expanded' : 'collapsed'">
+            <div
+                class="collapsible-content"
+                [@expandCollapse]="isMessageExpanded ? 'expanded' : 'collapsed'"
+            >
                 <div class="agent-content">
                     <!-- Thought Section -->
-                    <div class="thought-container" *ngIf="agentFinishMessageData?.thought">
-                        <div class="section-heading" (click)="toggleSection('thought')">
+                    <div
+                        class="thought-container"
+                        *ngIf="agentFinishMessageData?.thought"
+                    >
+                        <div
+                            class="section-heading"
+                            (click)="toggleSection('thought')"
+                        >
                             <app-svg-icon
                                 [icon]="isThoughtExpanded ? 'caret-down-filled' : 'caret-right-filled'"
                                 size="1.1rem"
@@ -58,7 +73,10 @@ import { AgentFinishMessageData, GraphMessage, MessageType } from '../../../../m
         </div>
 
         <!-- Task Result as Separate Message Bubble -->
-        <div class="result-message-container" *ngIf="agentFinishMessageData?.output">
+        <div
+            class="result-message-container"
+            *ngIf="agentFinishMessageData?.output"
+        >
             <div class="result-content">
                 <ngx-json-viewer
                     *ngIf="isValidJson(agentFinishMessageData?.output)"

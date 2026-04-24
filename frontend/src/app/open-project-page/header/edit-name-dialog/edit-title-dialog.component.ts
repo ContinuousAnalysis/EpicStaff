@@ -24,8 +24,19 @@ import { FormsModule } from '@angular/forms';
             </div>
 
             <div class="dialog-actions">
-                <button class="cancel-button" (click)="close()">Cancel</button>
-                <button class="save-button" (click)="save()" [disabled]="!isValid()">Save</button>
+                <button
+                    class="cancel-button"
+                    (click)="close()"
+                >
+                    Cancel
+                </button>
+                <button
+                    class="save-button"
+                    (click)="save()"
+                    [disabled]="!isValid()"
+                >
+                    Save
+                </button>
             </div>
         </div>
     `,

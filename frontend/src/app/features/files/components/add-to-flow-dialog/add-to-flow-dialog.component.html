@@ -1,8 +1,15 @@
 <div class="add-to-flow-dialog">
     <div class="add-to-flow-dialog__header">
         <h2 class="add-to-flow-dialog__title">Add to Flow</h2>
-        <button class="add-to-flow-dialog__close" aria-label="Close" (click)="onCancel()">
-            <app-svg-icon icon="x" size="1rem"></app-svg-icon>
+        <button
+            class="add-to-flow-dialog__close"
+            aria-label="Close"
+            (click)="onCancel()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="1rem"
+            ></app-svg-icon>
         </button>
     </div>
 
@@ -65,7 +72,10 @@
                                         [class.add-to-flow-dialog__checkbox--checked]="flow.checked"
                                     >
                                         @if (flow.checked) {
-                                            <app-svg-icon icon="check" size="0.625rem"></app-svg-icon>
+                                            <app-svg-icon
+                                                icon="check"
+                                                size="0.625rem"
+                                            ></app-svg-icon>
                                         }
                                     </div>
                                     <span class="add-to-flow-dialog__item-name">{{ flow.name }}</span>
@@ -79,7 +89,12 @@
     </div>
 
     <div class="add-to-flow-dialog__footer">
-        <button class="add-to-flow-dialog__btn add-to-flow-dialog__btn--cancel" (click)="onCancel()">Cancel</button>
+        <button
+            class="add-to-flow-dialog__btn add-to-flow-dialog__btn--cancel"
+            (click)="onCancel()"
+        >
+            Cancel
+        </button>
         <button
             class="add-to-flow-dialog__btn add-to-flow-dialog__btn--confirm"
             [disabled]="!hasChanges"

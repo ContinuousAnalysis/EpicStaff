@@ -65,9 +65,8 @@ app-flow-header {
     transform: translate(-100%, -50%);
     width: 28px;
     height: 66px;
-    border: 3px solid #3d3d3e;
-    border-right: 1px solid #3d3d3e;
-    background: #2c2c2e;
+    border: 1px solid var(--color-divider-subtle);
+    background: var(--color-background-body);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -93,6 +92,6 @@ app-flow-messages-panel {
     flex-shrink: 0;
     height: 100%;
     overflow: hidden;
-    border-left: 1px solid #3d3d3e;
+    border-left: 1px solid var(--color-divider-subtle);
     box-sizing: border-box;
 }

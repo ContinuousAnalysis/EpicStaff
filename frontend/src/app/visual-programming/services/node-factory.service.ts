@@ -30,7 +30,6 @@ export class NodeFactoryService {
         return {
             id,
             backendId: null,
-            category: 'web',
             ports,
             type: type as NodeModel['type'],
             node_name: nodeName,

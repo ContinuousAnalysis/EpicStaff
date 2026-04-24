@@ -29,7 +29,10 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
     template: `
         <div class="panel-container">
             <div class="panel-content">
-                <form [formGroup]="form" class="form-container">
+                <form
+                    [formGroup]="form"
+                    class="form-container"
+                >
                     <div
                         class="form-layout"
                         [class.expanded]="isExpanded()"
@@ -56,7 +59,10 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
                             ></app-custom-input>
                             <div class="webhook-url-display">
                                 @if (webhookUrlDisplay; as url) {
-                                    <span class="webhook-url-text" [style.color]="activeColor">
+                                    <span
+                                        class="webhook-url-text"
+                                        [style.color]="activeColor"
+                                    >
                                         {{ url }}
                                     </span>
                                     <button
@@ -66,7 +72,10 @@ const WEBHOOK_NAME_PATTERN = /^[A-Za-z0-9\-._~/]*$/;
                                         [disabled]="!url"
                                         aria-label="Copy webhook URL"
                                     >
-                                        <span class="copy-icon" aria-hidden="true"></span>
+                                        <span
+                                            class="copy-icon"
+                                            aria-hidden="true"
+                                        ></span>
                                         <span>Copy</span>
                                     </button>
                                 } @else {

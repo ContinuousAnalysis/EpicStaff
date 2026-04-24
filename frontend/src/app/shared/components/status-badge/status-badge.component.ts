@@ -18,7 +18,12 @@ import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
             collapseOnOverflowClass="status-badge--icon-only"
             collapseOnOverflowRequireSelector="app-svg-icon"
         >
-            <app-svg-icon *ngIf="statusIcon" [icon]="statusIcon" size="14px" aria-hidden="true" />
+            <app-svg-icon
+                *ngIf="statusIcon"
+                [icon]="statusIcon"
+                size="14px"
+                aria-hidden="true"
+            />
             <span class="status-text">{{ statusText }}</span>
         </span>
     `,
