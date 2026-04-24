@@ -408,10 +408,18 @@ class S3StorageBackend(AbstractStorageBackend):
                 rel = key[len(full_prefix) :]
                 parts = rel.rstrip("/").split("/") if rel.rstrip("/") else []
                 depth = len(parts)
-                if max_depth is not None and depth > max_depth:
-                    continue
 
                 is_folder_marker = key.endswith("/")
+                if max_depth is not None and depth > max_depth:
+                    # Truncate to max_depth and treat as synthetic folder at the cut
+                    parts = parts[:max_depth]
+                    depth = max_depth
+                    is_folder_marker = True
+                    obj_size = 0
+                    obj_modified = None
+                else:
+                    obj_size = obj["Size"]
+                    obj_modified = obj["LastModified"].isoformat()
                 cur_path = full_prefix
                 parent = nodes_by_path[cur_path]
 
@@ -465,8 +473,8 @@ class S3StorageBackend(AbstractStorageBackend):
                         "name": leaf_name,
                         "path": leaf_path,
                         "type": "file",
-                        "size": obj["Size"],
-                        "modified": obj["LastModified"].isoformat(),
+                        "size": obj_size,
+                        "modified": obj_modified,
                         "children_map": None,
                     }
 
