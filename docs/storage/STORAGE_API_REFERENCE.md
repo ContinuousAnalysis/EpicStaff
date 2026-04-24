@@ -11,23 +11,25 @@ Base path: `/api/storage/`
 ## Table of Contents
 
 1. [List Files](#list-files)
-2. [File Info](#file-info)
-3. [Download File](#download-file)
-4. [Upload Files](#upload-files)
-5. [Download ZIP](#download-zip)
-6. [Create Folder](#create-folder)
-7. [Bulk Delete](#bulk-delete)
-8. [Rename](#rename)
-9. [Move](#move)
-10. [Copy](#copy)
-11. [Add to Graph](#add-to-graph)
-12. [Remove from Graph](#remove-from-graph)
-13. [Graph Files](#graph-files)
-14. [Session Output Files](#session-output-files)
-15. [Blocked Extensions Reference](#blocked-extensions-reference)
-16. [Archive Format Reference](#archive-format-reference)
-17. [Path Normalization](#path-normalization)
-18. [HTTP Status Codes](#http-status-codes)
+2. [Folder Tree](#folder-tree)
+3. [Search Files](#search-files)
+4. [File Info](#file-info)
+5. [Download File](#download-file)
+6. [Upload Files](#upload-files)
+7. [Download ZIP](#download-zip)
+8. [Create Folder](#create-folder)
+9. [Bulk Delete](#bulk-delete)
+10. [Rename](#rename)
+11. [Move](#move)
+12. [Copy](#copy)
+13. [Add to Graph](#add-to-graph)
+14. [Remove from Graph](#remove-from-graph)
+15. [Graph Files](#graph-files)
+16. [Session Output Files](#session-output-files)
+17. [Blocked Extensions Reference](#blocked-extensions-reference)
+18. [Archive Format Reference](#archive-format-reference)
+19. [Path Normalization](#path-normalization)
+20. [HTTP Status Codes](#http-status-codes)
 
 ---
 
@@ -68,6 +70,129 @@ Lists files and folders at the given path.
 | `size` | integer | Size in bytes; `0` for folders |
 | `modified` | string \| null | ISO 8601 timestamp; `null` for empty folders |
 | `is_empty` | boolean | Always present. `true` if the folder has no children; always `false` for files |
+
+---
+
+## Folder Tree
+
+**GET** `/api/storage/tree/`
+
+Returns the entire folder subtree under `path` as a nested structure. One paginated S3 `list_objects_v2` call (no delimiter) powers the whole response — much faster than N calls to `/list/`. Files only appear as leaf nodes with `children: null`; folders carry a `children` array (possibly empty).
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `path` | string | No | `""` | Root path for the subtree. Empty = org root. |
+| `max_depth` | integer | No | unlimited | Max levels to return, counted **from** `path` (not from the org root). Must be ≥ 1. |
+
+**Response:** `200 OK`
+```json
+{
+    "path": "reports",
+    "truncated": false,
+    "tree": {
+        "name": "reports",
+        "path": "reports/",
+        "type": "folder",
+        "size": 0,
+        "modified": null,
+        "children": [
+            {
+                "name": "2025",
+                "path": "reports/2025/",
+                "type": "folder",
+                "size": 0,
+                "modified": null,
+                "children": [
+                    {
+                        "name": "q1.pdf",
+                        "path": "reports/2025/q1.pdf",
+                        "type": "file",
+                        "size": 102400,
+                        "modified": "2026-04-15T10:30:00Z",
+                        "children": null
+                    }
+                ]
+            },
+            {
+                "name": "empty_folder",
+                "path": "reports/empty_folder/",
+                "type": "folder",
+                "size": 0,
+                "modified": null,
+                "children": []
+            }
+        ]
+    }
+}
+```
+
+**Field notes:**
+
+| Field | Description |
+|-------|-------------|
+| `path` (top-level) | The requested path, unchanged |
+| `truncated` | `true` if the hard cap of **50 000 entries** was hit |
+| `tree.children` | `null` for files, array (possibly empty) for folders |
+| Folder paths | Always end with `/` |
+| File paths | Never end with `/` |
+
+**`max_depth` behavior:** depth is measured from the queried path. With `?path=a/b&max_depth=2`, you see up to `a/b/X/Y`. Content deeper than `max_depth` is collapsed into synthetic empty folders at the cut — ancestors within range are always shown, even if their only content is below the cut.
+
+**Errors:**
+- `404 Not Found` — `path` does not exist
+- `400 Bad Request` — `path` points to a file rather than a folder
+
+---
+
+## Search Files
+
+**GET** `/api/storage/search/`
+
+Substring match on filename (the last path segment). Backed by a Postgres `pg_trgm` GIN index on the `StorageFile` mirror, not live S3 — normal writes stay in sync via `StorageFileSync`, but if you bypass the API to mutate the backend you'll need to run `backfill_storage_files` / `prune_storage_files`.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Constraints | Description |
+|-----------|------|----------|---------|-------------|-------------|
+| `q` | string | Yes | — | min 2, max 100 chars | Substring to match, case-insensitive |
+| `path` | string | No | `""` | — | Restrict results to this subtree |
+| `limit` | integer | No | `50` | 1–200 | Max results to return |
+| `offset` | integer | No | `0` | ≥ 0 | Pagination offset |
+
+**Response:** `200 OK`
+```json
+{
+    "total": 137,
+    "offset": 0,
+    "limit": 50,
+    "results": [
+        {"path": "reports/2025/q1_report.pdf", "name": "q1_report.pdf"},
+        {"path": "archive/old_report.txt",    "name": "old_report.txt"}
+    ]
+}
+```
+
+**Field notes:**
+
+| Field | Description |
+|-------|-------------|
+| `total` | Total matching rows across all pages |
+| `results[].path` | Full org-relative path |
+| `results[].name` | Last path segment (the matched filename) |
+
+Response is intentionally lean — no `size`/`modified`. Call `/api/storage/info/?path=...` for full metadata on a click.
+
+**Semantics:**
+- **Files only.** Folders are not indexed.
+- **Filename only.** Search for `report` matches `q1_report.pdf` but not the folder `reports/`.
+- **Case-insensitive.** `REPORT` and `report` return the same results.
+- **Substring, not fuzzy.** `reprot` returns nothing — typo tolerance is out of scope.
+- **Missing `path`** returns an empty result set, not 404.
+
+**Errors:**
+- `400 Bad Request` — `q` shorter than 2 chars, or other validation failure
 
 ---
 
