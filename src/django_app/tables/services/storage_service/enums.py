@@ -14,3 +14,4 @@ class StorageAction(str, Enum):
     EXISTS = "exists"
     DOWNLOAD_ZIP = "download_zip"
     RENAME = "rename"
+    SEARCH = "search"

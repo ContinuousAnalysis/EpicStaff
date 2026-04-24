@@ -14,6 +14,8 @@ from tables.serializers.storage_serializers import (
     StoragePathQuerySerializer,
     StorageRemoveFromGraphSerializer,
     StorageRenameSerializer,
+    StorageSearchQuerySerializer,
+    StorageSearchResponseSerializer,
     StorageTreeQuerySerializer,
     StorageTreeResponseSerializer,
     StorageUploadResponseSerializer,
@@ -155,4 +157,14 @@ STORAGE_TREE_SWAGGER = dict(
     ),
     query_serializer=StorageTreeQuerySerializer,
     responses={200: StorageTreeResponseSerializer, 404: "Path does not exist"},
+)
+
+STORAGE_SEARCH_SWAGGER = dict(
+    operation_summary="Search files by name",
+    operation_description=(
+        "Substring match on the filename (last path segment). "
+        "Optional `path` narrows results to a subtree. Files only."
+    ),
+    query_serializer=StorageSearchQuerySerializer,
+    responses={200: StorageSearchResponseSerializer},
 )

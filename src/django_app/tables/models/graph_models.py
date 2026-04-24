@@ -572,6 +572,9 @@ class StorageFile(models.Model):
     path = models.CharField(
         max_length=1000, help_text="Org-relative path, never starts with '/'"
     )
+    name = models.CharField(
+        max_length=255, help_text="Last path segment, denormalized for search"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
