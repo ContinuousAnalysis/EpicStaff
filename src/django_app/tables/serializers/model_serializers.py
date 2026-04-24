@@ -554,8 +554,32 @@ class TwilioChannelSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class _NgrokConfigMinimalSerializer(serializers.ModelSerializer):
+    live_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = NgrokWebhookConfig
+        fields = ["id", "domain", "live_url"]
+
+    def get_live_url(self, instance: NgrokWebhookConfig):
+        from tables.services.webhook_trigger_service import WebhookTriggerService
+        try:
+            return WebhookTriggerService().get_tunnel_url(ngrok_webhook_config=instance)
+        except Exception:
+            return None
+
+
+class _TwilioChannelReadSerializer(serializers.ModelSerializer):
+    """Read-only variant that expands ngrok_config so downstream consumers get the domain."""
+    ngrok_config = _NgrokConfigMinimalSerializer(read_only=True)
+
+    class Meta:
+        model = TwilioChannel
+        fields = "__all__"
+
+
 class RealtimeChannelSerializer(serializers.ModelSerializer):
-    twilio = TwilioChannelSerializer(read_only=True)
+    twilio = _TwilioChannelReadSerializer(read_only=True)
 
     class Meta:
         model = RealtimeChannel

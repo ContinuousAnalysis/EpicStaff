@@ -137,6 +137,7 @@ export class AddEditChannelDialogComponent implements OnInit {
                     next: (channel) =>
                         this.saveTwilioChannel(
                             channel.id,
+                            channel.token,
                             v.account_sid,
                             v.auth_token,
                             v.phone_number,
@@ -162,6 +163,7 @@ export class AddEditChannelDialogComponent implements OnInit {
                     next: () =>
                         this.saveTwilioChannel(
                             ch.id,
+                            ch.token,
                             v.account_sid,
                             v.auth_token,
                             v.phone_number,
@@ -178,6 +180,7 @@ export class AddEditChannelDialogComponent implements OnInit {
 
     private saveTwilioChannel(
         channelId: number,
+        channelToken: string,
         accountSid: string,
         authToken: string,
         phoneNumber: string,
@@ -208,12 +211,44 @@ export class AddEditChannelDialogComponent implements OnInit {
               });
 
         obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: () => this.dialogRef.close(true),
+            next: () => this.configureWebhookAndClose(channelToken, phoneNumber, accountSid, authToken),
             error: () => {
                 this.errorMessage.set('Channel saved but Twilio settings failed to save.');
                 this.isSubmitting.set(false);
             },
         });
+    }
+
+    private configureWebhookAndClose(
+        channelToken: string,
+        phoneNumber: string,
+        accountSid: string,
+        authToken: string
+    ): void {
+        const ngrokConfig = this.form.get('ngrok_config')?.value;
+        if (!phoneNumber || !ngrokConfig) {
+            this.dialogRef.close(true);
+            return;
+        }
+
+        const phoneSid = this.phoneNumbers().find((p) => p.phone_number === phoneNumber)?.sid;
+        if (!phoneSid) {
+            this.dialogRef.close(true);
+            return;
+        }
+
+        this.channelService
+            .configureWebhook(phoneSid, channelToken, accountSid, authToken)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => this.dialogRef.close(true),
+                error: () => {
+                    this.errorMessage.set(
+                        'Channel saved but webhook configuration on Twilio failed. Check your ngrok tunnel.'
+                    );
+                    this.isSubmitting.set(false);
+                },
+            });
     }
 
     onPhoneSelectOpened(): void {

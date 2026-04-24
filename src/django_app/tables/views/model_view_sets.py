@@ -1,8 +1,11 @@
 import base64
 import json
+import logging
 import urllib.error
 import urllib.parse
 import urllib.request
+
+logger = logging.getLogger(__name__)
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -1642,48 +1645,75 @@ class TwilioConfigureWebhookView(generics.GenericAPIView):
 
     def post(self, request):
         phone_sid = request.data.get("phone_sid")
-        if not phone_sid:
-            return Response(
-                {"error": "phone_sid is required"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        channel_token = request.data.get("channel_token")
+        logger.info(f"configure-webhook: phone_sid={phone_sid} channel_token={channel_token}")
 
-        vs = VoiceSettings.load()
-        if not vs.twilio_account_sid or not vs.twilio_auth_token:
+        if not phone_sid or not channel_token:
+            logger.warning("configure-webhook: missing phone_sid or channel_token")
             return Response(
-                {"error": "Twilio Account SID and Auth Token are required"},
+                {"error": "phone_sid and channel_token are required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from tables.serializers.model_serializers import VoiceSettingsSerializer
-
-        voice_stream_url = VoiceSettingsSerializer(vs).data.get("voice_stream_url")
-        if not voice_stream_url:
+        account_sid = request.headers.get("X-Twilio-Account-Sid", "").strip()
+        auth_token = request.headers.get("X-Twilio-Auth-Token", "").strip()
+        logger.info(f"configure-webhook: account_sid present={bool(account_sid)} auth_token present={bool(auth_token)}")
+        if not account_sid or not auth_token:
+            logger.warning("configure-webhook: missing credentials headers")
             return Response(
-                {
-                    "error": "No voice stream URL configured — set up an ngrok tunnel first"
-                },
+                {"error": "X-Twilio-Account-Sid and X-Twilio-Auth-Token headers are required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        # Twilio expects the webhook as an HTTP/HTTPS URL not WSS
-        # voice_stream_url is wss://host/voice/stream → https://host/voice
-        webhook_url = (
-            voice_stream_url.replace("wss://", "https://")
-            .replace("/stream", "")
-            .rstrip("/")
-        )
 
         try:
-            url = f"https://api.twilio.com/2010-04-01/Accounts/{vs.twilio_account_sid}/IncomingPhoneNumbers/{phone_sid}.json"
+            channel = RealtimeChannel.objects.select_related("twilio__ngrok_config").get(
+                token=channel_token
+            )
+        except RealtimeChannel.DoesNotExist:
+            logger.warning(f"configure-webhook: channel not found for token={channel_token}")
+            return Response({"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        twilio = getattr(channel, "twilio", None)
+        ngrok = getattr(twilio, "ngrok_config", None) if twilio else None
+        logger.info(f"configure-webhook: twilio={twilio} ngrok={ngrok}")
+        if not ngrok:
+            logger.warning(f"configure-webhook: no ngrok tunnel configured for channel {channel.id}")
+            return Response(
+                {"error": "No ngrok tunnel configured for this channel"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from tables.services.webhook_trigger_service import WebhookTriggerService
+
+        tunnel_url = WebhookTriggerService().get_tunnel_url(ngrok)
+        if not tunnel_url and ngrok.domain:
+            tunnel_url = f"https://{ngrok.domain}"
+        logger.info(f"configure-webhook: tunnel_url={tunnel_url}")
+        if not tunnel_url:
+            logger.warning(f"configure-webhook: ngrok tunnel {ngrok.id} has no live URL and no domain")
+            return Response(
+                {"error": "Ngrok tunnel is not running and has no domain configured"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        webhook_url = f"{tunnel_url.rstrip('/')}/voice/{channel_token}"
+        logger.info(f"configure-webhook: setting VoiceUrl={webhook_url} on phone_sid={phone_sid}")
+
+        try:
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/IncomingPhoneNumbers/{phone_sid}.json"
             _twilio_request(
-                vs.twilio_account_sid,
-                vs.twilio_auth_token,
+                account_sid,
+                auth_token,
                 url,
                 method="POST",
                 data={"VoiceUrl": webhook_url, "VoiceMethod": "POST"},
             )
+            logger.info(f"configure-webhook: success webhook_url={webhook_url}")
             return Response({"webhook_url": webhook_url})
         except urllib.error.HTTPError as e:
-            return Response({"error": e.read().decode()}, status=e.code)
+            body = e.read().decode()
+            logger.error(f"configure-webhook: Twilio HTTP error {e.code}: {body}")
+            return Response({"error": body}, status=e.code)
         except Exception as e:
+            logger.exception("configure-webhook: unexpected error")
             return Response({"error": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
