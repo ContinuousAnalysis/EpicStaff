@@ -1,22 +1,17 @@
 <div class="dialog">
-    <div class="dialog__header">
-        <h2 class="dialog__title">Add Configuration</h2>
+    <div class="header">
+        <h2 class="title">Add Configuration</h2>
         <app-icon-button icon="x" ariaLabel="Close dialog" size="2rem" (onClick)="dialogRef.close()" />
     </div>
 
-    <div class="dialog__tabs">
-        <button
-            class="dialog__tab"
-            [class.dialog__tab--active]="activeTab() === 'llm'"
-            (click)="setActiveTab('llm')"
-            type="button"
-        >
+    <div class="tabs">
+        <button class="tab" [class.active]="activeTab() === 'llm'" (click)="setActiveTab('llm')" type="button">
             LLM
         </button>
-        <span class="dialog__tab-divider">/</span>
+        <span class="tab-divider">/</span>
         <button
-            class="dialog__tab"
-            [class.dialog__tab--active]="activeTab() === 'realtime'"
+            class="tab"
+            [class.active]="activeTab() === 'realtime'"
             (click)="setActiveTab('realtime')"
             type="button"
         >
@@ -25,9 +20,9 @@
     </div>
 
     @if (activeTab() === 'llm') {
-        <form class="dialog__form" [formGroup]="llmForm">
-            <section class="dialog__section">
-                <h3 class="dialog__section-title">MODEL INFORMATION</h3>
+        <form class="form" [formGroup]="llmForm">
+            <section class="section">
+                <h3 class="section-title">MODEL INFORMATION</h3>
                 <div>
                     <app-llm-model-selector
                         formControlName="model"
@@ -61,8 +56,8 @@
                 </div>
             </section>
 
-            <section class="dialog__section">
-                <h3 class="dialog__section-title">API CONFIGURATION</h3>
+            <section class="section">
+                <h3 class="section-title">API CONFIGURATION</h3>
                 <app-key-value-list
                     formControlName="headers"
                     label="Header Configuration"
@@ -72,8 +67,8 @@
                 />
             </section>
 
-            <section class="dialog__section">
-                <h3 class="dialog__section-title">GENERATION PARAMETERS</h3>
+            <section class="section">
+                <h3 class="section-title">GENERATION PARAMETERS</h3>
                 <div>
                     <app-slider-with-stepper
                         formControlName="temperature"
@@ -112,8 +107,8 @@
                 </div>
             </section>
 
-            <section class="dialog__section">
-                <h3 class="dialog__section-title">TOKEN LIMITS & COMPLETION</h3>
+            <section class="section">
+                <h3 class="section-title">TOKEN LIMITS & COMPLETION</h3>
                 <div>
                     <app-input-number
                         formControlName="max_tokens"
@@ -138,8 +133,8 @@
                 </div>
             </section>
 
-            <section class="dialog__section">
-                <h3 class="dialog__section-title">ADVANCED PARAMETERS</h3>
+            <section class="section">
+                <h3 class="section-title">ADVANCED PARAMETERS</h3>
                 <div>
                     <app-input-number
                         formControlName="seed"
@@ -161,17 +156,17 @@
     }
 
     @if (activeTab() === 'realtime') {
-        <div class="dialog__provider-section">
-            <div class="dialog__provider-label">
+        <div class="provider-section">
+            <div class="provider-label">
                 Realtime Provider
                 <i class="ti ti-help-circle" style="font-size: 1rem; opacity: 0.6"></i>
             </div>
-            <div class="dialog__provider-buttons">
+            <div class="provider-buttons">
                 @for (p of realtimeProviders; track p.key) {
                     <button
                         type="button"
-                        class="dialog__provider-btn"
-                        [class.dialog__provider-btn--active]="selectedProvider() === p.key"
+                        class="provider-btn"
+                        [class.active]="selectedProvider() === p.key"
                         (click)="selectProvider(p.key)"
                     >
                         {{ p.label }}
@@ -181,8 +176,8 @@
         </div>
 
         @if (selectedProvider() === 'openai') {
-            <form class="dialog__form" [formGroup]="openaiForm">
-                <div *ngIf="errorMessage()" class="dialog__error">
+            <form class="form" [formGroup]="openaiForm">
+                <div *ngIf="errorMessage()" class="error">
                     <p>{{ errorMessage() }}</p>
                 </div>
                 <div>
@@ -243,8 +238,8 @@
         }
 
         @if (selectedProvider() === 'elevenlabs') {
-            <form class="dialog__form" [formGroup]="elevenLabsForm">
-                <div *ngIf="errorMessage()" class="dialog__error">
+            <form class="form" [formGroup]="elevenLabsForm">
+                <div *ngIf="errorMessage()" class="error">
                     <p>{{ errorMessage() }}</p>
                 </div>
                 <div>
@@ -288,8 +283,8 @@
         }
 
         @if (selectedProvider() === 'gemini') {
-            <form class="dialog__form" [formGroup]="geminiForm">
-                <div *ngIf="errorMessage()" class="dialog__error">
+            <form class="form" [formGroup]="geminiForm">
+                <div *ngIf="errorMessage()" class="error">
                     <p>{{ errorMessage() }}</p>
                 </div>
                 <div>
@@ -333,7 +328,7 @@
         }
     }
 
-    <div class="dialog__footer">
+    <div class="footer">
         <app-button type="outline-primary" (click)="onCancel()">Cancel</app-button>
         <app-button type="primary" (click)="onSubmit()" [disabled]="isSubmitting()">
             @if (isSubmitting()) {

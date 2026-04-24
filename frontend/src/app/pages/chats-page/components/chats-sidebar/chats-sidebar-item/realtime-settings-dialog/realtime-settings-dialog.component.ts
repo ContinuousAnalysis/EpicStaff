@@ -14,6 +14,7 @@ import { FullAgent, PartialAgent } from '../../../../../../features/staff/servic
 import { AgentsService } from '../../../../../../features/staff/services/staff.service';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { HelpTooltipComponent } from '../../../../../../shared/components/help-tooltip/help-tooltip.component';
+import { SliderWithStepperComponent } from '../../../../../../shared/components/slider-with-stepper/slider-with-stepper.component';
 import { RealtimeVoice, RealtimeVoicesService } from '../../../../../../shared/services/realtime-voices.service';
 import { buildToolIdsArray } from '../../../../../../shared/utils/tool-ids-builder.util';
 import { VoiceSelectorComponent } from './voice-selector/voice-selector.component';
@@ -31,6 +32,7 @@ export type RealtimeProvider = 'openai' | 'elevenlabs' | 'gemini';
         VoiceSelectorComponent,
         HelpTooltipComponent,
         SelectComponent,
+        SliderWithStepperComponent,
     ],
     templateUrl: './realtime-settings-dialog.component.html',
     styleUrls: ['./realtime-settings-dialog.component.scss'],
