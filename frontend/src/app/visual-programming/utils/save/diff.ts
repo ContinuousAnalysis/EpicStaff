@@ -12,6 +12,7 @@ import {
     NodeModel,
     ProjectNodeModel,
     PythonNodeModel,
+    ScheduleTriggerNodeModel,
     StartNodeModel,
     SubGraphNodeModel,
     TelegramTriggerNodeModel,
@@ -198,6 +199,24 @@ function toTelegramComparable(node: TelegramTriggerNodeModel): unknown {
     };
 }
 
+function toScheduleComparable(node: ScheduleTriggerNodeModel): unknown {
+    return {
+        node_name: node.node_name,
+        isActive: node.data.isActive,
+        runMode: node.data.runMode,
+        startDateTime: node.data.startDateTime,
+        intervalEvery: node.data.intervalEvery,
+        intervalUnit: node.data.intervalUnit,
+        weekdays: node.data.weekdays,
+        endType: node.data.endType,
+        endDateTime: node.data.endDateTime,
+        maxRuns: node.data.maxRuns,
+        // currentRuns is excluded: it is a read-only backend counter, not user-configurable.
+        // Including it would mark nodes as dirty after every server response.
+        metadata: toNodeMetadata(node),
+    };
+}
+
 function toNoteComparable(node: GraphNoteModel): unknown {
     return {
         node_name: node.node_name,
@@ -280,6 +299,11 @@ export function getNodeDiff(previous: FlowModel, current: FlowModel): NodeDiffBy
             nodesByType<TelegramTriggerNodeModel>(previous.nodes, NodeType.TELEGRAM_TRIGGER),
             nodesByType<TelegramTriggerNodeModel>(current.nodes, NodeType.TELEGRAM_TRIGGER),
             toTelegramComparable
+        ),
+        scheduleNodes: diffNodesByBackendId(
+            nodesByType<ScheduleTriggerNodeModel>(previous.nodes, NodeType.SCHEDULE_TRIGGER),
+            nodesByType<ScheduleTriggerNodeModel>(current.nodes, NodeType.SCHEDULE_TRIGGER),
+            toScheduleComparable
         ),
         decisionTableNodes: diffNodesByBackendId(
             nodesByType<DecisionTableNodeModel>(previous.nodes, NodeType.TABLE),

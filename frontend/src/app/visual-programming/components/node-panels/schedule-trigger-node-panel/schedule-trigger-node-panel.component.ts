@@ -15,6 +15,13 @@ import {
     ToggleSwitchComponent,
 } from '@shared/components';
 
+import {
+    ScheduleEndType,
+    ScheduleIntervalUnit,
+    ScheduleRunMode,
+    ScheduleTriggerNodeData,
+    WeekdayCode,
+} from '../../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 import { ScheduleTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 
@@ -52,7 +59,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
 
     showRepeatFields = computed(() => this.runMode() === 'repeat');
     showEndDateTime = computed(() => this.endMode() === 'on_date');
-    showMaxRuns = computed(() => this.endMode() === 'after_runs');
+    showMaxRuns = computed(() => this.endMode() === 'after_n_runs');
 
     readonly runModeOptions = [
         { label: 'Once', value: 'once' },
@@ -62,7 +69,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     readonly endModeOptions = [
         { label: 'Never', value: 'never' },
         { label: 'On date', value: 'on_date' },
-        { label: 'After N runs', value: 'after_runs' },
+        { label: 'After N runs', value: 'after_n_runs' },
     ];
 
     readonly repeatUnitItems: SelectItem[] = [
@@ -73,7 +80,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         { name: 'Months', value: 'months' },
     ];
 
-    readonly weekdays = [
+    readonly weekdays: Array<{ label: string; value: WeekdayCode; tooltip: string }> = [
         { label: 'S', value: 'sun', tooltip: 'Sunday' },
         { label: 'M', value: 'mon', tooltip: 'Monday' },
         { label: 'T', value: 'tue', tooltip: 'Tuesday' },
@@ -83,29 +90,21 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         { label: 'S', value: 'sat', tooltip: 'Saturday' },
     ];
 
-    repeatDays = signal<string[]>([]);
+    repeatDays = signal<WeekdayCode[]>([]);
 
-    toggleDay(value: string): void {
+    toggleDay(value: WeekdayCode): void {
         const current = this.repeatDays();
-        this.repeatDays.set(
-            current.includes(value) ? current.filter((d) => d !== value) : [...current, value],
-        );
+        this.repeatDays.set(current.includes(value) ? current.filter((d) => d !== value) : [...current, value]);
     }
 
     public override onSave(): ScheduleTriggerNodeModel | null {
         this.submitted.set(true);
 
-        const startErr = this.computeStartError(
-            this.form.get('start_date')!.value,
-            this.form.get('start_time')!.value,
-        );
+        const startErr = this.computeStartError(this.form.get('start_date')!.value, this.form.get('start_time')!.value);
         this.startRowError.set(startErr);
 
         const endErr = this.showEndDateTime()
-            ? this.computeEndError(
-                  this.form.get('end_date')!.value,
-                  this.form.get('end_time')!.value,
-              )
+            ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value)
             : '';
         this.endRowError.set(endErr);
 
@@ -121,18 +120,28 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         this.startRowError.set('');
         this.endRowError.set('');
 
+        const data = this.node().data;
+
+        // Pre-sync signals so visibility computeds are correct before the template renders.
+        // These subscriptions are attached after fb.group(), so we set them manually here.
+        this.runMode.set(data.runMode ?? 'once');
+        this.endMode.set(data.endType ?? 'never');
+        this.repeatDays.set([...(data.weekdays ?? [])]);
+
+        // Initial values are passed directly to fb.group() — Angular does NOT emit
+        // valueChanges during construction, so live validators won't fire for loaded data.
         const fg = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
-            start_date: [''],
-            start_time: [''],
-            run_mode: ['once'],
-            repeat_every: [1],
-            repeat_unit: ['hours'],
-            end_mode: ['never'],
-            end_date: [''],
-            end_time: [''],
-            max_runs: [null],
-            is_active: [true],
+            start_date: [this.parseIsoToDate(data.startDateTime)],
+            start_time: [this.parseIsoToTime(data.startDateTime)],
+            run_mode: [data.runMode ?? 'once'],
+            repeat_every: [data.intervalEvery ?? 1],
+            repeat_unit: [data.intervalUnit ?? 'hours'],
+            end_mode: [data.endType ?? 'never'],
+            end_date: [this.parseIsoToDate(data.endDateTime ?? '')],
+            end_time: [this.parseIsoToTime(data.endDateTime ?? '')],
+            max_runs: [data.maxRuns ?? null],
+            is_active: [data.isActive ?? true],
         });
 
         fg.get('run_mode')!
@@ -158,6 +167,29 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         fg.get('end_time')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
 
         return fg;
+    }
+
+    /** ISO-8601 (with Z or offset) → "dd.mm.yyyy". Returns '' for empty/invalid input. */
+    private parseIsoToDate(iso: string): string {
+        if (!iso) return '';
+        const dt = new Date(iso);
+        if (isNaN(dt.getTime())) return '';
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()}`;
+    }
+
+    /** ISO-8601 (with Z or offset) → "HH:MM AM/PM". Returns '' for empty/invalid input. */
+    private parseIsoToTime(iso: string): string {
+        if (!iso) return '';
+        const dt = new Date(iso);
+        if (isNaN(dt.getTime())) return '';
+        let h = dt.getHours();
+        const min = dt.getMinutes();
+        const meridiem: 'AM' | 'PM' = h < 12 ? 'AM' : 'PM';
+        if (h === 0) h = 12;
+        else if (h > 12) h -= 12;
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${pad(h)}:${pad(min)} ${meridiem}`;
     }
 
     private computeStartError(dateVal: string | null, timeVal: string | null): string {
@@ -251,9 +283,89 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     }
 
     createUpdatedNode(): ScheduleTriggerNodeModel {
+        const f = this.form.value;
+        const runMode: ScheduleRunMode = f.run_mode === 'repeat' ? 'repeat' : 'once';
+        const endType: ScheduleEndType = runMode === 'once' ? 'never' : this.normalizeEndType(f.end_mode);
+
+        let intervalEvery: number | null = null;
+        let intervalUnit: ScheduleIntervalUnit | null = null;
+        let weekdays: WeekdayCode[] = [];
+        let endDateTime: string | null = null;
+        let maxRuns: number | null = null;
+
+        if (runMode === 'repeat') {
+            intervalEvery = f.repeat_every ?? null;
+            intervalUnit = (f.repeat_unit as ScheduleIntervalUnit) ?? null;
+            const unitAllowsWeekdays = intervalUnit === 'days' || intervalUnit === 'weeks';
+            weekdays = unitAllowsWeekdays ? [...this.repeatDays()] : [];
+
+            if (endType === 'on_date') {
+                endDateTime = this.buildDateTimeString(f.end_date ?? '', f.end_time ?? '');
+            } else if (endType === 'after_n_runs') {
+                maxRuns = f.max_runs ?? null;
+            }
+        }
+
+        const data: ScheduleTriggerNodeData = {
+            isActive: f.is_active ?? true,
+            runMode,
+            startDateTime: this.buildDateTimeString(f.start_date ?? '', f.start_time ?? ''),
+            intervalEvery,
+            intervalUnit,
+            weekdays,
+            endType,
+            endDateTime,
+            maxRuns,
+            currentRuns: this.node().data.currentRuns ?? 0,
+        };
+
         return {
             ...this.node(),
-            node_name: this.form.value.node_name,
+            node_name: f.node_name ?? this.node().node_name,
+            data,
         };
+    }
+
+    private normalizeEndType(raw: string | null | undefined): ScheduleEndType {
+        if (raw === 'on_date') return 'on_date';
+        if (raw === 'after_n_runs' || raw === 'after_runs') return 'after_n_runs';
+        return 'never';
+    }
+
+    /**
+     * Combines "dd.mm.yyyy" date and "HH:MM AM/PM" time into an ISO-8601 string
+     * with the browser's local UTC offset (e.g. "2026-04-22T23:35:00+03:00").
+     * TODO: confirm timezone strategy with backend before release.
+     */
+    private buildDateTimeString(date: string, time: string): string {
+        if (!date || !time) return '';
+
+        const dateMatch = date.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        const timeMatch = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (!dateMatch || !timeMatch) return '';
+
+        const d = parseInt(dateMatch[1], 10);
+        const m = parseInt(dateMatch[2], 10) - 1;
+        const y = parseInt(dateMatch[3], 10);
+        let h = parseInt(timeMatch[1], 10);
+        const min = parseInt(timeMatch[2], 10);
+        const ampm = timeMatch[3].toUpperCase();
+
+        if (ampm === 'PM' && h !== 12) h += 12;
+        else if (ampm === 'AM' && h === 12) h = 0;
+
+        const dt = new Date(y, m, d, h, min, 0, 0);
+        if (isNaN(dt.getTime())) return '';
+
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const offsetMin = dt.getTimezoneOffset();
+        const sign = offsetMin <= 0 ? '+' : '-';
+        const absOffset = Math.abs(offsetMin);
+
+        return (
+            `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}` +
+            `T${pad(dt.getHours())}:${pad(dt.getMinutes())}:00` +
+            `${sign}${pad(Math.floor(absOffset / 60))}:${pad(absOffset % 60)}`
+        );
     }
 }
