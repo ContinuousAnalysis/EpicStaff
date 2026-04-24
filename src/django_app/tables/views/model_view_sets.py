@@ -1611,15 +1611,16 @@ class TwilioPhoneNumbersView(generics.GenericAPIView):
     """Return the list of incoming phone numbers from Twilio."""
 
     def get(self, request):
-        vs = VoiceSettings.load()
-        if not vs.twilio_account_sid or not vs.twilio_auth_token:
+        account_sid = request.headers.get("X-Twilio-Account-Sid", "").strip()
+        auth_token = request.headers.get("X-Twilio-Auth-Token", "").strip()
+        if not account_sid or not auth_token:
             return Response(
-                {"error": "Twilio Account SID and Auth Token are required"},
+                {"error": "X-Twilio-Account-Sid and X-Twilio-Auth-Token headers are required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            url = f"https://api.twilio.com/2010-04-01/Accounts/{vs.twilio_account_sid}/IncomingPhoneNumbers.json?PageSize=100"
-            data = _twilio_request(vs.twilio_account_sid, vs.twilio_auth_token, url)
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/IncomingPhoneNumbers.json?PageSize=100"
+            data = _twilio_request(account_sid, auth_token, url)
             numbers = [
                 {
                     "sid": n["sid"],
@@ -1629,7 +1630,7 @@ class TwilioPhoneNumbersView(generics.GenericAPIView):
                 }
                 for n in data.get("incoming_phone_numbers", [])
             ]
-            return Response(numbers)
+            return Response({"results": numbers})
         except urllib.error.HTTPError as e:
             return Response({"error": e.read().decode()}, status=e.code)
         except Exception as e:

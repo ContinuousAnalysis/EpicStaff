@@ -49,14 +49,16 @@
             />
         </div>
 
-        <div>
-            <app-custom-input
-                label="Phone Number"
-                formControlName="phone_number"
-                placeholder="+15551234567"
-                tooltipText="Twilio phone number in E.164 format"
-            />
-        </div>
+        <app-select
+            label="Phone Number"
+            formControlName="phone_number"
+            [items]="phoneNumberItems()"
+            [loading]="phoneNumbersLoading()"
+            placeholder="Select a phone number"
+            tooltipText="Twilio phone number in E.164 format"
+            (opened)="onPhoneSelectOpened()"
+        />
+        <p *ngIf="phoneLoadError()" class="dialog__field-error">{{ phoneLoadError() }}</p>
 
         <app-select
             label="Webhook Tunnel"

@@ -60,7 +60,9 @@ export class RealtimeChannelService {
     }
 
     updateTwilioChannel(data: UpdateTwilioChannelRequest): Observable<TwilioChannel> {
-        return this.http.patch<TwilioChannel>(`${this.twilioChannelUrl}${data.id}/`, data, { headers: this.headers });
+        return this.http.patch<TwilioChannel>(`${this.twilioChannelUrl}${data.channel}/`, data, {
+            headers: this.headers,
+        });
     }
 
     getPhoneNumbers(accountSid: string, authToken: string): Observable<TwilioPhoneNumber[]> {

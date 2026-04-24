@@ -1,5 +1,4 @@
 export interface TwilioChannel {
-    id: number;
     channel: number;
     account_sid: string;
     auth_token: string;
@@ -40,7 +39,7 @@ export interface CreateTwilioChannelRequest {
 }
 
 export interface UpdateTwilioChannelRequest {
-    id: number;
+    channel: number;
     account_sid?: string;
     auth_token?: string;
     phone_number?: string | null;

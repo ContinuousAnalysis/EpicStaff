@@ -68,6 +68,7 @@ export class SelectComponent implements ControlValueAccessor {
     });
 
     changed = output<unknown>();
+    opened = output<void>();
 
     private onChange: (value: unknown) => void = () => {};
     private onTouched: () => void = () => {};
@@ -87,6 +88,7 @@ export class SelectComponent implements ControlValueAccessor {
     }
 
     openDropdown() {
+        this.opened.emit();
         if (!this.overlayRef) {
             const positionStrategy = this.overlayPositionBuilder
                 .flexibleConnectedTo(this.triggerBtn)

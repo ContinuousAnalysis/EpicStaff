@@ -1,12 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-    ButtonComponent,
-    ConfirmationDialogService,
-    IconButtonComponent,
-    LoadingSpinnerComponent,
-} from '@shared/components';
+import { ButtonComponent, ConfirmationDialogService, LoadingSpinnerComponent } from '@shared/components';
 import { GetNgrokConfigResponse } from '@shared/models';
 import { NgrokConfigStorageService } from '@shared/services';
 
@@ -25,7 +20,7 @@ import {
     selector: 'app-voice-settings-tab',
     templateUrl: './voice-settings-section.component.html',
     styleUrls: ['./voice-settings-section.component.scss'],
-    imports: [ButtonComponent, IconButtonComponent, LoadingSpinnerComponent],
+    imports: [ButtonComponent, LoadingSpinnerComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VoiceSettingsSectionComponent implements OnInit {
