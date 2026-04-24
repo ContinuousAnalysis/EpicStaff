@@ -111,6 +111,19 @@ REST_FRAMEWORK = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "x-twilio-account-sid",
+    "x-twilio-auth-token",
+]
 
 JWT_SECRET = os.getenv("JWT_SECRET", SECRET_KEY)
 

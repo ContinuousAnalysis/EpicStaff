@@ -13,6 +13,8 @@ x-common-env: &common_env
   DB_HOST_NAME: ${DB_HOST_NAME:-crewdb}
   DB_PORT: ${DB_PORT:-5432}
   DB_NAME: ${POSTGRES_DB:-crew}
+  DJANGO_API_KEY: ${DJANGO_API_KEY}
+
 
 services:
   django_app:
@@ -54,7 +56,7 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://${DJANGO_HOST:-localhost}:${DJANGO_PORT:-8000}/ht/')\""]
       interval: 30s
       timeout: 10s
-      retries: 12
+      retries: 50
 
   realtime:
     image: realtime
@@ -73,7 +75,6 @@ services:
       DB_REALTIME_USER: ${DB_REALTIME_USER}
       DB_REALTIME_PASSWORD: ${DB_REALTIME_PASSWORD}
       DJANGO_AUTH_URL: ${DJANGO_AUTH_URL}
-      DJANGO_API_KEY: ${DJANGO_API_KEY}
       DJANGO_AUTH_TIMEOUT: ${DJANGO_AUTH_TIMEOUT:-5}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
@@ -157,7 +158,7 @@ services:
         '
       interval: 15s
       timeout: 10s
-      retries: 10
+      retries: 50
       start_period: 15s
 
   redis:
@@ -179,7 +180,7 @@ services:
         sh -c "redis-cli -p $${REDIS_PORT:-6379} $${REDIS_PASSWORD:+-a \"$${REDIS_PASSWORD}\"} ping || exit 1"
       interval: 5s
       timeout: 2s
-      retries: 5
+      retries: 50
       start_period: 5s
 
   redis-monitor:
@@ -355,7 +356,7 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:${WEBHOOK_PORT:-8051}/')\""]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 30
       start_period: 5s
 
   epicstaff-nginx:
