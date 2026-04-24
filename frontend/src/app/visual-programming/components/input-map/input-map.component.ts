@@ -179,23 +179,13 @@ import { SidePanelService } from '../../services/side-panel.service';
                         type="button"
                         class="btn-primary"
                         [disabled]="!canRunTest() || !pythonNodeId"
+                        [matTooltip]="getRunTestButtonTooltip()"
+                        matTooltipPosition="above"
                         (click)="onRunTest()"
                     >
                         Run Test
                     </button>
                 </div>
-
-                @if (!pythonNodeId) {
-                    <div class="warning-banner">
-                        Click Save in the top panel to save the graph before running a test.
-                    </div>
-                }
-
-                @if (fillNoDataWarning()) {
-                    <div class="warning-banner">
-                        Fill out the Input list and complete a successful session to access Input Variables.
-                    </div>
-                }
             }
         </div>
     `,
@@ -690,7 +680,17 @@ export class InputMapComponent implements OnInit, OnChanges {
             return 'Save the graph first to enable this feature';
         }
         if (!this.hasSuccessfulSession()) {
-            return 'Complete a successful test run to fill variables from session data';
+            return 'Fill out the Input list and complete a successful session to access Input Variables.';
+        }
+        return '';
+    }
+
+    getRunTestButtonTooltip(): string {
+        if (!this.pythonNodeId) {
+            return 'Click Save in the top panel to save the graph before running a test';
+        }
+        if (!this.canRunTest()) {
+            return 'Fill out all test input variables before running the test';
         }
         return '';
     }
