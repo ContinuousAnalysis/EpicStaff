@@ -131,10 +131,27 @@ import { SidePanelService } from '../../services/side-panel.service';
                     >
                         {{ fillLoading() ? 'Loading...' : 'Fill Variables' }}
                     </button>
-                    <button type="button" class="btn-primary" [disabled]="!canRunTest()" (click)="onRunTest()">
+                    <button
+                        type="button"
+                        class="btn-primary"
+                        [disabled]="!canRunTest() || !pythonNodeId"
+                        (click)="onRunTest()"
+                    >
                         Run Test
                     </button>
                 </div>
+
+                @if (!pythonNodeId) {
+                    <div class="warning-banner">
+                        Click Save in the top panel to save the graph before running a test.
+                    </div>
+                }
+
+                @if (fillNoDataWarning()) {
+                    <div class="warning-banner">
+                        Fill out the Input list and complete a successful session to access Input Variables.
+                    </div>
+                }
             }
         </div>
     `,
@@ -329,6 +346,15 @@ import { SidePanelService } from '../../services/side-panel.service';
                     cursor: not-allowed;
                 }
             }
+
+            .warning-banner {
+                border-left: 1px solid rgba(255, 207, 0, 1);
+                border-radius: 10px;
+                padding: 10px 12px;
+                font-size: 13px;
+                color: inherit;
+                margin-top: 8px;
+            }
         `,
     ],
 })
@@ -340,6 +366,7 @@ export class InputMapComponent implements OnInit {
     @Output() runTest = new EventEmitter<Record<string, string>>();
 
     fillLoading = signal(false);
+    fillNoDataWarning = signal(false);
     private normalModeSnapshot: { key: string; value: string }[] = [];
 
     private readonly pythonCodeRunService = inject(PythonCodeRunService);
@@ -475,12 +502,17 @@ export class InputMapComponent implements OnInit {
 
     onFillVariables(): void {
         if (!this.pythonNodeId) return;
+        this.fillNoDataWarning.set(false);
         this.fillLoading.set(true);
         this.pythonCodeRunService
             .getLastTestInput(this.pythonNodeId)
             .pipe(finalize(() => this.fillLoading.set(false)))
             .subscribe({
                 next: ({ input }) => {
+                    if (!input) {
+                        this.fillNoDataWarning.set(true);
+                        return;
+                    }
                     for (const [key, value] of Object.entries(input)) {
                         const existing = this.testPairs.controls.find((c) => c.value.key === key);
                         if (existing) {
