@@ -5,10 +5,12 @@ from io import BytesIO
 import pytest
 from rest_framework.exceptions import PermissionDenied
 
+from tables.models import StorageFile
 from tables.services.storage_service.dataclasses import (
     ArchiveUploadResult,
     FileInfo,
     FileUploadResult,
+    TreeNode,
     UploadResult,
 )
 from tables.services.storage_service.manager import StorageManager
@@ -262,3 +264,108 @@ class TestCrossOrg:
             f"org_{org.id}/src.txt", f"org_{second_org.id}/dest.txt"
         )
         patch_sync.on_move_cross_org.assert_called_once()
+
+
+@pytest.mark.django_db
+class TestListTreeManager:
+    def test_list_tree_builds_org_key_and_strips_prefix(
+        self, storage_manager, mock_backend, org, org_user
+    ):
+        mock_backend.list_tree.return_value = (
+            TreeNode(
+                name="reports",
+                path=f"org_{org.id}/reports/",
+                type="folder",
+                size=0,
+                modified=None,
+                children=[
+                    TreeNode(
+                        name="q1.pdf",
+                        path=f"org_{org.id}/reports/q1.pdf",
+                        type="file",
+                        size=10,
+                        modified="2024-01-01T00:00:00Z",
+                        children=None,
+                    ),
+                ],
+            ),
+            False,
+        )
+        root, truncated = storage_manager.list_tree(
+            "testuser",
+            org.id,
+            "reports",
+            max_depth=None,
+        )
+        mock_backend.list_tree.assert_called_once()
+        called_prefix = mock_backend.list_tree.call_args.args[0]
+        assert called_prefix == f"org_{org.id}/reports"
+        assert root.path == "reports/"
+        assert root.children[0].path == "reports/q1.pdf"
+        assert truncated is False
+
+    def test_list_tree_respects_permission_gate(
+        self, storage_manager, mock_backend, org
+    ):
+        with pytest.raises(PermissionDenied):
+            storage_manager.list_tree("nobody", org.id, "")
+
+
+@pytest.mark.django_db
+class TestSearchManager:
+    @pytest.fixture
+    def seeded(self, org, second_org, org_user):
+        StorageFile.objects.bulk_create(
+            [
+                StorageFile(
+                    org=org, path="reports/q1_report.pdf", name="q1_report.pdf"
+                ),
+                StorageFile(
+                    org=org, path="reports/q2_report.pdf", name="q2_report.pdf"
+                ),
+                StorageFile(org=org, path="archive/note.txt", name="note.txt"),
+                StorageFile(
+                    org=org, path="other/report_draft.md", name="report_draft.md"
+                ),
+                StorageFile(
+                    org=second_org, path="reports/q1_report.pdf", name="q1_report.pdf"
+                ),
+            ]
+        )
+
+    def test_search_finds_filename_substring(
+        self, storage_manager, org, org_user, seeded
+    ):
+        results, total = storage_manager.search("testuser", org.id, q="report")
+        assert total == 3
+        names = [r["name"] for r in results]
+        assert "q1_report.pdf" in names
+        assert "note.txt" not in names
+
+    def test_search_is_case_insensitive(self, storage_manager, org, org_user, seeded):
+        _, total = storage_manager.search("testuser", org.id, q="REPORT")
+        assert total == 3
+
+    def test_search_scoped_to_path(self, storage_manager, org, org_user, seeded):
+        _, total = storage_manager.search(
+            "testuser", org.id, q="report", path="reports/"
+        )
+        assert total == 2
+
+    def test_search_excludes_other_orgs(
+        self, storage_manager, org, second_org, org_user, seeded
+    ):
+        _, total = storage_manager.search("testuser", org.id, q="q1_report")
+        assert total == 1
+
+    def test_search_pagination(self, storage_manager, org, org_user, seeded):
+        page1, total = storage_manager.search(
+            "testuser", org.id, q="report", limit=2, offset=0
+        )
+        page2, _ = storage_manager.search(
+            "testuser", org.id, q="report", limit=2, offset=2
+        )
+        assert len(page1) == 2
+        assert len(page2) == 1
+        assert total == 3
+        assert page1[0]["path"] != page2[0]["path"]
