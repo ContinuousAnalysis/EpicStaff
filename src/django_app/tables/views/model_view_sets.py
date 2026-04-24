@@ -908,6 +908,8 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "create":
             return GraphVersionCreateSerializer
+        if self.action in ("update", "partial_update"):
+            return GraphVersionUpdateSerializer
         return GraphVersionReadSerializer
 
     def create(self, request, *args, **kwargs):

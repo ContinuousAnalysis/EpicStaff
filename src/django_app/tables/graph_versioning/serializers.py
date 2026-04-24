@@ -31,3 +31,6 @@ class GraphVersionUpdateSerializer(serializers.ModelSerializer):
             "name": {"required": False},
             "description": {"required": False, "allow_blank": True},
         }
+
+    def to_representation(self, instance):
+        return GraphVersionReadSerializer(instance, context=self.context).data
