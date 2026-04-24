@@ -44,7 +44,10 @@ interface InputMapPair {
     template: `
         <div class="panel-container">
             <div class="panel-content">
-                <form [formGroup]="form" class="form-container">
+                <form
+                    [formGroup]="form"
+                    class="form-container"
+                >
                     <div
                         class="form-layout"
                         [class.expanded]="isExpanded()"
@@ -67,6 +70,8 @@ interface InputMapPair {
                                     [activeColor]="activeColor"
                                     [testMode]="isOpenTestMode()"
                                     [pythonNodeId]="node().backendId"
+                                    [graphId]="graphId()"
+                                    [nodeName]="node().node_name"
                                     (testModeChange)="isOpenTestMode.set($event)"
                                     (runTest)="onRunTest($event)"
                                 ></app-input-map>
@@ -88,7 +93,10 @@ interface InputMapPair {
                                 [activeColor]="activeColor"
                             ></app-custom-input>
 
-                            <div class="stream-config-section" formGroupName="stream_config">
+                            <div
+                                class="stream-config-section"
+                                formGroupName="stream_config"
+                            >
                                 <span class="section-label">Streaming to EpicChat</span>
                                 <div class="checkbox-list">
                                     <label class="checkbox-item">
@@ -153,7 +161,10 @@ interface InputMapPair {
                     [style.color]="activeColor"
                     (click)="onSaveClick()"
                 >
-                    <app-svg-icon icon="floppy" size="1.25rem" />
+                    <app-svg-icon
+                        icon="floppy"
+                        size="1.25rem"
+                    />
                     {{ isSaving() ? 'Saving…' : 'Save' }}
                 </button>
             }
@@ -438,6 +449,7 @@ interface InputMapPair {
 })
 export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     public override readonly isExpanded = input<boolean>(false);
+    public readonly graphId = input<number | null>(null);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
 
     isOpenTestMode = signal(false);

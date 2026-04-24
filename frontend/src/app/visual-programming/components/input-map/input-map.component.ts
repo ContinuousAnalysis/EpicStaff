@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, Input, OnInit, Output } from '@angular/core';
+import { Component, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { EventEmitter } from '@angular/core';
 import { signal } from '@angular/core';
 import {
@@ -11,8 +11,10 @@ import {
     FormGroupDirective,
     ReactiveFormsModule,
 } from '@angular/forms';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { finalize } from 'rxjs/operators';
 
+import { GraphSessionService, GraphSessionStatus } from '../../../features/flows/services/flows-sessions.service';
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToggleSwitchComponent } from '../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
@@ -22,7 +24,14 @@ import { SidePanelService } from '../../services/side-panel.service';
 @Component({
     selector: 'app-input-map',
     standalone: true,
-    imports: [ReactiveFormsModule, CommonModule, HelpTooltipComponent, ToggleSwitchComponent, AppSvgIconComponent],
+    imports: [
+        ReactiveFormsModule,
+        CommonModule,
+        HelpTooltipComponent,
+        ToggleSwitchComponent,
+        AppSvgIconComponent,
+        MatTooltipModule,
+    ],
     viewProviders: [
         {
             provide: ControlContainer,
@@ -39,15 +48,24 @@ import { SidePanelService } from '../../services/side-panel.service';
                 ></app-help-tooltip>
                 <div class="test-mode-header">
                     <span>Test mode</span>
-                    <app-toggle-switch [checked]="testMode" (checkedChange)="onTestModeToggle($event)" />
+                    <app-toggle-switch
+                        [checked]="testMode"
+                        (checkedChange)="onTestModeToggle($event)"
+                    />
                 </div>
             </div>
 
             @if (!testMode) {
                 <!-- Normal mode: input map list -->
-                <div formArrayName="input_map" class="input-map-list">
+                <div
+                    formArrayName="input_map"
+                    class="input-map-list"
+                >
                     @for (pair of pairs.controls; let i = $index; track pair) {
-                        <div class="input-map-item" [formGroupName]="i">
+                        <div
+                            class="input-map-item"
+                            [formGroupName]="i"
+                        >
                             <div class="input-map-fields">
                                 <div class="input-wrapper">
                                     <input
@@ -80,14 +98,28 @@ import { SidePanelService } from '../../services/side-panel.service';
                         </div>
                     }
                 </div>
-                <button type="button" class="add-pair-btn" (click)="addPair()">
-                    <app-svg-icon icon="plus" size="16px"></app-svg-icon> Add Input
+                <button
+                    type="button"
+                    class="add-pair-btn"
+                    (click)="addPair()"
+                >
+                    <app-svg-icon
+                        icon="plus"
+                        size="16px"
+                    ></app-svg-icon>
+                    Add Input
                 </button>
             } @else {
                 <!-- Test mode: editable test variables backed by parent form 'test_input' FormArray -->
-                <div formArrayName="test_input" class="input-map-list">
+                <div
+                    formArrayName="test_input"
+                    class="input-map-list"
+                >
                     @for (pair of testPairs.controls; let i = $index; track pair) {
-                        <div class="input-map-item" [formGroupName]="i">
+                        <div
+                            class="input-map-item"
+                            [formGroupName]="i"
+                        >
                             <div class="input-map-fields">
                                 <div class="input-wrapper">
                                     <input
@@ -118,15 +150,27 @@ import { SidePanelService } from '../../services/side-panel.service';
                         </div>
                     }
                 </div>
-                <button type="button" class="add-pair-btn" (click)="addTestVariable()">
+                <button
+                    type="button"
+                    class="add-pair-btn"
+                    (click)="addTestVariable()"
+                >
                     <i class="ti ti-plus"></i> Add Input
                 </button>
                 <div class="test-mode-actions">
-                    <button type="button" class="btn-secondary" (click)="onClearAll()">Clear All</button>
                     <button
                         type="button"
                         class="btn-secondary"
-                        [disabled]="fillLoading() || !pythonNodeId"
+                        (click)="onClearAll()"
+                    >
+                        Clear All
+                    </button>
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        [disabled]="fillLoading() || !pythonNodeId || !hasSuccessfulSession()"
+                        [matTooltip]="getButtonTooltip()"
+                        matTooltipPosition="above"
                         (click)="onFillVariables()"
                     >
                         {{ fillLoading() ? 'Loading...' : 'Fill Variables' }}
@@ -358,18 +402,22 @@ import { SidePanelService } from '../../services/side-panel.service';
         `,
     ],
 })
-export class InputMapComponent implements OnInit {
+export class InputMapComponent implements OnInit, OnChanges {
     @Input() activeColor: string = '#685fff';
     @Input() testMode: boolean = false;
     @Input() pythonNodeId: number | null = null;
+    @Input() graphId: number | null = null;
+    @Input() nodeName: string | null = null;
     @Output() testModeChange = new EventEmitter<boolean>();
     @Output() runTest = new EventEmitter<Record<string, string>>();
 
     fillLoading = signal(false);
     fillNoDataWarning = signal(false);
+    hasSuccessfulSession = signal(false);
     private normalModeSnapshot: { key: string; value: string }[] = [];
 
     private readonly pythonCodeRunService = inject(PythonCodeRunService);
+    private readonly graphSessionService = inject(GraphSessionService);
 
     constructor(
         private controlContainer: ControlContainer,
@@ -386,6 +434,13 @@ export class InputMapComponent implements OnInit {
                 this.pairs.at(0).markAsUntouched();
                 this.pairs.updateValueAndValidity();
             });
+        }
+        this.checkSuccessfulSessions();
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['pythonNodeId'] || changes['graphId'] || changes['nodeName']) {
+            this.checkSuccessfulSessions();
         }
     }
 
@@ -611,5 +666,32 @@ export class InputMapComponent implements OnInit {
             const value = control.value;
             return value.key?.trim() !== '';
         });
+    }
+
+    private checkSuccessfulSessions(): void {
+        if (!this.graphId || !this.nodeName || !this.pythonNodeId) {
+            this.hasSuccessfulSession.set(false);
+            return;
+        }
+        const formattedNodeName = `${this.nodeName} #${this.pythonNodeId}`;
+        this.graphSessionService
+            .getSessionsByGraphId(this.graphId, false, 1, 0, [GraphSessionStatus.ENDED], formattedNodeName)
+            .subscribe({
+                next: (result) => this.hasSuccessfulSession.set(result.count > 0),
+                error: () => this.hasSuccessfulSession.set(false),
+            });
+    }
+
+    getButtonTooltip(): string {
+        if (this.fillLoading()) {
+            return 'Loading variables...';
+        }
+        if (!this.pythonNodeId) {
+            return 'Save the graph first to enable this feature';
+        }
+        if (!this.hasSuccessfulSession()) {
+            return 'Complete a successful test run to fill variables from session data';
+        }
+        return '';
     }
 }
