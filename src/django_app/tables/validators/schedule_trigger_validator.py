@@ -1,3 +1,5 @@
+import zoneinfo
+
 from tables.exceptions import ScheduleTriggerValidationError
 from tables.models.graph_models import ScheduleTriggerNode
 
@@ -17,6 +19,15 @@ class ScheduleTriggerValidator:
         start_dt = attrs.get("start_date_time")
         end_dt = attrs.get("end_date_time")
         max_runs = attrs.get("max_runs")
+        tz_name = attrs.get("timezone")
+
+        if tz_name:
+            try:
+                zoneinfo.ZoneInfo(tz_name)
+            except zoneinfo.ZoneInfoNotFoundError:
+                raise ScheduleTriggerValidationError(
+                    {"timezone": f"Unknown IANA timezone: {tz_name!r}."}
+                )
 
         if run_mode == ScheduleTriggerNode.RunMode.ONCE:
             if every is not None or unit is not None or weekdays:

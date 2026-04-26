@@ -20,6 +20,7 @@ def _flat_schedule_payload(instance: ScheduleTriggerNode) -> dict:
         "node_name": instance.node_name,
         "graph": instance.graph_id,
         "is_active": instance.is_active,
+        "timezone": instance.timezone or "UTC",
         "run_mode": instance.run_mode,
         "start_date_time": (
             instance.start_date_time.isoformat() if instance.start_date_time else None

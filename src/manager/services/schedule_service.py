@@ -86,7 +86,8 @@ class ScheduleService:
     async def add_schedule(self, node_data: dict):
         """Register (or replace) an APScheduler job for a schedule node."""
         node_id = node_data["id"]
-        trigger = self._build_trigger(node_data)
+        node_tz = self._resolve_tz(node_data.get("timezone"))
+        trigger = self._build_trigger(node_data, node_tz)
 
         if trigger is None:
             logger.warning(
@@ -95,7 +96,7 @@ class ScheduleService:
             return
 
         start_dt = self._parse_dt(node_data.get("start_date_time"))
-        now = datetime.now(self.tz)
+        now = datetime.now(node_tz)
 
         next_run_time = start_dt if (start_dt and start_dt > now) else None
 
@@ -170,7 +171,9 @@ class ScheduleService:
         """Remove the APScheduler job for a node (idempotent if already gone)."""
         job_id = self.schedule_nodes.pop(node_id, None)
         if not job_id:
-            logger.warning(f"[ScheduleService] Job for node {node_id} not found")
+            logger.debug(
+                f"[ScheduleService] No tracked job for node {node_id} (already removed)"
+            )
             return
 
         self._manual_removals.add(job_id)
@@ -178,9 +181,7 @@ class ScheduleService:
             self.scheduler.remove_job(job_id)
             logger.info(f"[ScheduleService] Job {job_id} removed")
         except JobLookupError:
-            # Already gone — APScheduler auto-removed it (end_date reached,
-            # DateTrigger fired once, etc). Idempotent no-op.
-            logger.info(
+            logger.debug(
                 f"[ScheduleService] Job {job_id} was already removed by APScheduler"
             )
             self._manual_removals.discard(job_id)
@@ -219,23 +220,58 @@ class ScheduleService:
                 f"[ScheduleService] Error executing schedule for node {node_id}"
             )
 
-    def _build_trigger(self, node_data: dict):
+    def _resolve_tz(self, name: str | None):
+        """Return a pytz tz for the given IANA name, falling back to server tz."""
+        if not name:
+            return self.tz
+        try:
+            return pytz.timezone(name)
+        except pytz.UnknownTimeZoneError:
+            logger.warning(
+                f"[ScheduleService] Unknown tz {name!r}, falling back to server tz"
+            )
+            return self.tz
+
+    def _local_start(self, node_data: dict, tz):
+        """start_date_time (UTC in DB) converted into the node's tz, or None."""
+        dt = self._parse_dt(node_data.get("start_date_time"))
+        if dt is None:
+            return None
+        return dt.astimezone(tz)
+
+    _WEEKDAY_SHORT = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+    def _build_trigger(self, node_data: dict, node_tz=None):
         """Build an APScheduler trigger from node data.
 
-        run_mode="once" → DateTrigger; unit="seconds" → IntervalTrigger; every
-        other unit → CronTrigger. Returns None on missing/invalid config.
+        Two semantics, picked per (unit, weekdays, every):
+
+        * Pure interval (delta from start_date_time): seconds / minutes / hours
+          regardless of `every`, and days/weeks with every>1 and no weekdays.
+          Implemented via IntervalTrigger anchored at start_date_time, so e.g.
+          "every 2 minutes from 19:01" fires at 19:01, 19:03, 19:05, ...
+
+        * Calendar-aligned (wall-clock H:M of start_date_time): days every=1,
+          days with weekdays, weeks (every value), months. Implemented via
+          CronTrigger, so e.g. "Mon at 9am" or "every day at 9am" fire at
+          exactly that wall-clock time in the node's tz.
+
+        run_mode="once" → DateTrigger. Returns None on missing/invalid config.
         """
+        if node_tz is None:
+            node_tz = self._resolve_tz(node_data.get("timezone"))
         run_mode = node_data["run_mode"]
 
         end_dt = None
         if node_data.get("end_type") == "on_date":
             end_dt = self._parse_dt(node_data.get("end_date_time"))
 
+        start_dt = self._parse_dt(node_data["start_date_time"])
+
         if run_mode == "once":
-            dt = self._parse_dt(node_data["start_date_time"])
-            if dt is None:
+            if start_dt is None:
                 return None
-            return DateTrigger(run_date=dt, timezone=self.tz)
+            return DateTrigger(run_date=start_dt, timezone=node_tz)
 
         every = node_data.get("every")
         unit = node_data.get("unit")
@@ -248,31 +284,66 @@ class ScheduleService:
             return None
 
         if unit == "seconds":
-            return IntervalTrigger(seconds=every, timezone=self.tz, end_date=end_dt)
-
+            return IntervalTrigger(
+                seconds=every, timezone=node_tz, start_date=start_dt, end_date=end_dt
+            )
         if unit == "minutes":
-            return self._make_cron(f"*/{every} * * * *", end_dt=end_dt)
-
+            return IntervalTrigger(
+                minutes=every, timezone=node_tz, start_date=start_dt, end_date=end_dt
+            )
         if unit == "hours":
-            return self._make_cron(f"0 */{every} * * *", end_dt=end_dt)
+            return IntervalTrigger(
+                hours=every, timezone=node_tz, start_date=start_dt, end_date=end_dt
+            )
+
+        local = self._local_start(node_data, node_tz)
+        minute = local.minute if local is not None else 0
+        hour = local.hour if local is not None else 0
+        day = local.day if local is not None else 1
 
         if unit == "days":
             if weekdays:
                 wd = ",".join(weekdays)
-                return self._make_cron(f"0 0 * * {wd}", end_dt=end_dt)
-            return self._make_cron(f"0 0 */{every} * *", end_dt=end_dt)
+                return self._make_cron(
+                    f"{minute} {hour} * * {wd}", end_dt=end_dt, tz=node_tz
+                )
+            if every == 1:
+                return self._make_cron(
+                    f"{minute} {hour} * * *", end_dt=end_dt, tz=node_tz
+                )
+            return IntervalTrigger(
+                days=every, timezone=node_tz, start_date=start_dt, end_date=end_dt
+            )
 
         if unit == "weeks":
-            wd = ",".join(weekdays) if weekdays else "0"
-            return self._make_cron(f"0 0 * * {wd}", end_dt=end_dt)
+            wd = (
+                ",".join(weekdays)
+                if weekdays
+                else self._WEEKDAY_SHORT[local.weekday() if local is not None else 0]
+            )
+            if every == 1:
+                return self._make_cron(
+                    f"{minute} {hour} * * {wd}", end_dt=end_dt, tz=node_tz
+                )
+            return CronTrigger(
+                second="0",
+                minute=minute,
+                hour=hour,
+                day_of_week=wd,
+                week=f"*/{every}",
+                timezone=node_tz,
+                end_date=end_dt,
+            )
 
         if unit == "months":
-            return self._make_cron(f"0 0 1 */{every} *", end_dt=end_dt)
+            return self._make_cron(
+                f"{minute} {hour} {day} */{every} *", end_dt=end_dt, tz=node_tz
+            )
 
         logger.error(f"[ScheduleService] Unknown unit: {unit}")
         return None
 
-    def _make_cron(self, crontab: str, end_dt=None) -> CronTrigger:
+    def _make_cron(self, crontab: str, end_dt=None, tz=None) -> CronTrigger:
         """Build a CronTrigger from a 5-field crontab with an optional end_date.
 
         CronTrigger.from_crontab() has no end_date parameter, so the fields are
@@ -286,7 +357,7 @@ class ScheduleService:
             day=day,
             month=month,
             day_of_week=day_of_week,
-            timezone=self.tz,
+            timezone=tz or self.tz,
             end_date=end_dt,
         )
 
@@ -297,7 +368,7 @@ class ScheduleService:
         try:
             dt = datetime.fromisoformat(s)
             if dt.tzinfo is None:
-                dt = self.tz.localize(dt)
+                dt = pytz.UTC.localize(dt)
             return dt
         except (ValueError, AttributeError) as exc:
             logger.error(f"[ScheduleService] Error parsing datetime '{s}': {exc}")
@@ -316,39 +387,25 @@ class ScheduleService:
                     data = json.loads(message["data"])
                     action_wrapper = data.get("action")
 
-                    if action_wrapper == "node_update":
-                        inner = data.get("data", {})
-                        inner_action = inner.get("action")
-                        node_data = inner.get("node", {})
-                        node_id = node_data.get("id")
+                    if action_wrapper != "node_update":
+                        continue
 
-                        if inner_action in ("create", "update"):
-                            if not node_data.get("is_active", True):
-                                await self.remove_schedule(node_id)
-                                logger.info(
-                                    f"[ScheduleService] Job removed for node {node_id} "
-                                    f"(node deactivated)"
-                                )
-                            else:
-                                await self.add_schedule(node_data)
-                                logger.info(
-                                    f"[ScheduleService] Job updated for node {node_id} "
-                                    f"(action={inner_action})"
-                                )
-                        elif inner_action == "delete" and node_id:
-                            await self.remove_schedule(node_id)
-                            logger.info(
-                                f"[ScheduleService] Job removed for node {node_id}"
-                            )
+                    inner = data.get("data", {})
+                    inner_action = inner.get("action")
+                    node_data = inner.get("node", {})
+                    node_id = node_data.get("id")
 
-                    elif action_wrapper == "deactivate":
-                        node_id = data.get("node_id")
-                        if node_id:
+                    if inner_action in ("create", "update"):
+                        if not node_data.get("is_active", True):
                             await self.remove_schedule(node_id)
+                        else:
+                            await self.add_schedule(node_data)
                             logger.info(
-                                f"[ScheduleService] Job removed for node {node_id} "
-                                f"(received 'deactivate')"
+                                f"[ScheduleService] Job updated for node {node_id} "
+                                f"(action={inner_action})"
                             )
+                    elif inner_action == "delete" and node_id:
+                        await self.remove_schedule(node_id)
 
                 except json.JSONDecodeError:
                     logger.warning("[ScheduleService] Received invalid JSON message")

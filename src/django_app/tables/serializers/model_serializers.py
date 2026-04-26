@@ -16,6 +16,10 @@ from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
 from tables.validators.schedule_trigger_validator import ScheduleTriggerValidator
+from tables.services.schedule_trigger_service import (
+    parse_naive_to_utc,
+    format_utc_to_local_naive_iso,
+)
 from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
 from tables.models.webhook_models import (
     WebhookTrigger,
@@ -1847,18 +1851,28 @@ class _ScheduleIntervalInputSerializer(serializers.Serializer):
 
 class _ScheduleEndInputSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=ScheduleTriggerNode.EndType.choices)
-    date_time = serializers.DateTimeField(required=False, allow_null=True)
+    date_time = serializers.CharField(required=False, allow_null=True)
     max_runs = serializers.IntegerField(required=False, allow_null=True, min_value=1)
 
 
 class _ScheduleConfigInputSerializer(serializers.Serializer):
-    run_mode = serializers.ChoiceField(choices=ScheduleTriggerNode.RunMode.choices)
-    start_date_time = serializers.DateTimeField()
+    run_mode = serializers.ChoiceField(
+        choices=ScheduleTriggerNode.RunMode.choices,
+        required=False,
+        allow_null=True,
+    )
+    timezone = serializers.CharField(required=False, allow_null=True)
+    start_date_time = serializers.CharField(required=False, allow_null=True)
     interval = _ScheduleIntervalInputSerializer(required=False, allow_null=True)
-    end = _ScheduleEndInputSerializer()
+    end = _ScheduleEndInputSerializer(required=False, allow_null=True)
 
     def to_representation(self, instance):
-        """Build the nested `schedule` block from a ScheduleTriggerNode's flat columns."""
+        """Build the nested `schedule` block from a ScheduleTriggerNode's flat columns.
+
+        Datetimes are rendered as naive ISO strings in the node's declared tz so
+        that the client sees back exactly the local wall-clock time it sent.
+        """
+        tz_name = instance.timezone or "UTC"
         interval = (
             None
             if instance.run_mode == ScheduleTriggerNode.RunMode.ONCE
@@ -1870,18 +1884,15 @@ class _ScheduleConfigInputSerializer(serializers.Serializer):
         )
         return {
             "run_mode": instance.run_mode,
-            "start_date_time": (
-                instance.start_date_time.isoformat()
-                if instance.start_date_time
-                else None
+            "timezone": tz_name,
+            "start_date_time": format_utc_to_local_naive_iso(
+                instance.start_date_time, tz_name
             ),
             "interval": interval,
             "end": {
                 "type": instance.end_type,
-                "date_time": (
-                    instance.end_date_time.isoformat()
-                    if instance.end_date_time
-                    else None
+                "date_time": format_utc_to_local_naive_iso(
+                    instance.end_date_time, tz_name
                 ),
                 "max_runs": instance.max_runs,
             },
@@ -1891,16 +1902,10 @@ class _ScheduleConfigInputSerializer(serializers.Serializer):
 class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
     """Translates the nested `schedule` block to/from the model's flat columns."""
 
-    # source="*" drives both directions through the nested block.
-    # Write: to_internal_value below pops `schedule`, validates it, and injects
-    # the flat columns into the returned attrs. Read: _ScheduleConfigInputSerializer's
-    # to_representation builds the block from the same flat columns on the instance.
     schedule = _ScheduleConfigInputSerializer(required=False, source="*")
 
     class Meta:
         model = ScheduleTriggerNode
-        # Explicit list — the flat schedule columns are intentionally excluded
-        # so Swagger only shows the nested `schedule` block in both schemas.
         fields = [
             "id",
             "graph",
@@ -1923,13 +1928,25 @@ class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSeria
         schedule = data.pop("schedule", serializers.empty)
 
         if schedule is serializers.empty:
-            if self.partial:
-                return super().to_internal_value(data)
-            raise serializers.ValidationError({"schedule": ["This field is required."]})
+            if self.instance is None and not self.partial:
+                data["is_active"] = False
+            return super().to_internal_value(data)
+
         if schedule is None:
-            raise serializers.ValidationError(
-                {"schedule": ["This field may not be null."]}
+            data["is_active"] = False
+            attrs = super().to_internal_value(data)
+            attrs.update(
+                run_mode=None,
+                start_date_time=None,
+                every=None,
+                unit=None,
+                weekdays=None,
+                end_type=None,
+                end_date_time=None,
+                max_runs=None,
+                timezone="UTC",
             )
+            return attrs
 
         config = _ScheduleConfigInputSerializer(data=schedule)
         try:
@@ -1938,22 +1955,75 @@ class ScheduleTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSeria
             raise serializers.ValidationError({"schedule": exc.detail})
 
         cfg = config.validated_data
-        interval = cfg.get("interval") or {}
-        end = cfg["end"]
-
         attrs = super().to_internal_value(data)
-        attrs["run_mode"] = cfg["run_mode"]
-        attrs["start_date_time"] = cfg["start_date_time"]
-        attrs["every"] = interval.get("every")
-        attrs["unit"] = interval.get("unit")
-        attrs["weekdays"] = interval.get("weekdays")
-        attrs["end_type"] = end["type"]
-        attrs["end_date_time"] = end.get("date_time")
-        attrs["max_runs"] = end.get("max_runs")
+
+        tz_name = cfg.get("timezone")
+        if tz_name is None and self.instance is not None:
+            effective_tz = self.instance.timezone or "UTC"
+        else:
+            effective_tz = tz_name or "UTC"
+        if tz_name is not None:
+            attrs["timezone"] = tz_name
+
+        if "run_mode" in schedule:
+            attrs["run_mode"] = cfg.get("run_mode")
+
+        if "start_date_time" in schedule:
+            try:
+                attrs["start_date_time"] = parse_naive_to_utc(
+                    cfg.get("start_date_time"), effective_tz
+                )
+            except ValueError as exc:
+                raise serializers.ValidationError(
+                    {"schedule": {"start_date_time": [str(exc)]}}
+                )
+
+        if "interval" in schedule:
+            interval = cfg.get("interval") or {}
+            attrs["every"] = interval.get("every")
+            attrs["unit"] = interval.get("unit")
+            attrs["weekdays"] = interval.get("weekdays")
+
+        if "end" in schedule:
+            end = cfg.get("end") or {}
+            attrs["end_type"] = end.get("type")
+            try:
+                attrs["end_date_time"] = parse_naive_to_utc(
+                    end.get("date_time"), effective_tz
+                )
+            except ValueError as exc:
+                raise serializers.ValidationError(
+                    {"schedule": {"end": {"date_time": [str(exc)]}}}
+                )
+            attrs["max_runs"] = end.get("max_runs")
 
         return attrs
 
     def validate(self, attrs):
+        initial = self.initial_data if isinstance(self.initial_data, dict) else {}
+        if "is_active" in initial:
+            will_be_active = bool(initial["is_active"])
+        elif self.instance is not None:
+            will_be_active = self.instance.is_active
+        else:
+            will_be_active = bool(attrs.get("is_active", True))
+
+        if will_be_active:
+            run_mode = attrs.get("run_mode", getattr(self.instance, "run_mode", None))
+            start_dt = attrs.get(
+                "start_date_time",
+                getattr(self.instance, "start_date_time", None),
+            )
+            end_type = attrs.get("end_type", getattr(self.instance, "end_type", None))
+            if not (run_mode and start_dt and end_type):
+                raise serializers.ValidationError(
+                    {
+                        "is_active": (
+                            "Cannot activate: schedule is not fully configured."
+                        )
+                    }
+                )
+
         ScheduleTriggerValidator().validate(attrs)
         return attrs
 

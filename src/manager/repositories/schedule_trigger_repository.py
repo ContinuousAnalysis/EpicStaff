@@ -42,7 +42,7 @@ class ScheduleTriggerNodeRepository:
             query = text(
                 """
                 SELECT
-                    id, node_name, graph_id, is_active, run_mode,
+                    id, node_name, graph_id, is_active, timezone, run_mode,
                     start_date_time, every, unit, weekdays,
                     end_type, end_date_time, max_runs, current_runs
                 FROM tables_scheduletriggernode
@@ -61,6 +61,7 @@ class ScheduleTriggerNodeRepository:
                     "node_name": row.node_name,
                     "graph": row.graph_id,
                     "is_active": row.is_active,
+                    "timezone": row.timezone or "UTC",
                     "run_mode": row.run_mode,
                     "start_date_time": (
                         row.start_date_time.isoformat() if row.start_date_time else None

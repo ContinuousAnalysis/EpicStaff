@@ -608,15 +608,20 @@ class ScheduleTriggerNode(BaseGraphEntity, BaseGlobalNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="schedule_trigger_node_list"
     )
-    is_active = models.BooleanField(default=True)
-    run_mode = models.CharField(max_length=10, choices=RunMode.choices)
-    start_date_time = models.DateTimeField()
+    is_active = models.BooleanField(default=False)
+    timezone = models.CharField(max_length=64, default="UTC", blank=True)
+    run_mode = models.CharField(
+        max_length=10, choices=RunMode.choices, null=True, blank=True
+    )
+    start_date_time = models.DateTimeField(null=True, blank=True)
     every = models.IntegerField(null=True, blank=True)
     unit = models.CharField(
         max_length=10, null=True, blank=True, choices=TimeUnit.choices
     )
     weekdays = models.JSONField(null=True, blank=True)
-    end_type = models.CharField(max_length=15, choices=EndType.choices)
+    end_type = models.CharField(
+        max_length=15, choices=EndType.choices, null=True, blank=True
+    )
     end_date_time = models.DateTimeField(null=True, blank=True)
     max_runs = models.IntegerField(null=True, blank=True)
     current_runs = models.IntegerField(default=0)
@@ -631,7 +636,6 @@ class ScheduleTriggerNode(BaseGraphEntity, BaseGlobalNode):
             "updated_at",
             "content_hash",
             "metadata",
-            "current_runs",
         ]
         data = {
             f.name: str(getattr(self, f.attname))
