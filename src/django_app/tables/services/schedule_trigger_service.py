@@ -1,16 +1,59 @@
-import json
+import zoneinfo
+from datetime import datetime, timezone as _datetime_timezone
 
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 from loguru import logger
 
-from django_app.settings import SCHEDULE_CHANNEL
 from tables.models.graph_models import ScheduleTriggerNode
 from utils.singleton_meta import SingletonMeta
 from utils.graph_utils import generate_node_name
-from tables.services.redis_service import RedisService
 from tables.services.session_manager_service import SessionManagerService
+
+
+def parse_naive_to_utc(raw, tz_name: str | None) -> datetime | None:
+    """Parse an ISO string in the given IANA tz into a UTC tz-aware datetime.
+
+    Naive input is localized in `tz_name` (what the user typed on their wall
+    clock). Aware input is respected as-is and converted to UTC. Returns None
+    for empty input; raises ValueError on unparseable input or unknown tz.
+    """
+    if raw in (None, ""):
+        return None
+    if isinstance(raw, datetime):
+        parsed = raw
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ValueError(f"Invalid ISO 8601 datetime: {raw!r}.") from exc
+
+    if parsed.tzinfo is None:
+        try:
+            tz = zoneinfo.ZoneInfo(tz_name or "UTC")
+        except zoneinfo.ZoneInfoNotFoundError as exc:
+            raise ValueError(f"Unknown IANA timezone: {tz_name!r}.") from exc
+        parsed = parsed.replace(tzinfo=tz)
+
+    return parsed.astimezone(_datetime_timezone.utc)
+
+
+def format_utc_to_local_naive_iso(
+    dt: datetime | None, tz_name: str | None
+) -> str | None:
+    """Render a UTC datetime as a naive ISO string in the given IANA tz.
+
+    Falls back to UTC if `tz_name` is missing or unknown so a stored node is
+    always renderable even if its tz later becomes invalid.
+    """
+    if dt is None:
+        return None
+    try:
+        tz = zoneinfo.ZoneInfo(tz_name or "UTC")
+    except zoneinfo.ZoneInfoNotFoundError:
+        tz = zoneinfo.ZoneInfo("UTC")
+    return dt.astimezone(tz).replace(tzinfo=None).isoformat()
 
 
 class ScheduleTriggerService(metaclass=SingletonMeta):
@@ -26,6 +69,12 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
         select_for_update(skip_locked=True) lets concurrent workers race for the
         fired node; only one wins, others exit silently. current_runs is bumped
         via F() so concurrent increments never clobber each other.
+
+        Terminal conditions (end_date reached, max_runs reached) flip
+        is_active=False via .save() — the post_save signal publishes a
+        node_update echo that Manager consumes to drop its APScheduler job. We
+        intentionally do not publish 'deactivate' here to keep the channel's
+        direction rule intact (Manager → Django only).
         """
         try:
             now = timezone.now()
@@ -47,14 +96,11 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
                 and node.end_date_time
                 and node.end_date_time <= now
             ):
-                RedisService().redis_client.publish(
-                    SCHEDULE_CHANNEL,
-                    json.dumps({"action": "deactivate", "node_id": node.pk}),
-                )
+                node.is_active = False
+                node.save(update_fields=["is_active", "updated_at"])
                 logger.info(
                     f"[ScheduleTriggerService] Node {node_id}: "
-                    f"end date {node.end_date_time} has passed, "
-                    f"published 'deactivate' signal."
+                    f"end date {node.end_date_time} has passed, deactivated."
                 )
                 return
 
@@ -89,14 +135,12 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
                 and node.max_runs is not None
                 and node.current_runs >= node.max_runs
             ):
-                RedisService().redis_client.publish(
-                    SCHEDULE_CHANNEL,
-                    json.dumps({"action": "deactivate", "node_id": node.pk}),
-                )
+                node.is_active = False
+                node.save(update_fields=["is_active", "updated_at"])
                 logger.info(
                     f"[ScheduleTriggerService] Node {node_id}: "
                     f"max runs reached ({node.current_runs}/{node.max_runs}), "
-                    f"published 'deactivate' signal."
+                    f"deactivated."
                 )
 
         except Exception as exc:

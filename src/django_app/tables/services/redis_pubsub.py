@@ -586,13 +586,20 @@ class RedisPubSub:
         return total_usage
 
     def schedule_channel_handler(self, message: dict):
-        """
-        Router for schedule_channel messages coming from Manager.
+        """Router for schedule_channel messages coming from Manager.
+
+        Channel direction rules:
+          - 'node_update' is Django → Manager; we see the echo of our own
+            post_save publish and skip it silently here.
+          - 'run_session' and 'deactivate' are Manager → Django and are the
+            only actions consumed on this side.
 
         Supported actions:
-          - 'run_session'  → start a session via ScheduleTriggerService
-                             (guard checks + run_session + increment_runs — all atomic)
-          - 'deactivate'   → set is_active=False (used for once-mode nodes)
+          - 'run_session' → start a session via ScheduleTriggerService
+            (guard checks + run_session + increment_runs — all atomic)
+          - 'deactivate'  → set is_active=False (published by Manager after a
+            once-mode fire or when APScheduler auto-removes a job, e.g. when
+            end_date is reached)
 
         Input:
             message["data"] — JSON string:
@@ -603,8 +610,6 @@ class RedisPubSub:
             data = json.loads(message["data"])
             action = data.get("action")
 
-            # node_update messages are Django→Manager; we see the echo of our
-            # own post_save publish and must skip it silently.
             if action == "node_update":
                 return
 
