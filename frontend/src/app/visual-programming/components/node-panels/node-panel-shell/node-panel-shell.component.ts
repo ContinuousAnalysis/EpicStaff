@@ -237,4 +237,8 @@ export class NodePanelShellComponent {
             return null;
         }
     }
+
+    public hasPanelInstance(): boolean {
+        return this.panelInstance !== null;
+    }
 }

@@ -93,6 +93,8 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     ];
 
     repeatDays = signal<WeekdayCode[]>([]);
+    startDateTimeDirty = signal(false);
+    endDateTimeDirty = signal(false);
 
     toggleDay(value: WeekdayCode): void {
         const current = this.repeatDays();
@@ -111,16 +113,35 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         this.endRowError.set(endErr);
 
         if (startErr || endErr) {
-            return this.node();
+            return null;
         }
 
         return super.onSave();
+    }
+
+    public override onSaveSilently(): ScheduleTriggerNodeModel | null {
+        this.submitted.set(true);
+
+        const startErr = this.computeStartError(this.form.get('start_date')!.value, this.form.get('start_time')!.value);
+        this.startRowError.set(startErr);
+
+        const endErr = this.showEndDateTime()
+            ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value)
+            : '';
+        this.endRowError.set(endErr);
+
+        if (startErr || endErr) {
+            return null;
+        }
+        return super.onSaveSilently();
     }
 
     initializeForm(): FormGroup {
         this.submitted.set(false);
         this.startRowError.set('');
         this.endRowError.set('');
+        this.startDateTimeDirty.set(false);
+        this.endDateTimeDirty.set(false);
 
         const data = this.node().data;
 
@@ -155,6 +176,19 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((v) => this.endMode.set(v ?? 'never'));
 
+        fg.get('start_date')!
+            .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.startDateTimeDirty.set(true));
+        fg.get('start_time')!
+            .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.startDateTimeDirty.set(true));
+        fg.get('end_date')!
+            .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.endDateTimeDirty.set(true));
+        fg.get('end_time')!
+            .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.endDateTimeDirty.set(true));
+
         const validateStart = () => {
             this.startRowError.set(this.computeStartError(fg.get('start_date')!.value, fg.get('start_time')!.value));
         };
@@ -172,22 +206,37 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         return fg;
     }
 
-    /** ISO-8601 (with Z or offset) → "dd.mm.yyyy". Returns '' for empty/invalid input. */
+    /**
+     * Extracts "dd.mm.yyyy" from a naive or offset-bearing ISO-8601 string.
+     * Uses string splitting — no Date constructor — so the result is always
+     * the wall-clock date written in the string, unaffected by browser timezone.
+     * Handles both naive ("2026-05-01T09:00:00") and offset ("…+03:00") input.
+     */
     private parseIsoToDate(iso: string): string {
         if (!iso) return '';
-        const dt = new Date(iso);
-        if (isNaN(dt.getTime())) return '';
-        const pad = (n: number) => String(n).padStart(2, '0');
-        return `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()}`;
+        const datePart = iso.split('T')[0]; // "2026-05-01"
+        const segs = datePart.split('-');
+        if (segs.length !== 3) return '';
+        const [y, m, d] = segs;
+        if (!y || !m || !d) return '';
+        return `${d}.${m}.${y}`;
     }
 
-    /** ISO-8601 (with Z or offset) → "HH:MM AM/PM". Returns '' for empty/invalid input. */
+    /**
+     * Extracts "HH:MM AM/PM" from a naive or offset-bearing ISO-8601 string.
+     * Uses string splitting — no Date constructor — so the result is always
+     * the wall-clock time written in the string, unaffected by browser timezone.
+     * Handles both naive ("2026-05-01T09:00:00") and offset ("…+03:00") input.
+     */
     private parseIsoToTime(iso: string): string {
         if (!iso) return '';
-        const dt = new Date(iso);
-        if (isNaN(dt.getTime())) return '';
-        let h = dt.getHours();
-        const min = dt.getMinutes();
+        const timePart = iso.split('T')[1]; // "09:00:00" or "09:00:00+03:00"
+        if (!timePart) return '';
+        const [hStr, minStr] = timePart.slice(0, 5).split(':'); // take only "HH:MM"
+        if (!hStr || !minStr) return '';
+        let h = parseInt(hStr, 10);
+        const min = parseInt(minStr, 10);
+        if (isNaN(h) || isNaN(min)) return '';
         const meridiem: 'AM' | 'PM' = h < 12 ? 'AM' : 'PM';
         if (h === 0) h = 12;
         else if (h > 12) h -= 12;
@@ -214,6 +263,8 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         if (parsed.getFullYear() !== y || parsed.getMonth() !== m || parsed.getDate() !== d) {
             return 'Invalid start date';
         }
+
+        if (!this.startDateTimeDirty()) return '';
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -259,6 +310,8 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         if (parsed.getFullYear() !== y || parsed.getMonth() !== m || parsed.getDate() !== d) {
             return 'Invalid end date';
         }
+
+        if (!this.endDateTimeDirty()) return '';
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -344,9 +397,11 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     }
 
     /**
-     * Combines "dd.mm.yyyy" date and "HH:MM AM/PM" time into an ISO-8601 string
-     * with the browser's local UTC offset (e.g. "2026-04-22T23:35:00+03:00").
-     * TODO: confirm timezone strategy with backend before release.
+     * Combines "dd.mm.yyyy" date and "HH:MM AM/PM" time into a naive ISO-8601
+     * datetime string: "YYYY-MM-DDTHH:MM:00" — no UTC offset, no Z suffix.
+     * Timezone is sent separately as the IANA string in schedule.timezone.
+     * No Date constructor is used, so the result is always the exact wall-clock
+     * time the user entered, unaffected by browser timezone.
      */
     private buildDateTimeString(date: string, time: string): string {
         if (!date || !time) return '';
@@ -356,7 +411,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         if (!dateMatch || !timeMatch) return '';
 
         const d = parseInt(dateMatch[1], 10);
-        const m = parseInt(dateMatch[2], 10) - 1;
+        const m = parseInt(dateMatch[2], 10);
         const y = parseInt(dateMatch[3], 10);
         let h = parseInt(timeMatch[1], 10);
         const min = parseInt(timeMatch[2], 10);
@@ -365,18 +420,9 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         if (ampm === 'PM' && h !== 12) h += 12;
         else if (ampm === 'AM' && h === 12) h = 0;
 
-        const dt = new Date(y, m, d, h, min, 0, 0);
-        if (isNaN(dt.getTime())) return '';
+        if (d < 1 || d > 31 || m < 1 || m > 12 || h > 23 || min > 59) return '';
 
         const pad = (n: number) => String(n).padStart(2, '0');
-        const offsetMin = dt.getTimezoneOffset();
-        const sign = offsetMin <= 0 ? '+' : '-';
-        const absOffset = Math.abs(offsetMin);
-
-        return (
-            `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}` +
-            `T${pad(dt.getHours())}:${pad(dt.getMinutes())}:00` +
-            `${sign}${pad(Math.floor(absOffset / 60))}:${pad(absOffset % 60)}`
-        );
+        return `${y}-${pad(m)}-${pad(d)}T${pad(h)}:${pad(min)}:00`;
     }
 }
