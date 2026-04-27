@@ -1,5 +1,9 @@
 @if (label()) {
-    <app-tooltip [required]="required()" [tooltipText]="tooltipText()" [label]="label()" />
+    <app-tooltip
+        [required]="required()"
+        [tooltipText]="tooltipText()"
+        [label]="label()"
+    />
 }
 
 <div class="time-picker">
@@ -23,7 +27,9 @@
                 (focus)="onFocus()"
                 (click)="$event.stopPropagation()"
             />
-            <span class="time-picker__meridiem-display">{{ meridiem() }}</span>
+            @if (timeInput()) {
+                <span class="time-picker__meridiem-display">{{ meridiem() }}</span>
+            }
         </div>
         <svg
             class="time-picker__chevron"
@@ -32,7 +38,13 @@
             height="18"
             viewBox="0 0 24 24"
         >
-            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" />
+            <path
+                d="M6 9l6 6 6-6"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+            />
         </svg>
     </div>
 </div>
@@ -42,7 +54,10 @@
 }
 
 <ng-template #dropdownTemplate>
-    <div class="time-picker__dropdown" [style.--active-color]="activeColor()">
+    <div
+        class="time-picker__dropdown"
+        [style.--active-color]="activeColor()"
+    >
         <div class="time-picker__slots">
             @for (slot of filteredSlots(); track slot) {
                 <div

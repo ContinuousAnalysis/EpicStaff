@@ -223,9 +223,9 @@ export function buildBulkSavePayload(
         schedule_trigger_node_list: nodeItems(nodeDiff.scheduleNodes, (n) => ({
             node_name: n.node_name,
             graph: graphId,
-            is_active: n.data.isActive,
+            is_active: n.data.startDateTime ? n.data.isActive : false,
             metadata: toNodeMetadata(n),
-            schedule: buildScheduleBlock(n),
+            schedule: n.data.startDateTime ? buildScheduleBlock(n) : null,
         })),
         decision_table_node_list: nodeItems(nodeDiff.decisionTableNodes, (n) =>
             buildDecisionTableNodePayload(n, graphId, current.nodes, idMap)

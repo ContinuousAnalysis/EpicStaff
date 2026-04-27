@@ -60,6 +60,12 @@
     }
 }
 
+.repeat-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
 .section {
     display: flex;
     flex-direction: column;
@@ -157,4 +163,16 @@
 .toggle-stack {
     display: flex;
     flex-direction: column;
+}
+
+.toggle-inactive {
+    pointer-events: none;
+    opacity: 0.35;
+}
+
+.toggle-hint {
+    font-size: 0.75rem;
+    color: var(--color-input-text-placeholder);
+    line-height: 1.4;
+    margin-top: 0.25rem;
 }

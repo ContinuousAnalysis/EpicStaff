@@ -4,10 +4,10 @@
     type="button"
     [disabled]="isDisabled()"
     [class.tz-selector__btn--open]="open()"
-    [class.tz-selector__btn--placeholder]="!selectedOption()"
+    [class.tz-selector__btn--placeholder]="!selectedValue()"
     (click)="toggle()"
 >
-    <span class="tz-selector__text">{{ selectedOption()?.displayLabel ?? 'Timezone' }}</span>
+    <span class="tz-selector__text">{{ selectedOption()?.displayLabel ?? selectedValue() ?? 'Select timezone' }}</span>
     <svg
         class="tz-selector__chevron"
         [class.tz-selector__chevron--open]="open()"

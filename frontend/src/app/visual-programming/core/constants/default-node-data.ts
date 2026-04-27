@@ -59,7 +59,7 @@ export const DEFAULT_NODE_DATA: Partial<Record<NodeType, () => unknown>> = {
     [NodeType.SCHEDULE_TRIGGER]: (): ScheduleTriggerNodeData => {
         const rawTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         return {
-            isActive: true,
+            isActive: false,
             runMode: 'once',
             startDateTime: '',
             intervalEvery: null,

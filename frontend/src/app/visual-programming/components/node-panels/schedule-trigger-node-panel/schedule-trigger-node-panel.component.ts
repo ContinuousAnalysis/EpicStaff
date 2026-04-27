@@ -1,3 +1,4 @@
+import { animate, style, transition, trigger } from '@angular/animations';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -26,6 +27,14 @@ import {
 import { ScheduleTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
 
+const panelFadeSlide = trigger('panelFadeSlide', [
+    transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(-4px)' }),
+        animate('200ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
+    ]),
+    transition(':leave', [animate('150ms ease-in', style({ opacity: 0, transform: 'translateY(-4px)' }))]),
+]);
+
 @Component({
     standalone: true,
     selector: 'app-schedule-trigger-node-panel',
@@ -46,6 +55,7 @@ import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
     templateUrl: 'schedule-trigger-node-panel.component.html',
     styleUrls: ['schedule-trigger-node-panel.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    animations: [panelFadeSlide],
 })
 export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTriggerNodeModel> {
     public override readonly isExpanded = input<boolean>(false);
@@ -56,10 +66,15 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
 
     runMode = signal<string>('once');
     endMode = signal<string>('never');
+    repeatUnit = signal<string>('hours');
     startRowError = signal<string>('');
     endRowError = signal<string>('');
+    timezoneError = signal<string>('');
 
     showRepeatFields = computed(() => this.runMode() === 'repeat');
+    showWeekdays = computed(
+        () => this.runMode() === 'repeat' && (this.repeatUnit() === 'days' || this.repeatUnit() === 'weeks')
+    );
     showEndDateTime = computed(() => this.endMode() === 'on_date');
     showMaxRuns = computed(() => this.endMode() === 'after_n_runs');
 
@@ -75,6 +90,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     ];
 
     readonly repeatUnitItems: SelectItem[] = [
+        { name: 'Seconds', value: 'seconds' },
         { name: 'Minutes', value: 'minutes' },
         { name: 'Hours', value: 'hours' },
         { name: 'Days', value: 'days' },
@@ -93,46 +109,76 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     ];
 
     repeatDays = signal<WeekdayCode[]>([]);
+    hasStartDateTime = signal(false);
     startDateTimeDirty = signal(false);
     endDateTimeDirty = signal(false);
+    scheduleDirty = signal(false);
 
     toggleDay(value: WeekdayCode): void {
         const current = this.repeatDays();
         this.repeatDays.set(current.includes(value) ? current.filter((d) => d !== value) : [...current, value]);
+        this.scheduleDirty.set(true);
     }
 
     public override onSave(): ScheduleTriggerNodeModel | null {
-        this.submitted.set(true);
+        if (this.scheduleDirty()) {
+            this.submitted.set(true);
 
-        const startErr = this.computeStartError(this.form.get('start_date')!.value, this.form.get('start_time')!.value);
-        this.startRowError.set(startErr);
+            const startErr = this.computeStartError(
+                this.form.get('start_date')!.value,
+                this.form.get('start_time')!.value
+            );
+            this.startRowError.set(startErr);
 
-        const endErr = this.showEndDateTime()
-            ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value)
-            : '';
-        this.endRowError.set(endErr);
+            const endErr = this.showEndDateTime()
+                ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value)
+                : '';
+            this.endRowError.set(endErr);
 
-        if (startErr || endErr) {
-            return null;
+            if (startErr || endErr) {
+                return null;
+            }
         }
+
+        const hasConfiguredDateTime = !!(
+            (this.form.get('start_date')!.value ?? '') &&
+            (this.form.get('start_time')!.value ?? '')
+        );
+        const tzErr = hasConfiguredDateTime && !this.form.get('timezone')!.value ? 'Timezone is required' : '';
+        this.timezoneError.set(tzErr);
+        if (tzErr) return null;
 
         return super.onSave();
     }
 
     public override onSaveSilently(): ScheduleTriggerNodeModel | null {
-        this.submitted.set(true);
+        if (this.scheduleDirty()) {
+            this.submitted.set(true);
 
-        const startErr = this.computeStartError(this.form.get('start_date')!.value, this.form.get('start_time')!.value);
-        this.startRowError.set(startErr);
+            const startErr = this.computeStartError(
+                this.form.get('start_date')!.value,
+                this.form.get('start_time')!.value
+            );
+            this.startRowError.set(startErr);
 
-        const endErr = this.showEndDateTime()
-            ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value)
-            : '';
-        this.endRowError.set(endErr);
+            const endErr = this.showEndDateTime()
+                ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value)
+                : '';
+            this.endRowError.set(endErr);
 
-        if (startErr || endErr) {
-            return null;
+            if (startErr || endErr) {
+                return null;
+            }
         }
+
+        const hasConfiguredDateTime = !!(
+            (this.form.get('start_date')!.value ?? '') &&
+            (this.form.get('start_time')!.value ?? '')
+        );
+        const tzErr = hasConfiguredDateTime && !this.form.get('timezone')!.value ? 'Timezone is required' : '';
+        this.timezoneError.set(tzErr);
+        if (tzErr) return null;
+
         return super.onSaveSilently();
     }
 
@@ -140,23 +186,32 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         this.submitted.set(false);
         this.startRowError.set('');
         this.endRowError.set('');
+        this.timezoneError.set('');
         this.startDateTimeDirty.set(false);
         this.endDateTimeDirty.set(false);
+        this.scheduleDirty.set(false);
 
         const data = this.node().data;
+
+        const isNewNode = !data.startDateTime;
+        const future = isNewNode ? this.defaultFutureDateTime() : null;
+        const defaultDate = isNewNode ? this.formatCurrentDate(future!) : this.parseIsoToDate(data.startDateTime);
+        const defaultTime = isNewNode ? this.formatCurrentTime(future!) : this.parseIsoToTime(data.startDateTime);
 
         // Pre-sync signals so visibility computeds are correct before the template renders.
         // These subscriptions are attached after fb.group(), so we set them manually here.
         this.runMode.set(data.runMode ?? 'once');
         this.endMode.set(data.endType ?? 'never');
+        this.repeatUnit.set(data.intervalUnit ?? 'hours');
         this.repeatDays.set([...(data.weekdays ?? [])]);
+        this.hasStartDateTime.set(isNewNode || !!data.startDateTime);
 
         // Initial values are passed directly to fb.group() — Angular does NOT emit
         // valueChanges during construction, so live validators won't fire for loaded data.
         const fg = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
-            start_date: [this.parseIsoToDate(data.startDateTime)],
-            start_time: [this.parseIsoToTime(data.startDateTime)],
+            start_date: [defaultDate],
+            start_time: [defaultTime],
             run_mode: [data.runMode ?? 'once'],
             repeat_every: [data.intervalEvery ?? 1],
             repeat_unit: [data.intervalUnit ?? 'hours'],
@@ -164,9 +219,13 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             end_date: [this.parseIsoToDate(data.endDateTime ?? '')],
             end_time: [this.parseIsoToTime(data.endDateTime ?? '')],
             max_runs: [data.maxRuns ?? null],
-            is_active: [data.isActive ?? true],
-            timezone: [this.normalizeTimezone(data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone)],
+            is_active: [isNewNode ? false : (data.isActive ?? true)],
+            timezone: [this.resolveTimezone(data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone)],
         });
+
+        if (!this.hasStartDateTime()) {
+            fg.get('is_active')!.disable({ emitEvent: false });
+        }
 
         fg.get('run_mode')!
             .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
@@ -175,6 +234,10 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         fg.get('end_mode')!
             .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((v) => this.endMode.set(v ?? 'never'));
+
+        fg.get('repeat_unit')!
+            .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((v) => this.repeatUnit.set(v ?? 'hours'));
 
         fg.get('start_date')!
             .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
@@ -189,6 +252,25 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(() => this.endDateTimeDirty.set(true));
 
+        const scheduleFields = [
+            'start_date',
+            'start_time',
+            'run_mode',
+            'repeat_every',
+            'repeat_unit',
+            'end_mode',
+            'end_date',
+            'end_time',
+            'max_runs',
+            'is_active',
+            'timezone',
+        ] as const;
+        scheduleFields.forEach((field) => {
+            fg.get(field)!
+                .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(() => this.scheduleDirty.set(true));
+        });
+
         const validateStart = () => {
             this.startRowError.set(this.computeStartError(fg.get('start_date')!.value, fg.get('start_time')!.value));
         };
@@ -202,6 +284,24 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         };
         fg.get('end_date')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
         fg.get('end_time')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
+        fg.get('start_date')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
+        fg.get('start_time')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
+
+        const updateActiveState = () => {
+            const d = fg.get('start_date')!.value;
+            const t = fg.get('start_time')!.value;
+            const has = !!(d && t);
+            this.hasStartDateTime.set(has);
+            const ctrl = fg.get('is_active')!;
+            if (!has) {
+                ctrl.setValue(false, { emitEvent: false });
+                ctrl.disable({ emitEvent: false });
+            } else {
+                ctrl.enable({ emitEvent: false });
+            }
+        };
+        fg.get('start_date')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(updateActiveState);
+        fg.get('start_time')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(updateActiveState);
 
         return fg;
     }
@@ -311,6 +411,32 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             return 'Invalid end date';
         }
 
+        const startDateStr = this.form.get('start_date')?.value ?? '';
+        const startTimeStr = this.form.get('start_time')?.value ?? '';
+        if (startDateStr && /^\d{2}\.\d{2}\.\d{4}$/.test(startDateStr)) {
+            const sy = parseInt(startDateStr.slice(6), 10);
+            const sm = parseInt(startDateStr.slice(3, 5), 10) - 1;
+            const sd = parseInt(startDateStr.slice(0, 2), 10);
+            const parsedStart = new Date(sy, sm, sd);
+
+            const ampmToMinutes = (t: string): number => {
+                const tm = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+                if (!tm) return 0;
+                let h = parseInt(tm[1], 10);
+                const min = parseInt(tm[2], 10);
+                if (tm[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+                else if (tm[3].toUpperCase() === 'AM' && h === 12) h = 0;
+                return h * 60 + min;
+            };
+
+            const endTs = parsed.getTime() + ampmToMinutes(time) * 60_000;
+            const startTs = parsedStart.getTime() + ampmToMinutes(startTimeStr) * 60_000;
+
+            if (endTs <= startTs) {
+                return 'End date and time must be after start date and time';
+            }
+        }
+
         if (!this.endDateTimeDirty()) return '';
 
         const today = new Date();
@@ -363,7 +489,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         }
 
         const data: ScheduleTriggerNodeData = {
-            isActive: f.is_active ?? true,
+            isActive: f.is_active ?? false,
             runMode,
             startDateTime: this.buildDateTimeString(f.start_date ?? '', f.start_time ?? ''),
             intervalEvery,
@@ -373,9 +499,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             endDateTime,
             maxRuns,
             currentRuns: this.node().data.currentRuns ?? 0,
-            timezone: this.normalizeTimezone(
-                (f.timezone as string | null) ?? Intl.DateTimeFormat().resolvedOptions().timeZone
-            ),
+            timezone: (f.timezone as string | null) ?? '',
         };
 
         return {
@@ -388,6 +512,18 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     private normalizeTimezone(iana: string): string {
         // Europe/Kiev is the pre-2022 IANA alias — normalize to the canonical name.
         return iana === 'Europe/Kiev' ? 'Europe/Kyiv' : iana;
+    }
+
+    private resolveTimezone(raw: string | null | undefined): string | null {
+        if (!raw) return null;
+        const normalized = this.normalizeTimezone(raw);
+        if (normalized === 'UTC' || normalized === 'Etc/UTC') return null;
+        try {
+            new Intl.DateTimeFormat('en', { timeZone: normalized });
+            return normalized;
+        } catch {
+            return null;
+        }
     }
 
     private normalizeEndType(raw: string | null | undefined): ScheduleEndType {
@@ -424,5 +560,33 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
 
         const pad = (n: number) => String(n).padStart(2, '0');
         return `${y}-${pad(m)}-${pad(d)}T${pad(h)}:${pad(min)}:00`;
+    }
+
+    private defaultFutureDateTime(): Date {
+        const d = new Date();
+        d.setSeconds(0, 0);
+        d.setMinutes(d.getMinutes() + 5);
+        const rem = d.getMinutes() % 5;
+        if (rem !== 0) {
+            d.setMinutes(d.getMinutes() + (5 - rem));
+        }
+        return d;
+    }
+
+    private formatCurrentDate(d: Date): string {
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = String(d.getFullYear());
+        return `${dd}.${mm}.${yyyy}`;
+    }
+
+    private formatCurrentTime(d: Date): string {
+        let h = d.getHours();
+        const min = d.getMinutes();
+        const meridiem: 'AM' | 'PM' = h < 12 ? 'AM' : 'PM';
+        if (h === 0) h = 12;
+        else if (h > 12) h -= 12;
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${pad(h)}:${pad(min)} ${meridiem}`;
     }
 }
