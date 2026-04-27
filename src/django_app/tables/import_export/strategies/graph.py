@@ -4,7 +4,11 @@ from copy import deepcopy
 from tables.models import Graph, Crew
 from tables.serializers.model_serializers import (
     CrewSerializer,
+    GraphOrganization,
+    Organization,
+    ClassificationDecisionTablePrompt,
 )
+from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
 from tables.import_export.strategies.base import EntityImportExportStrategy
 from tables.import_export.serializers.graph import (
     GraphImportSerializer,

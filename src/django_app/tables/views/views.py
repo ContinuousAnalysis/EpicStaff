@@ -16,7 +16,12 @@ from tables.models.llm_models import DefaultLLMConfig
 from tables.services.realtime_service import RealtimeService
 from utils.logger import logger
 
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, inline_serializer
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiParameter,
+    inline_serializer,
+)
 from rest_framework import serializers as drf_serializers
 from django.db import transaction
 from django.db.models import Count, Exists, OuterRef
@@ -227,9 +232,9 @@ class SessionViewSet(
 
         return Response(warning, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(
-        operation_summary="List session output files",
-        operation_description=(
+    @extend_schema(
+        summary="List session output files",
+        description=(
             "Returns all storage files recorded as output during the given session, "
             "ordered by the time they were added."
         ),
@@ -870,7 +875,9 @@ class ProcessRagIndexingView(APIView):
         request=ProcessRagIndexingSerializer,
         responses={
             202: OpenApiResponse(description="Indexing process accepted and queued"),
-            400: OpenApiResponse(description="Invalid request or RAG not ready for indexing"),
+            400: OpenApiResponse(
+                description="Invalid request or RAG not ready for indexing"
+            ),
             404: OpenApiResponse(description="RAG configuration not found"),
         },
     )
