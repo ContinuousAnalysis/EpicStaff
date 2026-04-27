@@ -1,5 +1,4 @@
-import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -18,7 +17,6 @@ import { AuthService } from '../../../../services/auth/auth.service';
 @Component({
     selector: 'app-login-page',
     imports: [
-        CommonModule,
         ReactiveFormsModule,
         CustomInputComponent,
         ValidationErrorsComponent,
@@ -30,7 +28,7 @@ import { AuthService } from '../../../../services/auth/auth.service';
     styleUrls: ['./login-page.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LoginPageComponent implements OnInit {
+export class LoginPageComponent {
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
@@ -45,11 +43,11 @@ export class LoginPageComponent implements OnInit {
         rememberMe: new FormControl(false, { nonNullable: true }),
     });
 
-    loading = false;
+    loading = signal(false);
     serverError = signal<string | null>('');
     throttleSecondsLeft = signal(0);
 
-    ngOnInit(): void {
+    constructor() {
         this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.serverError.set(null);
         });
@@ -58,7 +56,7 @@ export class LoginPageComponent implements OnInit {
     onSubmit(): void {
         if (this.form.invalid) return;
 
-        this.loading = true;
+        this.loading.set(true);
         this.serverError.set(null);
 
         const email = this.form.getRawValue().email.toString();
@@ -73,7 +71,7 @@ export class LoginPageComponent implements OnInit {
                     void this.router.navigateByUrl(returnUrl);
                 },
                 error: (err) => {
-                    this.loading = false;
+                    this.loading.set(false);
                     if (err.error.status_code === 429) {
                         this.handleThrottleError(err?.error?.message);
                         return;
@@ -81,7 +79,7 @@ export class LoginPageComponent implements OnInit {
                     this.serverError.set(err?.error?.message || 'Login failed. Please try again.');
                 },
                 complete: () => {
-                    this.loading = false;
+                    this.loading.set(false);
                 },
             });
     }

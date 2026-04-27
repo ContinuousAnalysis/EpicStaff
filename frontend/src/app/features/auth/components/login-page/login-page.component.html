@@ -58,7 +58,7 @@
         <app-button
             class="btn"
             (click)="onSubmit()"
-            [disabled]="loading || form.invalid || throttleSecondsLeft() > 0"
+            [disabled]="loading() || form.invalid || throttleSecondsLeft() > 0"
         >
             Login
         </app-button>

@@ -16,7 +16,7 @@ type PageState = 'request' | 'email-sent';
 @Component({
     selector: 'app-forgot-password',
     templateUrl: './forgot-password-page.component.html',
-    styleUrls: ['../login-page/login-page.component.scss', './forgot-password-page.component.scss'],
+    styleUrls: ['./forgot-password-page.component.scss'],
     imports: [
         ReactiveFormsModule,
         AppSvgIconComponent,

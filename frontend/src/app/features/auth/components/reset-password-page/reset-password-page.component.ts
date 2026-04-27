@@ -21,7 +21,7 @@ type PageState = 'invalid-token' | 'set-password' | 'success';
 @Component({
     selector: 'app-reset-password-page',
     templateUrl: './reset-password-page.component.html',
-    styleUrls: ['../login-page/login-page.component.scss', './reset-password-page.component.scss'],
+    styleUrls: ['./reset-password-page.component.scss'],
     imports: [
         ReactiveFormsModule,
         AppSvgIconComponent,
