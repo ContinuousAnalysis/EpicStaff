@@ -9,7 +9,14 @@
         ></app-icon-button>
     </div>
     <div class="dialog-content">
-        @if (versionsList.length === 0) {
+        @if (isLoading) {
+            <app-spinner
+                [isOverlay]="false"
+                [size]="32"
+                [borderWidth]="3"
+                text="Loading versions..."
+            ></app-spinner>
+        } @else if (versionsList.length === 0) {
             <div class="empty-state">
                 <h2>No versions saved yet</h2>
                 <h3>Click "Save version" to create one</h3>

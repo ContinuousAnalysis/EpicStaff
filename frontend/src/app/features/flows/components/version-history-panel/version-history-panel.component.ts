@@ -15,17 +15,19 @@ import { FormsModule } from '@angular/forms';
 import { IconButtonComponent } from '@shared/components';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
+import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
 import { GraphVersionDto } from '../../models/graph.model';
 import { FlowsApiService } from '../../services/flows-api.service';
 
 @Component({
     selector: 'app-version-history-panel',
-    imports: [IconButtonComponent, CommonModule, FormsModule],
+    imports: [IconButtonComponent, CommonModule, FormsModule, SpinnerComponent],
     templateUrl: './version-history-panel.component.html',
     styleUrl: './version-history-panel.component.scss',
 })
 export class VersionHistoryPanelComponent implements OnInit {
     public versionsList: GraphVersionDto[] = [];
+    public isLoading = true;
     public openMenuId: number | null = null;
     public editingVersionId: number | null = null;
     public editingField: 'name' | 'description' | null = null;
@@ -89,7 +91,8 @@ export class VersionHistoryPanelComponent implements OnInit {
         const value = this.editingValue.trim();
         const originalValue = field === 'name' ? version.name : version.description || '';
         this.cancelEdit();
-        if (!value || value === originalValue) return;
+        if (value === originalValue) return;
+        if (field === 'name' && !value) return;
 
         const payload =
             field === 'name'
@@ -130,12 +133,15 @@ export class VersionHistoryPanelComponent implements OnInit {
     }
 
     private loadVersions(): void {
+        this.isLoading = true;
         this.flowApiService.getGraphVersions(this.data.graphId).subscribe({
             next: (result) => {
                 this.versionsList = result;
+                this.isLoading = false;
             },
             error: (err) => {
                 console.error('Failed to load graph versions', err);
+                this.isLoading = false;
             },
         });
     }
