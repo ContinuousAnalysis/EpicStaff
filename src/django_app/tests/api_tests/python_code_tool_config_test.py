@@ -4,55 +4,15 @@ from tables.models.python_models import (
     PythonCode,
     PythonCodeTool,
     PythonCodeToolConfig,
-    PythonCodeToolConfigField,
 )
 
 from tests.fixtures import *
 
 
 @pytest.mark.django_db
-def test_field_viewset_list(api_client, tool_config_field_int):
-    """Test retrieving the list of config fields."""
-    url = reverse("pythoncodetoolconfigfield-list")
-
-    response = api_client.get(url)
-
-    assert response.status_code == 200
-
-    if "results" in response.data:
-        results = response.data["results"]
-    else:
-        results = response.data
-
-    assert len(results) == 1
-    assert results[0]["name"] == "batch_size"
-
-
-@pytest.mark.django_db
-def test_field_viewset_create(api_client, python_code_tool):
-    """Test creating a new configuration field definition."""
-    url = reverse("pythoncodetoolconfigfield-list")
-
-    payload = {
-        "tool": python_code_tool.id,
-        "name": "temperature",
-        "data_type": "float",
-        "required": True,
-        "description": "LLM Temperature",
-    }
-
-    response = api_client.post(url, payload, format="json")
-
-    assert response.status_code == 201
-    assert PythonCodeToolConfigField.objects.count() == 1
-    assert PythonCodeToolConfigField.objects.get().name == "temperature"
-
-
-@pytest.mark.django_db
-def test_config_viewset_create_success(
-    api_client, python_code_tool, tool_config_field_int
-):
-    """Happy Path: Create a config."""
+def test_config_viewset_create_success(api_client, tool_config_field_int):
+    """Happy Path: Create a config when tool has a required integer variable."""
+    python_code_tool = tool_config_field_int
     url = reverse("pythoncodetoolconfig-list")
 
     payload = {
@@ -69,15 +29,18 @@ def test_config_viewset_create_success(
 
 
 @pytest.mark.django_db
-def test_config_viewset_create_validation_missing_required(
-    api_client, python_code_tool
-):
-    PythonCodeToolConfigField.objects.create(
-        tool=python_code_tool,
-        name="mandatory_field",
-        data_type=PythonCodeToolConfigField.FieldType.STRING,
-        required=True,
-    )
+def test_config_viewset_create_validation_missing_required(api_client, python_code_tool):
+    python_code_tool.variables = [
+        {
+            "name": "mandatory_field",
+            "type": "string",
+            "description": "",
+            "default_value": None,
+            "input_type": "user_input",
+            "required": True,
+        }
+    ]
+    python_code_tool.save()
 
     url = reverse("pythoncodetoolconfig-list")
 
@@ -94,10 +57,9 @@ def test_config_viewset_create_validation_missing_required(
 
 
 @pytest.mark.django_db
-def test_config_viewset_create_validation_type_casting(
-    api_client, python_code_tool, tool_config_field_int
-):
-    """Happy Path with Casting: Send a string '500' for an Integer field."""
+def test_config_viewset_create_validation_type_casting(api_client, tool_config_field_int):
+    """Happy Path with Casting: Send a string '500' for an Integer variable."""
+    python_code_tool = tool_config_field_int
     url = reverse("pythoncodetoolconfig-list")
 
     payload = {
@@ -115,10 +77,9 @@ def test_config_viewset_create_validation_type_casting(
 
 
 @pytest.mark.django_db
-def test_config_viewset_create_validation_type_error(
-    api_client, python_code_tool, tool_config_field_int
-):
-    """Failure Path: Send a non-numeric string for an Integer field."""
+def test_config_viewset_create_validation_type_error(api_client, tool_config_field_int):
+    """Failure Path: Send a non-numeric string for an Integer variable."""
+    python_code_tool = tool_config_field_int
     url = reverse("pythoncodetoolconfig-list")
 
     payload = {
@@ -138,7 +99,7 @@ def test_config_viewset_filtering(api_client, python_code_tool, existing_config)
     """Test that the filter backend works (filtering by tool)."""
     other_code = PythonCode.objects.create(code="pass")
     other_tool = PythonCodeTool.objects.create(
-        name="other_tool", python_code=other_code, args_schema={}
+        name="other_tool", python_code=other_code, variables=[]
     )
     PythonCodeToolConfig.objects.create(
         name="other_config", tool=other_tool, configuration={}

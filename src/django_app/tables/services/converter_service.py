@@ -502,21 +502,34 @@ class ConverterService(metaclass=SingletonMeta):
             global_kwargs=python_code.global_kwargs,
         )
 
+    @staticmethod
+    def _get_user_input_defaults(variables: list[dict]) -> dict:
+        return {
+            var["name"]: var["default_value"]
+            for var in variables
+            if var.get("input_type") in ("user_input", "mixed")
+            and var.get("default_value") is not None
+        }
+
     def convert_python_code_tool_to_pydantic(
         self, python_code_tool: PythonCodeTool
     ) -> PythonCodeToolData:
-        python_code: PythonCode = python_code_tool.python_code
-
-        python_code_data = self.convert_python_code_to_pydantic(python_code)
-        python_code_tool_data = PythonCodeToolData(
+        variables = python_code_tool.variables or []
+        user_defaults = self._get_user_input_defaults(variables)
+        python_code_data = self.convert_python_code_to_pydantic(
+            python_code_tool.python_code
+        )
+        merged_kwargs = {**user_defaults, **(python_code_data.global_kwargs or {})}
+        python_code_data = PythonCodeData(
+            **{**python_code_data.model_dump(), "global_kwargs": merged_kwargs}
+        )
+        return PythonCodeToolData(
             id=python_code_tool.pk,
             name=python_code_tool.name,
             description=python_code_tool.description,
-            args_schema=python_code_tool.args_schema,
+            variables=variables,
             python_code=python_code_data,
         )
-
-        return python_code_tool_data
 
     def convert_python_code_tool_config_to_pydantic(
         self, python_code_tool_config: PythonCodeToolConfig
@@ -528,19 +541,23 @@ class ConverterService(metaclass=SingletonMeta):
             python_configuration, dict
         ), "Error reading python tool configuration. How did you even pass validation?"
 
+        variables = python_code_tool.variables or []
+        user_defaults = self._get_user_input_defaults(variables)
+        global_kwargs = {**user_defaults, **python_configuration}
+
         python_code: PythonCode = python_code_tool.python_code
-        python_code.global_kwargs = python_configuration
+        python_code.global_kwargs = global_kwargs
         python_code_data = self.convert_python_code_to_pydantic(
             python_code_tool.python_code
         )
-        python_code_tool_data = PythonCodeToolData(
+
+        return PythonCodeToolData(
             id=python_code_tool.pk,
             name=python_code_tool.name,
             description=python_code_tool.description,
-            args_schema=python_code_tool.args_schema,
+            variables=variables,
             python_code=python_code_data,
         )
-        return python_code_tool_data
 
     def convert_configured_tool_to_pydantic(
         self, tool_config: ToolConfig
