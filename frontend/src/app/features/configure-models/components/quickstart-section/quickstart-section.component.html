@@ -38,11 +38,20 @@
                             tooltipClass="dialog__label-tooltip"
                         />
                     </div>
-                    <app-custom-input formControlName="apiKey" type="password" placeholder="Enter API key" />
+                    <app-custom-input
+                        formControlName="apiKey"
+                        type="password"
+                        placeholder="Enter API key"
+                    />
                 </div>
 
                 <div class="quickstart-section__actions">
-                    <app-button type="outline-primary" (click)="onReset()"> Reset </app-button>
+                    <app-button
+                        type="outline-primary"
+                        (click)="onReset()"
+                    >
+                        Reset
+                    </app-button>
                     <app-button
                         type="primary"
                         (click)="onQuickStart()"
