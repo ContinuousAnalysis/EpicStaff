@@ -31,12 +31,23 @@ import { SessionFilesButtonComponent } from './session-files-button/session-file
     template: `
         <div class="header">
             <div class="breadcrumbs">
-                <div class="flows-prefix" routerLink="/flows">
-                    <app-svg-icon icon="arrow-left" size="20px" class="back-arrow" />
+                <div
+                    class="flows-prefix"
+                    routerLink="/flows"
+                >
+                    <app-svg-icon
+                        icon="arrow-left"
+                        size="20px"
+                        class="back-arrow"
+                    />
                     <span>Flows</span>
                 </div>
                 <span class="slash">/</span>
-                <span class="flow-name project-link" (click)="onFlowClick()">{{ graphName || '...' }}</span>
+                <span
+                    class="flow-name project-link"
+                    (click)="onFlowClick()"
+                    >{{ graphName || '...' }}</span
+                >
                 <span class="slash">/</span>
                 <app-status-badge [sessionStatus]="sessionStatus"></app-status-badge>
             </div>
@@ -48,10 +59,19 @@ import { SessionFilesButtonComponent } from './session-files-button/session-file
                         [sessionStatus]="sessionStatus"
                     ></app-session-files-button>
                 }
-                <button mat-button class="sessions-button" (click)="openSessionsDialog()" [disabled]="!graphData">
+                <button
+                    mat-button
+                    class="sessions-button"
+                    (click)="openSessionsDialog()"
+                    [disabled]="!graphData"
+                >
                     <span class="btn-label">Sessions</span>
                 </button>
-                <button mat-button class="memories-button" (click)="toggleMemoriesSidebar()">
+                <button
+                    mat-button
+                    class="memories-button"
+                    (click)="toggleMemoriesSidebar()"
+                >
                     <span class="btn-label">Memories</span>
                     <span
                         class="memories-badge"

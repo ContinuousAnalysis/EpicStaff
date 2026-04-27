@@ -14,7 +14,10 @@ import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-m
     template: `
         <div class="llm-flow-container">
             <!-- LLM Message Header with Toggle -->
-            <div class="llm-header" (click)="toggleMessage()">
+            <div
+                class="llm-header"
+                (click)="toggleMessage()"
+            >
                 <div class="play-arrow">
                     <app-svg-icon
                         [icon]="isMessageExpanded ? 'caret-down-filled' : 'caret-right-filled'"
@@ -22,17 +25,26 @@ import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-m
                     />
                 </div>
                 <div class="icon-container">
-                    <app-svg-icon icon="message-circle" size="1.25rem" />
+                    <app-svg-icon
+                        icon="message-circle"
+                        size="1.25rem"
+                    />
                 </div>
                 <h3>LLM Response</h3>
             </div>
 
             <!-- Collapsible LLM Content -->
-            <div class="collapsible-content" [@expandCollapse]="isMessageExpanded ? 'expanded' : 'collapsed'">
+            <div
+                class="collapsible-content"
+                [@expandCollapse]="isMessageExpanded ? 'expanded' : 'collapsed'"
+            >
                 <div class="llm-content">
                     <!-- Response Subsection -->
                     <div class="llm-section">
-                        <div class="section-heading" (click)="toggleResponseSection()">
+                        <div
+                            class="section-heading"
+                            (click)="toggleResponseSection()"
+                        >
                             <app-svg-icon
                                 [icon]="isResponseExpanded ? 'caret-down-filled' : 'caret-right-filled'"
                                 size="1.1rem"
@@ -43,7 +55,10 @@ import { GraphMessage, LLMMessageData } from '../../../../models/graph-session-m
                             class="collapsible-content"
                             [@expandCollapse]="isResponseExpanded ? 'expanded' : 'collapsed'"
                         >
-                            <div class="result-content" [ngClass]="{ collapsed: isCollapsed && shouldShowToggle() }">
+                            <div
+                                class="result-content"
+                                [ngClass]="{ collapsed: isCollapsed && shouldShowToggle() }"
+                            >
                                 <markdown [data]="llmResponse"></markdown>
                             </div>
                             <button

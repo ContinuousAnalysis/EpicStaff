@@ -2,8 +2,14 @@
     <!-- Search and controls section -->
     <div class="control-section">
         <!-- Search input with container -->
-        <div class="search-container" [class.has-content]="searchTerm.trim().length > 0">
-            <app-svg-icon icon="search" size="20px" />
+        <div
+            class="search-container"
+            [class.has-content]="searchTerm.trim().length > 0"
+        >
+            <app-svg-icon
+                icon="search"
+                size="20px"
+            />
             <input
                 type="text"
                 class="search-input"
@@ -14,9 +20,16 @@
             />
             <!-- Close button that appears when dropdown is shown -->
             @if (showDropdown) {
-                <button class="close-button" (click)="onCloseDropdown()" aria-label="Clear search and close dropdown">
+                <button
+                    class="close-button"
+                    (click)="onCloseDropdown()"
+                    aria-label="Clear search and close dropdown"
+                >
                     <span class="close-label">Clear search</span>
-                    <app-svg-icon icon="x" size="16px" />
+                    <app-svg-icon
+                        icon="x"
+                        size="16px"
+                    />
                 </button>
             }
         </div>

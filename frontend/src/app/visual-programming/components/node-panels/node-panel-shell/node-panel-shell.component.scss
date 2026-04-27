@@ -1,4 +1,8 @@
 .node-panel {
+    ::ng-deep input[type='checkbox'] {
+        accent-color: var(--accent-color);
+    }
+
     position: absolute;
     top: 1rem;
     right: 1rem;

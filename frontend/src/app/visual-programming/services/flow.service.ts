@@ -1,7 +1,7 @@
 import { computed, Injectable, signal } from '@angular/core';
 
 import { NodeType } from '../core/enums/node-type';
-import { generatePortsForDecisionTableNode } from '../core/helpers/helpers';
+import { generatePortsForDecisionTableNode, isDecisionPortRole } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
 import { ConditionGroup, DecisionTableNode } from '../core/models/decision-table.model';
 import { FlowModel } from '../core/models/flow.model';
@@ -46,14 +46,6 @@ export class FlowService {
         return this.connections();
     });
 
-    public visibleNodes = computed(() => {
-        return this.nodes().filter((node) => node.category !== 'vscode');
-    });
-
-    // Add a new computed property for vscode nodes
-    public vscodeNodes = computed(() => {
-        return this.nodes().filter((node) => node.category === 'vscode');
-    });
     // Selector to get connections for a given port.
     public getConnectionsForPort(portId: CustomPortId): CustomPortId[] {
         return this.portConnectionsMap()[portId] || [];
@@ -367,6 +359,7 @@ export class FlowService {
                 targetPortId,
                 behavior: 'fixed',
                 type: 'segment',
+                data: null,
             };
 
             this.addConnection(newConnection);
@@ -582,34 +575,36 @@ export class FlowService {
         return portIdValue.startsWith(`${tableNodeId}_decision-`);
     }
 
-    private canPortsConnect(portA: FlattenedPort, portB: FlattenedPort, connections: ConnectionModel[]): boolean {
+    private canPortsConnect(portA: FlattenedPort, portB: FlattenedPort): boolean {
         // Prevent connecting ports on the same node.
         if (portA.nodeId === portB.nodeId) {
-            return false;
-        }
-
-        // If any connection already exists between the two nodes, do not allow any further connections.
-        const alreadyConnected = connections.some(
-            (conn) =>
-                (conn.sourceNodeId === portA.nodeId && conn.targetNodeId === portB.nodeId) ||
-                (conn.sourceNodeId === portB.nodeId && conn.targetNodeId === portA.nodeId)
-        );
-        if (alreadyConnected) {
             return false;
         }
 
         const a = portA.port;
         const b = portB.port;
         if (a.port_type === 'input' && b.port_type === 'output') {
-            return a.allowedConnections.includes(b.role);
+            return this.isAllowedRole(a.allowedConnections, b.role);
         }
         if (a.port_type === 'output' && b.port_type === 'input') {
-            return b.allowedConnections.includes(a.role);
+            return this.isAllowedRole(b.allowedConnections, a.role);
         }
         if (a.port_type === 'input-output' && b.port_type === 'input-output') {
-            return a.allowedConnections.includes(b.role) || b.allowedConnections.includes(a.role);
+            return this.isAllowedRole(a.allowedConnections, b.role) || this.isAllowedRole(b.allowedConnections, a.role);
         }
         return false;
+    }
+
+    private isAllowedRole(allowedRoles: string[], targetRole: string): boolean {
+        return allowedRoles.some((allowedRole) => {
+            if (allowedRole === targetRole) {
+                return true;
+            }
+            if (allowedRole === 'table-out' && isDecisionPortRole(targetRole)) {
+                return true;
+            }
+            return false;
+        });
     }
     public deleteSelections(selections: { fNodeIds: string[]; fConnectionIds: string[] }): void {
         this.flowSignal.update((flow: FlowModel) => {
@@ -775,7 +770,7 @@ export class FlowService {
                 if (current.port.id === other.port.id) return;
 
                 // Pass the full connections array to our updated canPortsConnect check.
-                if (this.canPortsConnect(current, other, connections)) {
+                if (this.canPortsConnect(current, other)) {
                     const otherConnCount = connectionCount[other.port.id] || 0;
                     if (!other.port.multiple && otherConnCount > 0) {
                         return;

@@ -7,7 +7,10 @@
                 aria-label="Cancel"
                 (click)="onCancel()"
             >
-                <app-svg-icon icon="x-fill" size="16px"></app-svg-icon>
+                <app-svg-icon
+                    icon="x-fill"
+                    size="16px"
+                ></app-svg-icon>
             </button>
             <button
                 class="create-folder-dialog__icon-btn create-folder-dialog__icon-btn--confirm"
@@ -18,7 +21,10 @@
                 @if (isUploading()) {
                     <app-spinner2 [size]="20" />
                 } @else {
-                    <app-svg-icon icon="check-fill" size="16px"></app-svg-icon>
+                    <app-svg-icon
+                        icon="check-fill"
+                        size="16px"
+                    ></app-svg-icon>
                 }
             </button>
         </div>
@@ -55,7 +61,10 @@
                 </div>
 
                 @if (dropdownOpen()) {
-                    <div class="create-folder-dialog__dropdown" (click)="stopPropagation($event)">
+                    <div
+                        class="create-folder-dialog__dropdown"
+                        (click)="stopPropagation($event)"
+                    >
                         <div class="create-folder-dialog__search">
                             <app-svg-icon
                                 icon="search"
@@ -84,7 +93,10 @@
                                     <span
                                         class="create-folder-dialog__chevron-btn create-folder-dialog__chevron-btn--open"
                                     >
-                                        <app-svg-icon icon="expand" size="0.5rem"></app-svg-icon>
+                                        <app-svg-icon
+                                            icon="expand"
+                                            size="0.5rem"
+                                        ></app-svg-icon>
                                     </span>
                                     <span class="create-folder-dialog__node-name">/</span>
                                 </div>
@@ -101,7 +113,10 @@
                                                 [class.create-folder-dialog__chevron-btn--open]="node.isExpanded"
                                                 (click)="toggleExpand($event, node)"
                                             >
-                                                <app-svg-icon icon="expand" size="0.5rem"></app-svg-icon>
+                                                <app-svg-icon
+                                                    icon="expand"
+                                                    size="0.5rem"
+                                                ></app-svg-icon>
                                             </button>
                                         } @else {
                                             <span class="create-folder-dialog__chevron-gap"></span>
@@ -154,8 +169,17 @@
                 <div class="create-folder-dialog__empty-state">
                     <span class="create-folder-dialog__drop-text">Drag and drop files here or click to upload</span>
                     <label class="create-folder-dialog__upload-box">
-                        <app-svg-icon icon="upload" size="32px" class="create-folder-dialog__drop-icon"></app-svg-icon>
-                        <input type="file" multiple hidden (change)="onFileInputChange($event)" />
+                        <app-svg-icon
+                            icon="upload"
+                            size="32px"
+                            class="create-folder-dialog__drop-icon"
+                        ></app-svg-icon>
+                        <input
+                            type="file"
+                            multiple
+                            hidden
+                            (change)="onFileInputChange($event)"
+                        />
                     </label>
                 </div>
             } @else {
@@ -168,7 +192,12 @@
                     }
                     <label class="create-folder-dialog__add-more-btn">
                         + Add More Files
-                        <input type="file" multiple hidden (change)="onFileInputChange($event)" />
+                        <input
+                            type="file"
+                            multiple
+                            hidden
+                            (change)="onFileInputChange($event)"
+                        />
                     </label>
                 </div>
                 <ul class="create-folder-dialog__file-list">
@@ -181,7 +210,11 @@
                                 class="create-folder-dialog__file-icon"
                             ></app-svg-icon>
                             <div class="create-folder-dialog__file-info">
-                                <span class="create-folder-dialog__file-name" [title]="file.name">{{ file.name }}</span>
+                                <span
+                                    class="create-folder-dialog__file-name"
+                                    [title]="file.name"
+                                    >{{ file.name }}</span
+                                >
                                 @if (getFileError(file); as serverError) {
                                     <span
                                         class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
@@ -210,7 +243,10 @@
                                 aria-label="Remove file"
                                 (click)="removeFile(i)"
                             >
-                                <app-svg-icon icon="x" size="16px"></app-svg-icon>
+                                <app-svg-icon
+                                    icon="x"
+                                    size="16px"
+                                ></app-svg-icon>
                             </button>
                         </li>
                     }

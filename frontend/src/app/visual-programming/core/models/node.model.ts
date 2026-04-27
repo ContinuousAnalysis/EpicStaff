@@ -17,7 +17,6 @@ export interface BaseNodeModel {
     id: string;
     /** Backend primary key — set on load, null for newly created nodes. */
     backendId: number | null;
-    category: 'web' | 'vscode';
     position: { x: number; y: number };
     ports: ViewPort[] | null;
     node_name: string;
@@ -27,12 +26,12 @@ export interface BaseNodeModel {
         width: number;
         height: number;
     };
+    input_map: Record<string, unknown>;
+    output_variable_path: string | null;
     /** Unique incrementing number per graph, displayed as the #N badge. */
     nodeNumber?: number;
     // UI-only flag for invalid references (e.g. deleted subgraph)
     isBlocked?: boolean;
-    input_map: Record<string, unknown>;
-    output_variable_path: string | null;
 }
 export interface StartNodeData {
     initialState: Record<string, unknown>;

@@ -18,15 +18,32 @@ import { NodeGroup } from 'src/app/shared/models/node-group.model';
     imports: [CommonModule, FormsModule],
     changeDetection: ChangeDetectionStrategy.Default,
     template: `
-        <div class="node-filter-dropdown" [class.open]="open" (clickOutside)="closeDropdown()">
-            <button class="dropdown-toggle" (click)="toggleDropdown($event)">
+        <div
+            class="node-filter-dropdown"
+            [class.open]="open"
+            (clickOutside)="closeDropdown()"
+        >
+            <button
+                class="dropdown-toggle"
+                (click)="toggleDropdown($event)"
+            >
                 <span class="selected-label">
                     <i class="ti ti-filter"></i>
                     {{ selectedValue ?? 'Filter by Node name' }}
                 </span>
                 <span class="dropdown-arrow-wrapper">
-                    <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24">
-                        <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none" />
+                    <svg
+                        class="dropdown-arrow"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            d="M7 10l5 5 5-5"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            fill="none"
+                        />
                     </svg>
                 </span>
             </button>
@@ -45,14 +62,20 @@ import { NodeGroup } from 'src/app/shared/models/node-group.model';
                             (click)="$event.stopPropagation()"
                         />
                         @if (searchQuery) {
-                            <button class="clear-search" (click)="clearSearch($event)">
+                            <button
+                                class="clear-search"
+                                (click)="clearSearch($event)"
+                            >
                                 <i class="ti ti-x"></i>
                             </button>
                         }
                     </div>
 
                     <ul class="dropdown-menu">
-                        <li (click)="selectNode(null, $event)" [class.selected]="selectedValue === null">
+                        <li
+                            (click)="selectNode(null, $event)"
+                            [class.selected]="selectedValue === null"
+                        >
                             <i class="ti ti-list"></i>
                             <span>All Nodes</span>
                             @if (selectedValue === null) {
@@ -63,7 +86,10 @@ import { NodeGroup } from 'src/app/shared/models/node-group.model';
                         @for (group of filteredGroups; track group.label) {
                             @if (group.nodes.length > 0) {
                                 <li class="group-header">
-                                    <i [class]="group.icon" [style.color]="group.color"></i>
+                                    <i
+                                        [class]="group.icon"
+                                        [style.color]="group.color"
+                                    ></i>
                                     <span>{{ group.label }}</span>
                                 </li>
                                 @for (node of group.nodes; track node) {
@@ -91,7 +117,12 @@ import { NodeGroup } from 'src/app/shared/models/node-group.model';
 
                     @if (selectedValue) {
                         <div class="clear-filter-footer">
-                            <button class="clear-filter-btn" (click)="selectNode(null, $event)">Clear Filter</button>
+                            <button
+                                class="clear-filter-btn"
+                                (click)="selectNode(null, $event)"
+                            >
+                                Clear Filter
+                            </button>
                         </div>
                     }
                 </div>

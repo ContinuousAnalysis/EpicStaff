@@ -73,6 +73,12 @@ export class FlowsApiService {
         });
     }
 
+    bulkSaveGraph(graphId: number, payload: Record<string, unknown>): Observable<GraphDto> {
+        return this.http.post<GraphDto>(`${this.apiUrl}${graphId}/save/`, payload, {
+            headers: this.httpHeaders,
+        });
+    }
+
     deleteGraph(id: number): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}${id}/`);
     }

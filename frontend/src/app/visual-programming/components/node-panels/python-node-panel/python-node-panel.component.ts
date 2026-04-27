@@ -37,9 +37,15 @@ import {
     template: `
         <div class="panel-container">
             <div class="panel-content">
-                <form [formGroup]="form" class="form-container">
+                <form
+                    [formGroup]="form"
+                    class="form-container"
+                >
                     @if (isExpanded()) {
-                        <div class="form-layout expanded" [class.code-editor-fullwidth]="isCodeEditorFullWidth()">
+                        <div
+                            class="form-layout expanded"
+                            [class.code-editor-fullwidth]="isCodeEditorFullWidth()"
+                        >
                             @if (!isCodeEditorFullWidth()) {
                                 <div class="form-fields">
                                     <app-custom-input
@@ -71,14 +77,16 @@ import {
                                         [activeColor]="activeColor"
                                     ></app-custom-input>
 
-                                    <div class="stream-config-section" formGroupName="stream_config">
+                                    <div
+                                        class="stream-config-section"
+                                        formGroupName="stream_config"
+                                    >
                                         <span class="section-label">Streaming to EpicChat</span>
                                         <div class="checkbox-list">
                                             <label class="checkbox-item">
                                                 <input
                                                     type="checkbox"
                                                     formControlName="execution_status"
-                                                    [style.accent-color]="activeColor"
                                                 />
                                                 <span>Execution status</span>
                                             </label>
@@ -148,14 +156,16 @@ import {
                                 [activeColor]="activeColor"
                             ></app-custom-input>
 
-                            <div class="stream-config-section" formGroupName="stream_config">
+                            <div
+                                class="stream-config-section"
+                                formGroupName="stream_config"
+                            >
                                 <span class="section-label">Streaming to EpicChat</span>
                                 <div class="checkbox-list">
                                     <label class="checkbox-item">
                                         <input
                                             type="checkbox"
                                             formControlName="execution_status"
-                                            [style.accent-color]="activeColor"
                                         />
                                         <span>Execution status</span>
                                     </label>

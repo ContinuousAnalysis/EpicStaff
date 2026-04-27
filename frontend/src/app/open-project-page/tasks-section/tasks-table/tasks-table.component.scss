@@ -247,7 +247,7 @@ $transition-default: all 0.2s ease;
 
 :host ::ng-deep .required-header .ag-header-cell-text::after {
     content: '*';
-    color: #ff3b30;
+    color: var(--color-required-asterisk, var(--accent-color));
     margin-left: 4px;
 }
 
