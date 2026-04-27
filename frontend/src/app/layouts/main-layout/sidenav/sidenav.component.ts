@@ -7,12 +7,12 @@ import {
     CUSTOM_ELEMENTS_SCHEMA,
     DestroyRef,
     ElementRef,
-    HostListener,
     signal,
     ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { ClickOutsideDirective } from '@shared/directives';
 import { GetMeResponse } from '@shared/models';
 import { EMPTY } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -49,6 +49,7 @@ interface NavItem {
         UserMenuComponent,
         AppSvgIconComponent,
         UserAvatarComponent,
+        ClickOutsideDirective,
     ],
     templateUrl: './sidenav.component.html',
     styleUrls: ['./sidenav.component.scss'],
@@ -227,12 +228,8 @@ export class LeftSidebarComponent implements AfterViewInit {
         this.epicChatService.toggleChat(this.epicChat?.nativeElement);
     }
 
-    @HostListener('document:click', ['$event'])
-    public onDocumentClick(event: MouseEvent): void {
-        const target = event.target as HTMLElement;
-        if (!target.closest('.user-avatar-btn')) {
-            this.isUserMenuOpen.set(false);
-        }
+    public closeUserMenu(): void {
+        this.isUserMenuOpen.set(false);
     }
 
     public toggleUserMenu(event: MouseEvent): void {

@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, model } from '@angular/core';
 import { AppSvgIconComponent } from '@shared/components';
 import { GetMeResponse, Membership } from '@shared/models';
+import { EMPTY } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { AuthService } from '../../../../services/auth/auth.service';
 import { OrgAvatarComponent } from '../org-avatar/org-avatar.component';
@@ -24,8 +26,14 @@ export class UserMenuComponent {
 
     public onSignOutClick(): void {
         this.isUserMenuOpen.set(false);
-        this.authService.logout().subscribe({
-            error: () => this.authService.removeTokensAndNavToLogin(),
-        });
+        this.authService
+            .logout()
+            .pipe(
+                catchError(() => {
+                    this.authService.removeTokensAndNavToLogin();
+                    return EMPTY;
+                })
+            )
+            .subscribe();
     }
 }

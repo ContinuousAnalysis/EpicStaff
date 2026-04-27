@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
+import { onboardingGuard } from './core/guards/onboarding.guard';
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { RoutedAuthShellComponent } from './layouts/routed-auth-shell/routed-auth-shell.component';
@@ -25,6 +26,7 @@ export const routes: Routes = [
             import('./features/auth/components/onboarding-page/onboarding-page.component').then(
                 (m) => m.OnboardingPageComponent
             ),
+        canActivate: [onboardingGuard],
     },
     {
         path: '',
