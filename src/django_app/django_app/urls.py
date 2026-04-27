@@ -18,11 +18,15 @@ Including another URLconf
 from django.urls import include, path
 from rest_framework_simplejwt.views import TokenRefreshView
 from tables.views.auth_views import (
+    AdminPasswordResetView,
     ApiKeyValidateView,
     AuthMeView,
     FirstSetupView,
     LoginView,
     LogoutView,
+    PasswordChangeView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     ResetUserView,
     SseTicketView,
     SwaggerTokenView,
@@ -49,6 +53,26 @@ urlpatterns = [
     ),
     path("api/auth/first-setup/", FirstSetupView.as_view(), name="first_setup"),
     path("api/auth/reset-user/", ResetUserView.as_view(), name="reset_user"),
+    path(
+        "api/auth/password-reset/request/",
+        PasswordResetRequestView.as_view(),
+        name="password_reset_request",
+    ),
+    path(
+        "api/auth/password-reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
+    path(
+        "api/auth/password-change/",
+        PasswordChangeView.as_view(),
+        name="password_change",
+    ),
+    path(
+        "api/auth/admin/password-reset/",
+        AdminPasswordResetView.as_view(),
+        name="admin_password_reset",
+    ),
     path("api/auth/swagger-token/", SwaggerTokenView.as_view(), name="swagger_token"),
     path("api/", include("tables.urls")),
     path("ht/", include("health_check.urls")),

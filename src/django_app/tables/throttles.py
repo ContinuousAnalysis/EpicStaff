@@ -22,3 +22,26 @@ class LoginThrottle(SimpleRateThrottle):
         ip = self.get_ident(request)
         ident = f"{ip}|{email}" if email else ip
         return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class PasswordResetRequestThrottle(SimpleRateThrottle):
+    """
+    Throttle for POST /api/auth/password-reset/request/.
+
+    Bucket key is `<ip>|<email-lowercased>` so neither an IP nor an email
+    can be used to farm unlimited reset emails. Rate is driven by the
+    `password_reset_request` scope (default 5/hour, env var
+    `PASSWORD_RESET_REQUEST_THROTTLE_RATE`).
+
+    The endpoint itself returns 200 regardless of whether the email
+    exists, so the throttle is the only surface that pushes back on
+    automated abuse.
+    """
+
+    scope = "password_reset_request"
+
+    def get_cache_key(self, request, view):
+        email = (request.data.get("email") or "").lower().strip()
+        ip = self.get_ident(request)
+        ident = f"{ip}|{email}" if email else ip
+        return self.cache_format % {"scope": self.scope, "ident": ident}

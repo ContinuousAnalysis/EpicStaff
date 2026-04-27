@@ -139,6 +139,46 @@ class SwaggerTokenResponseSerializer(serializers.Serializer):
     token_type = serializers.CharField()
 
 
+# ---- Password recovery ----
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    # Schema-only: real validation in
+    # `AuthValidationService.validate_password_reset_request`.
+    email = serializers.EmailField()
+
+
+class PasswordResetRequestResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    smtp_configured = serializers.BooleanField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    # Schema-only: real validation in
+    # `AuthValidationService.validate_password_reset_confirm`.
+    token = serializers.UUIDField()
+    new_password = serializers.CharField(write_only=True)
+
+
+class PasswordResetConfirmResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+
+
+class PasswordChangeResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+
+
+class AdminPasswordResetSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(min_value=1)
+    new_password = serializers.CharField(write_only=True)
+
+
 # ---- Custom TokenObtainPair (embeds email + is_superadmin claims) ----
 
 
