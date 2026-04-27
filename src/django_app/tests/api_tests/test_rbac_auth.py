@@ -11,18 +11,29 @@ Integration tests for the Story 2 auth surface:
 - SSE ticket issue/consume single-use + expired + atomic
 """
 
+from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from tables.models.rbac_models import PasswordResetToken
 from tables.services.rbac.sse_ticket_service import SseTicketService
+
+LOCMEM_EMAIL = "django.core.mail.backends.locmem.EmailBackend"
+OPAQUE_RESET_CODE = "invalid_or_expired_reset_token"
 
 
 # ---------------- First-setup ----------------
@@ -418,3 +429,481 @@ def test_reset_user_requires_authentication(api_client):
         format="json",
     )
     assert r.status_code in (401, 403)
+
+
+# ---------------- Password recovery: request ----------------
+
+
+@pytest.mark.django_db
+@override_settings(EMAIL_BACKEND=LOCMEM_EMAIL, EMAIL_HOST="smtp.example.com")
+def test_password_reset_request_known_user_creates_token_and_sends_email(
+    api_client, regular_user
+):
+    cache.clear()
+    mail.outbox = []
+    r = api_client.post(
+        reverse("password_reset_request"),
+        data={"email": regular_user.email},
+        format="json",
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["smtp_configured"] is True
+    assert body["detail"]
+    tokens = PasswordResetToken.objects.filter(user=regular_user, is_used=False)
+    assert tokens.count() == 1
+    assert len(mail.outbox) == 1
+    msg = mail.outbox[0]
+    assert regular_user.email in msg.to
+    assert str(tokens.first().token) in msg.body
+
+
+@pytest.mark.django_db
+@override_settings(EMAIL_BACKEND=LOCMEM_EMAIL, EMAIL_HOST="")
+def test_password_reset_request_smtp_off_still_creates_token(api_client, regular_user):
+    cache.clear()
+    mail.outbox = []
+    r = api_client.post(
+        reverse("password_reset_request"),
+        data={"email": regular_user.email},
+        format="json",
+    )
+    assert r.status_code == 200
+    assert r.json()["smtp_configured"] is False
+    assert PasswordResetToken.objects.filter(user=regular_user).count() == 1
+
+
+@pytest.mark.django_db
+@override_settings(EMAIL_BACKEND=LOCMEM_EMAIL)
+def test_password_reset_request_unknown_email_is_uniform(api_client, regular_user):
+    """No-enumeration guard: identical body, no token row, no email."""
+    cache.clear()
+    mail.outbox = []
+    r = api_client.post(
+        reverse("password_reset_request"),
+        data={"email": "nobody@example.com"},
+        format="json",
+    )
+    assert r.status_code == 200
+    assert "detail" in r.json() and "smtp_configured" in r.json()
+    assert PasswordResetToken.objects.count() == 0
+    assert mail.outbox == []
+
+
+@pytest.mark.django_db
+@override_settings(EMAIL_BACKEND=LOCMEM_EMAIL, EMAIL_HOST="smtp.example.com")
+def test_password_reset_request_resolves_user_case_insensitively(
+    api_client, regular_user
+):
+    cache.clear()
+    r = api_client.post(
+        reverse("password_reset_request"),
+        data={"email": regular_user.email.upper()},
+        format="json",
+    )
+    assert r.status_code == 200
+    assert PasswordResetToken.objects.filter(user=regular_user).count() == 1
+
+
+@pytest.mark.django_db
+def test_password_reset_request_malformed_email_returns_structured_400(api_client):
+    cache.clear()
+    r = api_client.post(
+        reverse("password_reset_request"),
+        data={"email": "not-an-email"},
+        format="json",
+    )
+    assert r.status_code == 400
+    fields = {e["field"] for e in r.json()["errors"]}
+    assert "email" in fields
+
+
+@pytest.mark.django_db
+def test_password_reset_request_missing_email_returns_400(api_client):
+    cache.clear()
+    r = api_client.post(reverse("password_reset_request"), data={}, format="json")
+    assert r.status_code == 400
+    assert any(e["field"] == "email" for e in r.json()["errors"])
+
+
+@pytest.mark.django_db
+@override_settings(EMAIL_BACKEND=LOCMEM_EMAIL, EMAIL_HOST="smtp.example.com")
+def test_password_reset_request_invalidates_prior_tokens_for_same_user(
+    api_client, regular_user
+):
+    cache.clear()
+    api_client.post(
+        reverse("password_reset_request"),
+        data={"email": regular_user.email},
+        format="json",
+    )
+    api_client.post(
+        reverse("password_reset_request"),
+        data={"email": regular_user.email},
+        format="json",
+    )
+    rows = PasswordResetToken.objects.filter(user=regular_user).order_by("created_at")
+    assert rows.count() == 2
+    assert rows.first().is_used is True
+    assert rows.last().is_used is False
+
+
+@pytest.mark.django_db
+@override_settings(EMAIL_BACKEND=LOCMEM_EMAIL, EMAIL_HOST="smtp.example.com")
+def test_password_reset_request_email_failure_does_not_break_response(
+    api_client, regular_user
+):
+    """SMTP failure must not change the HTTP contract — still 200, token still created.
+
+    Patches `django.core.mail.send_mail` so the sender's own try/except
+    runs and swallows the error (that fail-silent guarantee is the thing
+    under test)."""
+    cache.clear()
+    with patch(
+        "tables.services.rbac.utils.password_reset_email_sender.send_mail",
+        side_effect=RuntimeError("smtp blew up"),
+    ):
+        r = api_client.post(
+            reverse("password_reset_request"),
+            data={"email": regular_user.email},
+            format="json",
+        )
+    assert r.status_code == 200
+    assert PasswordResetToken.objects.filter(user=regular_user).count() == 1
+
+
+@pytest.mark.django_db
+def test_password_reset_request_throttle_blocks_after_limit(api_client, regular_user):
+    cache.clear()
+    url = reverse("password_reset_request")
+    for _ in range(5):
+        api_client.post(url, data={"email": regular_user.email}, format="json")
+    r = api_client.post(url, data={"email": regular_user.email}, format="json")
+    assert r.status_code == 429
+
+
+@pytest.mark.django_db
+def test_password_reset_request_throttle_is_per_email(api_client, regular_user):
+    cache.clear()
+    url = reverse("password_reset_request")
+    for _ in range(5):
+        api_client.post(url, data={"email": regular_user.email}, format="json")
+    r = api_client.post(url, data={"email": "someone-else@example.com"}, format="json")
+    assert r.status_code != 429
+
+
+# ---------------- Password recovery: confirm ----------------
+
+
+def _issue_token(user) -> PasswordResetToken:
+    return PasswordResetToken.objects.create(user=user)
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_happy_path(api_client, regular_user, jwt_tokens):
+    token = _issue_token(regular_user)
+    r = api_client.post(
+        reverse("password_reset_confirm"),
+        data={"token": str(token.token), "new_password": "BrandNewPass123!"},
+        format="json",
+    )
+    assert r.status_code == 200
+    regular_user.refresh_from_db()
+    assert regular_user.check_password("BrandNewPass123!")
+    assert not regular_user.check_password("UserStrongPass123!")
+    token.refresh_from_db()
+    assert token.is_used is True
+    # Outstanding refresh token from `jwt_tokens` fixture must now be blacklisted.
+    assert OutstandingToken.objects.filter(user=regular_user).exists()
+    assert (
+        BlacklistedToken.objects.filter(token__user=regular_user).count()
+        == OutstandingToken.objects.filter(user=regular_user).count()
+    )
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_unknown_token_returns_opaque_400(api_client):
+    r = api_client.post(
+        reverse("password_reset_confirm"),
+        data={
+            "token": "00000000-0000-0000-0000-000000000000",
+            "new_password": "BrandNewPass123!",
+        },
+        format="json",
+    )
+    assert r.status_code == 400
+    assert r.json()["code"] == OPAQUE_RESET_CODE
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_used_token_returns_opaque_400(api_client, regular_user):
+    token = _issue_token(regular_user)
+    token.is_used = True
+    token.save(update_fields=["is_used"])
+    r = api_client.post(
+        reverse("password_reset_confirm"),
+        data={"token": str(token.token), "new_password": "BrandNewPass123!"},
+        format="json",
+    )
+    assert r.status_code == 400
+    assert r.json()["code"] == OPAQUE_RESET_CODE
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_expired_token_returns_opaque_400(
+    api_client, regular_user
+):
+    token = _issue_token(regular_user)
+    PasswordResetToken.objects.filter(pk=token.pk).update(
+        created_at=timezone.now()
+        - timedelta(seconds=settings.PASSWORD_RESET_TOKEN_TTL + 60)
+    )
+    r = api_client.post(
+        reverse("password_reset_confirm"),
+        data={"token": str(token.token), "new_password": "BrandNewPass123!"},
+        format="json",
+    )
+    assert r.status_code == 400
+    assert r.json()["code"] == OPAQUE_RESET_CODE
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_weak_password_does_not_consume_token(
+    api_client, regular_user
+):
+    token = _issue_token(regular_user)
+    r = api_client.post(
+        reverse("password_reset_confirm"),
+        data={"token": str(token.token), "new_password": "12345"},
+        format="json",
+    )
+    assert r.status_code == 400
+    assert any(e["field"] == "new_password" for e in r.json()["errors"])
+    token.refresh_from_db()
+    assert token.is_used is False
+    regular_user.refresh_from_db()
+    assert regular_user.check_password("UserStrongPass123!")
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_rejects_non_uuid_token(api_client):
+    r = api_client.post(
+        reverse("password_reset_confirm"),
+        data={"token": "not-a-uuid", "new_password": "BrandNewPass123!"},
+        format="json",
+    )
+    assert r.status_code == 400
+    assert any(e["field"] == "token" for e in r.json()["errors"])
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_missing_fields_returns_structured_400(api_client):
+    r = api_client.post(reverse("password_reset_confirm"), data={}, format="json")
+    assert r.status_code == 400
+    fields = {e["field"] for e in r.json()["errors"]}
+    assert {"token", "new_password"} <= fields
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_redacts_new_password_in_errors(api_client):
+    token = "00000000-0000-0000-0000-000000000000"
+    r = api_client.post(
+        reverse("password_reset_confirm"),
+        data={"token": token, "new_password": "12345"},
+        format="json",
+    )
+    assert r.status_code == 400
+    for entry in r.json()["errors"]:
+        if entry["field"] == "new_password":
+            assert entry["value"] == "***"
+
+
+@pytest.mark.django_db
+def test_password_reset_confirm_token_is_single_use(api_client, regular_user):
+    token = _issue_token(regular_user)
+    first = api_client.post(
+        reverse("password_reset_confirm"),
+        data={"token": str(token.token), "new_password": "BrandNewPass123!"},
+        format="json",
+    )
+    assert first.status_code == 200
+    second = api_client.post(
+        reverse("password_reset_confirm"),
+        data={"token": str(token.token), "new_password": "AnotherPass456!"},
+        format="json",
+    )
+    assert second.status_code == 400
+    assert second.json()["code"] == OPAQUE_RESET_CODE
+
+
+# ---------------- Password recovery: self-service change ----------------
+
+
+@pytest.mark.django_db
+def test_password_change_happy_path_returns_fresh_tokens(
+    auth_client, regular_user, jwt_tokens
+):
+    r = auth_client.post(
+        reverse("password_change"),
+        data={
+            "current_password": "UserStrongPass123!",
+            "new_password": "EvenStrongerPass456!",
+        },
+        format="json",
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert "access" in body and "refresh" in body
+    regular_user.refresh_from_db()
+    assert regular_user.check_password("EvenStrongerPass456!")
+    # Old refresh token blacklisted.
+    assert BlacklistedToken.objects.filter(token__user=regular_user).exists()
+
+
+@pytest.mark.django_db
+def test_password_change_wrong_current_returns_400(auth_client, regular_user):
+    r = auth_client.post(
+        reverse("password_change"),
+        data={
+            "current_password": "wrong",
+            "new_password": "EvenStrongerPass456!",
+        },
+        format="json",
+    )
+    assert r.status_code == 400
+    assert r.json()["code"] == "invalid_current_password"
+    regular_user.refresh_from_db()
+    assert regular_user.check_password("UserStrongPass123!")
+
+
+@pytest.mark.django_db
+def test_password_change_weak_new_password_returns_structured_400(
+    auth_client, regular_user
+):
+    r = auth_client.post(
+        reverse("password_change"),
+        data={
+            "current_password": "UserStrongPass123!",
+            "new_password": "12345",
+        },
+        format="json",
+    )
+    assert r.status_code == 400
+    assert any(e["field"] == "new_password" for e in r.json()["errors"])
+    regular_user.refresh_from_db()
+    assert regular_user.check_password("UserStrongPass123!")
+
+
+@pytest.mark.django_db
+def test_password_change_requires_authentication(api_client):
+    r = api_client.post(
+        reverse("password_change"),
+        data={
+            "current_password": "UserStrongPass123!",
+            "new_password": "EvenStrongerPass456!",
+        },
+        format="json",
+    )
+    assert r.status_code == 401
+
+
+@pytest.mark.django_db
+def test_password_change_missing_fields_returns_structured_400(auth_client):
+    r = auth_client.post(reverse("password_change"), data={}, format="json")
+    assert r.status_code == 400
+    fields = {e["field"] for e in r.json()["errors"]}
+    assert {"current_password", "new_password"} <= fields
+
+
+# ---------------- Password recovery: admin reset ----------------
+
+
+@pytest.mark.django_db
+def test_admin_password_reset_superadmin_succeeds(
+    api_client, superadmin_user, regular_user
+):
+    api_client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(superadmin_user).access_token}"
+    )
+    # Pre-create an outstanding refresh for the target so the blacklist
+    # invariant has something to act on.
+    RefreshToken.for_user(regular_user)
+    r = api_client.post(
+        reverse("admin_password_reset"),
+        data={"user_id": regular_user.id, "new_password": "AdminSet123!"},
+        format="json",
+    )
+    assert r.status_code == 204
+    regular_user.refresh_from_db()
+    assert regular_user.check_password("AdminSet123!")
+    assert BlacklistedToken.objects.filter(token__user=regular_user).exists()
+
+
+@pytest.mark.django_db
+def test_admin_password_reset_non_superadmin_returns_403(auth_client, regular_user):
+    r = auth_client.post(
+        reverse("admin_password_reset"),
+        data={"user_id": regular_user.id, "new_password": "AdminSet123!"},
+        format="json",
+    )
+    assert r.status_code == 403
+    assert r.json()["code"] == "superadmin_required"
+    regular_user.refresh_from_db()
+    assert regular_user.check_password("UserStrongPass123!")
+
+
+@pytest.mark.django_db
+def test_admin_password_reset_requires_authentication(api_client, regular_user):
+    r = api_client.post(
+        reverse("admin_password_reset"),
+        data={"user_id": regular_user.id, "new_password": "AdminSet123!"},
+        format="json",
+    )
+    assert r.status_code == 401
+
+
+@pytest.mark.django_db
+def test_admin_password_reset_unknown_user_returns_404(api_client, superadmin_user):
+    api_client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(superadmin_user).access_token}"
+    )
+    r = api_client.post(
+        reverse("admin_password_reset"),
+        data={"user_id": 999_999, "new_password": "AdminSet123!"},
+        format="json",
+    )
+    assert r.status_code == 404
+    assert r.json()["code"] == "user_not_found"
+
+
+@pytest.mark.django_db
+def test_admin_password_reset_weak_password_returns_structured_400(
+    api_client, superadmin_user, regular_user
+):
+    api_client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(superadmin_user).access_token}"
+    )
+    r = api_client.post(
+        reverse("admin_password_reset"),
+        data={"user_id": regular_user.id, "new_password": "12345"},
+        format="json",
+    )
+    assert r.status_code == 400
+    assert any(e["field"] == "new_password" for e in r.json()["errors"])
+    regular_user.refresh_from_db()
+    assert regular_user.check_password("UserStrongPass123!")
+
+
+@pytest.mark.django_db
+def test_admin_password_reset_validates_user_id_shape(api_client, superadmin_user):
+    api_client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(superadmin_user).access_token}"
+    )
+    r = api_client.post(
+        reverse("admin_password_reset"),
+        data={"user_id": "not-an-int", "new_password": "AdminSet123!"},
+        format="json",
+    )
+    assert r.status_code == 400
+    fields = {e["field"] for e in r.json()["errors"]}
+    assert "user_id" in fields
