@@ -62,7 +62,12 @@
                             >
                                 Change Description
                             </button>
-                            <button class="dropdown-item dropdown-item--danger">Delete</button>
+                            <button
+                                class="dropdown-item dropdown-item--danger"
+                                (click)="deleteVersion(version, $event)"
+                            >
+                                Delete
+                            </button>
                         </div>
                     }
                 </div>

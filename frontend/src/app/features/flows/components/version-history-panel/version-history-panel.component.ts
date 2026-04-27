@@ -13,8 +13,10 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { IconButtonComponent } from '@shared/components';
+import { filter, switchMap } from 'rxjs';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
+import { ConfirmationDialogService } from '../../../../shared/components/cofirm-dialog/confimation-dialog.service';
 import { GraphVersionDto } from '../../models/graph.model';
 import { FlowsApiService } from '../../services/flows-api.service';
 
@@ -56,6 +58,7 @@ export class VersionHistoryPanelComponent implements OnInit {
     constructor(
         private flowApiService: FlowsApiService,
         private toastService: ToastService,
+        private confirmationDialog: ConfirmationDialogService,
         private el: ElementRef,
         private cdr: ChangeDetectorRef,
         @Inject(DIALOG_DATA) public data: { graphId: number },
@@ -127,6 +130,33 @@ export class VersionHistoryPanelComponent implements OnInit {
         } else if (event.key === 'Escape') {
             this.cancelEdit();
         }
+    }
+
+    public deleteVersion(version: GraphVersionDto, event?: MouseEvent): void {
+        event?.stopPropagation();
+        this.openMenuId = null;
+        this.confirmationDialog
+            .confirm({
+                title: 'Delete Version',
+                message: `This version will be permanently <strong>removed</strong> from the list and cannot be restored.`,
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                type: 'danger',
+            })
+            .pipe(
+                filter((result) => result === true),
+                switchMap(() => this.flowApiService.deleteGraphVersion(version.id)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: () => {
+                    this.versionsList = this.versionsList.filter((v) => v.id !== version.id);
+                    this.toastService.success('Version deleted');
+                },
+                error: () => {
+                    this.toastService.error('Failed to delete version');
+                },
+            });
     }
 
     private loadVersions(): void {
