@@ -1,5 +1,6 @@
 import zoneinfo
 from datetime import datetime, timezone as _datetime_timezone
+from typing import TYPE_CHECKING
 
 from django.db import transaction
 from django.db.models import F
@@ -9,7 +10,9 @@ from loguru import logger
 from tables.models.graph_models import ScheduleTriggerNode
 from utils.singleton_meta import SingletonMeta
 from utils.graph_utils import generate_node_name
-from tables.services.session_manager_service import SessionManagerService
+
+if TYPE_CHECKING:
+    from tables.services.session_manager_service import SessionManagerService
 
 
 def parse_naive_to_utc(raw, tz_name: str | None) -> datetime | None:
@@ -59,7 +62,7 @@ def format_utc_to_local_naive_iso(
 class ScheduleTriggerService(metaclass=SingletonMeta):
     """Runs a graph session when a schedule fires (signalled from Manager via Redis)."""
 
-    def __init__(self, session_manager_service: SessionManagerService):
+    def __init__(self, session_manager_service: "SessionManagerService"):
         self.session_manager_service = session_manager_service
 
     @transaction.atomic
