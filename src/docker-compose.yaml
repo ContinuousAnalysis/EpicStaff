@@ -42,7 +42,17 @@ services:
       JWT_SECRET: ${JWT_SECRET:-}
       JWT_ACCESS_MINUTES: ${JWT_ACCESS_MINUTES:-15}
       JWT_REFRESH_DAYS: ${JWT_REFRESH_DAYS:-7}
-      PASSWORD_RESET_TOKEN_TTL: ${PASSWORD_RESET_TOKEN_TTL:-3600}
+      PASSWORD_RESET_TOKEN_TTL: ${PASSWORD_RESET_TOKEN_TTL:-900}
+      PASSWORD_RESET_REQUEST_THROTTLE_RATE: ${PASSWORD_RESET_REQUEST_THROTTLE_RATE:-5/hour}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-False}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-no-reply@epicstaff.local}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:4200}
+      FRONTEND_PASSWORD_RESET_PATH: ${FRONTEND_PASSWORD_RESET_PATH:-/reset-password}
       DJANGO_AUTO_CREATE_ADMIN: ${DJANGO_AUTO_CREATE_ADMIN:-False}
       DJANGO_ADMIN_EMAIL: ${DJANGO_ADMIN_EMAIL:-}
       DJANGO_ADMIN_PASSWORD: ${DJANGO_ADMIN_PASSWORD:-}
@@ -407,6 +417,16 @@ services:
     restart: always
     profiles:
       - voice
+
+  #DEV container for test SMTP (remove later) 
+  mailpit:
+    container_name: mailpit
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # web UI: http://localhost:8025/
+    networks:
+      - backend-network
 
 volumes:
   sandbox_venvs:
