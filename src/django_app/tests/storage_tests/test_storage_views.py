@@ -10,6 +10,7 @@ from tables.services.storage_service.dataclasses import (
     FileListItem,
     FileUploadResult,
     FolderInfo,
+    TreeNode,
 )
 
 
@@ -64,7 +65,7 @@ class TestInfo:
 
         resp = api_client.get("/api/storage/info/", {"path": "ghost.txt"})
 
-        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
 
 
 class TestDownload:
@@ -211,6 +212,8 @@ class TestDelete:
 
 class TestMkdir:
     def test_mkdir_returns_201(self, api_client, mock_manager):
+        mock_manager.info.side_effect = FileNotFoundError("not found")
+
         resp = api_client.post(
             "/api/storage/mkdir/", {"path": "new_folder"}, format="json"
         )
@@ -279,3 +282,126 @@ class TestGraphFiles:
         assert resp.status_code == status.HTTP_200_OK
         assert len(resp.data) == 1
         assert resp.data[0]["path"] == "attached.txt"
+
+
+class TestTree:
+    def test_tree_returns_nested_structure(self, api_client, mock_manager):
+        root = TreeNode(
+            name="reports",
+            path="reports/",
+            type="folder",
+            size=0,
+            modified=None,
+            children=[
+                TreeNode(
+                    name="q1.pdf",
+                    path="reports/q1.pdf",
+                    type="file",
+                    size=10,
+                    modified="2024-01-01T00:00:00Z",
+                    children=None,
+                ),
+            ],
+        )
+        mock_manager.info.return_value = FolderInfo(
+            name="reports",
+            path="reports/",
+            modified="2024-01-01T00:00:00Z",
+        )
+        mock_manager.list_tree.return_value = (root, False)
+
+        resp = api_client.get("/api/storage/tree/", {"path": "reports"})
+
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.data["truncated"] is False
+        assert resp.data["tree"]["name"] == "reports"
+        assert resp.data["tree"]["children"][0]["name"] == "q1.pdf"
+        assert resp.data["tree"]["children"][0]["children"] is None
+
+    def test_tree_forwards_max_depth_to_manager(self, api_client, mock_manager):
+        mock_manager.info.return_value = FolderInfo(
+            name="", path="", modified="2024-01-01T00:00:00Z"
+        )
+        mock_manager.list_tree.return_value = (
+            TreeNode(
+                name="", path="", type="folder", size=0, modified=None, children=[]
+            ),
+            False,
+        )
+        api_client.get("/api/storage/tree/", {"path": "x", "max_depth": 2})
+        assert mock_manager.list_tree.call_args.kwargs["max_depth"] == 2
+
+    def test_tree_surfaces_truncated_flag(self, api_client, mock_manager):
+        mock_manager.info.return_value = FolderInfo(
+            name="", path="", modified="2024-01-01T00:00:00Z"
+        )
+        mock_manager.list_tree.return_value = (
+            TreeNode(
+                name="", path="", type="folder", size=0, modified=None, children=[]
+            ),
+            True,
+        )
+        resp = api_client.get("/api/storage/tree/", {"path": "big"})
+        assert resp.data["truncated"] is True
+
+    def test_tree_returns_404_for_missing_path(self, api_client, mock_manager):
+        mock_manager.info.side_effect = FileNotFoundError("gone")
+        resp = api_client.get("/api/storage/tree/", {"path": "nope"})
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_tree_rejects_file_path_with_400(self, api_client, mock_manager):
+        mock_manager.info.return_value = FileInfo(
+            name="f.txt",
+            path="f.txt",
+            size=1,
+            content_type="text/plain",
+            modified="2024-01-01T00:00:00Z",
+        )
+        resp = api_client.get("/api/storage/tree/", {"path": "f.txt"})
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+
+class TestSearch:
+    def test_search_returns_paged_results(self, api_client, mock_manager):
+        mock_manager.search.return_value = (
+            [
+                {"path": "reports/q1_report.pdf", "name": "q1_report.pdf"},
+                {"path": "archive/old_report.txt", "name": "old_report.txt"},
+            ],
+            137,
+        )
+        resp = api_client.get("/api/storage/search/", {"q": "report"})
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.data["total"] == 137
+        assert resp.data["offset"] == 0
+        assert resp.data["limit"] == 50
+        assert len(resp.data["results"]) == 2
+
+    def test_search_forwards_path_limit_offset(self, api_client, mock_manager):
+        mock_manager.search.return_value = ([], 0)
+        api_client.get(
+            "/api/storage/search/",
+            {
+                "q": "rep",
+                "path": "reports/",
+                "limit": 10,
+                "offset": 20,
+            },
+        )
+        kwargs = mock_manager.search.call_args.kwargs
+        assert kwargs["q"] == "rep"
+        assert kwargs["path"] == "reports"
+        assert kwargs["limit"] == 10
+        assert kwargs["offset"] == 20
+
+    def test_search_rejects_short_query(self, api_client, mock_manager):
+        resp = api_client.get("/api/storage/search/", {"q": "r"})
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_search_requires_q_parameter(self, api_client, mock_manager):
+        resp = api_client.get("/api/storage/search/")
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_search_rejects_limit_over_max(self, api_client, mock_manager):
+        resp = api_client.get("/api/storage/search/", {"q": "rep", "limit": 999})
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST

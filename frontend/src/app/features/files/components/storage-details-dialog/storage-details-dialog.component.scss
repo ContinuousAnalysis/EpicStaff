@@ -1,6 +1,9 @@
 .storage-details-dialog {
     width: 560px;
     max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
     background: #212325;
     border: 1px solid #2b2d30;
     border-radius: 10px;
@@ -42,6 +45,9 @@
 
     &__content {
         padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
     }
 
     &__section {

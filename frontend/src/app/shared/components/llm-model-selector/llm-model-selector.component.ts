@@ -41,8 +41,14 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
                 [class.loading]="loading"
                 (click)="!loading && toggleDropdown($event)"
             >
-                <div *ngIf="loading" class="loading-spinner"></div>
-                <div *ngIf="selectedConfig && !loading; else placeholderTemplate" class="model-info">
+                <div
+                    *ngIf="loading"
+                    class="loading-spinner"
+                ></div>
+                <div
+                    *ngIf="selectedConfig && !loading; else placeholderTemplate"
+                    class="model-info"
+                >
                     <app-svg-icon
                         [icon]="getProviderIcon(selectedConfig)"
                         size="20px"
@@ -51,16 +57,30 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
                     />
                     <div class="model-text">
                         <span class="model-name">{{ selectedConfig.modelDetails?.name || 'Unknown Model' }}</span>
-                        <span *ngIf="selectedConfig.custom_name" class="custom-name">
+                        <span
+                            *ngIf="selectedConfig.custom_name"
+                            class="custom-name"
+                        >
                             ({{ selectedConfig.custom_name }})
                         </span>
                     </div>
                 </div>
                 <ng-template #placeholderTemplate>
-                    <div *ngIf="!loading" class="placeholder-text">{{ placeholder }}</div>
+                    <div
+                        *ngIf="!loading"
+                        class="placeholder-text"
+                    >
+                        {{ placeholder }}
+                    </div>
                 </ng-template>
                 <div class="dropdown-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
                         <path
                             d="M6 9L12 15L18 9"
                             stroke="currentColor"
@@ -73,7 +93,11 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
             </div>
 
             <!-- Dropdown Menu -->
-            <div class="dropdown-menu" [class.dropdown-top]="dropdownPosition === 'top'" *ngIf="isDropdownOpen">
+            <div
+                class="dropdown-menu"
+                [class.dropdown-top]="dropdownPosition === 'top'"
+                *ngIf="isDropdownOpen"
+            >
                 <!-- Search Input -->
                 <div class="search-container">
                     <input
@@ -87,7 +111,12 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
 
                 <!-- Models List -->
                 <div class="models-list">
-                    <div *ngIf="filteredConfigs.length === 0" class="no-results">No matching models found</div>
+                    <div
+                        *ngIf="filteredConfigs.length === 0"
+                        class="no-results"
+                    >
+                        No matching models found
+                    </div>
 
                     @for (config of filteredConfigs; track config.id) {
                         <app-llm-model-item

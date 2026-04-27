@@ -1,7 +1,12 @@
 <div class="dialog-wrapper">
     <div class="dialog-header">
         <h2>Sessions for {{ flow.name }}</h2>
-        <app-icon-button icon="x" size="2rem" ariaLabel="Close dialog" (onClick)="dialogRef.close()"></app-icon-button>
+        <app-icon-button
+            icon="x"
+            size="2rem"
+            ariaLabel="Close dialog"
+            (onClick)="dialogRef.close()"
+        ></app-icon-button>
     </div>
 
     <div class="dialog-content">
@@ -19,13 +24,22 @@
 
             <label class="error-cause-filter">
                 <span>Show first failed</span>
-                <div class="toggle-switch" [class.active]="isErrorCauseFilter()" (click)="onIsErrorCauseChange()">
+                <div
+                    class="toggle-switch"
+                    [class.active]="isErrorCauseFilter()"
+                    (click)="onIsErrorCauseChange()"
+                >
                     <div class="toggle-thumb"></div>
                 </div>
             </label>
         </div>
         @if (selectedIds().size > 0) {
-            <button class="delete-btn" (click)="onBulkDelete()">Delete Selected</button>
+            <button
+                class="delete-btn"
+                (click)="onBulkDelete()"
+            >
+                Delete Selected
+            </button>
         }
         <div class="table-container">
             <app-flow-sessions-table

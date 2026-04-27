@@ -10,6 +10,7 @@ from tables.services.storage_service.dataclasses import (
     FileInfo,
     FolderInfo,
     FileListItem,
+    TreeNode,
     UploadResult,
 )
 
@@ -160,7 +161,13 @@ class S3StorageBackend(AbstractStorageBackend):
         full_path = self._full_path(path)
         if not full_path.endswith("/"):
             full_path += "/"
-        self.client.put_object(Bucket=self.bucket_name, Key=full_path, Body=b"")
+        try:
+            self.client.put_object(Bucket=self.bucket_name, Key=full_path, Body=b"")
+        except ClientError as error:
+            code = error.response["Error"]["Code"]
+            if code in ("400", "XMinioInvalidObjectName"):
+                raise ValueError(f"Invalid storage path: {path!r}")
+            raise
 
     def move(self, source_path: str, destination_path: str) -> None:
         self.copy(source_path, destination_path)
@@ -300,7 +307,12 @@ class S3StorageBackend(AbstractStorageBackend):
                 modified=head["LastModified"].isoformat(),
             )
         except ClientError as error:
-            if error.response["Error"]["Code"] != "404":
+            code = error.response["Error"]["Code"]
+            if code == "404":
+                pass
+            elif code in ("400", "XMinioInvalidObjectName"):
+                raise ValueError(f"Invalid storage path: {path!r}")
+            else:
                 raise
 
         # Try as folder marker
@@ -312,7 +324,12 @@ class S3StorageBackend(AbstractStorageBackend):
                 modified=head["LastModified"].isoformat(),
             )
         except ClientError as error:
-            if error.response["Error"]["Code"] != "404":
+            code = error.response["Error"]["Code"]
+            if code == "404":
+                pass
+            elif code in ("400", "XMinioInvalidObjectName"):
+                raise ValueError(f"Invalid storage path: {path!r}")
+            else:
                 raise
 
         # Fallback: virtual folder (no marker, but objects exist under prefix)
@@ -353,6 +370,134 @@ class S3StorageBackend(AbstractStorageBackend):
                     archive.writestr(archive_name, file_bytes)
         buffer.seek(0)
         yield buffer.read()
+
+    def list_tree(
+        self, prefix: str, max_depth: int | None = None, max_entries: int = 50_000
+    ) -> tuple[TreeNode, bool]:
+        full_prefix = self._full_path(prefix)
+        if full_prefix and not full_prefix.endswith("/"):
+            full_prefix += "/"
+
+        root_rel = self._strip_prefix(full_prefix).rstrip("/")
+        root_name = root_rel.split("/")[-1] if root_rel else ""
+        nodes_by_path: dict[str, dict] = {
+            full_prefix: {
+                "name": root_name,
+                "path": full_prefix,
+                "type": "folder",
+                "size": 0,
+                "modified": None,
+                "children_map": {},
+            }
+        }
+        truncated = False
+        count = 0
+
+        paginator = self.client.get_paginator("list_objects_v2")
+        outer = False
+
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=full_prefix):
+            if outer:
+                break
+
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                if key == full_prefix:
+                    continue
+
+                rel = key[len(full_prefix) :]
+                parts = rel.rstrip("/").split("/") if rel.rstrip("/") else []
+                depth = len(parts)
+
+                is_folder_marker = key.endswith("/")
+                if max_depth is not None and depth > max_depth:
+                    # Truncate to max_depth and treat as synthetic folder at the cut
+                    parts = parts[:max_depth]
+                    depth = max_depth
+                    is_folder_marker = True
+                    obj_size = 0
+                    obj_modified = None
+                else:
+                    obj_size = obj["Size"]
+                    obj_modified = obj["LastModified"].isoformat()
+                cur_path = full_prefix
+                parent = nodes_by_path[cur_path]
+
+                for segment in parts[:-1]:
+                    cur_path = cur_path + segment + "/"
+                    if cur_path not in nodes_by_path:
+                        if count >= max_entries:
+                            truncated = True
+                            outer = True
+                            break
+                        node = {
+                            "name": segment,
+                            "path": cur_path,
+                            "type": "folder",
+                            "size": 0,
+                            "modified": None,
+                            "children_map": {},
+                        }
+                        nodes_by_path[cur_path] = node
+                        parent["children_map"][segment] = node
+                        count += 1
+                    parent = nodes_by_path[cur_path]
+
+                if outer:
+                    break
+
+                leaf_name = parts[-1] if parts else ""
+                if not leaf_name:
+                    continue
+
+                leaf_path = cur_path + leaf_name + ("/" if is_folder_marker else "")
+                if leaf_path in nodes_by_path:
+                    continue
+
+                if count >= max_entries:
+                    truncated = True
+                    outer = True
+                    break
+
+                if is_folder_marker:
+                    node = {
+                        "name": leaf_name,
+                        "path": leaf_path,
+                        "type": "folder",
+                        "size": 0,
+                        "modified": None,
+                        "children_map": {},
+                    }
+                else:
+                    node = {
+                        "name": leaf_name,
+                        "path": leaf_path,
+                        "type": "file",
+                        "size": obj_size,
+                        "modified": obj_modified,
+                        "children_map": None,
+                    }
+
+                nodes_by_path[leaf_path] = node
+                parent["children_map"][leaf_name] = node
+                count += 1
+
+        def build(node_dict) -> TreeNode:
+            children = (
+                None
+                if node_dict["children_map"] is None
+                else [build(child) for child in node_dict["children_map"].values()]
+            )
+            return TreeNode(
+                name=node_dict["name"],
+                path=node_dict["path"],
+                type=node_dict["type"],
+                size=node_dict["size"],
+                modified=node_dict["modified"],
+                children=children,
+            )
+
+        return build(nodes_by_path[full_prefix]), truncated
 
     def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
         self._check_archive_password(archive_file, archive_name)

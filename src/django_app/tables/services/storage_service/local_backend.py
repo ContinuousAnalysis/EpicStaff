@@ -11,6 +11,7 @@ from tables.services.storage_service.dataclasses import (
     FileInfo,
     FolderInfo,
     FileListItem,
+    TreeNode,
     UploadResult,
 )
 
@@ -193,6 +194,99 @@ class LocalStorageBackend(AbstractStorageBackend):
                     archive.writestr(path.lstrip("/"), file_bytes)
         buffer.seek(0)
         yield buffer.read()
+
+    def list_tree(
+        self, prefix: str, max_depth: int | None = None, max_entries: int = 50_000
+    ) -> tuple[TreeNode, bool]:
+        root_fs = self._resolve(prefix)
+        root_rel = str(root_fs.relative_to(self.base_path)).replace("\\", "/")
+        root_name = root_fs.name if prefix else ""
+        root_path = (root_rel + "/") if root_rel else ""
+
+        root_dict: dict = {
+            "name": root_name,
+            "path": root_path,
+            "type": "folder",
+            "size": 0,
+            "modified": None,
+            "children_map": {},
+            "fs_path": root_fs,
+            "depth": 0,
+        }
+
+        truncated = False
+        count = 0
+        queue: list[dict] = [root_dict]
+
+        while queue:
+            current = queue.pop(0)
+            current_fs: Path = current["fs_path"]
+            current_depth: int = current["depth"]
+
+            if not current_fs.exists() or not current_fs.is_dir():
+                continue
+
+            for entry in sorted(current_fs.iterdir()):
+                if count >= max_entries:
+                    truncated = True
+                    queue.clear()
+                    break
+
+                stat = entry.stat()
+                modified = datetime.fromtimestamp(
+                    stat.st_mtime, tz=timezone.utc
+                ).isoformat()
+                entry_rel = str(entry.relative_to(self.base_path)).replace("\\", "/")
+                entry_name = entry.name
+                child_depth = current_depth + 1
+
+                if entry.is_dir():
+                    entry_path = entry_rel + "/"
+                    child: dict = {
+                        "name": entry_name,
+                        "path": entry_path,
+                        "type": "folder",
+                        "size": 0,
+                        "modified": modified,
+                        "children_map": {},
+                        "fs_path": entry,
+                        "depth": child_depth,
+                    }
+                    current["children_map"][entry_name] = child
+                    count += 1
+
+                    if max_depth is None or child_depth < max_depth:
+                        queue.append(child)
+                else:
+                    child = {
+                        "name": entry_name,
+                        "path": entry_rel,
+                        "type": "file",
+                        "size": stat.st_size,
+                        "modified": modified,
+                        "children_map": None,
+                        "fs_path": entry,
+                        "depth": child_depth,
+                    }
+                    current["children_map"][entry_name] = child
+                    count += 1
+
+        def build(node_dict) -> TreeNode:
+            children = (
+                None
+                if node_dict["children_map"] is None
+                else [build(child) for child in node_dict["children_map"].values()]
+            )
+            return TreeNode(
+                name=node_dict["name"],
+                path=node_dict["path"],
+                type=node_dict["type"],
+                size=node_dict["size"],
+                modified=node_dict["modified"],
+                children=children,
+            )
+
+        return build(root_dict), truncated
 
     def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
         self._check_archive_password(archive_file, archive_name)

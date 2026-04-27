@@ -22,8 +22,9 @@ const TABBED_ROUTES: Record<string, string[]> = {
         `
             :host {
                 display: flex;
-                height: 100%;
+                flex: 1;
                 width: 100%;
+                min-height: 0;
             }
 
             .sidebar-wrapper {
@@ -63,8 +64,14 @@ const TABBED_ROUTES: Record<string, string[]> = {
         </div>
 
         @if (epicChatService.isDocked() && epicChatService.isChatOpen()) {
-            <div class="chat-dock-spacer" [style.width.px]="epicChatService.dockWidth()">
-                <div class="chat-dock-resizer" (mousedown)="onDockResizeStart($event)"></div>
+            <div
+                class="chat-dock-spacer"
+                [style.width.px]="epicChatService.dockWidth()"
+            >
+                <div
+                    class="chat-dock-resizer"
+                    (mousedown)="onDockResizeStart($event)"
+                ></div>
             </div>
         }
 

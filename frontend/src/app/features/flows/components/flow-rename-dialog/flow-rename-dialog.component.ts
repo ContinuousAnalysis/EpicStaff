@@ -69,7 +69,12 @@ interface FlowRenameData {
                 <div class="error-message-block">{{ errorMessage }}</div>
             }
             <div class="dialog-actions">
-                <app-button type="ghost" (click)="cancel()" [disabled]="isSubmitting">Cancel</app-button>
+                <app-button
+                    type="ghost"
+                    (click)="cancel()"
+                    [disabled]="isSubmitting"
+                    >Cancel</app-button
+                >
                 <app-button
                     type="primary"
                     [disabled]="isSubmitting || !newName || !newName.trim().length"

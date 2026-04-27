@@ -14,6 +14,10 @@ from tables.serializers.storage_serializers import (
     StoragePathQuerySerializer,
     StorageRemoveFromGraphSerializer,
     StorageRenameSerializer,
+    StorageSearchQuerySerializer,
+    StorageSearchResponseSerializer,
+    StorageTreeQuerySerializer,
+    StorageTreeResponseSerializer,
     StorageUploadResponseSerializer,
     StorageUploadSerializer,
 )
@@ -142,4 +146,25 @@ STORAGE_GRAPH_FILES_SWAGGER = dict(
     operation_description="Returns all storage paths that have been linked to the given graph.",
     query_serializer=StorageGraphFilesQuerySerializer,
     responses={200: GraphStorageFileSerializer(many=True), 404: "Graph not found"},
+)
+
+STORAGE_TREE_SWAGGER = dict(
+    operation_summary="Get recursive folder tree",
+    operation_description=(
+        "Returns the entire folder subtree under `path` as a nested "
+        "structure. Each folder has a `children` array; files have "
+        "`children: null`. Response is truncated at 50 000 entries."
+    ),
+    query_serializer=StorageTreeQuerySerializer,
+    responses={200: StorageTreeResponseSerializer, 404: "Path does not exist"},
+)
+
+STORAGE_SEARCH_SWAGGER = dict(
+    operation_summary="Search files by name",
+    operation_description=(
+        "Substring match on the filename (last path segment). "
+        "Optional `path` narrows results to a subtree. Files only."
+    ),
+    query_serializer=StorageSearchQuerySerializer,
+    responses={200: StorageSearchResponseSerializer},
 )

@@ -1,7 +1,10 @@
 <div class="files-list-page">
     <div class="sticky-header">
         <header class="header">
-            <div class="header-titles" appHideInlineSubtitleOnOverflow>
+            <div
+                class="header-titles"
+                appHideInlineSubtitleOnOverflow
+            >
                 <h1 class="title">
                     Files
                     <span class="subtitle-inline"> Organize files centrally or enable RAG for AI-powered search. </span>
@@ -34,7 +37,11 @@
             </div>
             <div class="tabs-right">
                 <div class="search-container">
-                    <app-svg-icon icon="search" class="search-icon" size="1rem"></app-svg-icon>
+                    <app-svg-icon
+                        icon="search"
+                        class="search-icon"
+                        size="1rem"
+                    ></app-svg-icon>
                     <input
                         type="text"
                         class="search-input"
@@ -43,8 +50,16 @@
                         (ngModelChange)="filesSearchService.setSearchTerm($event)"
                     />
                     @if (searchTerm()) {
-                        <button type="button" class="clear-btn" aria-label="Clear" (click)="filesSearchService.clear()">
-                            <app-svg-icon icon="x" size="1.1rem"></app-svg-icon>
+                        <button
+                            type="button"
+                            class="clear-btn"
+                            aria-label="Clear"
+                            (click)="filesSearchService.clear()"
+                        >
+                            <app-svg-icon
+                                icon="x"
+                                size="1.1rem"
+                            ></app-svg-icon>
                         </button>
                     }
                 </div>

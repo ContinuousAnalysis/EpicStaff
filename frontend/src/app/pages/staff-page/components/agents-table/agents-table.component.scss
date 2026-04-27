@@ -263,7 +263,7 @@ $transition-default: all 0.2s ease;
 
 :host ::ng-deep .ag-grid-staff .ag-header-cell.required-header .ag-header-cell-text::after {
     content: ' *';
-    color: rgba(255, 77, 79, 1);
+    color: var(--color-required-asterisk, var(--accent-color));
     font-weight: 700;
 }
 

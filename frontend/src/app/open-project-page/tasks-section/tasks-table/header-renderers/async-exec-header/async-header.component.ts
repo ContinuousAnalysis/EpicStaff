@@ -21,8 +21,14 @@ import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-ic
     standalone: true,
     imports: [CommonModule, AppSvgIconComponent],
     template: `
-        <div class="header-container" #headerContainer>
-            <app-svg-icon icon="arrows-cross" size="24px" />
+        <div
+            class="header-container"
+            #headerContainer
+        >
+            <app-svg-icon
+                icon="arrows-cross"
+                size="24px"
+            />
         </div>
 
         <ng-template #tooltipTemplate>

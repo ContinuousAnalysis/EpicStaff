@@ -1,4 +1,5 @@
 import os
+import re
 
 from rest_framework import serializers
 
@@ -6,9 +7,19 @@ from tables.models import Graph
 from tables.validators.file_upload_validator import FileValidator
 
 
+_MAX_STORAGE_PATH_BYTES = 1000
+
+
 def _normalize_path(value: str) -> str:
-    """Strip trailing slashes so endpoints behave consistently."""
-    return value.rstrip("/") if value else value
+    if not value:
+        return value
+    value = re.sub(r"/+", "/", value)
+    value = value.rstrip("/")
+    if len(value.encode("utf-8")) > _MAX_STORAGE_PATH_BYTES:
+        raise serializers.ValidationError(
+            f"Path too long: max {_MAX_STORAGE_PATH_BYTES} bytes."
+        )
+    return value
 
 
 class StoragePathQuerySerializer(serializers.Serializer):
@@ -273,3 +284,57 @@ class StorageGraphFilesQuerySerializer(serializers.Serializer):
         required=True,
         help_text="Graph ID to list attached files for",
     )
+
+
+class StorageTreeQuerySerializer(serializers.Serializer):
+    path = serializers.CharField(required=False, default="")
+    max_depth = serializers.IntegerField(
+        required=False, min_value=1, allow_null=True, default=None
+    )
+
+    def validate_path(self, value: str) -> str:
+        return _normalize_path(value)
+
+
+class TreeNodeSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    path = serializers.CharField()
+    type = serializers.ChoiceField(choices=["file", "folder"])
+    size = serializers.IntegerField()
+    modified = serializers.CharField(allow_null=True)
+    children = serializers.ListField(
+        child=serializers.DictField(),
+        allow_null=True,
+        required=False,
+        help_text="Nested TreeNode objects; null for files.",
+    )
+
+
+class StorageTreeResponseSerializer(serializers.Serializer):
+    path = serializers.CharField()
+    truncated = serializers.BooleanField()
+    tree = TreeNodeSerializer()
+
+
+class StorageSearchQuerySerializer(serializers.Serializer):
+    q = serializers.CharField(min_length=2, max_length=100)
+    path = serializers.CharField(required=False, default="")
+    limit = serializers.IntegerField(
+        required=False, default=50, min_value=1, max_value=200
+    )
+    offset = serializers.IntegerField(required=False, default=0, min_value=0)
+
+    def validate_path(self, value: str) -> str:
+        return _normalize_path(value)
+
+
+class StorageSearchResultSerializer(serializers.Serializer):
+    path = serializers.CharField()
+    name = serializers.CharField()
+
+
+class StorageSearchResponseSerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+    offset = serializers.IntegerField()
+    limit = serializers.IntegerField()
+    results = StorageSearchResultSerializer(many=True)

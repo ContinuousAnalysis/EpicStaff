@@ -7,7 +7,11 @@
         collapseOnOverflowClass="session-files-btn--icon-only"
         (click)="toggleDropdown($event)"
     >
-        <app-svg-icon icon="download" size="12px" class="session-files-btn__icon"></app-svg-icon>
+        <app-svg-icon
+            icon="download"
+            size="12px"
+            class="session-files-btn__icon"
+        ></app-svg-icon>
         <span class="session-files-btn__label">Files</span>
     </button>
 
@@ -51,7 +55,10 @@
                                     [class.session-files-dropdown__chevron--open]="node.isExpanded"
                                     (click)="toggleExpand($event, node)"
                                 >
-                                    <app-svg-icon icon="expand" size="0.5rem"></app-svg-icon>
+                                    <app-svg-icon
+                                        icon="expand"
+                                        size="0.5rem"
+                                    ></app-svg-icon>
                                 </button>
                             } @else {
                                 <span class="session-files-dropdown__chevron-gap"></span>
@@ -63,7 +70,10 @@
                                 [class.session-files-dropdown__checkbox--indeterminate]="isIndeterminate(node)"
                             >
                                 @if (isChecked(node)) {
-                                    <app-svg-icon icon="check" size="0.625rem"></app-svg-icon>
+                                    <app-svg-icon
+                                        icon="check"
+                                        size="0.625rem"
+                                    ></app-svg-icon>
                                 } @else if (isIndeterminate(node)) {
                                     <span class="session-files-dropdown__checkbox-dash"></span>
                                 }
@@ -72,17 +82,24 @@
                             <app-svg-icon
                                 class="session-files-dropdown__file-icon"
                                 [icon]="getFileIcon(node)"
-                                size="13px"
+                                size="12px"
                             ></app-svg-icon>
 
-                            <span class="session-files-dropdown__item-name" [title]="node.name">{{ node.name }}</span>
+                            <span
+                                class="session-files-dropdown__item-name"
+                                [title]="node.name"
+                                >{{ node.name }}</span
+                            >
 
                             <button
                                 class="session-files-dropdown__link-btn"
                                 (click)="onDeepLink($event, node)"
                                 title="Open in storage"
                             >
-                                <app-svg-icon icon="external-link" size="12px"></app-svg-icon>
+                                <app-svg-icon
+                                    icon="external-link"
+                                    size="12px"
+                                ></app-svg-icon>
                             </button>
                         </div>
                     }
@@ -98,7 +115,10 @@
                     Download all
                 </button>
                 <span class="session-files-dropdown__spacer"></span>
-                <button class="session-files-dropdown__btn session-files-dropdown__btn--outline" (click)="onCancel()">
+                <button
+                    class="session-files-dropdown__btn session-files-dropdown__btn--outline"
+                    (click)="onCancel()"
+                >
                     Cancel
                 </button>
                 <button

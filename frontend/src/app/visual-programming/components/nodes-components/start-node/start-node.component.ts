@@ -9,7 +9,10 @@ import { StartNodeModel } from '../../../core/models/node.model';
     imports: [AppSvgIconComponent],
     template: `
         <div class="start-node">
-            <app-svg-icon icon="play" size="25px"></app-svg-icon>
+            <app-svg-icon
+                icon="play"
+                size="25px"
+            ></app-svg-icon>
 
             <span>Start</span>
         </div>

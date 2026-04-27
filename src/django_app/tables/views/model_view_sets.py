@@ -34,6 +34,11 @@ from tables.exceptions import (
 )
 from tables.serializers.graph_bulk_save_serializers import GraphBulkSaveInputSerializer
 from tables.services.graph_bulk_save_service import GraphBulkSaveService
+from tables.graph_versioning.services import GraphVersioningService
+from tables.graph_versioning.serializers import (
+    GraphVersionCreateSerializer,
+    GraphVersionReadSerializer,
+)
 
 from tables.import_export.enums import EntityType
 from tables.models import (
@@ -49,6 +54,7 @@ from tables.models import (
     FileExtractorNode,
     Graph,
     GraphSessionMessage,
+    GraphVersion,
     LLMConfig,
     LLMModel,
     Provider,
@@ -82,8 +88,7 @@ from tables.models.llm_models import (
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
 )
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from tables.swagger_schemas.graph_bulk_save_schema import (
     SAVE_FLOW_SWAGGER as _SAVE_FLOW_SWAGGER,
 )
@@ -836,7 +841,7 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
         return Response(data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"], url_path="save")
-    @swagger_auto_schema(**_SAVE_FLOW_SWAGGER)
+    @extend_schema(**_SAVE_FLOW_SWAGGER)
     def save_flow(self, request, pk=None):
         input_serializer = GraphBulkSaveInputSerializer(data=request.data)
         if not input_serializer.is_valid():
@@ -867,6 +872,33 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return Graph.objects.only("id", "name", "description").prefetch_related(
             "tags", "labels"
+        )
+
+
+class GraphVersionViewSet(viewsets.ModelViewSet):
+    queryset = GraphVersion.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["graph_id"]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return GraphVersionCreateSerializer
+        return GraphVersionReadSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        write_serializer = serializer_class(data=request.data)
+        write_serializer.is_valid(raise_exception=True)
+
+        version = GraphVersioningService().save_version(
+            graph=write_serializer.validated_data["graph"],
+            name=write_serializer.validated_data["name"],
+            description=write_serializer.validated_data.get("description", ""),
+        )
+
+        return Response(
+            GraphVersionReadSerializer(version).data,
+            status=status.HTTP_201_CREATED,
         )
 
 

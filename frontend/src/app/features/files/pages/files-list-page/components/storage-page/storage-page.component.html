@@ -2,10 +2,17 @@
     <div class="storage-page">
         @if (isLoading()) {
             <div class="storage-page__loading">
-                <app-spinner [text]="'Loading storage...'" [accentColor]="'#6562f5'" [isOverlay]="false"></app-spinner>
+                <app-spinner
+                    [text]="'Loading storage...'"
+                    [accentColor]="'#6562f5'"
+                    [isOverlay]="false"
+                ></app-spinner>
             </div>
         } @else {
-            <div class="storage-page__sidebar" [class.storage-page__sidebar--hidden]="!showSidebar()">
+            <div
+                class="storage-page__sidebar"
+                [class.storage-page__sidebar--hidden]="!showSidebar()"
+            >
                 <app-storage-tree
                     [items]="filteredTreeData()"
                     (fileSelected)="onFileSelect($event)"
@@ -24,6 +31,7 @@
                     [showSidebar]="showSidebar()"
                     (toggleSidebar)="toggleSidebar()"
                     (contextAction)="onPreviewContextAction($event)"
+                    (breadcrumbClick)="showSidebar.set(true); expandAndSelectPath($event)"
                 />
             </div>
         }

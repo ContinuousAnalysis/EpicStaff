@@ -178,6 +178,67 @@ Both require the user to have permission in source and destination orgs.
 - Bulk-creates on copy
 - Handles cross-org operations
 
+The DB mirror powers the search endpoint (`GET /api/storage/search/`). Normal mutations stay in sync automatically; the commands below exist for initial import and drift repair.
+
+---
+
+## Management Commands
+
+Two management commands reconcile the `StorageFile` table with the storage backend. Both iterate every organization by default and accept `--org-id <id>` to scope to one org. Both accept `--dry-run` to preview without writing.
+
+Run inside the `django_app` container:
+
+```bash
+docker exec django_app python manage.py <command> [flags]
+```
+
+### `backfill_storage_files` — S3 → DB
+
+Walks the backend for every org, upserts a `StorageFile` row per key. Additive only: inserts missing rows, updates `name` on existing rows, never deletes. Safe to re-run (idempotent).
+
+Use when:
+- Bootstrapping the mirror for files that pre-date the sync layer
+- Recovering from a bug that dropped `StorageFile` rows
+- After a backend migration that seeded files outside the app
+
+```bash
+docker exec django_app python manage.py backfill_storage_files --dry-run
+docker exec django_app python manage.py backfill_storage_files
+docker exec django_app python manage.py backfill_storage_files --org-id 1
+```
+
+Dry-run output:
+```
+[org=1] dry-run: 142813 keys found
+[org=2] dry-run: 37 keys found
+```
+
+Live run logs progress per 1000-row batch: `[org=1] upserted 12000/142813`.
+
+### `prune_storage_files` — DB → S3
+
+Deletes `StorageFile` rows whose corresponding backend key no longer exists (orphans). Complements `backfill`: backfill fixes "DB missing rows"; prune fixes "DB has orphan rows".
+
+Cascading: deleting a `StorageFile` row also removes linked `GraphStorageFile` and `SessionStorageFile` entries via FK `CASCADE`. Always run with `--dry-run` first on production.
+
+Use when:
+- Files were deleted directly in S3/MinIO (bypassing the API)
+- Recovering from a missed sync hook
+- After a backend migration that removed objects
+
+```bash
+docker exec django_app python manage.py prune_storage_files --dry-run
+docker exec django_app python manage.py prune_storage_files
+docker exec django_app python manage.py prune_storage_files --org-id 1
+```
+
+Dry-run output:
+```
+[org=1] 142813 keys in S3, 142850 rows in DB, 37 orphans to prune
+```
+
+Memory: the command loads all S3 keys per org into a `set` (~20 MB at 200k keys) and streams DB rows via `.iterator()`, so it's safe at 140k+ scale.
+
 ---
 
 ## Graph and Session File Tracking
@@ -197,6 +258,8 @@ Base path: `/api/storage/`
 | Method | Path | Description | Parameters |
 |--------|------|-------------|------------|
 | GET | `/list/` | List files and folders | `path` (query) |
+| GET | `/tree/` | Recursive folder tree (one nested JSON response, up to 50 000 entries) | `path`, `max_depth` (query) |
+| GET | `/search/` | Substring search on filename (DB-backed) | `q`, `path`, `limit`, `offset` (query) |
 | GET | `/info/` | File/folder metadata + linked graphs | `path` (query) |
 | GET | `/download/` | Download a file | `path` (query) |
 | POST | `/upload/` | Upload files (multipart) | `path` (form), `files` (multipart) |

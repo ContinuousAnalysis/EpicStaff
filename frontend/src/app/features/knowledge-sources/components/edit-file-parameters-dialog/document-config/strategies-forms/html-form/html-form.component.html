@@ -1,13 +1,15 @@
 <form [formGroup]="strategyForm">
-    <div class="config__grid config__grid--pt-0" formGroupName="mainParams">
+    <div
+        class="config__grid config__grid--pt-0"
+        formGroupName="mainParams"
+    >
         <div class="config__grid-item">
             <label>Chunk Size</label>
-            <app-svg-icon
-                icon="help"
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="The maximum size of each document chunk. Smaller chunks are more precise but may lose context. Larger chunks preserve more context but may be less precise."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
+                text="The maximum size of each document chunk. Smaller chunks are more precise but may lose context. Larger chunks preserve more context but may be less precise."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
         </div>
         <div class="config__grid-item config__grid-item--short">
@@ -21,12 +23,11 @@
 
         <div class="config__grid-item">
             <label>Chunk Overlap</label>
-            <app-svg-icon
-                icon="help"
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="The number of characters or tokens that overlap between chunks. Helps maintain context between chunks. Must be smaller than chunk size."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
+                text="The number of characters or tokens that overlap between chunks. Helps maintain context between chunks. Must be smaller than chunk size."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
         </div>
         <div class="config__grid-item config__grid-item--short">
@@ -41,18 +42,20 @@
 
     <span class="config__divider"></span>
 
-    <div class="config__grid" formGroupName="additionalParams">
+    <div
+        class="config__grid"
+        formGroupName="additionalParams"
+    >
         <span class="config__grid-item">Additional parameters</span>
         <span class="config__grid-item"></span>
 
         <div class="config__grid-item">
             <label>Preserve Links</label>
-            <app-svg-icon
-                icon="help"
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="Keeps hyperlinks in the extracted content instead of removing them. Useful when link references provide important context."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
+                text="Keeps hyperlinks in the extracted content instead of removing them. Useful when link references provide important context."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
         </div>
         <div class="config__grid-item">
@@ -60,12 +63,11 @@
         </div>
         <div class="config__grid-item">
             <label>Normalize Text</label>
-            <app-svg-icon
-                icon="help"
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="Cleans and standardizes extracted text by removing extra whitespace, formatting inconsistencies, and HTML artifacts."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
+                text="Cleans and standardizes extracted text by removing extra whitespace, formatting inconsistencies, and HTML artifacts."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
         </div>
         <div class="config__grid-item">
@@ -73,12 +75,11 @@
         </div>
         <div class="config__grid-item">
             <label>External Metadata</label>
-            <app-svg-icon
-                icon="help"
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="Additional metadata provided as a JSON object. This metadata will be attached to each generated chunk."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
+                text="Additional metadata provided as a JSON object. This metadata will be attached to each generated chunk."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
         </div>
         <div class="config__grid-item">
@@ -95,12 +96,11 @@
 
         <div class="config__grid-item">
             <label>Denylist Tags</label>
-            <app-svg-icon
-                icon="help"
+            <app-help-tooltip
                 class="config__tooltip"
-                matTooltip="A list of HTML tags to exclude from processing (e.g., script, style). Content inside these tags will be removed before chunking."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
+                text="A list of HTML tags to exclude from processing (e.g., script, style). Content inside these tags will be removed before chunking."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
         </div>
         <div class="config__grid-item">

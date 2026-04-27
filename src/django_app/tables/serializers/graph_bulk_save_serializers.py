@@ -3,6 +3,7 @@ from rest_framework import serializers
 from tables.serializers.model_serializers import (
     AudioTranscriptionNodeSerializer,
     ClassificationDecisionTableNodeSerializer,
+    CodeAgentNodeSerializer,
     ConditionalEdgeSerializer,
     CrewNodeSerializer,
     DecisionTableNodeSerializer,
@@ -36,6 +37,10 @@ class BulkSaveEntityMixin:
             required=False, allow_null=True, default=None
         )
         return fields
+
+
+class CodeAgentNodeBulkSerializer(BulkSaveEntityMixin, CodeAgentNodeSerializer):
+    pass
 
 
 class CrewNodeBulkSerializer(BulkSaveEntityMixin, CrewNodeSerializer):

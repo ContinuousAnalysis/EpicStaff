@@ -14,6 +14,7 @@ from tables.services.storage_service.dataclasses import (
     FileListItem,
     FileUploadResult,
     FolderInfo,
+    TreeNode,
     UploadFileResult,
     UploadResult,
 )
@@ -266,6 +267,51 @@ class StorageManager:
         relative_path = self._strip_org_prefix(org_id, result.path)
         StorageFileSync.on_upload(org_id, relative_path)
         return FileUploadResult(type="file", path=relative_path, size=result.size)
+
+    @check_permission
+    def list_tree(
+        self,
+        user_name: str,
+        org_id: int,
+        prefix: str = "",
+        max_depth: int | None = None,
+        max_entries: int = 50_000,
+    ) -> tuple[TreeNode, bool]:
+        root, truncated = self._backend.list_tree(
+            self._build_storage_key(org_id, prefix), max_depth, max_entries
+        )
+        return self._strip_tree_org_prefix(org_id, root), truncated
+
+    def _strip_tree_org_prefix(self, org_id: int, node: TreeNode) -> TreeNode:
+        stripped_path = self._strip_org_prefix(org_id, node.path)
+        children = (
+            None
+            if node.children is None
+            else [self._strip_tree_org_prefix(org_id, child) for child in node.children]
+        )
+        return dataclasses.replace(node, path=stripped_path, children=children)
+
+    @check_permission
+    def search(
+        self,
+        user_name: str,
+        org_id: int,
+        q: str,
+        path: str = "",
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[dict], int]:
+        """Substring search on filename within an org."""
+        from tables.models import StorageFile
+
+        qs = StorageFile.objects.filter(org_id=org_id, name__icontains=q)
+
+        if path:
+            qs = qs.filter(path__startswith=path.rstrip("/") + "/")
+
+        total = qs.count()
+        rows = list(qs.order_by("path").values("path", "name")[offset : offset + limit])
+        return rows, total
 
     # --- Cross-org operations ---
 

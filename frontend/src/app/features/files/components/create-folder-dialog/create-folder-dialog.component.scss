@@ -4,7 +4,6 @@
     background-color: var(--color-background-body);
     border-radius: 0.75rem;
     width: calc(100vw - 36px);
-    max-width: 1200px;
     height: calc(100vh - 40px);
     overflow: hidden;
 
@@ -190,9 +189,11 @@
             align-items: center;
             gap: 1rem;
 
-            .create-folder-dialog__label {
+            .create-folder-dialog__label,
+            .create-folder-dialog__label-group {
                 flex-shrink: 0;
                 white-space: nowrap;
+                min-width: 130px;
             }
 
             .create-folder-dialog__input,
@@ -208,6 +209,24 @@
         color: var(--color-text-primary);
     }
 
+    &__label-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    &__tooltip-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+        color: var(--accent-color);
+
+        &:hover {
+            opacity: 0.7;
+        }
+    }
+
     &__count {
         color: rgba(104, 95, 255, 1);
         font-weight: 400;
@@ -220,11 +239,13 @@
         justify-content: space-between;
         padding: 0 0.75rem;
         height: 40px;
+        min-width: 0;
+        overflow: hidden;
         background-color: var(--color-input-background);
         border: 1px solid var(--color-divider-regular);
         border-radius: 0.375rem;
         cursor: pointer;
-        flex-shrink: 0;
+        flex-shrink: 1;
         transition: border-color 0.15s ease;
 
         &:hover,
@@ -239,6 +260,8 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        min-width: 0;
+        flex: 1;
 
         .create-folder-dialog__selector--filled & {
             color: var(--color-text-primary);
@@ -305,6 +328,7 @@
         display: flex;
         flex-direction: column;
         overflow-y: auto;
+        overflow-x: auto;
         min-height: 60px;
         padding: 0.25rem;
     }
@@ -327,6 +351,7 @@
         border-radius: 4px;
         cursor: pointer;
         flex-shrink: 0;
+        min-width: max-content;
 
         &:hover:not(&--selected) {
             background-color: rgba(217, 217, 222, 0.04);
@@ -373,10 +398,7 @@
     &__node-name {
         font-size: 0.875rem;
         color: var(--color-text-primary);
-        flex: 1;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
     &__node-spinner {

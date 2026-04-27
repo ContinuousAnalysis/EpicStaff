@@ -89,7 +89,9 @@ export class FlowFilesButtonComponent implements OnInit {
         const query = this.searchQuery().toLowerCase().trim();
         const all = this.allNodes();
         if (query) {
-            return all.filter((n) => n.name.toLowerCase().includes(query));
+            const filtered = all.filter((n) => n.name.toLowerCase().includes(query));
+            const minLevel = filtered.reduce((min, n) => Math.min(min, n.level), Infinity);
+            return filtered.map((n) => ({ ...n, level: n.level - minLevel }));
         }
         return this.buildVisible(this.rootNodes());
     });
@@ -338,7 +340,7 @@ export class FlowFilesButtonComponent implements OnInit {
                         parent.children = nodes;
                         parent.isLoaded = true;
                         parent.isLoading = false;
-                        parent.hasChildren = nodes.some((n) => n.type === 'folder');
+                        parent.hasChildren = nodes.length > 0;
                     } else {
                         this.rootNodes.set(nodes);
                         this.isLoadingRoot.set(false);

@@ -1,8 +1,15 @@
 <div class="copy-to-dialog">
     <div class="copy-to-dialog__header">
         <h2 class="copy-to-dialog__title">Copy to Folder</h2>
-        <button class="copy-to-dialog__close" aria-label="Close" (click)="onCancel()">
-            <app-svg-icon icon="x" size="1rem"></app-svg-icon>
+        <button
+            class="copy-to-dialog__close"
+            aria-label="Close"
+            (click)="onCancel()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="1rem"
+            ></app-svg-icon>
         </button>
     </div>
 
@@ -10,6 +17,7 @@
         <div class="copy-to-dialog__field">
             <label class="copy-to-dialog__label">Folder <span class="copy-to-dialog__required">*</span></label>
             <div
+                #selectorEl
                 class="copy-to-dialog__selector"
                 [class.copy-to-dialog__selector--filled]="selectedPath() !== null"
                 [class.copy-to-dialog__selector--open]="dropdownOpen()"
@@ -27,9 +35,17 @@
             </div>
 
             @if (dropdownOpen()) {
-                <div class="copy-to-dialog__dropdown" (click)="stopPropagation($event)">
+                <div
+                    class="copy-to-dialog__dropdown"
+                    [style.max-height.px]="dropdownMaxHeight()"
+                    (click)="stopPropagation($event)"
+                >
                     <div class="copy-to-dialog__search">
-                        <app-svg-icon icon="search" size="0.875rem" class="copy-to-dialog__search-icon"></app-svg-icon>
+                        <app-svg-icon
+                            icon="search"
+                            size="0.875rem"
+                            class="copy-to-dialog__search-icon"
+                        ></app-svg-icon>
                         <input
                             class="copy-to-dialog__search-input"
                             type="text"
@@ -52,7 +68,10 @@
                                 (click)="selectFolder('')"
                             >
                                 <span class="copy-to-dialog__chevron-btn copy-to-dialog__chevron-btn--open">
-                                    <app-svg-icon icon="expand" size="0.5rem"></app-svg-icon>
+                                    <app-svg-icon
+                                        icon="expand"
+                                        size="0.5rem"
+                                    ></app-svg-icon>
                                 </span>
                                 <span class="copy-to-dialog__node-name">/</span>
                             </div>
@@ -69,7 +88,10 @@
                                             [class.copy-to-dialog__chevron-btn--open]="node.isExpanded"
                                             (click)="toggleExpand($event, node)"
                                         >
-                                            <app-svg-icon icon="expand" size="0.5rem"></app-svg-icon>
+                                            <app-svg-icon
+                                                icon="expand"
+                                                size="0.5rem"
+                                            ></app-svg-icon>
                                         </button>
                                     } @else {
                                         <span class="copy-to-dialog__chevron-gap"></span>
@@ -90,8 +112,17 @@
     </div>
 
     <div class="copy-to-dialog__footer">
-        <button class="copy-to-dialog__btn copy-to-dialog__btn--cancel" (click)="onCancel()">Cancel</button>
-        <button class="copy-to-dialog__btn copy-to-dialog__btn--confirm" [disabled]="!isValid" (click)="onConfirm()">
+        <button
+            class="copy-to-dialog__btn copy-to-dialog__btn--cancel"
+            (click)="onCancel()"
+        >
+            Cancel
+        </button>
+        <button
+            class="copy-to-dialog__btn copy-to-dialog__btn--confirm"
+            [disabled]="!isValid"
+            (click)="onConfirm()"
+        >
             Copy
         </button>
     </div>

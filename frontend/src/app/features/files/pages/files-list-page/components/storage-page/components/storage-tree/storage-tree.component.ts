@@ -121,6 +121,7 @@ export class StorageTreeComponent {
     }
 
     selectItemExternally(item: StorageItem): void {
+        this.hoveredItemEl = null;
         this.setSelectedPaths(new Set([item.path]));
         this.selectedItem.set(item);
         this.selectionAnchorPath = item.path;
@@ -138,7 +139,10 @@ export class StorageTreeComponent {
         this.renamingFromPath = item.path || item.name;
         this.renameValue = item.name;
 
-        const itemEl = this.hoveredItemEl;
+        const path = item.path || item.name;
+        const itemEl =
+            this.hoveredItemEl ??
+            (this.listElRef?.nativeElement.querySelector(`[data-path="${CSS.escape(path)}"]`) as HTMLElement | null);
         const listEl = this.listElRef?.nativeElement;
         if (itemEl && listEl) {
             const itemRect = itemEl.getBoundingClientRect();

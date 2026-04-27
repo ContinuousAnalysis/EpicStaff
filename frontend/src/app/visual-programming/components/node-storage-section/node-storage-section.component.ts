@@ -27,7 +27,10 @@ const STORAGE_HEADER_COMMENT = `from epicstaff_storage import storage
         <div class="storage-section">
             <div class="storage-header">
                 <span class="section-label">Enable Storage</span>
-                <app-toggle-switch [ngModel]="enabled()" (ngModelChange)="onToggle($event)"></app-toggle-switch>
+                <app-toggle-switch
+                    [ngModel]="enabled()"
+                    (ngModelChange)="onToggle($event)"
+                ></app-toggle-switch>
             </div>
         </div>
     `,

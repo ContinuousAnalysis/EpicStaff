@@ -52,7 +52,7 @@
                 color: var(--color-text-secondary);
 
                 .required {
-                    color: var(--accent-color);
+                    color: var(--color-required-asterisk, var(--accent-color));
                     margin-left: 2px;
                 }
             }

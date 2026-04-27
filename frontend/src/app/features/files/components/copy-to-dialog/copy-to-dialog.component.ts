@@ -1,5 +1,15 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    ElementRef,
+    HostListener,
+    inject,
+    signal,
+    ViewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
@@ -39,11 +49,14 @@ export class CopyToDialogComponent {
     private storageApiService = inject(StorageApiService);
     private destroyRef = inject(DestroyRef);
 
+    @ViewChild('selectorEl') selectorElRef?: ElementRef<HTMLElement>;
+
     readonly searchQuery = signal('');
     readonly selectedPath = signal<string | null>(null);
     readonly rootNodes = signal<FolderNode[]>([]);
     readonly isLoadingRoot = signal(true);
     readonly dropdownOpen = signal(false);
+    readonly dropdownMaxHeight = signal(400);
 
     private readonly allNodes = signal<FolderNode[]>([]);
 
@@ -77,6 +90,11 @@ export class CopyToDialogComponent {
 
     toggleDropdown(event: MouseEvent): void {
         event.stopPropagation();
+        const opening = !this.dropdownOpen();
+        if (opening && this.selectorElRef) {
+            const rect = this.selectorElRef.nativeElement.getBoundingClientRect();
+            this.dropdownMaxHeight.set(Math.max(120, window.innerHeight - rect.bottom - 12));
+        }
         this.dropdownOpen.update((v) => !v);
     }
 

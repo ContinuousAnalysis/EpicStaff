@@ -12,6 +12,7 @@ from tables.models.base_models import (
     BaseGraphEntity,
     TimestampMixin,
     ContentHashMixin,
+    SoftDeleteMixin,
 )
 from tables.models.label_models import Label
 
@@ -658,12 +659,35 @@ class GraphNote(BaseGraphEntity, BaseGlobalNode):
     content = models.TextField()
 
 
+class GraphVersion(SoftDeleteMixin, models.Model):
+    graph = models.ForeignKey(
+        "Graph",
+        on_delete=models.CASCADE,
+        related_name="versions",
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    snapshot = models.JSONField(
+        help_text="Serialized graph state: nodes, edges, conditional edges, metadata."
+    )
+    dependencies = models.JSONField(
+        default=dict,
+        help_text="Lightweight manifest of external dependency IDs referenced at snapshot time.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        
 class StorageFile(models.Model):
     org = models.ForeignKey(
         "Organization", on_delete=models.CASCADE, related_name="storage_files"
     )
     path = models.CharField(
-        max_length=2048, help_text="Org-relative path, never starts with '/'"
+        max_length=1000, help_text="Org-relative path, never starts with '/'"
+    )
+    name = models.CharField(
+        max_length=255, help_text="Last path segment, denormalized for search"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

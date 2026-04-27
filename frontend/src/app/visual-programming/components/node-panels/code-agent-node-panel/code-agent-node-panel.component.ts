@@ -40,9 +40,15 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
     template: `
         <div class="panel-container">
             <div class="panel-content">
-                <form [formGroup]="form" class="form-container">
+                <form
+                    [formGroup]="form"
+                    class="form-container"
+                >
                     @if (isExpanded()) {
-                        <div class="form-layout expanded" [class.code-editor-fullwidth]="isCodeEditorFullWidth()">
+                        <div
+                            class="form-layout expanded"
+                            [class.code-editor-fullwidth]="isCodeEditorFullWidth()"
+                        >
                             @if (!isCodeEditorFullWidth()) {
                                 <div class="form-fields">
                                     <app-custom-input
@@ -136,14 +142,16 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                         </div>
                                     </div>
 
-                                    <div class="stream-config-section" formGroupName="stream_config">
+                                    <div
+                                        class="stream-config-section"
+                                        formGroupName="stream_config"
+                                    >
                                         <span class="section-label">Streaming to EpicChat</span>
                                         <div class="checkbox-list">
                                             <label class="checkbox-item">
                                                 <input
                                                     type="checkbox"
                                                     formControlName="reasoning"
-                                                    [style.accent-color]="activeColor"
                                                 />
                                                 <span>Reasoning</span>
                                             </label>
@@ -151,7 +159,6 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                                 <input
                                                     type="checkbox"
                                                     formControlName="tool_calls"
-                                                    [style.accent-color]="activeColor"
                                                 />
                                                 <span>Tool calls</span>
                                             </label>
@@ -159,7 +166,6 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                                 <input
                                                     type="checkbox"
                                                     formControlName="tool_results"
-                                                    [style.accent-color]="activeColor"
                                                 />
                                                 <span>Tool results</span>
                                             </label>
@@ -167,7 +173,6 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                                 <input
                                                     type="checkbox"
                                                     formControlName="final_reply"
-                                                    [style.accent-color]="activeColor"
                                                 />
                                                 <span>Final reply</span>
                                             </label>
@@ -192,7 +197,11 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                             }
 
                             <div class="editor-panel-wrapper">
-                                <button type="button" class="toggle-icon-button" (click)="toggleCodeEditorFullWidth()">
+                                <button
+                                    type="button"
+                                    class="toggle-icon-button"
+                                    (click)="toggleCodeEditorFullWidth()"
+                                >
                                     <svg
                                         width="9"
                                         height="22"
@@ -320,14 +329,16 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                 [activeColor]="activeColor"
                             ></app-custom-input>
 
-                            <div class="stream-config-section" formGroupName="stream_config">
+                            <div
+                                class="stream-config-section"
+                                formGroupName="stream_config"
+                            >
                                 <span class="section-label">Streaming to EpicChat</span>
                                 <div class="checkbox-list">
                                     <label class="checkbox-item">
                                         <input
                                             type="checkbox"
                                             formControlName="reasoning"
-                                            [style.accent-color]="activeColor"
                                         />
                                         <span>Reasoning</span>
                                     </label>
@@ -335,7 +346,6 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                         <input
                                             type="checkbox"
                                             formControlName="tool_calls"
-                                            [style.accent-color]="activeColor"
                                         />
                                         <span>Tool calls</span>
                                     </label>
@@ -343,7 +353,6 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                         <input
                                             type="checkbox"
                                             formControlName="tool_results"
-                                            [style.accent-color]="activeColor"
                                         />
                                         <span>Tool results</span>
                                     </label>
@@ -351,7 +360,6 @@ import { DEFAULT_OUTPUT_SCHEMA } from './default-output-schema';
                                         <input
                                             type="checkbox"
                                             formControlName="final_reply"
-                                            [style.accent-color]="activeColor"
                                         />
                                         <span>Final reply</span>
                                     </label>

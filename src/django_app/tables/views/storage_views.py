@@ -21,6 +21,8 @@ from tables.serializers.storage_serializers import (
     StoragePathQuerySerializer,
     StorageRemoveFromGraphSerializer,
     StorageRenameSerializer,
+    StorageSearchQuerySerializer,
+    StorageTreeQuerySerializer,
     StorageUploadSerializer,
 )
 from tables.services.storage_service import get_storage_manager
@@ -39,6 +41,8 @@ from tables.swagger_schemas.storage_schema import (
     STORAGE_MOVE_SWAGGER,
     STORAGE_REMOVE_FROM_GRAPH_SWAGGER,
     STORAGE_RENAME_SWAGGER,
+    STORAGE_SEARCH_SWAGGER,
+    STORAGE_TREE_SWAGGER,
     STORAGE_UPLOAD_SWAGGER,
 )
 
@@ -180,8 +184,13 @@ class StorageAPIView(ViewSet):
             )
         except FileNotFoundError:
             pass
+        except ValueError as e:
+            raise ValidationError({"detail": str(e)})
 
-        self.manager.mkdir(user_name, org_id, path)
+        try:
+            self.manager.mkdir(user_name, org_id, path)
+        except ValueError as e:
+            raise ValidationError({"detail": str(e)})
         return Response({"path": path, "created": True}, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=["delete"], url_path="delete")
@@ -319,6 +328,31 @@ class StorageAPIView(ViewSet):
         ).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(detail=False, methods=["get"], url_path="tree")
+    @swagger_auto_schema(**STORAGE_TREE_SWAGGER)
+    def tree(self, request):
+        user_name, org_id = self._resolve_context(request)
+        params = StorageTreeQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        prefix = params.validated_data["path"]
+        max_depth = params.validated_data.get("max_depth")
+
+        if prefix:
+            try:
+                info = self.manager.info(user_name, org_id, prefix)
+            except FileNotFoundError:
+                raise NotFound({"path": f"Path does not exist: {prefix}"})
+
+            if not isinstance(info, FolderInfo):
+                raise ValidationError({"path": "tree requires a folder path"})
+
+        root, truncated = self.manager.list_tree(
+            user_name, org_id, prefix, max_depth=max_depth
+        )
+        return Response(
+            {"path": prefix, "truncated": truncated, "tree": root.to_dict()}
+        )
+
     @action(detail=False, methods=["get"], url_path="graph-files")
     @swagger_auto_schema(**STORAGE_GRAPH_FILES_SWAGGER)
     def graph_files(self, request):
@@ -335,3 +369,26 @@ class StorageAPIView(ViewSet):
             .order_by("added_at")
         )
         return Response(GraphStorageFileSerializer(qs, many=True).data)
+
+    @action(detail=False, methods=["get"], url_path="search")
+    @swagger_auto_schema(**STORAGE_SEARCH_SWAGGER)
+    def search(self, request):
+        user_name, org_id = self._resolve_context(request)
+        params = StorageSearchQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        results, total = self.manager.search(
+            user_name,
+            org_id,
+            q=params.validated_data["q"],
+            path=params.validated_data["path"],
+            limit=params.validated_data["limit"],
+            offset=params.validated_data["offset"],
+        )
+        return Response(
+            {
+                "total": total,
+                "offset": params.validated_data["offset"],
+                "limit": params.validated_data["limit"],
+                "results": results,
+            }
+        )

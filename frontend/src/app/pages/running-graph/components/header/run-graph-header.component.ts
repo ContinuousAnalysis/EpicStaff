@@ -31,24 +31,47 @@ import { SessionFilesButtonComponent } from './session-files-button/session-file
     template: `
         <div class="header">
             <div class="breadcrumbs">
-                <div class="flows-prefix" routerLink="/flows">
-                    <app-svg-icon icon="arrow-left" size="20px" class="back-arrow" />
+                <div
+                    class="flows-prefix"
+                    routerLink="/flows"
+                >
+                    <app-svg-icon
+                        icon="arrow-left"
+                        size="20px"
+                        class="back-arrow"
+                    />
                     <span>Flows</span>
                 </div>
                 <span class="slash">/</span>
-                <span class="flow-name project-link" (click)="onFlowClick()">{{ graphName || '...' }}</span>
+                <span
+                    class="flow-name project-link"
+                    (click)="onFlowClick()"
+                    >{{ graphName || '...' }}</span
+                >
                 <span class="slash">/</span>
                 <app-status-badge [sessionStatus]="sessionStatus"></app-status-badge>
             </div>
             <div class="view-options"></div>
             <div class="actions">
                 @if (sessionId) {
-                    <app-session-files-button [sessionId]="sessionId"></app-session-files-button>
+                    <app-session-files-button
+                        [sessionId]="sessionId"
+                        [sessionStatus]="sessionStatus"
+                    ></app-session-files-button>
                 }
-                <button mat-button class="sessions-button" (click)="openSessionsDialog()" [disabled]="!graphData">
+                <button
+                    mat-button
+                    class="sessions-button"
+                    (click)="openSessionsDialog()"
+                    [disabled]="!graphData"
+                >
                     <span class="btn-label">Sessions</span>
                 </button>
-                <button mat-button class="memories-button" (click)="toggleMemoriesSidebar()">
+                <button
+                    mat-button
+                    class="memories-button"
+                    (click)="toggleMemoriesSidebar()"
+                >
                     <span class="btn-label">Memories</span>
                     <span
                         class="memories-badge"
@@ -78,7 +101,7 @@ import { SessionFilesButtonComponent } from './session-files-button/session-file
                 height: 5rem !important;
                 width: 100%;
                 min-width: 0;
-                overflow: hidden;
+                overflow: visible;
                 padding: 0 clamp(1rem, 4vw, 3rem);
                 border-bottom: 1px solid var(--color-divider-subtle);
 
@@ -163,7 +186,7 @@ import { SessionFilesButtonComponent } from './session-files-button/session-file
                     margin-left: auto;
                     flex: 0 1 auto;
                     max-width: 100%;
-                    overflow: hidden;
+                    overflow: visible;
                 }
 
                 app-session-files-button {

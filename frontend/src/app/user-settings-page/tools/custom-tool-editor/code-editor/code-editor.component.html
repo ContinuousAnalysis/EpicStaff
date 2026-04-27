@@ -3,17 +3,29 @@
 <div class="editor-header">
     <div class="left-section">
         <span class="editor-title">
-            <app-svg-icon icon="python" size="1.2rem" class="python-icon"></app-svg-icon>
+            <app-svg-icon
+                icon="python"
+                size="1.2rem"
+                class="python-icon"
+            ></app-svg-icon>
             Python3 <span class="entrypoint-main"> (entrypoint "main")</span>
         </span>
     </div>
     <div class="right-section">
-        <app-icon-button icon="copy" size="2rem" ariaLabel="Copy code" (onClick)="copyCode()"></app-icon-button>
+        <app-icon-button
+            icon="copy"
+            size="2rem"
+            ariaLabel="Copy code"
+            (onClick)="copyCode()"
+        ></app-icon-button>
     </div>
 </div>
 
 <!-- Editor Container -->
-<div class="editor-container" #editorContainer>
+<div
+    class="editor-container"
+    #editorContainer
+>
     <ngx-monaco-editor
         [options]="editorOptions"
         [ngModel]="pythonCode"
@@ -23,7 +35,10 @@
     ></ngx-monaco-editor>
 
     <!-- Loading Overlay -->
-    <div class="editor-loading-overlay" *ngIf="!editorLoaded">
+    <div
+        class="editor-loading-overlay"
+        *ngIf="!editorLoaded"
+    >
         <div class="spinner"></div>
         <span>Loading editor...</span>
     </div>
