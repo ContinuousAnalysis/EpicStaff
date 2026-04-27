@@ -98,6 +98,7 @@ class PythonNode(BaseNode):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
     stream_config = models.JSONField(default=dict, blank=True)
+    use_storage = models.BooleanField(default=False)
 
     def generate_hash(self):
         """
@@ -204,6 +205,7 @@ class CodeAgentNode(BaseNode):
     max_wait_s = models.IntegerField(default=300)
     stream_config = models.JSONField(default=dict, blank=True)
     output_schema = models.JSONField(default=dict, blank=True)
+    use_storage = models.BooleanField(default=False)
 
 
 class Edge(BaseGraphEntity, models.Model):
@@ -411,34 +413,6 @@ class Condition(ContentHashMixin, models.Model):
         ordering = ["order"]
 
 
-class GraphFile(models.Model):
-    graph = models.ForeignKey(
-        "Graph", on_delete=models.CASCADE, related_name="uploaded_files"
-    )
-    domain_key = models.CharField(
-        max_length=100, help_text="Key to access file from domain"
-    )
-    name = models.CharField(max_length=255, help_text="Original filename")
-    content_type = models.CharField(max_length=100, help_text="MIME type")
-    size = models.PositiveIntegerField(help_text="File size in bytes")
-    file = models.FileField(upload_to="uploads/")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["graph", "domain_key"], name="unique_file_key_per_graph"
-            )
-        ]
-
-    def delete(self, *args, **kwargs):
-        if self.file:
-            self.file.delete(save=False)
-
-        super().delete(*args, **kwargs)
-
-
 class Organization(models.Model):
     name = models.CharField(max_length=256, blank=False, unique=True)
 
@@ -611,3 +585,59 @@ class GraphVersion(SoftDeleteMixin, models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        
+class StorageFile(models.Model):
+    org = models.ForeignKey(
+        "Organization", on_delete=models.CASCADE, related_name="storage_files"
+    )
+    path = models.CharField(
+        max_length=1000, help_text="Org-relative path, never starts with '/'"
+    )
+    name = models.CharField(
+        max_length=255, help_text="Last path segment, denormalized for search"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["org", "path"], name="unique_storage_file_per_org"
+            )
+        ]
+        indexes = [models.Index(fields=["org", "path"])]
+
+
+class GraphStorageFile(models.Model):
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="storage_files"
+    )
+    storage_file = models.ForeignKey(
+        "StorageFile", on_delete=models.CASCADE, related_name="graph_storage_files"
+    )
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["graph", "storage_file"], name="unique_graph_storage_file"
+            )
+        ]
+
+
+class SessionStorageFile(models.Model):
+    session = models.ForeignKey(
+        "Session", on_delete=models.CASCADE, related_name="storage_files"
+    )
+    storage_file = models.ForeignKey(
+        "StorageFile", on_delete=models.CASCADE, related_name="session_storage_files"
+    )
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "storage_file"],
+                name="unique_session_storage_file",
+            )
+        ]
