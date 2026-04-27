@@ -61,7 +61,9 @@ export class LoginPageComponent implements OnInit {
         this.loading = true;
         this.serverError.set(null);
 
-        const { email, password, rememberMe } = this.form.getRawValue();
+        const email = this.form.getRawValue().email.toString();
+        const password = this.form.getRawValue().password.toString();
+        const rememberMe = this.form.getRawValue().rememberMe;
         this.authService
             .login(email, password, rememberMe)
             .pipe(takeUntilDestroyed(this.destroyRef))
