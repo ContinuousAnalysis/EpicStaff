@@ -7,6 +7,8 @@ Tests:
   3. test_multiple_agent_inputs     — multiple agent_input variables, all supplied by LLM
   4. test_mixed_uses_default        — mixed variable: agent doesn't set it, default_value used
   5. test_mixed_agent_override      — mixed variable: agent explicitly overrides the default
+  6. test_nested_object_variable    — agent_input of type object with nested properties
+  7. test_array_variable            — agent_input of type array with items schema
 """
 
 import json
@@ -599,6 +601,148 @@ def main(**kwargs):
             task_instructions=(
                 'Use the repeat tool to process the item "ping" exactly 7 times '
                 "(pass count=7 to the tool)."
+            ),
+            llm_config_id=config_id,
+        )
+        logger.success(f"Result: {result}")
+
+    finally:
+        for url in filter(None, [
+            f"{DJANGO_URL}/python-code-tool/{tool_id}/" if tool_id else None,
+            f"{DJANGO_URL}/llm-configs/{config_id}/" if config_id else None,
+        ]):
+            try:
+                s.delete(url)
+            except Exception as exc:
+                logger.warning(f"Cleanup failed for {url}: {exc}")
+
+
+def test_nested_object_variable():
+    """
+    agent_input variable of type "object" with nested properties.
+    Tool: person (object, required) with properties first_name + last_name (both strings).
+    LLM must call tool with {"first_name": "Alice", "last_name": "Smith"}.
+    Expected: session completes and tool returns "Alice Smith".
+    """
+    s = _make_session()
+    tool_id = config_id = None
+    try:
+        config_id = _get_llm_config_id(s)
+
+        code = """
+def main(**kwargs):
+    person = kwargs.get("person", {})
+    if isinstance(person, str):
+        import json
+        person = json.loads(person)
+    first = person.get("first_name", "")
+    last = person.get("last_name", "")
+    return f"{first} {last}"
+"""
+        tool_id = _j(
+            s.post(
+                f"{DJANGO_URL}/python-code-tool/",
+                json={
+                    "name": f"NestedObject_{uuid.uuid4().hex[:8]}",
+                    "description": (
+                        "Format a full name from a person object containing first_name and last_name. "
+                        "Call this tool when asked to format or display a person's full name."
+                    ),
+                    "python_code": {"code": code, "entrypoint": "main", "libraries": [], "global_kwargs": {}},
+                    "variables": [
+                        {
+                            "name": "person",
+                            "type": "object",
+                            "description": "Person object with first_name and last_name fields",
+                            "input_type": "agent_input",
+                            "required": True,
+                            "default_value": None,
+                            "properties": {
+                                "first_name": {"type": "string", "description": "First name"},
+                                "last_name": {"type": "string", "description": "Last name"},
+                            },
+                            "required_properties": ["first_name", "last_name"],
+                        },
+                    ],
+                },
+            )
+        )["id"]
+        logger.info(f"Created tool id={tool_id}")
+
+        result = _run_tool_session(
+            s,
+            tool_id=tool_id,
+            task_instructions=(
+                'Use the name formatting tool with person={"first_name": "Alice", "last_name": "Smith"} '
+                "to produce the full name."
+            ),
+            llm_config_id=config_id,
+        )
+        logger.success(f"Result: {result}")
+
+    finally:
+        for url in filter(None, [
+            f"{DJANGO_URL}/python-code-tool/{tool_id}/" if tool_id else None,
+            f"{DJANGO_URL}/llm-configs/{config_id}/" if config_id else None,
+        ]):
+            try:
+                s.delete(url)
+            except Exception as exc:
+                logger.warning(f"Cleanup failed for {url}: {exc}")
+
+
+def test_array_variable():
+    """
+    agent_input variable of type "array" with items schema (array of strings).
+    Tool: tags (array of strings, required).
+    LLM must call tool with ["python", "ai", "tools"].
+    Expected: session completes and tool returns "python, ai, tools".
+    """
+    s = _make_session()
+    tool_id = config_id = None
+    try:
+        config_id = _get_llm_config_id(s)
+
+        code = """
+def main(**kwargs):
+    tags = kwargs.get("tags", [])
+    if isinstance(tags, str):
+        import json
+        tags = json.loads(tags)
+    return ", ".join(str(t) for t in tags)
+"""
+        tool_id = _j(
+            s.post(
+                f"{DJANGO_URL}/python-code-tool/",
+                json={
+                    "name": f"ArrayTags_{uuid.uuid4().hex[:8]}",
+                    "description": (
+                        "Join a list of tags into a comma-separated string. "
+                        "Call this tool when asked to format or combine a list of tags."
+                    ),
+                    "python_code": {"code": code, "entrypoint": "main", "libraries": [], "global_kwargs": {}},
+                    "variables": [
+                        {
+                            "name": "tags",
+                            "type": "array",
+                            "description": "List of tag strings to join",
+                            "input_type": "agent_input",
+                            "required": True,
+                            "default_value": None,
+                            "items": {"type": "string"},
+                        },
+                    ],
+                },
+            )
+        )["id"]
+        logger.info(f"Created tool id={tool_id}")
+
+        result = _run_tool_session(
+            s,
+            tool_id=tool_id,
+            task_instructions=(
+                'Use the tag formatting tool with tags=["python", "ai", "tools"] '
+                "to produce a comma-separated string."
             ),
             llm_config_id=config_id,
         )
