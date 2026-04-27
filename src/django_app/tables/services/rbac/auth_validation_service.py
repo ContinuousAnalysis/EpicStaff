@@ -1,5 +1,6 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Optional
+from uuid import UUID
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -10,7 +11,7 @@ from tables.services.rbac.rbac_exceptions import FormValidationError
 
 
 REDACTED_FIELDS: frozenset[str] = frozenset(
-    {"password", "new_password", "refresh", "token", "access"}
+    {"password", "new_password", "current_password", "refresh", "token", "access"}
 )
 REDACTED_PLACEHOLDER = "***"
 NON_FIELD_KEY = "non_field_errors"
@@ -64,6 +65,59 @@ class AuthValidationService:
         # confirmation field) lands in one obvious place.
         return self.validate_first_setup(data)
 
+    def validate_password_reset_request(self, data: dict) -> dict:
+        email = data.get("email")
+
+        errors: list[FieldError] = []
+        errors.extend(self._validate_email_field(email))
+
+        self._raise_if_any(errors)
+        return {"email": email}
+
+    def validate_password_reset_confirm(self, data: dict) -> dict:
+        token = data.get("token")
+        new_password = data.get("new_password")
+
+        errors: list[FieldError] = []
+        errors.extend(self._validate_uuid_field("token", token))
+        errors.extend(
+            self._validate_password_field(new_password, field_name="new_password")
+        )
+
+        self._raise_if_any(errors)
+        return {"token": self._coerce_uuid(token), "new_password": new_password}
+
+    def validate_admin_password_reset(self, data: dict) -> dict:
+        user_id = data.get("user_id")
+        new_password = data.get("new_password")
+
+        errors: list[FieldError] = []
+        errors.extend(self._validate_positive_int_field("user_id", user_id))
+        errors.extend(
+            self._validate_password_field(new_password, field_name="new_password")
+        )
+
+        self._raise_if_any(errors)
+        return {"user_id": int(user_id), "new_password": new_password}
+
+    def validate_password_change(self, data: dict) -> dict:
+        current_password = data.get("current_password")
+        new_password = data.get("new_password")
+
+        errors: list[FieldError] = []
+        errors.extend(
+            self._require_nonblank_string("current_password", current_password)
+        )
+        errors.extend(
+            self._validate_password_field(new_password, field_name="new_password")
+        )
+
+        self._raise_if_any(errors)
+        return {
+            "current_password": current_password,
+            "new_password": new_password,
+        }
+
     def validate_login(self, data: dict) -> dict:
         email = data.get("email")
         password = data.get("password")
@@ -91,9 +145,12 @@ class AuthValidationService:
         return []
 
     def _validate_password_field(
-        self, value: Any, user_hints: Optional[dict] = None
+        self,
+        value: Any,
+        user_hints: Optional[dict] = None,
+        field_name: str = "password",
     ) -> list[FieldError]:
-        required = self._require_nonblank_string("password", value)
+        required = self._require_nonblank_string(field_name, value)
         if required:
             return required
         # `UserAttributeSimilarityValidator` only runs when `user=` is
@@ -105,10 +162,43 @@ class AuthValidationService:
             validate_password(value, user=user_stub)
         except DjangoValidationError as exc:
             return [
-                FieldError("password", self._echo("password", value), msg)
+                FieldError(field_name, self._echo(field_name, value), msg)
                 for msg in exc.messages
             ]
         return []
+
+    def _validate_uuid_field(self, field: str, value: Any) -> list[FieldError]:
+        required = self._require_nonblank_string(field, value)
+        if required:
+            return required
+        try:
+            UUID(str(value))
+        except (ValueError, AttributeError, TypeError):
+            return [
+                FieldError(field, self._echo(field, value), "Must be a valid UUID.")
+            ]
+        return []
+
+    def _validate_positive_int_field(self, field: str, value: Any) -> list[FieldError]:
+        if value is None or value == "":
+            return [
+                FieldError(field, self._echo(field, value), "This field is required.")
+            ]
+        try:
+            coerced = int(value)
+        except (TypeError, ValueError):
+            return [FieldError(field, self._echo(field, value), "Must be an integer.")]
+        if coerced <= 0:
+            return [
+                FieldError(
+                    field, self._echo(field, value), "Must be a positive integer."
+                )
+            ]
+        return []
+
+    @staticmethod
+    def _coerce_uuid(value: Any) -> UUID:
+        return UUID(str(value))
 
     # ---- primitives ----
 
