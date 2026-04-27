@@ -121,6 +121,11 @@ function buildCreatedNodeIdMap(
     );
     mapByNewIds(nodeDiff.endNodes.toCreate, responseGraph.end_node_list ?? [], existingIdsByType(NodeType.END));
     mapByNewIds(nodeDiff.noteNodes.toCreate, responseGraph.graph_note_list ?? [], existingIdsByType(NodeType.NOTE));
+    mapByNewIds(
+        nodeDiff.classificationDecisionTableNodes.toCreate,
+        responseGraph.classification_decision_table_node_list ?? [],
+        existingIdsByType(NodeType.CLASSIFICATION_TABLE)
+    );
 
     return mapping;
 }
