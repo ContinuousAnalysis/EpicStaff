@@ -69,8 +69,10 @@ export class SignUpPageComponent {
 
         this.state.set('loading');
 
-        const payload = this.form.getRawValue();
-        forkJoin([this.authService.runSetup(payload), timer(1000)]).subscribe({
+        const email = this.form.getRawValue().email.toString();
+        const password = this.form.getRawValue().password.toString();
+
+        forkJoin([this.authService.runSetup({ email, password }), timer(1000)]).subscribe({
             next: ([resp]) => {
                 this.authService.storeTokens({ access: resp.access, refresh: resp.refresh });
                 sessionStorage.setItem('needs_onboarding', 'true');
