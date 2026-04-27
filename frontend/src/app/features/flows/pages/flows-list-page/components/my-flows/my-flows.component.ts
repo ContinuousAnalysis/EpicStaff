@@ -21,7 +21,6 @@ import {
     ConfirmationResult,
 } from '../../../../../../shared/components/cofirm-dialog/confimation-dialog.service';
 import { LoadingSpinnerComponent } from '../../../../../../shared/components/loading-spinner/loading-spinner.component';
-import { GraphUpdateService } from '../../../../../../visual-programming/services/graph/save-graph.service';
 import { FlowCardAction, FlowCardComponent } from '../../../../components/flow-card/flow-card.component';
 import { FlowRenameDialogComponent } from '../../../../components/flow-rename-dialog/flow-rename-dialog.component';
 import { FlowSessionsListComponent } from '../../../../components/flow-sessions-dialog/flow-sessions-list.component';
@@ -41,7 +40,6 @@ import { RunGraphService } from '../../../../services/run-graph-session.service'
 })
 export class MyFlowsComponent {
     private readonly flowsService = inject(FlowsStorageService);
-    private readonly graphUpdateService = inject(GraphUpdateService);
     private readonly flowsApiService = inject(FlowsApiService);
     private readonly runGraphService = inject(RunGraphService);
     private readonly router = inject(Router);
@@ -82,7 +80,7 @@ export class MyFlowsComponent {
             .slice(0, max);
     });
 
-    constructor() {
+    constructor(private flowApiService: FlowsApiService) {
         effect(() => {
             const filter = this.labelsStorage.activeLabelFilter();
             this.flowsService.getFlows(true, filter).subscribe({
@@ -145,10 +143,18 @@ export class MyFlowsComponent {
                 break;
 
             case 'viewSessions':
-                this.dialog.open(FlowSessionsListComponent, {
-                    data: { flow },
-                    panelClass: 'custom-dialog-panel',
+                this.flowApiService.getGraphById(event.flow.id, false).subscribe({
+                    next: (graph) => {
+                        this.dialog.open(FlowSessionsListComponent, {
+                            data: { flow: graph },
+                            panelClass: 'custom-dialog-panel',
+                        });
+                    },
+                    error: () => {
+                        this.toastService.error('Failed to load graph');
+                    },
                 });
+
                 break;
 
             case 'rename':
@@ -208,17 +214,6 @@ export class MyFlowsComponent {
             this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe();
         });
     }
-    private saving(flowState: GraphDto['metadata'], graph: GraphDto): void {
-        this.graphUpdateService.saveGraph(flowState, graph).subscribe({
-            next: (result) => {
-                this.toastService.success(`Flow copied and saved as "${result.graph.name}"`);
-            },
-            error: (err) => {
-                this.toastService.error('Failed to save graph for copied flow');
-                console.error('Save graph error', err);
-            },
-        });
-    }
 
     private openCopyDialog(flow: GetGraphLightRequest): void {
         const dialogRef = this.dialog.open<string>(FlowRenameDialogComponent, {
@@ -229,7 +224,8 @@ export class MyFlowsComponent {
             if (newName && newName.trim().length > 0) {
                 this.flowsService.copyFlow(flow.id, newName.trim()).subscribe({
                     next: (graph) => {
-                        this.saving(graph.metadata, graph);
+                        this.toastService.success(`Flow copied and saved as "${graph.name}"`);
+                        this.flowsService.getFlows(true, this.labelsStorage.activeLabelFilter()).subscribe();
                     },
                     error: (err) => {
                         this.toastService.error('Failed to copy flow');

@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--color-ks-line, #2c2c2e);
+    background: var(--color-background-body);
     width: 489px;
     min-width: 489px;
     flex-shrink: 0;
@@ -13,7 +13,7 @@
     align-items: center;
     gap: 4px;
     padding: 8px 16px;
-    border-bottom: 1px solid #3d3d3e;
+    border-bottom: 1px solid var(--color-divider-subtle);
     flex-shrink: 0;
     min-height: 48px;
     gap: 10px;

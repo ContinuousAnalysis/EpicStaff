@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-    ChipsInputComponent,
+    ChipsSelectComponent,
     InputNumberComponent,
     SelectItem,
     ToggleSwitchComponent,
@@ -9,7 +9,7 @@ import {
 } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 
-import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { HelpTooltipComponent } from '../../../../../../../shared/components/help-tooltip/help-tooltip.component';
 import { MarkdownStrategyModel } from '../../../../../models/strategy.model';
 import { StrategyForm } from '../strategy-config-form.abstract';
 
@@ -19,8 +19,8 @@ import { StrategyForm } from '../strategy-config-form.abstract';
     styleUrls: ['../../document-config.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        ChipsInputComponent,
-        AppSvgIconComponent,
+        HelpTooltipComponent,
+        ChipsSelectComponent,
         ToggleSwitchComponent,
         MATERIAL_FORMS,
         InputNumberComponent,

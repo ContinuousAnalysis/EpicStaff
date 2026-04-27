@@ -94,3 +94,7 @@ class BaseRealtimeAgentClient(IRealtimeAgentClient):
     async def call_tool(
         self, call_id: str, tool_name: str, tool_arguments: dict[str, Any]
     ) -> None: ...
+
+    async def replay_audio_buffer(self) -> None:
+        """No-op default — providers without a rolling buffer do nothing on reconnect."""
+        pass

@@ -41,6 +41,25 @@ class RealtimeAgentClientFactory:
         Construct and return the correct provider adapter.
         Returns a fully built but NOT yet connected client — caller must await connect().
         """
+        if config.rt_provider == "gemini":
+            from infrastructure.providers.gemini.gemini_realtime_agent_client import (
+                GeminiRealtimeAgentClient,
+            )
+
+            client = GeminiRealtimeAgentClient(
+                api_key=config.rt_api_key,
+                connection_key=config.connection_key,
+                on_server_event=on_server_event,
+                tool_manager_service=tool_manager_service,
+                rt_tools=rt_tools,
+                model=config.rt_model_name,
+                voice=config.voice,
+                instructions=instructions,
+                temperature=config.temperature or 1.0,
+            )
+            client.is_twilio = is_twilio
+            return client
+
         if config.rt_provider == "elevenlabs":
             llm_model = config.llm.config.model if config.llm else _DEFAULT_LLM
             client = ElevenLabsRealtimeAgentClient(

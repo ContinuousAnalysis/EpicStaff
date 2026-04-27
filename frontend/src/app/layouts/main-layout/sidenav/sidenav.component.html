@@ -1,15 +1,35 @@
 <nav class="sidenav">
     <div class="logo-container">
-        <div class="app-logo">
-            <img src="assets/icons/llm-providers-logos/logo.svg" alt="AI" class="logo-svg static-logo" />
-            <img src="assets/gifs/logo.gif" alt="AI" class="logo-svg gif-logo" />
-            <div class="logo-text">EpicStaff.ai</div>
-        </div>
+        <a
+            class="app-logo"
+            routerLink="/projects"
+            (mouseenter)="showLogoTooltip = true"
+            (mouseleave)="showLogoTooltip = false"
+        >
+            <img
+                src="assets/icons/llm-providers-logos/logo.svg"
+                alt="AI"
+                class="logo-svg static-logo"
+            />
+            <img
+                src="assets/gifs/logo.gif"
+                alt="AI"
+                class="logo-svg gif-logo"
+            />
+            <app-tooltip
+                text="EpicStaff.ai"
+                [visible]="showLogoTooltip"
+            ></app-tooltip>
+        </a>
     </div>
 
     <ul class="sidenav-nav main-nav">
         @for (item of topNavItems; track item.id) {
-            <li class="sidenav-nav-item" (mouseenter)="item.showTooltip = true" (mouseleave)="item.showTooltip = false">
+            <li
+                class="sidenav-nav-item"
+                (mouseenter)="item.showTooltip = true"
+                (mouseleave)="item.showTooltip = false"
+            >
                 <div class="tooltip-wrapper">
                     <a
                         class="sidenav-nav-link"
@@ -21,11 +41,17 @@
                     >
                         <div class="sidenav-link-icon">
                             @if (item.icon) {
-                                <app-svg-icon [icon]="item.icon" size="1.4rem" />
+                                <app-svg-icon
+                                    [icon]="item.icon"
+                                    size="1.4rem"
+                                />
                             }
                         </div>
                     </a>
-                    <app-tooltip [text]="item.label" [visible]="item.showTooltip"></app-tooltip>
+                    <app-tooltip
+                        [text]="item.label"
+                        [visible]="item.showTooltip"
+                    ></app-tooltip>
                 </div>
             </li>
         }
@@ -33,7 +59,11 @@
 
     <ul class="sidenav-nav bottom-nav">
         @for (item of bottomNavItems; track item.id) {
-            <li class="sidenav-nav-item" (mouseenter)="item.showTooltip = true" (mouseleave)="item.showTooltip = false">
+            <li
+                class="sidenav-nav-item"
+                (mouseenter)="item.showTooltip = true"
+                (mouseleave)="item.showTooltip = false"
+            >
                 <div class="tooltip-wrapper">
                     <a
                         class="sidenav-nav-link"
@@ -45,7 +75,10 @@
                     >
                         <div class="sidenav-link-icon">
                             @if (item.icon) {
-                                <app-svg-icon [icon]="item.icon" size="1.4rem" />
+                                <app-svg-icon
+                                    [icon]="item.icon"
+                                    size="1.4rem"
+                                />
                             }
                         </div>
                     </a>
@@ -69,6 +102,7 @@
             chat-icon-path=""
             message-timeout="180000"
             [apiBaseUrl]="apiBaseUrl"
+            [accessToken]="accessToken"
             [attr.chat-left]="epicChatService.isDocked() ? epicChatService.dockLeftPx() + 'px' : '68px'"
             [attr.chat-bottom]="epicChatService.isDocked() ? '0px' : '10px'"
             [attr.chat-top]="epicChatService.isDocked() ? '0px' : null"

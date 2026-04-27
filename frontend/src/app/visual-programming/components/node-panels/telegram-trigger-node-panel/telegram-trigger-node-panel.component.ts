@@ -31,6 +31,7 @@ import {
 import { WebhookStatus } from '../../../../pages/flows-page/components/flow-visual-programming/models/webhook.model';
 import { ToastService } from '../../../../services/notifications';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
 import { TELEGRAM_TRIGGER_FIELDS } from '../../../core/constants/telegram-trigger-fields';
 import { TelegramTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
@@ -45,6 +46,7 @@ import { WEBHOOK_NAME_PATTERN } from '../webhook-trigger-node-panel/webhook-trig
         CustomInputComponent,
         ReactiveFormsModule,
         ButtonComponent,
+        HelpTooltipComponent,
         AppSvgIconComponent,
         MATERIAL_FORMS,
         JsonEditorComponent,
@@ -56,7 +58,7 @@ export class TelegramTriggerNodePanelComponent
     extends BaseSidePanel<TelegramTriggerNodeModel>
     implements OnInit, OnChanges
 {
-    public readonly isExpanded = input<boolean>(false);
+    public override readonly isExpanded = input<boolean>(false);
 
     private dialog = inject(Dialog);
     private destroyRef = inject(DestroyRef);

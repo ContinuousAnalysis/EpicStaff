@@ -20,7 +20,6 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { AppSvgIconComponent } from '../shared/components/app-svg-icon/app-svg-icon.component';
 import { EMPTY, filter, forkJoin, from, Observable, of, Subscription } from 'rxjs';
 import { catchError, concatMap, finalize, map, switchMap, tap, toArray } from 'rxjs/operators';
 
@@ -32,6 +31,7 @@ import { FullAgent, FullAgentService } from '../features/staff/services/full-age
 import { AgentsService } from '../features/staff/services/staff.service';
 import { TasksService } from '../features/tasks/services/tasks.service';
 import { ToastService } from '../services/notifications/toast.service';
+import { AppSvgIconComponent } from '../shared/components/app-svg-icon/app-svg-icon.component';
 import { CreateAgentFormComponent } from '../shared/components/create-agent-form-dialog/create-agent-form-dialog.component';
 import { SpinnerComponent } from '../shared/components/spinner/spinner.component';
 import { UnsavedChangesDialogService } from '../shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
@@ -247,20 +247,21 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         const loadStartTime = Date.now();
         this.isLoading.set(true);
 
-        const projectRequest = this.projectsService.getProjectById(+this.projectId);
-
-        const tasksRequest = this.fullTaskService.getFullTasksByProject(+this.projectId);
-        const agentsRequest = this.fullAgentService.getFullAgentsByProject(+this.projectId);
-
-        const combinedRequest = forkJoin({
-            project: projectRequest,
-            tasks: tasksRequest,
-            agents: agentsRequest,
-        });
-
         this.subscription.add(
-            combinedRequest
+            this.projectsService
+                .getProjectById(+this.projectId)
                 .pipe(
+                    switchMap((project) => {
+                        if (!project) {
+                            throw new Error(
+                                `Project with ID ${this.projectId} not found or essential data is missing.`
+                            );
+                        }
+                        return forkJoin({
+                            tasks: this.fullTaskService.getFullTasksByProject(+this.projectId),
+                            agents: this.fullAgentService.getFullAgentsByProject(+this.projectId),
+                        }).pipe(map(({ tasks, agents }) => ({ project, tasks, agents })));
+                    }),
                     finalize(() => {
                         // Ensure minimum loading time of 500ms
                         const loadTime = Date.now() - loadStartTime;
@@ -277,13 +278,7 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
                 )
                 .subscribe({
                     next: ({ project, tasks, agents }) => {
-                        this.projectStateService.setProject(project ?? null);
-
-                        if (!project) {
-                            throw new Error(
-                                `Project with ID ${this.projectId} not found or essential data is missing.`
-                            );
-                        }
+                        this.projectStateService.setProject(project);
                         this.project = project;
 
                         this.projectStateService.updateTasks(tasks);
@@ -295,9 +290,7 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
 
                         this.cdr.markForCheck();
                     },
-                    error: (err) => {
-                        console.error('loadData - Failed to fetch project data', err);
-                        console.error('Error details:', err.message, err.status);
+                    error: () => {
                         this.toastService.error('Failed to load project data');
                         this.isLoading.set(false);
                         this.cdr.markForCheck();
@@ -324,8 +317,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
         event.stopPropagation();
 
         if (sectionId === 'agents') {
-            console.log('Add agent clicked');
-
             const dialogRef = this.dialog.open<{ kind: 'create' | 'update'; payload: CreateAgentRequest }>(
                 CreateAgentFormComponent,
                 {
@@ -354,7 +345,6 @@ export class OpenProjectPageComponent implements OnInit, OnDestroy, CanComponent
                 )
                 .subscribe();
         } else if (sectionId === 'tasks') {
-            console.log('Add task clicked');
         }
     }
 

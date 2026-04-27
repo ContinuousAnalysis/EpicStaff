@@ -5,6 +5,7 @@
     justify-content: space-between;
     gap: 12px;
     flex-shrink: 0;
+    min-height: 40px;
 
     .search-section {
         flex: 1;
@@ -28,7 +29,8 @@
 
 .sessions-table-wrapper {
     flex: 1 1 auto;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     border: 1px solid var(--color-divider-regular);
     background: var(--color-nodes-actionbar-bg);
     min-height: 300px;
@@ -36,6 +38,7 @@
 
 table {
     width: 100%;
+    min-width: 1200px;
     border-collapse: collapse;
     margin-bottom: 0;
     table-layout: fixed;
@@ -91,7 +94,8 @@ table {
         padding: 12px 8px;
     }
 
-    td[colspan='7'] {
+    td[colspan='7'],
+    td[colspan='8'] {
         border-bottom: none;
     }
 
@@ -124,7 +128,8 @@ table {
         display: table-row;
     }
 
-    td[colspan='7'] {
+    td[colspan='7'],
+    td[colspan='8'] {
         padding: 40px;
         vertical-align: middle;
     }
@@ -133,6 +138,30 @@ table {
         background-color: var(--color-sidenav-background);
         color: var(--color-text-primary);
         font-weight: 600;
+
+        &.sortable {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+
+            &:hover {
+                color: var(--accent-color);
+            }
+
+            .sort-icon {
+                margin-left: 4px;
+                font-size: 0.85em;
+                opacity: 0.8;
+                position: relative;
+                top: -2px;
+            }
+        }
+    }
+
+    .flow-link-td {
+        .flow-link {
+            cursor: pointer;
+        }
     }
 
     td {
@@ -145,7 +174,7 @@ table {
         min-width: 160px;
         flex-shrink: 0;
         flex-wrap: nowrap;
-        justify-content: flex-start;
+        justify-content: flex-end;
     }
 }
 
@@ -256,4 +285,39 @@ table {
         color: var(--color-text-secondary);
         font-size: 0.9em;
     }
+}
+
+.arrow-icon {
+    cursor: pointer;
+    margin-left: 0;
+}
+
+app-icon-button {
+    margin-left: 10px;
+}
+
+tr.row-expanded td {
+    border-bottom: none;
+}
+
+tr.preview-row td.preview-cell {
+    padding: 0;
+    border-top: none;
+}
+
+.preview-content {
+    app-graph-messages {
+        --message-padding: 0.5rem 1rem;
+    }
+
+    max-height: 500px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-color, #2a2a3a);
+    background: rgba(0, 0, 0, 0.32);
+    padding: 0;
+}
+
+.view-btn--active {
+    background-color: transparent;
+    border: 1px solid rgba(104, 95, 255, 1);
 }

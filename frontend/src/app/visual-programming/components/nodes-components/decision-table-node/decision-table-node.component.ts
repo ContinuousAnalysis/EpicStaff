@@ -6,6 +6,7 @@ import { FFlowModule } from '@foblex/flow';
 import { ClickOrDragDirective } from '../../../core/directives/click-or-drag.directive';
 import { ConditionGroup } from '../../../core/models/decision-table.model';
 import { DecisionTableNodeModel } from '../../../core/models/node.model';
+import { CustomPortId } from '../../../core/models/port.model';
 import { FlowService } from '../../../services/flow.service';
 @Component({
     selector: 'app-decision-table-node',
@@ -20,6 +21,10 @@ export class DecisionTableNodeComponent {
     @Output() actualClick = new EventEmitter<MouseEvent>();
 
     private flowService = inject(FlowService);
+
+    public getPortConnections(portId: CustomPortId): CustomPortId[] {
+        return this.flowService.portConnectionsMap()[portId] ?? ['__none__'];
+    }
 
     get conditionGroups(): ConditionGroup[] {
         const allGroups = this.node.data.table?.condition_groups ?? [];

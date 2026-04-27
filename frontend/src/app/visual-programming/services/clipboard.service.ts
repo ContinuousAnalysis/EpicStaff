@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { FSelectionChangeEvent } from '@foblex/flow';
+import { ICurrentSelection } from '@foblex/flow';
 import { v4 as uuidv4 } from 'uuid';
 
 import { NodeType } from '../core/enums/node-type';
 import { generateMultipleNodeDisplayNames } from '../core/helpers/generate-node-display-name.util';
-import { generatePortsForNode, getPortsForType, parsePortId } from '../core/helpers/helpers';
+import { generatePortsForNode, parsePortId } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
 import { NodeModel } from '../core/models/node.model';
 import { CustomPortId, ViewPort } from '../core/models/port.model';
@@ -32,7 +32,7 @@ export class ClipboardService {
         return this.clipboard;
     }
 
-    public copy(selection: FSelectionChangeEvent): void {
+    public copy(selection: ICurrentSelection): void {
         if (!selection || selection.fNodeIds.length === 0) {
             return;
         }
@@ -108,7 +108,7 @@ export class ClipboardService {
             const newNodeId = uuidv4();
             oldToNewIdMap.set(oldNode.id, newNodeId);
 
-            const newPorts: ViewPort[] = generatePortsForNode(newNodeId, oldNode.type);
+            const newPorts: ViewPort[] = generatePortsForNode(newNodeId, oldNode.type, oldNode.data);
 
             return {
                 ...oldNode,

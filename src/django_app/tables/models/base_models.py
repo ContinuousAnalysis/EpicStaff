@@ -75,17 +75,23 @@ class DefaultBaseModel(models.Model):
     Singleton base model for models that intended to be defaults
     """
 
+    _load_cache: dict = {}
+
     class Meta:
         abstract = True
 
     def save(self, *args, **kwargs):
         self.pk = 1
+        # Invalidate cache on save
+        DefaultBaseModel._load_cache.pop(self.__class__, None)
         super(DefaultBaseModel, self).save(*args, **kwargs)
 
     @classmethod
     def load(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
+        if cls not in DefaultBaseModel._load_cache:
+            obj, _ = cls.objects.get_or_create(pk=1)
+            DefaultBaseModel._load_cache[cls] = obj
+        return DefaultBaseModel._load_cache[cls]
 
 
 class MessageType(Enum):
@@ -117,6 +123,20 @@ class BaseSessionMessage(models.Model):
 
 class CrewSessionMessage(BaseSessionMessage):
     crew = models.ForeignKey("Crew", on_delete=models.SET_NULL, null=True, default=None)
+
+    class Meta:
+        abstract = True
+
+
+class SoftDeleteMixin(models.Model):
+    deleted_at = models.DateTimeField(
+        db_index=True,
+        null=True,
+        blank=True,
+        default=None,
+        editable=False,
+    )
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         abstract = True
