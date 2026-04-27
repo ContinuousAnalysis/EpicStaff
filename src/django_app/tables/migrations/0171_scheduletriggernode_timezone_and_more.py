@@ -31,6 +31,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterField(
             model_name="scheduletriggernode",
+            name="is_active",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AlterField(
+            model_name="scheduletriggernode",
             name="run_mode",
             field=models.CharField(
                 blank=True,

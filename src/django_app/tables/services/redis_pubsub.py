@@ -651,25 +651,10 @@ class RedisPubSub:
             )
 
     def _handle_schedule_deactivate(self, node_id: int):
-        """Flip is_active=False via .save() so post_save publishes node_update
-        back to Manager — keeping QuerySet.update() here would skip the signal
-        and leave Manager unaware via the standard update path.
-        """
         try:
-            from tables.models.graph_models import ScheduleTriggerNode
+            from tables.services.schedule_trigger_service import ScheduleTriggerService
 
             close_old_connections()
-            node = ScheduleTriggerNode.objects.filter(id=node_id).first()
-            if node is None:
-                logger.warning(
-                    f"[SchedulePubSub] Node {node_id} not found for deactivation"
-                )
-                return
-            if not node.is_active:
-                logger.info(f"[SchedulePubSub] Node {node_id} already inactive")
-                return
-            node.is_active = False
-            node.save(update_fields=["is_active", "updated_at"])
-            logger.info(f"[SchedulePubSub] Node {node_id} deactivated")
+            ScheduleTriggerService().deactivate_node(node_id)
         except Exception as e:
             logger.error(f"[SchedulePubSub] Error deactivating node {node_id}: {e}")
