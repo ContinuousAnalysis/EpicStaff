@@ -18,6 +18,7 @@ from src.crew.services.graph.nodes.code_agent_node import CodeAgentNode
 from src.crew.services.graph.nodes.llm_node import LLMNode
 from src.crew.services.graph.nodes.webhook_trigger_node import WebhookTriggerNode
 from src.crew.services.graph.nodes.telegram_trigger_node import TelegramTriggerNode
+from src.crew.services.graph.nodes.schedule_trigger_node import ScheduleTriggerNode
 from src.crew.services.graph.events import StopEvent
 from src.crew.services.graph.subgraphs.decision_table_node import (
     DecisionTableNodeSubgraph,
@@ -362,6 +363,15 @@ class SessionGraphBuilder:
                     node_name=telegram_trigger_node_data.node_name,
                     stop_event=self.stop_event,
                     field_list=telegram_trigger_node_data.field_list,
+                )
+            )
+
+        for schedule_trigger_node_data in schema.schedule_trigger_node_data_list:
+            self.add_node(
+                node=ScheduleTriggerNode(
+                    session_id=self.session_id,
+                    node_name=schedule_trigger_node_data.node_name,
+                    stop_event=self.stop_event,
                 )
             )
 

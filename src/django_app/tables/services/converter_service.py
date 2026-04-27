@@ -28,6 +28,7 @@ from src.shared.models import (
     PythonNodeData,
     RagSearchConfig,
     RealtimeAgentChatData,
+    ScheduleTriggerNodeData,
     SubGraphNodeData,
     TaskData,
     TelegramTriggerNodeData,
@@ -70,6 +71,7 @@ from tables.models.graph_models import (
     FileExtractorNode,
     Graph,
     PythonNode,
+    ScheduleTriggerNode,
     SubGraphNode,
     TelegramTriggerNode,
     WebhookTriggerNode,
@@ -758,6 +760,31 @@ class ConverterService(metaclass=SingletonMeta):
         return TelegramTriggerNodeData(
             node_name=resolver(telegram_trigger_node.id),
             field_list=field_data,
+        )
+
+    def convert_schedule_trigger_node_to_pydantic(
+        self,
+        schedule_trigger_node: ScheduleTriggerNode,
+        resolver: NodeNameResolver = SINGLE_LOOKUP_RESOLVER,
+    ) -> ScheduleTriggerNodeData:
+        return ScheduleTriggerNodeData(
+            node_name=resolver(schedule_trigger_node.id),
+            run_mode=schedule_trigger_node.run_mode,
+            start_date_time=(
+                schedule_trigger_node.start_date_time.isoformat()
+                if schedule_trigger_node.start_date_time
+                else None
+            ),
+            every=schedule_trigger_node.every,
+            unit=schedule_trigger_node.unit,
+            weekdays=schedule_trigger_node.weekdays or [],
+            end_type=schedule_trigger_node.end_type,
+            end_date_time=(
+                schedule_trigger_node.end_date_time.isoformat()
+                if schedule_trigger_node.end_date_time
+                else None
+            ),
+            max_runs=schedule_trigger_node.max_runs,
         )
 
     def convert_edge_to_pytdantic(

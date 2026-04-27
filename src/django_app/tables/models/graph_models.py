@@ -636,6 +636,7 @@ class ScheduleTriggerNode(BaseGraphEntity, BaseGlobalNode):
             "updated_at",
             "content_hash",
             "metadata",
+            "current_runs",
         ]
         data = {
             f.name: str(getattr(self, f.attname))
