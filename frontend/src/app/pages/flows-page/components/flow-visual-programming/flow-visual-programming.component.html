@@ -8,6 +8,8 @@
         [isRunning]="isRunning()"
         [hasUnsavedChanges]="hasUnsavedChanges()"
         (save)="onHeaderSave()"
+        (saveVersion)="onSaveVersion()"
+        (viewVersionHistory)="onViewVersionHistory()"
         (viewSessions)="handleViewSessions()"
         (run)="handleRunFlow()"
         (getCurl)="handleGetCurl()"
@@ -21,7 +23,7 @@
             [currentFlowId]="graph.id"
             [flowName]="graph.name"
             [initialNodeId]="initialNodeId"
-            (save)="onGraphSave(currentFlowState())"
+            (save)="onGraphSave($event)"
             (openShortcuts)="openShortcutsModal($event)"
         ></app-flow-graph>
         <app-shortcuts-modal

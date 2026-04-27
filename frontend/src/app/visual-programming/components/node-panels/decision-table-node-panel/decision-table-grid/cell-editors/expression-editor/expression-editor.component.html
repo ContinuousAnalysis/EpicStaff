@@ -1,5 +1,8 @@
 <div class="expression-editor-container">
-    <app-editor-toolbar (tokenInserted)="insertToken($event)"></app-editor-toolbar>
+    <app-editor-toolbar
+        [mode]="editorMode()"
+        (tokenInserted)="insertToken($event)"
+    />
     <div class="editor-wrapper">
         <div
             class="editor-backdrop"

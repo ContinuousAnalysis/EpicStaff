@@ -17,6 +17,7 @@ export interface UnsavedChangesDialogData {
     dontSaveText?: string;
     cancelText?: string;
     type?: 'warning' | 'danger' | 'info';
+    showDontSave?: boolean;
     onSave?: () => Observable<boolean>;
 }
 

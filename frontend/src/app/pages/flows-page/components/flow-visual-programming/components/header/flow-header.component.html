@@ -79,25 +79,65 @@
                 <span class="btn-label">Connect chat</span>
             </button>
         }
-        <button
-            class="save-button"
-            [appCollapseOnOverflow]="true"
-            collapseOnOverflowTarget=".btn-label"
-            collapseOnOverflowClass="btn--icon-only"
-            collapseOnOverflowRequireSelector="app-svg-icon"
-            [disabled]="isSaving || isRunning"
-            (click)="onSave()"
+        <div
+            class="save-split-btn"
+            [class.disabled]="isSaving || isRunning"
         >
-            @if (isSaving) {
-                <app-spinner2 [size]="16"></app-spinner2>
-            } @else {
+            <button
+                class="save-split-btn__main"
+                [disabled]="isSaving || isRunning"
+                (click)="onSave()"
+            >
+                @if (isSaving) {
+                    <app-spinner2 [size]="16"></app-spinner2>
+                } @else {
+                    <app-svg-icon
+                        icon="floppy"
+                        size="1.25rem"
+                    />
+                }
+                Save
+            </button>
+            <button
+                class="save-split-btn__chevron"
+                [disabled]="isSaving || isRunning"
+                (click)="toggleSaveDropdown($event)"
+            >
                 <app-svg-icon
-                    icon="floppy"
-                    size="1.25rem"
+                    icon="chevron-down"
+                    size="1rem"
                 />
+            </button>
+            @if (isSaveDropdownOpen()) {
+                <div
+                    class="save-dropdown"
+                    (click)="$event.stopPropagation()"
+                >
+                    <button
+                        class="save-dropdown__item"
+                        (click)="onSave(); isSaveDropdownOpen.set(false)"
+                    >
+                        Save
+                    </button>
+                    <button
+                        class="save-dropdown__item"
+                        (click)="saveVersion.emit(); isSaveDropdownOpen.set(false)"
+                    >
+                        Save Version
+                    </button>
+                    <button
+                        class="save-dropdown__item"
+                        (click)="viewVersionHistory.emit(); isSaveDropdownOpen.set(false)"
+                    >
+                        Version History
+                        <app-svg-icon
+                            icon="arrow-up-right"
+                            size="1rem"
+                        />
+                    </button>
+                </div>
             }
-            <span class="btn-label">Save</span>
-        </button>
+        </div>
         <button
             class="run-button"
             [appCollapseOnOverflow]="true"

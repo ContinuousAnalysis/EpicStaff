@@ -20,6 +20,7 @@
             class="close-button"
         ></app-icon-button>
     </div>
+    <div class="dialog-divider"></div>
     <p
         class="dialog-message"
         [innerHTML]="data.message"
@@ -35,6 +36,7 @@
         </button>
         <div class="right-buttons">
             <button
+                *ngIf="data.showDontSave !== false"
                 type="button"
                 class="button dont-save-button"
                 (click)="onDontSave()"

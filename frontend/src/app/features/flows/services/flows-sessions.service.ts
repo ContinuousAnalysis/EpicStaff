@@ -39,6 +39,7 @@ export interface SessionUpdates {
 export interface GraphSessionLight {
     id: number;
     graph_id: number;
+    graph_name: string;
     status: GraphSessionStatus;
     status_updated_at: string;
     created_at: string;
@@ -185,5 +186,25 @@ export class GraphSessionService {
 
     getSessionWarnings(sessionId: string): Observable<WarningMessages> {
         return this.http.get<WarningMessages>(`${this.apiUrl}${sessionId}/warnings/`);
+    }
+
+    getGlobalSessions(
+        limit?: number,
+        offset?: number,
+        status?: string[],
+        ordering?: string,
+        graphName?: string | null,
+        isErrorCause?: boolean
+    ): Observable<ApiGetRequest<GraphSessionLight>> {
+        let params = new HttpParams();
+        params = params.set('detailed', 'false');
+        if (limit !== undefined) params = params.set('limit', limit.toString());
+        if (offset !== undefined) params = params.set('offset', offset.toString());
+        if (status && !status.includes('all')) params = params.set('status', status.join(','));
+        if (ordering) params = params.set('ordering', ordering);
+        if (graphName) params = params.set('graph_name', graphName);
+        if (isErrorCause) params = params.set('is_error_cause', 'true');
+
+        return this.http.get<ApiGetRequest<GraphSessionLight>>(this.apiUrl, { params });
     }
 }

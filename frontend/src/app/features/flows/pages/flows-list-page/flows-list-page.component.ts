@@ -283,4 +283,8 @@ export class FlowsListPageComponent implements OnDestroy {
     public isAllSelected(): boolean {
         return this.flowStorageService.isAllFlowsSelected();
     }
+
+    public navigateToSessions() {
+        this.router.navigate(['/sessions']);
+    }
 }

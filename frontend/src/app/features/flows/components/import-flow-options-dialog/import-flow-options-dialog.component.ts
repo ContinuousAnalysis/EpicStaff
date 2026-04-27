@@ -1,9 +1,9 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { HelpTooltipComponent } from '@shared/components';
 
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
+import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
 
 export interface ImportFlowOptions {
     preserveUuids: boolean;

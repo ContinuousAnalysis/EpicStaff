@@ -36,6 +36,13 @@
                 } @else {
                     <app-button
                         type="ghost"
+                        [leftIcon]="'union'"
+                        (click)="navigateToSessions()"
+                    >
+                        All sessions
+                    </app-button>
+                    <app-button
+                        type="ghost"
                         [leftIcon]="'download'"
                         (click)="onImportClick()"
                     >
@@ -74,11 +81,7 @@
             </div>
             <div class="tabs-right">
                 <div class="search-container">
-                    <app-svg-icon
-                        icon="search"
-                        class="search-icon"
-                        size="1.1rem"
-                    ></app-svg-icon>
+                    <app-svg-icon icon="search" class="search-icon" size="1.1rem"></app-svg-icon>
                     <input
                         type="text"
                         class="search-input"
