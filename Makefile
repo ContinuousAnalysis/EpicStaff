@@ -15,7 +15,8 @@ endif
         dev dev-down dev-build dev-logs dev-restart dev-logs-s dev-rebuild-s rebuild-dev \
         dev-voice dev-ngrok \
         prod-setup prod-init prod prod-build prod-up start-prod prod-down prod-logs prod-voice prod-ngrok \
-        clean docker-generate-certs
+        clean docker-generate-certs \
+        integration-test
 
 # --- Help ---
 
@@ -167,6 +168,41 @@ docker-generate-certs:
 	docker run --rm -v "$(CURDIR)/src/nginx/certs:/certs" -w /certs alpine \
 		sh -c "apk add openssl && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout privkey.pem -out fullchain.pem -subj '/CN=$(domain)'"
 	@echo "SSL certificates generated for domain: $(domain)"
+
+# ==========================================
+# LOCAL DJANGO DEVELOPMENT
+# ==========================================
+
+# ==========================================
+# INTEGRATION TESTS
+# ==========================================
+
+# Overridable defaults (set via env or on command line)
+DJANGO_URL           ?= http://127.0.0.1:8000/api
+OPENAI_KEY           ?=
+DJANGO_TEST_USERNAME ?= admin
+DJANGO_TEST_PASSWORD ?= admin123!
+
+# f=<file>    — run a specific test file (default: all)
+# k=<keyword> — filter tests by keyword (-k)
+# ARGS=       — any extra pytest flags (e.g. ARGS="-s --tb=short")
+_ITEST_FILE  = $(if $(f),$(f),)
+_ITEST_KFLAG = $(if $(k),-k "$(k)",)
+
+integration-test:
+	@echo "--- Installing integration test dependencies ---"
+	@pip install -r integration_tests/requirements.txt -q
+	@echo "--- Running integration tests ---"
+ifeq ($(OS),Windows_NT)
+	@cd integration_tests && set "DJANGO_URL=$(DJANGO_URL)" && set "OPENAI_KEY=$(OPENAI_KEY)" && set "DJANGO_TEST_USERNAME=$(DJANGO_TEST_USERNAME)" && set "DJANGO_TEST_PASSWORD=$(DJANGO_TEST_PASSWORD)" && pytest $(_ITEST_FILE) $(_ITEST_KFLAG) -v $(ARGS)
+else
+	@cd integration_tests && \
+		DJANGO_URL=$(DJANGO_URL) \
+		OPENAI_KEY=$(OPENAI_KEY) \
+		DJANGO_TEST_USERNAME=$(DJANGO_TEST_USERNAME) \
+		DJANGO_TEST_PASSWORD=$(DJANGO_TEST_PASSWORD) \
+		pytest $(_ITEST_FILE) $(_ITEST_KFLAG) -v $(ARGS)
+endif
 
 # ==========================================
 # LOCAL DJANGO DEVELOPMENT

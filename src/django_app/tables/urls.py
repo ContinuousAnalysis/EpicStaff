@@ -14,7 +14,6 @@ from tables.views.model_view_sets import (
     GraphVersionViewSet,
     McpToolViewSet,
     NgrokWebhookConfigViewSet,
-    PythonCodeToolConfigFieldViewSet,
     PythonCodeToolConfigViewSet,
     PythonNodeViewSet,
     FileExtractorNodeViewSet,
@@ -188,7 +187,6 @@ router.register(r"webhook-triggers", WebhookTriggerViewSet)
 router.register(r"telegram-trigger-nodes", TelegramTriggerNodeViewSet)
 router.register(r"telegram-trigger-node-fields", TelegramTriggerNodeFieldViewSet)
 router.register(r"python-code-tool-configs", PythonCodeToolConfigViewSet)
-router.register(r"python-code-tool-config-fields", PythonCodeToolConfigFieldViewSet)
 router.register(r"graph-notes", GraphNoteViewSet)
 router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
 

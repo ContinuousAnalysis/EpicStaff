@@ -21,6 +21,40 @@ from src.crew.services.pickle_encode import txt_to_obj
 from src.crew.services.run_python_code_service import RunPythonCodeService
 
 
+_TYPE_NORMALIZE = {"obj": "object", "list": "array"}
+
+
+def _build_prop(var: dict) -> dict:
+    var_type = _TYPE_NORMALIZE.get(var.get("type", "string"), var.get("type", "string"))
+    prop: dict = {"type": var_type, "description": var.get("description", "")}
+    if var.get("default_value") is not None:
+        prop["default"] = var["default_value"]
+    if var_type == "object" and var.get("properties"):
+        prop["properties"] = var["properties"]
+        if var.get("required_properties"):
+            prop["required"] = var["required_properties"]
+    elif var_type == "array" and var.get("items"):
+        prop["items"] = var["items"]
+    return prop
+
+
+def _build_args_schema(variables: list[dict]) -> dict:
+    properties: dict = {}
+    required: list[str] = []
+    for var in variables:
+        input_type = var.get("input_type")
+        if input_type in ("agent_input", "mixed"):
+            properties[var["name"]] = _build_prop(var)
+            if var.get("required") and input_type == "agent_input":
+                required.append(var["name"])
+    return {
+        "title": "ArgumentsSchema",
+        "type": "object",
+        "properties": properties,
+        "required": required,
+    }
+
+
 class ProxyToolFactory:
     def __init__(
         self,
@@ -39,13 +73,9 @@ class ProxyToolFactory:
         global_kwargs: dict[str, Any],
         stop_event: StopEvent,
     ) -> Tool:
-        args_schema_raw = python_code_tool_data.args_schema
-        args_schema_dict = (
-            args_schema_raw
-            if isinstance(args_schema_raw, dict)
-            else args_schema_raw.model_dump()
+        args_schema = generate_model_from_schema(
+            _build_args_schema(python_code_tool_data.variables)
         )
-        args_schema = generate_model_from_schema(args_schema_dict)
         name = python_code_tool_data.name
         description = python_code_tool_data.description
 

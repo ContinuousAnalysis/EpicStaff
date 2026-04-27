@@ -15,7 +15,7 @@ from tables.serializers.telegram_trigger_serializers import (
 from tables.validators.python_code_tool_config_validator import (
     PythonCodeToolConfigValidator,
 )
-from tables.models.python_models import PythonCodeToolConfig, PythonCodeToolConfigField
+from tables.models.python_models import PythonCodeToolConfig
 from tables.models.webhook_models import (
     WebhookTrigger,
     NgrokWebhookConfig,
@@ -414,23 +414,8 @@ class PythonCodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer
         return internal_value
 
 
-class PythonCodeToolConfigFieldSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PythonCodeToolConfigField
-        fields = [
-            "id",
-            "name",
-            "tool",
-            "description",
-            "data_type",
-            "required",
-            "secret",
-        ]
-
-
 class PythonCodeToolSerializer(serializers.ModelSerializer):
     python_code = PythonCodeSerializer()
-    tool_fields = PythonCodeToolConfigFieldSerializer(many=True, read_only=True)
     built_in = serializers.ReadOnlyField()
 
     class Meta:
@@ -439,13 +424,12 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "description",
-            "args_schema",
+            "variables",
             "python_code",
             "favorite",
             "built_in",
-            "tool_fields",
         ]
-        read_only_fields = ["id", "built_in", "tool_fields"]
+        read_only_fields = ["id", "built_in"]
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
