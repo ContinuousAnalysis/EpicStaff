@@ -1,0 +1,171 @@
+# Password Recovery
+
+Four endpoints plus a CLI fallback, all sharing a single orchestrator
+(`PasswordRecoveryService`) that composes small single-purpose
+collaborators. Views are thin — they call the validator for shape
+checks, hand the cleaned payload to the service, and wrap the return in
+a DRF `Response`. All business rules and security invariants live in
+the service layer.
+
+## Layering
+
+```
+View  ──▶  AuthValidationService.validate_*()  (shape + strength)
+  │
+  └────▶  PasswordRecoveryService               (orchestrator)
+             │
+             ├── SmtpConfigService              (is SMTP configured?)
+             ├── PasswordResetTokenRepository   (token CRUD + active-ness)
+             ├── PasswordResetEmailSender       (render + send, fail-silent)
+             ├── PasswordWriter                 (set_password + save)
+             └── SessionInvalidationService     (blacklist refresh tokens)
+```
+
+Every collaborator is injected via the orchestrator's constructor so
+tests can swap in fakes without monkey-patching.
+
+## Endpoints
+
+### `POST /api/auth/password-reset/request/` — anonymous
+
+Body: `{ "email": "<email>" }`.
+
+Always returns **200** with body:
+
+```json
+{ "detail": "If the email is registered, a reset link has been sent.", "smtp_configured": true|false }
+```
+
+Behavior:
+
+* If the email resolves to a user, inside a single transaction: all
+  prior unused tokens for that user are marked `is_used=True` and a new
+  `PasswordResetToken` is created. Only the most recent link works.
+* If SMTP is configured (`EMAIL_HOST` set — credentials are optional
+  and only used when the relay requires AUTH), the reset email is
+  dispatched through `django.core.mail`. Delivery is fail-silent — a
+  send error never changes the HTTP response.
+* If SMTP is **not** configured, `EMAIL_BACKEND` is the console backend
+  and Django prints the rendered email (with the reset link) to stdout.
+  That is the documented no-SMTP recovery surface.
+* If the email does not resolve to a user, no token is created and no
+  email is sent, but the response body is identical.
+
+Throttling: `PasswordResetRequestThrottle`, bucket `ip|email`, rate
+`PASSWORD_RESET_REQUEST_THROTTLE_RATE` (default `5/hour`).
+
+### `POST /api/auth/password-reset/confirm/` — anonymous
+
+Body: `{ "token": "<uuid>", "new_password": "<pw>" }`.
+
+* Looks up the token; if it is unknown, already used, or past
+  `PASSWORD_RESET_TOKEN_TTL` (default **900 s / 15 min**), returns a
+  single generic **400**
+  (`Reset token is invalid, expired, or already used.`) — the response
+  body does not distinguish the three cases.
+* Runs the same `AUTH_PASSWORD_VALIDATORS` as first-setup. Weak
+  passwords return 400 with per-field errors in the standard
+  `FormValidationError` shape.
+* On success: password is written, token is marked used, and **every
+  outstanding JWT refresh token for that user is blacklisted**. Short-
+  lived access tokens still in circulation continue to work until they
+  expire (bounded by `JWT_ACCESS_MINUTES`, default 15).
+
+### `POST /api/auth/password-change/` — authenticated self-service
+
+Body: `{ "current_password": "<pw>", "new_password": "<pw>" }`.
+
+* Verifies `current_password`. Wrong password → 400
+  (`invalid_current_password`).
+* Validates `new_password` strength.
+* On success: writes new password, blacklists the user's refresh
+  tokens, mints a fresh `{access, refresh}` pair so the calling device
+  stays logged in without a second round-trip.
+
+### `POST /api/auth/admin/password-reset/` — superadmin only
+
+Body: `{ "user_id": <int>, "new_password": "<pw>" }`.
+
+* Gate: `actor.is_superadmin` — non-superadmins get 403
+  (`superadmin_required`). The gate lives in the service so the CLI
+  and the HTTP surface share one authorization path.
+* Target user not found → 404.
+* Weak password → 400 (same validators as everywhere else).
+* On success: writes the new password, invalidates any pending reset
+  tokens for the target, blacklists all of the target's refresh
+  tokens. Returns **204**. No password is echoed — the admin supplied
+  it.
+
+## CLI fallback
+
+```
+python manage.py reset_password <email> [--generate | --password <pw>]
+```
+
+* No flag → prompts twice with `getpass` and confirms.
+* `--password <pw>` → non-interactive (use with care; logs in shell
+  history).
+* `--generate` → generates a strong random password via
+  `secrets.token_urlsafe(16)` and prints it once to stdout.
+* Runs the same validators as the HTTP surface.
+* Goes through `PasswordRecoveryService.cli_reset`, so the same
+  post-conditions apply: password written, reset tokens invalidated,
+  refresh tokens blacklisted.
+
+Unknown email → non-zero exit with `CommandError`.
+
+## Configuration
+
+All env vars land in `src/.env` and are forwarded through
+`src/docker-compose.yaml` to the `django_app` container.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `PASSWORD_RESET_TOKEN_TTL` | `900` | Token lifetime, seconds. |
+| `PASSWORD_RESET_REQUEST_THROTTLE_RATE` | `5/hour` | DRF throttle rate. |
+| `EMAIL_HOST` | *(empty)* | SMTP host. Empty → console backend. |
+| `EMAIL_PORT` | `587` | SMTP port. |
+| `EMAIL_HOST_USER` | *(empty)* | SMTP user. Leave blank for relays that do not require AUTH (mailpit, local Postfix). |
+| `EMAIL_HOST_PASSWORD` | *(empty)* | SMTP password. Leave blank for relays that do not require AUTH. |
+| `EMAIL_USE_TLS` | `True` | |
+| `EMAIL_USE_SSL` | `False` | |
+| `DEFAULT_FROM_EMAIL` | `no-reply@epicstaff.local` | `From:` header on reset emails. |
+| `FRONTEND_BASE_URL` | `http://localhost:4200` | Base of the reset link. |
+| `FRONTEND_PASSWORD_RESET_PATH` | `/reset-password` | Path segment; token appended as `?token=<uuid>`. |
+
+`EMAIL_BACKEND` is resolved at import time: SMTP when `EMAIL_HOST` is
+set, else console. Whether Django authenticates against that host is
+independent and keyed on `EMAIL_HOST_USER` + `EMAIL_HOST_PASSWORD` —
+both blank = no AUTH attempted (required for mailpit and other
+unauthenticated relays; setting creds against a server that does not
+implement SMTP AUTH raises `SMTPNotSupportedError`).
+`SmtpConfigService.is_configured()` is the source of truth for "should
+we tell the user an email is coming?" — inspect it, not `EMAIL_BACKEND`.
+
+## Security invariants
+
+* **No enumeration.** Request endpoint always returns 200. Confirm
+  endpoint uses a single opaque 400 for unknown / used / expired.
+* **Single-use tokens.** Marked `is_used=True` on consumption.
+* **Only the latest link works.** Prior unused tokens for a user are
+  bulk-invalidated every time a new reset is requested.
+* **Time-bound.** `PASSWORD_RESET_TOKEN_TTL` (default 15 min).
+* **Throttled.** `5/hour` per `ip|email`.
+* **Session kill on every password change.** Reset, self-service
+  change, admin reset, and CLI reset all blacklist every outstanding
+  refresh token for the user. Access tokens expire on their own
+  (≤ `JWT_ACCESS_MINUTES`).
+* **Strength enforced uniformly.** Every entry point runs Django's
+  `AUTH_PASSWORD_VALIDATORS`, via the same
+  `AuthValidationService._validate_password_field`.
+* **Admin gate in service.** `is_superadmin` check is inside
+  `admin_reset`, not the view — shared with any future non-HTTP
+  caller.
+* **Fail-silent email.** SMTP errors are logged, never surfaced, so the
+  HTTP response stays uniform (no side-channel).
+
+## Out of scope (future stories)
+
+* HTML email templates.
+* Per-organization admin reset (only global `is_superadmin` today).
+* Audit log entries — no audit surface exists yet.
