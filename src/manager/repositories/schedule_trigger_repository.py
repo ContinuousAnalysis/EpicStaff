@@ -1,16 +1,16 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from helpers.logger import logger
 from db.config import AsyncSessionLocal
+from helpers.logger import logger
+from src.shared.models import ScheduleTriggerNodePayload
 
 
 class ScheduleTriggerNodeRepository:
-    """Read/update tables_scheduletriggernode from Manager.
+    """Read schedule nodes via raw SQL through SQLAlchemy async.
 
-    Manager uses a restricted DB user (manager_user, SELECT/UPDATE only) —
-    no Django ORM here, raw SQL via SQLAlchemy async.
+    Uses a restricted DB user (manager_user) with SELECT/UPDATE only.
     """
 
     def __init__(self, session_factory=None):
@@ -32,7 +32,9 @@ class ScheduleTriggerNodeRepository:
                 logger.error(f"[ScheduleRepo] Unexpected error: {exc}")
                 raise
 
-    async def get_all_active_schedule_nodes(self) -> list[dict] | None:
+    async def get_all_active_schedule_nodes(
+        self,
+    ) -> list[ScheduleTriggerNodePayload] | None:
         """Return all schedule nodes with is_active=true.
 
         Empty list when there are none; None on DB error (caller decides retry).
@@ -50,33 +52,9 @@ class ScheduleTriggerNodeRepository:
                 """
             )
             result = await session.execute(query)
-            rows = result.fetchall()
-
-            if not rows:
-                return []
-
             return [
-                {
-                    "id": row.id,
-                    "node_name": row.node_name,
-                    "graph": row.graph_id,
-                    "is_active": row.is_active,
-                    "timezone": row.timezone or "UTC",
-                    "run_mode": row.run_mode,
-                    "start_date_time": (
-                        row.start_date_time.isoformat() if row.start_date_time else None
-                    ),
-                    "every": row.every,
-                    "unit": row.unit,
-                    "weekdays": row.weekdays,
-                    "end_type": row.end_type,
-                    "end_date_time": (
-                        row.end_date_time.isoformat() if row.end_date_time else None
-                    ),
-                    "max_runs": row.max_runs,
-                    "current_runs": row.current_runs,
-                }
-                for row in rows
+                ScheduleTriggerNodePayload.model_validate(row)
+                for row in result.fetchall()
             ]
 
         try:

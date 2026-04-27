@@ -1,40 +1,20 @@
-import json
-
 from loguru import logger
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from django_app.settings import SCHEDULE_CHANNEL
+from src.shared.models import (
+    ScheduleTriggerNodeDeletePayload,
+    ScheduleTriggerNodePayload,
+    ScheduleTriggerNodeUpdateData,
+    ScheduleTriggerNodeUpdateMessage,
+)
 from tables.models.graph_models import ScheduleTriggerNode
 from tables.services.redis_service import RedisService
 
 
-def _flat_schedule_payload(instance: ScheduleTriggerNode) -> dict:
-    """Flat projection of a ScheduleTriggerNode for the Django→Manager Redis channel.
-
-    Shape must stay in sync with ScheduleTriggerNodeRepository.get_all_active_schedule_nodes() —
-    Manager reads these keys directly, not the nested HTTP form.
-    """
-    return {
-        "id": instance.pk,
-        "node_name": instance.node_name,
-        "graph": instance.graph_id,
-        "is_active": instance.is_active,
-        "timezone": instance.timezone or "UTC",
-        "run_mode": instance.run_mode,
-        "start_date_time": (
-            instance.start_date_time.isoformat() if instance.start_date_time else None
-        ),
-        "every": instance.every,
-        "unit": instance.unit,
-        "weekdays": instance.weekdays,
-        "end_type": instance.end_type,
-        "end_date_time": (
-            instance.end_date_time.isoformat() if instance.end_date_time else None
-        ),
-        "max_runs": instance.max_runs,
-        "current_runs": instance.current_runs,
-    }
+def _publish(message: ScheduleTriggerNodeUpdateMessage) -> None:
+    RedisService().redis_client.publish(SCHEDULE_CHANNEL, message.model_dump_json())
 
 
 @receiver(post_save, sender=ScheduleTriggerNode)
@@ -43,19 +23,17 @@ def schedule_trigger_post_save_handler(
 ):
     """Publish a create/update event to the Manager on every node save."""
     node_id = instance.pk
+    action = "create" if created else "update"
     logger.info(f"[ScheduleSignal] post_save triggered for node ID: {node_id}")
 
     try:
-        redis_service = RedisService()
-        action = "create" if created else "update"
-        payload = {
-            "action": "node_update",
-            "data": {
-                "action": action,
-                "node": _flat_schedule_payload(instance),
-            },
-        }
-        redis_service.redis_client.publish(SCHEDULE_CHANNEL, json.dumps(payload))
+        message = ScheduleTriggerNodeUpdateMessage(
+            data=ScheduleTriggerNodeUpdateData(
+                action=action,
+                node=ScheduleTriggerNodePayload.model_validate(instance),
+            )
+        )
+        _publish(message)
         logger.info(f"[ScheduleSignal] Published '{action}' for node ID: {node_id}")
     except Exception:
         logger.exception(
@@ -72,15 +50,13 @@ def schedule_trigger_post_delete_handler(
     logger.info(f"[ScheduleSignal] post_delete triggered for node ID: {node_id}")
 
     try:
-        redis_service = RedisService()
-        payload = {
-            "action": "node_update",
-            "data": {
-                "action": "delete",
-                "node": {"id": node_id},
-            },
-        }
-        redis_service.redis_client.publish(SCHEDULE_CHANNEL, json.dumps(payload))
+        message = ScheduleTriggerNodeUpdateMessage(
+            data=ScheduleTriggerNodeUpdateData(
+                action="delete",
+                node=ScheduleTriggerNodeDeletePayload(id=node_id),
+            )
+        )
+        _publish(message)
         logger.info(f"[ScheduleSignal] Published 'delete' for node ID: {node_id}")
     except Exception:
         logger.exception(

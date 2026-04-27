@@ -1,6 +1,8 @@
-from pydantic import BaseModel
-from typing import Literal, Any
-from pydantic import ConfigDict
+from datetime import datetime
+from typing import Any, Literal
+
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+
 from .ai_providers import LLMData
 from .agents import CrewData
 from .tools import PythonCodeData
@@ -146,12 +148,14 @@ class TelegramTriggerNodeData(BaseModel):
 
 class ScheduleTriggerNodeData(BaseModel):
     node_name: str
-    run_mode: Literal["once", "repeat"]
-    start_date_time: str
+    run_mode: Literal["once", "repeat"] | None = None
+    start_date_time: str | None = None
     every: int | None = None
-    unit: Literal["seconds", "minutes", "hours", "days", "weeks", "months"] | None = None
+    unit: Literal["seconds", "minutes", "hours", "days", "weeks", "months"] | None = (
+        None
+    )
     weekdays: list[str] = []
-    end_type: Literal["never", "on_date", "after_n_runs"]
+    end_type: Literal["never", "on_date", "after_n_runs"] | None = None
     end_date_time: str | None = None
     max_runs: int | None = None
 
@@ -193,5 +197,54 @@ class SubGraphData(BaseModel):
     id: int
     data: GraphData
     initial_state: dict[str, Any] = {}
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ScheduleTriggerNodePayload(BaseModel):
+    """Flat projection of a schedule trigger node."""
+
+    id: int
+    node_name: str
+    graph: int = Field(validation_alias=AliasChoices("graph_id", "graph"))
+    is_active: bool
+    timezone: str = "UTC"
+    run_mode: Literal["once", "repeat"] | None = None
+    start_date_time: datetime | None = None
+    every: int | None = None
+    unit: Literal["seconds", "minutes", "hours", "days", "weeks", "months"] | None = (
+        None
+    )
+    weekdays: list[str] | None = None
+    end_type: Literal["never", "on_date", "after_n_runs"] | None = None
+    end_date_time: datetime | None = None
+    max_runs: int | None = None
+    current_runs: int = 0
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class ScheduleTriggerNodeDeletePayload(BaseModel):
+    """Minimal payload for delete events on SCHEDULE_CHANNEL."""
+
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ScheduleTriggerNodeUpdateData(BaseModel):
+    """Inner action+node pair carried by ScheduleTriggerNodeUpdateMessage."""
+
+    action: Literal["create", "update", "delete"]
+    node: ScheduleTriggerNodePayload | ScheduleTriggerNodeDeletePayload
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ScheduleTriggerNodeUpdateMessage(BaseModel):
+    """Envelope published on SCHEDULE_CHANNEL."""
+
+    action: Literal["node_update"] = "node_update"
+    data: ScheduleTriggerNodeUpdateData
 
     model_config = ConfigDict(from_attributes=True)
