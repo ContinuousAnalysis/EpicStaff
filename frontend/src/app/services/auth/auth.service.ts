@@ -1,7 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { FirstSetupRequest, FirstSetupResponse, FirstSetupStatus, GetMeResponse } from '@shared/models';
+import {
+    ConfirmResetPasswordRequest,
+    ConfirmResetPasswordResponse,
+    FirstSetupRequest,
+    FirstSetupResponse,
+    FirstSetupStatus,
+    GetMeResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
+} from '@shared/models';
 import { catchError, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { ConfigService } from '../config';
@@ -75,6 +84,18 @@ export class AuthService {
             tap(() => this.removeTokensAndNavToLogin()),
             catchError((err) => throwError(() => err))
         );
+    }
+
+    requestResetPassword(data: ResetPasswordRequest): Observable<ResetPasswordResponse> {
+        return this.http
+            .post<ResetPasswordResponse>(`${this.baseUrl}password-reset/request/`, data)
+            .pipe(catchError((err) => throwError(() => err)));
+    }
+
+    confirmResetPassword(data: ConfirmResetPasswordRequest): Observable<ConfirmResetPasswordResponse> {
+        return this.http
+            .post<ResetPasswordResponse>(`${this.baseUrl}password-reset/confirm/`, data)
+            .pipe(catchError((err) => throwError(() => err)));
     }
 
     refreshToken(): Observable<string | null> {

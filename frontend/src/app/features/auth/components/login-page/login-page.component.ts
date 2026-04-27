@@ -104,4 +104,8 @@ export class LoginPageComponent implements OnInit {
     navToSignUp(): void {
         void this.router.navigateByUrl('sign-up');
     }
+
+    navToForgotPassword(): void {
+        void this.router.navigateByUrl('forgot-password');
+    }
 }

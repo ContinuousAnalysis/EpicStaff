@@ -21,6 +21,22 @@ export const routes: Routes = [
         canActivate: [guestGuard],
     },
     {
+        path: 'forgot-password',
+        loadComponent: () =>
+            import('./features/auth/components/forgot-pass-page/forgot-password-page.component').then(
+                (m) => m.ForgotPasswordPageComponent
+            ),
+        canActivate: [guestGuard],
+    },
+    {
+        path: 'reset-password',
+        loadComponent: () =>
+            import('./features/auth/components/reset-password-page/reset-password-page.component').then(
+                (m) => m.ResetPasswordPageComponent
+            ),
+        canActivate: [guestGuard],
+    },
+    {
         path: 'onboarding',
         loadComponent: () =>
             import('./features/auth/components/onboarding-page/onboarding-page.component').then(

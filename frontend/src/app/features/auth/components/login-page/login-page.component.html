@@ -37,7 +37,11 @@
             <div class="remember-row">
                 <app-checkbox formControlName="rememberMe" />
                 <span class="remember-label">Remember me</span>
-                <span class="forgot-label">Forgot?</span>
+                <span
+                    class="forgot-label"
+                    (click)="navToForgotPassword()"
+                    >Forgot?</span
+                >
             </div>
         </form>
 
