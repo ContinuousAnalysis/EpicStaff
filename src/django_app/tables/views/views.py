@@ -227,9 +227,9 @@ class SessionViewSet(
 
         return Response(warning, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(
-        operation_summary="List session output files",
-        operation_description=(
+    @extend_schema(
+        summary="List session output files",
+        description=(
             "Returns all storage files recorded as output during the given session, "
             "ordered by the time they were added."
         ),
