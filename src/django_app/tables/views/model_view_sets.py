@@ -34,6 +34,11 @@ from tables.exceptions import (
 )
 from tables.serializers.graph_bulk_save_serializers import GraphBulkSaveInputSerializer
 from tables.services.graph_bulk_save_service import GraphBulkSaveService
+from tables.graph_versioning.services import GraphVersioningService
+from tables.graph_versioning.serializers import (
+    GraphVersionCreateSerializer,
+    GraphVersionReadSerializer,
+)
 
 from tables.import_export.enums import EntityType
 from tables.models import (
@@ -48,8 +53,8 @@ from tables.models import (
     EmbeddingModel,
     FileExtractorNode,
     Graph,
-    GraphFile,
     GraphSessionMessage,
+    GraphVersion,
     LLMConfig,
     LLMModel,
     Provider,
@@ -170,7 +175,6 @@ from tables.serializers.model_serializers import (
     EmbeddingModelSerializer,
     EndNodeSerializer,
     FileExtractorNodeSerializer,
-    GraphFileReadSerializer,
     GraphLightSerializer,
     GraphOrganizationSerializer,
     GraphOrganizationUserSerializer,
@@ -213,9 +217,6 @@ from tables.serializers.model_serializers import (
     WebhookTriggerSerializer,
 )
 from tables.serializers.serializers import (
-    BulkExportSerializer,
-    GraphFileUpdateSerializer,
-    UploadGraphFileSerializer,
     BulkExportSerializer,
     ImportRequestSerializer,
 )
@@ -802,15 +803,6 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
         )
         GraphOrganization.objects.create(graph=created_graph, organization=organization)
 
-    @action(detail=True, methods=["get"], url_path="files")
-    def get_files(self, request, pk=None):
-        graph = self.get_object()
-        files = graph.uploaded_files.all()
-        serializer = GraphFileReadSerializer(
-            instance=files, many=True, context={"request": request}
-        )
-        return Response(serializer.data)
-
     @action(detail=True, methods=["get"])
     def export(self, request, pk: int):
         return self.import_export_service.export_entity(self.get_object())
@@ -875,6 +867,33 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return Graph.objects.only("id", "name", "description").prefetch_related(
             "tags", "labels"
+        )
+
+
+class GraphVersionViewSet(viewsets.ModelViewSet):
+    queryset = GraphVersion.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["graph_id"]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return GraphVersionCreateSerializer
+        return GraphVersionReadSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        write_serializer = serializer_class(data=request.data)
+        write_serializer.is_valid(raise_exception=True)
+
+        version = GraphVersioningService().save_version(
+            graph=write_serializer.validated_data["graph"],
+            name=write_serializer.validated_data["name"],
+            description=write_serializer.validated_data.get("description", ""),
+        )
+
+        return Response(
+            GraphVersionReadSerializer(version).data,
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -1240,68 +1259,6 @@ class McpToolViewSet(CopyActionMixin, viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
-
-
-class GraphFileViewSet(ModelViewSet):
-    queryset = GraphFile.objects.all()
-    parser_classes = [MultiPartParser, FormParser]
-    http_method_names = ["get", "post", "put", "delete", "head", "options"]
-
-    def get_serializer_class(self):
-        if self.action in ["list", "retrieve"]:
-            return GraphFileReadSerializer
-        if self.action in ["update"]:
-            return GraphFileUpdateSerializer
-        return UploadGraphFileSerializer
-
-    def create(self, request, *args, **kwargs):
-        graph = request.data.get("graph")
-        if not graph:
-            return Response(
-                {"message": "Graph is required"}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        files = {k: v for k, v in request.FILES.items()}
-        if not files:
-            return Response(
-                {"files": "This field is required."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if isinstance(graph, list):
-            graph = graph[0]
-
-        data = {"graph": graph, "files": files}
-        serializer_class = self.get_serializer_class()
-        serializer = serializer_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        instances = serializer.save()
-
-        serializer = GraphFileReadSerializer(
-            instance=instances, many=True, context={"request": request}
-        )
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def update(self, request, *args, **kwargs):
-        data = {}
-        for key, file in request.FILES.items():
-            data["domain_key"] = key
-            data["file"] = file
-
-        if not data:
-            return Response(
-                {"file": "This field is required."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        instance = self.get_object()
-
-        serializer_class = self.get_serializer_class()
-        serializer = serializer_class(
-            instance=instance, data=data, context={"graph": instance.graph}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response({"detail": "File updated successfully."})
 
 
 class OrganizationViewSet(viewsets.ModelViewSet):
