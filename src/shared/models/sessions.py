@@ -41,3 +41,13 @@ class ScheduleEventData(BaseModel):
     trigger_type: Literal["schedule"] = "schedule"
 
     model_config = ConfigDict(from_attributes=True)
+class StorageMutation(BaseModel):
+    op: str
+    path: str
+
+
+class StorageMutationEvent(BaseModel):
+    execution_id: str
+    org_prefix: str
+    session_id: int | None = None
+    mutations: list[StorageMutation]

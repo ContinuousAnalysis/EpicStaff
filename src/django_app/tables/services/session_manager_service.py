@@ -44,6 +44,7 @@ from tables.models import (
     Session,
     Edge,
     Graph,
+    GraphStorageFile,
     PythonNode,
     FileExtractorNode,
     AudioTranscriptionNode,
@@ -376,7 +377,12 @@ class SessionManagerService(metaclass=SingletonMeta):
             for item in crew_node_list
         ]
         python_node_data_list = [
-            cv.convert_python_node_to_pydantic(python_node=item, resolver=resolver)
+            cv.convert_python_node_to_pydantic(
+                python_node=item,
+                resolver=resolver,
+                graph_id=graph.pk,
+                session_id=session.pk if session else None,
+            )
             for item in python_node_list
         ]
         webhook_trigger_node_data_list = [

@@ -53,7 +53,6 @@ from tables.models import (
     FileExtractorNode,
     SubGraphNode,
     AudioTranscriptionNode,
-    GraphFile,
 )
 from rest_framework import serializers
 from tables.exceptions import (
@@ -1569,16 +1568,21 @@ class SessionSerializer(serializers.ModelSerializer):
 
 
 class SessionLightSerializer(serializers.ModelSerializer):
+    has_output_files = serializers.BooleanField(read_only=True)
+    graph_name = serializers.CharField(source="graph.name", read_only=True)
+
     class Meta:
         model = Session
         fields = (
             "id",
             "graph_id",
+            "graph_name",
             "status",
             "status_updated_at",
             "created_at",
             "finished_at",
             "parent_session",
+            "has_output_files",
         )
 
 
@@ -2038,25 +2042,6 @@ class GraphSerializer(serializers.ModelSerializer):
         if labels is not None:
             instance.labels.set(labels)
         return instance
-
-
-class GraphFileReadSerializer(serializers.ModelSerializer):
-    file = serializers.FileField(use_url=True)
-
-    class Meta:
-        model = GraphFile
-        fields = [
-            "id",
-            "graph",
-            "domain_key",
-            "name",
-            "content_type",
-            "size",
-            "file",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = fields
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
