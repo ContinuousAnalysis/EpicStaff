@@ -1,15 +1,27 @@
 <div class="flow-grid-container">
     @if (!isFlowsLoaded()) {
-        <app-loading-spinner size="md" message="Loading flows..."></app-loading-spinner>
+        <app-loading-spinner
+            size="md"
+            message="Loading flows..."
+        ></app-loading-spinner>
     } @else {
         @if (error()) {
             <div class="error-message">
                 {{ error() }}
-                <button type="button" (click)="retryLoad()" class="retry-button">Retry</button>
+                <button
+                    type="button"
+                    (click)="retryLoad()"
+                    class="retry-button"
+                >
+                    Retry
+                </button>
             </div>
         } @else {
             <div class="grid">
-                <div class="recent-section" #recentSection>
+                <div
+                    class="recent-section"
+                    #recentSection
+                >
                     <h3 class="section-title-no-tabs">Last modified</h3>
                     @if (recentFlows().length === 0) {
                         <div class="empty-message-no-tabs">
@@ -19,7 +31,11 @@
                         <ul class="recent-flows-list">
                             @for (flow of recentFlows(); track flow.id) {
                                 <li class="recent-flow-card">
-                                    <a class="recent-flow-name" [routerLink]="['/flows', flow.id]">{{ flow.name }}</a>
+                                    <a
+                                        class="recent-flow-name"
+                                        [routerLink]="['/flows', flow.id]"
+                                        >{{ flow.name }}</a
+                                    >
                                 </li>
                             }
                         </ul>
