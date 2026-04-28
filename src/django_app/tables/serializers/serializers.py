@@ -6,6 +6,7 @@ from tables.models.crew_models import ToolConfig
 from tables.models.python_models import PythonCodeTool
 from tables.models.graph_models import GraphFile, Graph
 from tables.models.python_models import PythonCodeToolConfig
+from tables.models import PythonCode
 
 
 class RunSessionSerializer(serializers.Serializer):
@@ -211,3 +212,15 @@ class BulkExportSerializer(serializers.Serializer):
 class ImportRequestSerializer(serializers.Serializer):
     file = serializers.FileField()
     preserve_uuids = serializers.BooleanField(default=False, required=False)
+
+
+class RunPythonCodeSerializer(serializers.Serializer):
+    python_code_id = serializers.PrimaryKeyRelatedField(
+        queryset=PythonCode.objects.all(),
+        source="python_code",
+    )
+    variables = serializers.DictField(
+        child=serializers.JSONField(),
+        required=False,
+        default=dict,
+    )

@@ -85,6 +85,7 @@ from tables.serializers.serializers import (
     ProcessRagIndexingSerializer,
     RunSessionSerializer,
     RegisterTelegramTriggerSerializer,
+    RunPythonCodeSerializer,
 )
 
 from tables.serializers.quickstart_serializers import (
@@ -683,15 +684,7 @@ class ToolListRetrieveUpdateGenericViewSet(
 class RunPythonCodeAPIView(APIView):
     @extend_schema(
         summary="Run Python Code",
-        request=inline_serializer(
-            name="RunPythonCodeRequest",
-            fields={
-                "python_code_id": drf_serializers.IntegerField(),
-                "variables": drf_serializers.DictField(
-                    child=drf_serializers.CharField(), required=False
-                ),
-            },
-        ),
+        request=RunPythonCodeSerializer,
         responses={
             200: inline_serializer(
                 name="RunPythonCodeResponse",
@@ -703,16 +696,12 @@ class RunPythonCodeAPIView(APIView):
         },
     )
     def post(self, request):
-        python_code_id = request.data.get("python_code_id")
-        variables = request.data.get("variables", {})
+        serializer = RunPythonCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        python_code = serializer.validated_data["python_code"]
+        variables = serializer.validated_data["variables"]
 
-        if not python_code_id:
-            return Response(
-                {"error": "python_code_id is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        execution_id = run_python_code_service.run_code(python_code_id, variables)
+        execution_id = run_python_code_service.run_code(python_code.id, variables)
         return Response({"execution_id": execution_id}, status=status.HTTP_200_OK)
 
 
