@@ -239,16 +239,18 @@ export function generatePortsForNode(newNodeId: string, nodeType: NodeType, data
     }
 
     if (nodeType === NodeType.CLASSIFICATION_TABLE) {
-        const tableData = (data as { table?: { condition_groups?: ConditionGroup[]; default_next_node?: unknown; next_error_node?: unknown } })?.table ?? {};
+        const tableData =
+            (
+                data as {
+                    table?: {
+                        condition_groups?: ConditionGroup[];
+                        default_next_node?: unknown;
+                        next_error_node?: unknown;
+                    };
+                }
+            )?.table ?? {};
         const conditionGroups = tableData?.condition_groups ?? [];
-        const hasDefault = Boolean(tableData?.default_next_node);
-        const hasError = Boolean(tableData?.next_error_node);
-        return generatePortsForClassificationDecisionTableNode(
-            newNodeId,
-            conditionGroups,
-            hasDefault,
-            hasError
-        );
+        return generatePortsForClassificationDecisionTableNode(newNodeId, conditionGroups);
     }
 
     const portsConfig: BasePort[] = getPortsForType(nodeType);
@@ -336,13 +338,9 @@ export function generatePortsForDecisionTableNode(nodeId: string, conditionGroup
 
 export function generatePortsForClassificationDecisionTableNode(
     nodeId: string,
-    conditionGroups: ConditionGroup[],
-    _hasDefaultNode?: boolean,
-    _hasErrorNode?: boolean
+    conditionGroups: ConditionGroup[]
 ): ViewPort[] {
-    const inputPortConfig = DEFAULT_TABLE_NODE_PORTS.find(
-        (p) => p.port_type === 'input'
-    );
+    const inputPortConfig = DEFAULT_TABLE_NODE_PORTS.find((p) => p.port_type === 'input');
     const inputPort = {
         ...(inputPortConfig ?? {
             port_type: 'input',
@@ -364,19 +362,18 @@ export function generatePortsForClassificationDecisionTableNode(
         id: `${nodeId}_table-in` as `${string}_${string}`,
     };
 
-    // Extract unique route codes where dock_visible=true
+    // Extract unique route codes where dock_visible is not explicitly false
     const uniqueRouteCodes = new Map<string, string>();
     conditionGroups
-        .filter((group) => group.route_code && group.dock_visible)
+        .filter((group) => group.dock_visible !== false)
         .forEach((group) => {
-            if (!uniqueRouteCodes.has(group.route_code!)) {
-                uniqueRouteCodes.set(group.route_code!, group.route_code!);
+            const key = group.route_code ?? group.group_name;
+            if (!uniqueRouteCodes.has(key)) {
+                uniqueRouteCodes.set(key, key);
             }
         });
 
-    const defaultOutputConfig = DEFAULT_TABLE_NODE_PORTS.find(
-        (p) => p.port_type === 'output'
-    );
+    const defaultOutputConfig = DEFAULT_TABLE_NODE_PORTS.find((p) => p.port_type === 'output');
 
     const outputPorts: ViewPort[] = Array.from(uniqueRouteCodes.keys()).map((routeCode) => {
         const normalizedRouteCode = routeCode.toLowerCase().replace(/\s+/g, '-');

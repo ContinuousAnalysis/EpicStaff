@@ -321,12 +321,7 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
             height: Math.max(calculatedHeight, 152),
         };
 
-        const updatedPorts = generatePortsForClassificationDecisionTableNode(
-            currentNode.id,
-            conditionGroups,
-            !!tableData.default_next_node,
-            !!tableData.next_error_node
-        );
+        const updatedPorts = generatePortsForClassificationDecisionTableNode(currentNode.id, conditionGroups);
 
         return {
             ...currentNode,

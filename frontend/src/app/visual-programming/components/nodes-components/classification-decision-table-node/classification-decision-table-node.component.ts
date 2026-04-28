@@ -110,11 +110,11 @@ export class ClassificationDecisionTableNodeComponent {
     }
 
     getPortForGroup(group: ConditionGroup) {
-        const groupName = group.group_name?.trim();
-        if (!groupName) {
+        const key = group.route_code ?? group.group_name;
+        if (!key) {
             return undefined;
         }
-        return this.node.ports?.find((p) => p.role === `decision-out-${groupName}`);
+        return this.node.ports?.find((p) => p.role === `decision-route-${key}`);
     }
 
     onEditClick() {

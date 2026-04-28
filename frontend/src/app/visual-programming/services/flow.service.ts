@@ -4,7 +4,8 @@ import { Subject } from 'rxjs';
 import { NodeType } from '../core/enums/node-type';
 import {
     generatePortsForClassificationDecisionTableNode,
-    generatePortsForDecisionTableNode, isDecisionPortRole,
+    generatePortsForDecisionTableNode,
+    isDecisionPortRole,
     parsePortId,
 } from '../core/helpers/helpers';
 import { ConnectionModel } from '../core/models/connection.model';
@@ -174,13 +175,21 @@ export class FlowService {
 
         let connectionSnapshot = this.connections();
 
-        const validGroupsWithNextNode = groups.filter((group) => group.valid && group.next_node);
+        const validGroupsWithNextNode = groups.filter(
+            (group) => group.valid !== false && group.dock_visible !== false && !!group.next_node
+        );
+
+        const nodeType = allNodes.find((n) => n.id === tableNodeId)?.type;
+        const isClassificationTable = nodeType === NodeType.CLASSIFICATION_TABLE;
 
         validGroupsWithNextNode.forEach((group) => {
+            const portRole = isClassificationTable
+                ? `decision-route-${group.route_code ?? group.group_name}`
+                : `decision-out-${group.group_name}`;
             connectionSnapshot = this.ensureDecisionTableConnection(
                 tableNodeId,
                 group.next_node!,
-                `decision-out-${group.group_name}`,
+                portRole,
                 allNodes,
                 connectionSnapshot
             );
@@ -302,8 +311,11 @@ export class FlowService {
         }
 
         const groupsKey = (table.condition_groups ?? [])
-            .filter((group) => group.valid === true && !!group.next_node)
-            .map((group) => `${group.group_name ?? ''}::${group.next_node ?? ''}`)
+            .filter((group) => group.valid !== false && group.dock_visible !== false && !!group.next_node)
+            .map(
+                (group) =>
+                    `${group.group_name ?? ''}::${group.next_node ?? ''}::${String(group.dock_visible !== false)}`
+            )
             .sort()
             .join('|');
 
@@ -412,12 +424,13 @@ export class FlowService {
 
         const normalizedSourceRole = this.normalizeDecisionPortRole(sourcePortRole);
 
+        const isCdt = sourceNode.type === NodeType.CLASSIFICATION_TABLE;
         const updatedTable = {
             ...tableData,
             condition_groups: (tableData.condition_groups || []).map((group: ConditionGroup) => {
-                const normalizedGroupRole = group.group_name
-                    ? this.normalizeDecisionPortRole(`decision-out-${group.group_name}`)
-                    : null;
+                const key = isCdt ? (group.route_code ?? group.group_name) : group.group_name;
+                const prefix = isCdt ? 'decision-route-' : 'decision-out-';
+                const normalizedGroupRole = key ? this.normalizeDecisionPortRole(`${prefix}${key}`) : null;
 
                 if (normalizedGroupRole === normalizedSourceRole) {
                     return {
@@ -501,12 +514,13 @@ export class FlowService {
             return;
         }
 
+        const isCdt = sourceNode.type === NodeType.CLASSIFICATION_TABLE;
         const updatedTable = {
             ...tableData,
             condition_groups: (tableData.condition_groups || []).map((group: ConditionGroup) => {
-                const normalizedGroupRole = group.group_name
-                    ? this.normalizeDecisionPortRole(`decision-out-${group.group_name}`)
-                    : null;
+                const key = isCdt ? (group.route_code ?? group.group_name) : group.group_name;
+                const prefix = isCdt ? 'decision-route-' : 'decision-out-';
+                const normalizedGroupRole = key ? this.normalizeDecisionPortRole(`${prefix}${key}`) : null;
                 if (normalizedGroupRole === normalizedSourceRole) {
                     return {
                         ...group,
@@ -542,12 +556,15 @@ export class FlowService {
     }
 
     private normalizeDecisionPortRole(role: string): string {
-        if (!role.startsWith('decision-out-')) {
-            return role;
+        if (role.startsWith('decision-out-')) {
+            const suffix = role.substring('decision-out-'.length);
+            return `decision-out-${suffix.toLowerCase().replace(/\s+/g, '-')}`;
         }
-
-        const suffix = role.substring('decision-out-'.length);
-        return `decision-out-${suffix.toLowerCase().replace(/\s+/g, '-')}`;
+        if (role.startsWith('decision-route-')) {
+            const suffix = role.substring('decision-route-'.length);
+            return `decision-route-${suffix.toLowerCase().replace(/\s+/g, '-')}`;
+        }
+        return role;
     }
 
     private normalizeDecisionPortId(portId: string): string {
@@ -733,12 +750,7 @@ export class FlowService {
 
                 const updatedPorts =
                     sourceNode.type === NodeType.CLASSIFICATION_TABLE
-                        ? generatePortsForClassificationDecisionTableNode(
-                              sourceNode.id,
-                              updatedTable.condition_groups,
-                              !!updatedTable.default_next_node,
-                              !!updatedTable.next_error_node
-                          )
+                        ? generatePortsForClassificationDecisionTableNode(sourceNode.id, updatedTable.condition_groups)
                         : generatePortsForDecisionTableNode(
                               sourceNode.id,
                               updatedTable.condition_groups
@@ -761,7 +773,7 @@ export class FlowService {
                         return node;
                     }
 
-                    if (node.type !== NodeType.TABLE) return node;
+                    if (node.type !== NodeType.TABLE && node.type !== NodeType.CLASSIFICATION_TABLE) return node;
 
                     return {
                         ...node,
@@ -770,7 +782,7 @@ export class FlowService {
                             table: decisionUpdate.table,
                         },
                         ports: decisionUpdate.ports,
-                    };
+                    } as NodeModel;
                 });
 
             // Create an updated flow state
