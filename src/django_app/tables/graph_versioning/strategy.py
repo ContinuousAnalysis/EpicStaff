@@ -3,7 +3,6 @@ from copy import deepcopy
 from tables.import_export.enums import EntityType
 from tables.import_export.strategies.graph import GraphStrategy
 from tables.import_export.id_mapper import IDMapper
-from tables.import_export.constants import NODE_MAPPING_KEY
 
 from tables.graph_versioning.constants import (
     _DEPENDENCY_ENTITY_TYPES,
@@ -243,27 +242,7 @@ class GraphVersioningStrategy:
     def apply_snapshot_to_graph(
         self, graph: Graph, data: dict, id_mapper: IDMapper
     ) -> dict:
-        nodes_data = data.get("nodes", [])
-        edges_data = data.get("edge_list", [])
-        conditional_edges_data = data.get("conditional_edge_list", [])
-
-        node_mapper = IDMapper()
-
-        # TODO: how to not break convention by using protected methods
-
-        # Pass 1: create all nodes and build the old→new node ID mapping
-        self._graph_strategy._create_nodes(nodes_data, graph, node_mapper, id_mapper)
-
-        # Pass 2: create edges/conditional-edges with remapped node IDs,
-        # then fix stale node-ID references in decision tables and metadata
-        self._graph_strategy._create_edges(edges_data, graph, node_mapper)
-        self._graph_strategy._create_conditional_edges(
-            conditional_edges_data, graph, node_mapper
-        )
-        self._graph_strategy._remap_decision_table_references(graph, node_mapper)
-        self._graph_strategy._update_metadata_node_ids(graph, node_mapper)
-
-        return {"node_id_map": node_mapper.get_id_map(NODE_MAPPING_KEY)}
+        return self._graph_strategy.recreate_graph_children(graph, data, id_mapper)
 
     def _wipe_graph_children(self, graph: Graph) -> None:
         """

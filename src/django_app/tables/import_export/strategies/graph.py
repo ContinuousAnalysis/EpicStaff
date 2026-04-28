@@ -81,6 +81,25 @@ class GraphStrategy(EntityImportExportStrategy):
         serializer.is_valid(raise_exception=True)
         graph = serializer.save()
 
+        self.recreate_graph_children(
+            graph,
+            {
+                "nodes": nodes_data,
+                "edge_list": edges_data,
+                "conditional_edge_list": conditional_edges_data,
+            },
+            id_mapper,
+        )
+
+        return graph
+
+    def recreate_graph_children(
+        self, graph: Graph, data: dict, id_mapper: IDMapper
+    ) -> dict:
+        nodes_data = data.get("nodes", [])
+        edges_data = data.get("edge_list", [])
+        conditional_edges_data = data.get("conditional_edge_list", [])
+
         node_mapper = IDMapper()
 
         # Pass 1: create all nodes and build the old→new node ID mapping
@@ -93,7 +112,7 @@ class GraphStrategy(EntityImportExportStrategy):
         self._remap_decision_table_references(graph, node_mapper)
         self._update_metadata_node_ids(graph, node_mapper)
 
-        return graph
+        return {"node_id_map": node_mapper.get_id_map(NODE_MAPPING_KEY)}
 
     def _export_nodes(self, instance: Graph) -> list:
         nodes = []
