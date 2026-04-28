@@ -9,6 +9,7 @@ import {
     CreateGraphDtoRequest,
     GetGraphLightRequest,
     GraphDto,
+    GraphRestoreResponse,
     GraphVersionCreateRequest,
     GraphVersionDto,
     GraphVersionUpdateRequest,
@@ -122,5 +123,14 @@ export class FlowsApiService {
         return this.http.patch<GraphVersionDto>(`${this.configService.apiUrl}graph-versions/${id}/`, data, {
             headers: this.httpHeaders,
         });
+    }
+
+    restoreGraphVersion(id: number, backup = true): Observable<GraphRestoreResponse> {
+        const params = backup ? new HttpParams().set('backup', 'true') : undefined;
+        return this.http.post<GraphRestoreResponse>(
+            `${this.configService.apiUrl}graph-versions/${id}/restore/`,
+            {},
+            { headers: this.httpHeaders, params }
+        );
     }
 }

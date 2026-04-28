@@ -604,12 +604,19 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
         const positionStrategy = this.overlay.position().global().right('0').top('5rem');
 
-        this.dialog.open(VersionHistoryPanelComponent, {
+        const dialogRef = this.dialog.open<boolean>(VersionHistoryPanelComponent, {
             positionStrategy,
             height: 'calc(100% - 5rem)',
             width: '380px',
-            data: { graphId: this.graph.id },
+            data: { graphId: this.graph.id, hasUnsavedChanges: () => this.hasUnsavedChanges() },
         });
+
+        dialogRef.closed
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                filter((result) => result === true)
+            )
+            .subscribe(() => this.refreshCurrentFlow());
     }
 
     public onSaveVersion(): void {

@@ -17,7 +17,11 @@
         }
 
         @for (version of versionsList; track version.id) {
-            <div class="version-card">
+            <div
+                class="version-card"
+                [class.version-card--selected]="selectedVersionId === version.id"
+                (click)="selectVersion(version)"
+            >
                 <div class="version-info">
                     @if (editingVersionId === version.id && editingField === 'name') {
                         <input
@@ -40,7 +44,10 @@
                     }
                     <div class="version-date">{{ version.created_at | date: 'MMM d, yyyy, h:mm a' }}</div>
                 </div>
-                <div class="version-menu">
+                <div
+                    class="version-menu"
+                    (click)="$event.stopPropagation()"
+                >
                     <app-icon-button
                         icon="dots-vertical"
                         size="1.5rem"
@@ -49,7 +56,12 @@
                     ></app-icon-button>
                     @if (openMenuId === version.id) {
                         <div class="dropdown-menu">
-                            <button class="dropdown-item">Restore</button>
+                            <button
+                                class="dropdown-item"
+                                (click)="restoreVersion(version, $event)"
+                            >
+                                Restore
+                            </button>
                             <button
                                 class="dropdown-item"
                                 (click)="startEdit(version, 'name')"
@@ -68,5 +80,14 @@
                 </div>
             </div>
         }
+    </div>
+    <div class="dialog-footer">
+        <button
+            class="restore-version-btn"
+            [disabled]="!selectedVersionId"
+            (click)="restoreSelectedVersion()"
+        >
+            Restore This Version
+        </button>
     </div>
 </div>

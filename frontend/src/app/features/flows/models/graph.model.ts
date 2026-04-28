@@ -104,3 +104,18 @@ export interface GraphVersionUpdateRequest {
     name: string;
     description: string;
 }
+
+export interface RestoreWarning {
+    type: 'node_skipped' | 'edge_dropped' | string;
+    node_name?: string;
+    node_type?: string;
+    reason: string;
+}
+
+export interface GraphRestoreResponse {
+    restored: boolean;
+    graph_id: number;
+    warnings: RestoreWarning[];
+    auto_backup_version_id?: number;
+    node_id_map?: Record<string, number>;
+}
