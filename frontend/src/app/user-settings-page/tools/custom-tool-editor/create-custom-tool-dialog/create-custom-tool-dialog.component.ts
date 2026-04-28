@@ -15,7 +15,6 @@ import {
 import { CustomToolsService } from '../../../../features/tools/services/custom-tools/custom-tools.service';
 import { ToastService } from '../../../../services/notifications';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
-import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { ChipsInputComponent } from '../../../../shared/components/chips-input/chips-input.component';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
@@ -49,7 +48,6 @@ const DEFAULT_VARIABLES_JSON = `[
         CommonModule,
         ReactiveFormsModule,
         AppSvgIconComponent,
-        ButtonComponent,
         ChipsInputComponent,
         CustomInputComponent,
         HelpTooltipComponent,

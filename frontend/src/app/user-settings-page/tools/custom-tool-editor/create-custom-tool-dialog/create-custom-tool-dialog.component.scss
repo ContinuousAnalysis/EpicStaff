@@ -39,19 +39,18 @@
             justify-content: center;
             width: 40px;
             height: 40px;
-            background: none;
-            border: none;
-            color: #fff;
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
             cursor: pointer;
-            border-radius: 8px;
-            opacity: 0.8;
+            border-radius: 50%;
             transition:
-                opacity 0.2s ease,
-                background-color 0.2s ease;
+                background-color 0.2s ease,
+                color 0.2s ease;
 
             &:hover {
-                opacity: 1;
-                background-color: rgba(255, 255, 255, 0.06);
+                background-color: rgba(104, 95, 255, 0.12);
+                color: #fff;
             }
 
             &:focus-visible {
@@ -101,7 +100,7 @@
         justify-content: space-between;
         height: 58px;
         box-sizing: border-box;
-        padding: 20px 40px;
+        padding: 16px 40px 16px 30px;
         background-color: var(--color-modals-background);
         border-bottom: 1px solid var(--color-divider-subtle);
         flex-shrink: 0;
@@ -112,8 +111,8 @@
         align-items: center;
         gap: 8px;
         font-size: 14px;
-        line-height: 18px;
-        font-weight: 600;
+        line-height: 130%;
+        font-weight: 700;
         color: #fff;
 
         .python-icon {
@@ -124,30 +123,34 @@
     .editor-pane-actions {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 4px;
         flex-shrink: 0;
 
         button {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 16px;
-            height: 16px;
+            width: 28px;
+            height: 28px;
             padding: 0;
             background: transparent;
-            border: none;
+            border: 1px solid transparent;
+            border-radius: 6px;
             color: #d4d4dc;
             cursor: pointer;
-            transition: color 0.2s ease;
+            transition:
+                background-color 0.2s ease,
+                border-color 0.2s ease,
+                color 0.2s ease;
 
             &:hover {
+                background-color: rgba(255, 255, 255, 0.06);
                 color: #fff;
             }
 
             &:focus-visible {
                 outline: 2px solid var(--accent-color);
-                outline-offset: 4px;
-                border-radius: 2px;
+                outline-offset: 2px;
             }
         }
     }
@@ -214,7 +217,7 @@
         justify-content: space-between;
         gap: 16px;
         height: 58px;
-        padding: 0 16px;
+        padding: 20px 16px;
         border-bottom: 1px solid transparent;
     }
 
@@ -301,13 +304,5 @@
             display: flex;
             flex-direction: column;
         }
-    }
-
-    .dialog-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        padding: 16px 40px;
-        border-top: 1px solid var(--color-divider-subtle);
     }
 }
