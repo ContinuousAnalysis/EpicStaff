@@ -22,6 +22,8 @@ from tables.services.storage_service.db_sync import StorageFileSync
 from tables.services.storage_service.decorators import check_permission
 from tables.services.storage_service.enums import StorageAction
 
+from tables.models import OrganizationUser
+
 
 _DOCUMENT_EXTENSIONS = frozenset(
     {
@@ -99,11 +101,8 @@ class StorageManager:
           - Add path-based ACLs for fine-grained file access
           - Add audit logging here to capture every storage operation
         """
-        from tables.models import OrganizationUser
 
-        if not OrganizationUser.objects.filter(
-            name=user_name, organization_id=org_id
-        ).exists():
+        if not OrganizationUser.objects.filter(org_id=org_id).exists():
             raise PermissionDenied(
                 f"User '{user_name}' does not have '{action}' permission "
                 f"in organization {org_id}."

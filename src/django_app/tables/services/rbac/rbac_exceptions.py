@@ -60,6 +60,6 @@ class DefaultOrganizationConflictError(CustomAPIExeption):
     status_code = 409
     default_detail = (
         "Default organization already exists from a previous setup. "
-        "Remove it manually or change DJANGO_DEFAULT_ORG_NAME before retrying."
+        "Remove it manually or change DEFAULT_ORGANIZATION_NAME before retrying."
     )
     default_code = "default_organization_conflict"

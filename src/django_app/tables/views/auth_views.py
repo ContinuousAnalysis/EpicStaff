@@ -142,7 +142,7 @@ class FirstSetupView(APIView):
         summary="Perform first-time setup",
         description=(
             "Creates the first superadmin (is_superadmin=True), a default "
-            "Organization (name from `DJANGO_DEFAULT_ORG_NAME` env var, "
+            "Organization (name from `DEFAULT_ORGANIZATION_NAME` env var, "
             "falling back to 'Default Organization'), and an OrganizationUser "
             "membership with the built-in 'Org Admin' role. Returns the user, "
             "the org, and JWT tokens so the frontend can drop the user straight "

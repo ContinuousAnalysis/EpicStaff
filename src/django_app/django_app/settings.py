@@ -230,7 +230,9 @@ PASSWORD_RESET_TOKEN_TTL = int(os.getenv("PASSWORD_RESET_TOKEN_TTL", "3600"))
 
 SSE_TICKET_TTL_SECONDS = 30
 
-DJANGO_DEFAULT_ORG_NAME = os.getenv("DJANGO_DEFAULT_ORG_NAME", "Default Organization")
+DEFAULT_ORGANIZATION_NAME = os.getenv(
+    "DEFAULT_ORGANIZATION_NAME", "Default Organization"
+)
 
 # Object storage
 STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "s3")

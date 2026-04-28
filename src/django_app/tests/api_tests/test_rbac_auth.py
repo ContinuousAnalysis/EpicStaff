@@ -288,7 +288,7 @@ def test_logout_rejects_refresh_owned_by_another_user(
 @pytest.mark.django_db
 def test_first_setup_ignores_organization_name_and_display_name_in_body(api_client):
     """After the M1/M2 cleanup the endpoint silently ignores these fields;
-    the org name comes from settings.DJANGO_DEFAULT_ORG_NAME."""
+    the org name comes from settings.DEFAULT_ORGANIZATION_NAME."""
     r = api_client.post(
         reverse("first_setup"),
         data={
@@ -302,11 +302,11 @@ def test_first_setup_ignores_organization_name_and_display_name_in_body(api_clie
     assert r.status_code == 201
     body = r.json()
     assert body["user"]["display_name"] is None
-    assert body["organization"]["name"] == settings.DJANGO_DEFAULT_ORG_NAME
+    assert body["organization"]["name"] == settings.DEFAULT_ORGANIZATION_NAME
 
 
 @pytest.mark.django_db
-@override_settings(DJANGO_DEFAULT_ORG_NAME="Override Co")
+@override_settings(DEFAULT_ORGANIZATION_NAME="Override Co")
 def test_first_setup_uses_django_default_org_name_from_settings(api_client):
     r = api_client.post(
         reverse("first_setup"),

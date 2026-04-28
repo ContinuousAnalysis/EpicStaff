@@ -34,8 +34,8 @@ class FirstSetupService:
       already exists ("When this setup is completed once, it never
       appears again" — re-opens only if all users are removed).
 
-    The organization name always comes from `settings.DJANGO_DEFAULT_ORG_NAME`
-    (driven by the `DJANGO_DEFAULT_ORG_NAME` env var, with a sane fallback).
+    The organization name always comes from `settings.DEFAULT_ORGANIZATION_NAME`
+    (driven by the `DEFAULT_ORGANIZATION_NAME` env var, with a sane fallback).
     It is not taken from the HTTP request body.
     """
 
@@ -52,7 +52,7 @@ class FirstSetupService:
         if user_model.objects.exists():
             raise SetupAlreadyCompletedError()
 
-        org_name = settings.DJANGO_DEFAULT_ORG_NAME
+        org_name = settings.DEFAULT_ORGANIZATION_NAME
 
         user = user_model.objects.create_superuser(
             email=email,

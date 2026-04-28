@@ -101,7 +101,7 @@ Shape comes from `utils/exception_handler.custom_exception_handler`.
   - `password` — must pass Django's `AUTH_PASSWORD_VALIDATORS` (min length,
     not-too-common, not-all-numeric, not-too-similar-to-email).
   - Organization name is **not** taken from the request body; it comes from
-    the `DJANGO_DEFAULT_ORG_NAME` setting (env-driven, default
+    the `DEFAULT_ORGANIZATION_NAME` setting (env-driven, default
     `"Default Organization"`). Any `organization_name` / `display_name`
     fields passed in the body are silently ignored.
 - **Response 201:**
@@ -157,7 +157,7 @@ Enable by setting in the service environment:
 | `DJANGO_AUTO_CREATE_ADMIN` | yes | `True` | Accepts only `True`, `true`, `False`, `false`. Anything else → entrypoint aborts (`exit 1`). |
 | `DJANGO_ADMIN_EMAIL` | when flag is `True` | `admin@acme.com` | |
 | `DJANGO_ADMIN_PASSWORD` | when flag is `True` | `StrongPass123!` | Used exactly as given. The entrypoint **never generates** or rewrites it. |
-| `DJANGO_DEFAULT_ORG_NAME` | optional | `Acme Inc` | Name for the default Organization. Falls back to `"Default Organization"` when unset. Read from `settings.DJANGO_DEFAULT_ORG_NAME` — applies to both the HTTP endpoint and the entrypoint bootstrap. |
+| `DEFAULT_ORGANIZATION_NAME` | optional | `Acme Inc` | Name for the default Organization. Falls back to `"Default Organization"` when unset. Read from `settings.DEFAULT_ORGANIZATION_NAME` — applies to both the HTTP endpoint and the entrypoint bootstrap. |
 
 `docker-compose.yaml` forwards these vars into the `django_app` container
 already. Compose does not pass arbitrary `.env` entries into services — only
@@ -569,7 +569,7 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 | Refresh rotation | Each call to `POST /api/auth/refresh/` (renamed from `/api/auth/token/refresh/`) returns a **new** refresh in addition to the access token — overwrite local storage with both values. The previous refresh is blacklisted; replaying it → 401. |
 | Login throttling | 6th credential attempt within the bucket window returns `429` with a `Retry-After` header. Surface a "too many attempts, retry in N seconds" message instead of generic error. |
 | SSE streams | EventSource can no longer connect directly. Fetch a ticket via `POST /api/auth/sse-ticket/`, then connect with `?ticket=<value>`. On `onerror` / reconnect, fetch a **fresh** ticket first. Full migration guide: [`sse_auth.md`](./sse_auth.md). |
-| First-setup screen | Call `GET /api/auth/first-setup/` on boot; if `needs_setup: true`, show the setup form. POST payload is `{ email, password }` — the organization name is sourced from the `DJANGO_DEFAULT_ORG_NAME` setting on the server, not the request body. Response returns `access` + `refresh` — persist them and skip the login screen on success. |
+| First-setup screen | Call `GET /api/auth/first-setup/` on boot; if `needs_setup: true`, show the setup form. POST payload is `{ email, password }` — the organization name is sourced from the `DEFAULT_ORGANIZATION_NAME` setting on the server, not the request body. Response returns `access` + `refresh` — persist them and skip the login screen on success. |
 | Idempotency | A repeated `POST /api/auth/first-setup/` returns **409** with `{"detail": "Setup has already been completed"}`. Handle this explicitly (e.g. redirect to login). |
 | `/me` response shape | Changed. New fields: `display_name`, `avatar_url`, `is_superadmin`, `memberships[]`. Removed: `username`. FE should render email (not username) in the profile menu, and use `memberships` to populate the org/role sidebar. |
 | JWT claims | Access token now carries `email` and `is_superadmin` in addition to `user_id`. FE may decode the access token locally to short-circuit UI gating without hitting `/me`. |
@@ -599,7 +599,7 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 | `/api/auth/token/refresh/` → **`/api/auth/refresh/`** | returns `{access}` only | returns `{access, refresh}` (rotation on) |
 | `/api/auth/logout/` | *did not exist* | new — `{refresh}` → 205 |
 | `/api/auth/sse-ticket/` | *did not exist* | new — JWT-authed; returns `{ticket, expires_in}` |
-| `/api/auth/first-setup/` POST request | `{username, password, email?}` | `{email, password}` (org name comes from `DJANGO_DEFAULT_ORG_NAME`) |
+| `/api/auth/first-setup/` POST request | `{username, password, email?}` | `{email, password}` (org name comes from `DEFAULT_ORGANIZATION_NAME`) |
 | `/api/auth/first-setup/` POST response | `{access, refresh, api_key}` | `{user, organization, access, refresh}` |
 | `/api/auth/me/` response | `{id, username, email}` | `{id, email, display_name, avatar_url, is_superadmin, memberships[]}` |
 | `/api/auth/introspect/` response | `{active, user_id, username, scopes}` | `{active, user_id, email, scopes}` |
