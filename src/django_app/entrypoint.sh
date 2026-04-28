@@ -23,7 +23,7 @@ python manage.py upload_models
 # 'False'/'false' only). When enabled, runs the same FirstSetupService that
 # POST /api/auth/first-setup/ uses, so the resulting DB state is identical.
 # Required when enabled: DJANGO_ADMIN_EMAIL, DJANGO_ADMIN_PASSWORD,
-# DJANGO_DEFAULT_ORG_NAME. Password is used as-is from env (never generated).
+# DEFAULT_ORGANIZATION_NAME. Password is used as-is from env (never generated).
 case "${DJANGO_AUTO_CREATE_ADMIN:-False}" in
   True|true)   AUTO_CREATE_ADMIN=1 ;;
   False|false) AUTO_CREATE_ADMIN=0 ;;
@@ -37,7 +37,7 @@ if [ "${AUTO_CREATE_ADMIN}" = "1" ]; then
   missing=""
   [ -z "${DJANGO_ADMIN_EMAIL}" ]      && missing="${missing} DJANGO_ADMIN_EMAIL"
   [ -z "${DJANGO_ADMIN_PASSWORD}" ]   && missing="${missing} DJANGO_ADMIN_PASSWORD"
-  [ -z "${DJANGO_DEFAULT_ORG_NAME}" ] && missing="${missing} DJANGO_DEFAULT_ORG_NAME"
+  [ -z "${DEFAULT_ORGANIZATION_NAME}" ] && missing="${missing} DEFAULT_ORGANIZATION_NAME"
 
   if [ -n "${missing}" ]; then
     echo "ERROR: DJANGO_AUTO_CREATE_ADMIN=True but required var(s) missing:${missing}." >&2
@@ -56,7 +56,7 @@ else:
         email=os.environ['DJANGO_ADMIN_EMAIL'],
         password=os.environ['DJANGO_ADMIN_PASSWORD'],
     )
-    print(f\"Bootstrapped superadmin {os.environ['DJANGO_ADMIN_EMAIL']} in org '{os.environ['DJANGO_DEFAULT_ORG_NAME']}'.\")
+    print(f\"Bootstrapped superadmin {os.environ['DJANGO_ADMIN_EMAIL']} in org '{os.environ['DEFAULT_ORGANIZATION_NAME']}'.\")
 "
   fi
 else
