@@ -30,6 +30,7 @@ import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import { themeQuartz } from 'ag-grid-community';
 
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
+import { HelpTooltipComponent } from '../../../../../shared/components/help-tooltip/help-tooltip.component';
 import { NodeType } from '../../../../core/enums/node-type';
 import { PromptConfig } from '../../../../core/models/classification-decision-table.model';
 import { ConditionGroup } from '../../../../core/models/decision-table.model';
@@ -46,7 +47,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
     selector: 'app-classification-decision-table-grid',
-    imports: [AgGridModule, ButtonComponent, ParamsGroupHeaderComponent],
+    imports: [AgGridModule, ButtonComponent, ParamsGroupHeaderComponent, HelpTooltipComponent],
     templateUrl: './classification-decision-table-grid.component.html',
     styleUrls: ['./classification-decision-table-grid.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

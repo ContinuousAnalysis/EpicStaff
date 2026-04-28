@@ -1,7 +1,10 @@
 <div class="panel-container">
     <div class="panel-content">
         @if (form) {
-            <form [formGroup]="form" class="form-container">
+            <form
+                [formGroup]="form"
+                class="form-container"
+            >
                 <!-- Sticky header: node fields + tab row -->
                 <div class="panel-sticky-header">
                     <!-- Header fields row -->
@@ -9,9 +12,8 @@
                         <div class="header-field">
                             <label class="header-label"
                                 >Name
-                                <span class="help-icon" title="The unique identifier for this node"
-                                    ><i class="ti ti-help-circle"></i></span
-                            ></label>
+                                <app-help-tooltip text="The unique identifier for this node" />
+                            </label>
                             <input
                                 type="text"
                                 formControlName="node_name"
@@ -23,10 +25,12 @@
                         <div class="header-field">
                             <label class="header-label"
                                 >Default Next Node
-                                <span class="help-icon" title="Fallback route when no condition matches"
-                                    ><i class="ti ti-help-circle"></i></span
-                            ></label>
-                            <select formControlName="default_next_node" class="header-select">
+                                <app-help-tooltip text="Fallback route when no condition matches" />
+                            </label>
+                            <select
+                                formControlName="default_next_node"
+                                class="header-select"
+                            >
                                 <option value="">Select Node</option>
                                 @for (node of availableNodes(); track node.value) {
                                     <option [value]="node.value">{{ node.label }}</option>
@@ -37,10 +41,12 @@
                         <div class="header-field">
                             <label class="header-label"
                                 >Error Next Node
-                                <span class="help-icon" title="Route taken if evaluation fails"
-                                    ><i class="ti ti-help-circle"></i></span
-                            ></label>
-                            <select formControlName="next_error_node" class="header-select">
+                                <app-help-tooltip text="Route taken if evaluation fails" />
+                            </label>
+                            <select
+                                formControlName="next_error_node"
+                                class="header-select"
+                            >
                                 <option value="">Select Node</option>
                                 @for (node of availableNodes(); track node.value) {
                                     <option [value]="node.value">{{ node.label }}</option>
@@ -51,9 +57,8 @@
                         <div class="header-field header-field--toggle">
                             <label class="header-label"
                                 >Classification Dec Table
-                                <span class="help-icon" title="This node operates as a Classification Decision Table"
-                                    ><i class="ti ti-help-circle"></i></span
-                            ></label>
+                                <app-help-tooltip text="This node operates as a Classification Decision Table" />
+                            </label>
                             <div
                                 class="cdt-toggle cdt-toggle--on"
                                 aria-label="Classification Decision Table (always enabled)"
@@ -132,7 +137,10 @@
                         <div class="computation-sidebar">
                             <h4 class="section-label">Input Map</h4>
                             <div class="input-map">
-                                <app-input-map [activeColor]="activeColor" arrayName="pre_input_map"></app-input-map>
+                                <app-input-map
+                                    [activeColor]="activeColor"
+                                    arrayName="pre_input_map"
+                                ></app-input-map>
                             </div>
                             <app-custom-input
                                 label="Output Variable Path"
@@ -164,7 +172,10 @@
                         <div class="computation-sidebar">
                             <h4 class="section-label">Input Map</h4>
                             <div class="input-map">
-                                <app-input-map [activeColor]="activeColor" arrayName="post_input_map"></app-input-map>
+                                <app-input-map
+                                    [activeColor]="activeColor"
+                                    arrayName="post_input_map"
+                                ></app-input-map>
                             </div>
                             <app-custom-input
                                 label="Output Variable Path"
@@ -196,12 +207,13 @@
                         <div class="prompt-section-header">
                             <span class="prompt-section-title">
                                 Prompt Library
-                                <i
-                                    class="ti ti-help-circle"
-                                    title="Define reusable prompts referenced in decision table rules."
-                                ></i>
+                                <app-help-tooltip text="Define reusable prompts referenced in decision table rules." />
                             </span>
-                            <button type="button" class="add-prompt-header-btn" (click)="addPrompt()">
+                            <button
+                                type="button"
+                                class="add-prompt-header-btn"
+                                (click)="addPrompt()"
+                            >
                                 <i class="ti ti-plus"></i> Add Prompt
                             </button>
                         </div>
@@ -212,8 +224,14 @@
                                 <p class="empty-state">No prompts defined yet. Add a prompt above to get started.</p>
                             } @else {
                                 @for (prompt of promptEntries(); track prompt.id) {
-                                    <div class="prompt-card" [class.expanded]="editingPromptId() === prompt.id">
-                                        <div class="prompt-card-header" (click)="toggleEditPrompt(prompt.id)">
+                                    <div
+                                        class="prompt-card"
+                                        [class.expanded]="editingPromptId() === prompt.id"
+                                    >
+                                        <div
+                                            class="prompt-card-header"
+                                            (click)="toggleEditPrompt(prompt.id)"
+                                        >
                                             <div class="prompt-card-title">
                                                 <i class="ti ti-message-chatbot"></i>
                                                 <span class="prompt-id">{{ prompt.id }}</span>

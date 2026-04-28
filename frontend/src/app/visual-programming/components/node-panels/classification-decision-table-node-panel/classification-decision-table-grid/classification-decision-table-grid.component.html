@@ -2,15 +2,16 @@
     <div class="grid-header">
         <h3>
             Conditions
-            <span
-                class="tooltip-icon"
-                title="Configure routing rules with continue flag and route codes for dock visibility."
-            >
-                <i class="ti ti-help-circle"></i>
-            </span>
+            <app-help-tooltip text="Configure routing rules with continue flag and route codes for dock visibility." />
         </h3>
         <div class="grid-header-actions">
-            <app-button type="primary" [leftIcon]="'plus'" (click)="addRow()"> Add Condition </app-button>
+            <app-button
+                type="primary"
+                [leftIcon]="'plus'"
+                (click)="addRow()"
+            >
+                Add Condition
+            </app-button>
         </div>
     </div>
 
@@ -28,11 +29,21 @@
     </ag-grid-angular>
 
     @if (contextMenu()) {
-        <div class="context-menu" [style.left.px]="contextMenu()!.x" [style.top.px]="contextMenu()!.y">
-            <div class="context-menu-item" (click)="addRowAbove()">
+        <div
+            class="context-menu"
+            [style.left.px]="contextMenu()!.x"
+            [style.top.px]="contextMenu()!.y"
+        >
+            <div
+                class="context-menu-item"
+                (click)="addRowAbove()"
+            >
                 <i class="ti ti-row-insert-top"></i> Add Row Above
             </div>
-            <div class="context-menu-item" (click)="addRowBelow()">
+            <div
+                class="context-menu-item"
+                (click)="addRowBelow()"
+            >
                 <i class="ti ti-row-insert-bottom"></i> Add Row Below
             </div>
         </div>
@@ -56,7 +67,10 @@
             @if (hiddenFieldColumns().length > 0) {
                 <div class="field-picker-group-label">Hidden</div>
                 @for (field of hiddenFieldColumns(); track field) {
-                    <div class="field-picker-item field-picker-item--hidden" (click)="addFieldColumn(field)">
+                    <div
+                        class="field-picker-item field-picker-item--hidden"
+                        (click)="addFieldColumn(field)"
+                    >
                         <i class="ti ti-eye-off"></i> {{ field }}
                     </div>
                 }
@@ -64,13 +78,23 @@
             @if (availableInputMapFields().length > 0) {
                 <div class="field-picker-group-label">Input Map</div>
                 @for (field of availableInputMapFields(); track field) {
-                    <div class="field-picker-item" (click)="addFieldColumn(field)">{{ field }}</div>
+                    <div
+                        class="field-picker-item"
+                        (click)="addFieldColumn(field)"
+                    >
+                        {{ field }}
+                    </div>
                 }
             }
             @if (availableDomainFields().length > 0) {
                 <div class="field-picker-group-label">Domain</div>
                 @for (field of availableDomainFields(); track field) {
-                    <div class="field-picker-item" (click)="addFieldColumn(field)">{{ field }}</div>
+                    <div
+                        class="field-picker-item"
+                        (click)="addFieldColumn(field)"
+                    >
+                        {{ field }}
+                    </div>
                 }
             }
             @if (!hasAvailableFields()) {
@@ -97,7 +121,10 @@
             @if (hiddenManipFieldColumns().length > 0) {
                 <div class="field-picker-group-label">Hidden</div>
                 @for (field of hiddenManipFieldColumns(); track field) {
-                    <div class="field-picker-item field-picker-item--hidden" (click)="addManipFieldColumn(field)">
+                    <div
+                        class="field-picker-item field-picker-item--hidden"
+                        (click)="addManipFieldColumn(field)"
+                    >
                         <i class="ti ti-eye-off"></i> {{ field }}
                     </div>
                 }
@@ -105,13 +132,23 @@
             @if (availableManipInputMapFields().length > 0) {
                 <div class="field-picker-group-label">Input Map</div>
                 @for (field of availableManipInputMapFields(); track field) {
-                    <div class="field-picker-item" (click)="addManipFieldColumn(field)">{{ field }}</div>
+                    <div
+                        class="field-picker-item"
+                        (click)="addManipFieldColumn(field)"
+                    >
+                        {{ field }}
+                    </div>
                 }
             }
             @if (availableManipDomainFields().length > 0) {
                 <div class="field-picker-group-label">Domain</div>
                 @for (field of availableManipDomainFields(); track field) {
-                    <div class="field-picker-item" (click)="addManipFieldColumn(field)">{{ field }}</div>
+                    <div
+                        class="field-picker-item"
+                        (click)="addManipFieldColumn(field)"
+                    >
+                        {{ field }}
+                    </div>
                 }
             }
             @if (!hasAvailableManipFields()) {
