@@ -9,6 +9,9 @@ import {
     Inject,
     inject,
     OnInit,
+    QueryList,
+    ViewChild,
+    ViewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -33,13 +36,18 @@ export class VersionHistoryPanelComponent implements OnInit {
     public editingField: 'name' | 'description' | null = null;
     public editingValue: string = '';
     private editingVersion: GraphVersionDto | null = null;
+    private isSaving = false;
+
+    @ViewChild('versionEditInput') editInput?: ElementRef<HTMLInputElement | HTMLTextAreaElement>;
+    @ViewChildren('versionMenu') versionMenus!: QueryList<ElementRef>;
 
     private destroyRef = inject(DestroyRef);
 
     @HostListener('document:click', ['$event'])
     onDocumentClick(event: MouseEvent): void {
-        const menus = this.el.nativeElement.querySelectorAll('.version-menu');
-        const clickedInsideMenu = Array.from(menus).some((m) => (m as HTMLElement).contains(event.target as Node));
+        const clickedInsideMenu = this.versionMenus?.some((menuRef) =>
+            menuRef.nativeElement.contains(event.target as Node)
+        );
         if (!clickedInsideMenu) {
             this.openMenuId = null;
         }
@@ -49,8 +57,7 @@ export class VersionHistoryPanelComponent implements OnInit {
     onDocumentMouseDown(event: MouseEvent): void {
         const editing = this.editingVersion;
         if (!editing) return;
-        const input = this.el.nativeElement.querySelector('.version-edit-input');
-        if (input && !input.contains(event.target as Node)) {
+        if (this.editInput && !this.editInput.nativeElement.contains(event.target as Node)) {
             this.saveEdit(editing);
         }
     }
@@ -59,7 +66,6 @@ export class VersionHistoryPanelComponent implements OnInit {
         private flowApiService: FlowsApiService,
         private toastService: ToastService,
         private confirmationDialog: ConfirmationDialogService,
-        private el: ElementRef,
         private cdr: ChangeDetectorRef,
         @Inject(DIALOG_DATA) public data: { graphId: number },
         public dialogRef: DialogRef<void>
@@ -81,18 +87,23 @@ export class VersionHistoryPanelComponent implements OnInit {
         this.editingValue = field === 'name' ? version.name : version.description || '';
         this.cdr.detectChanges();
         setTimeout(() => {
-            const input = this.el.nativeElement.querySelector('.version-edit-input');
-            if (input) input.focus();
+            this.editInput?.nativeElement.focus();
         });
     }
 
     public saveEdit(version: GraphVersionDto): void {
-        if (!this.editingVersionId || !this.editingField) return;
+        if (!this.editingVersionId || !this.editingField || this.isSaving) return;
+
         const field = this.editingField;
         const value = this.editingValue.trim();
         const originalValue = field === 'name' ? version.name : version.description || '';
-        this.cancelEdit();
-        if (!value || value === originalValue) return;
+
+        if (!value || value === originalValue) {
+            this.cancelEdit();
+            return;
+        }
+
+        this.isSaving = true;
 
         const payload =
             field === 'name'
@@ -109,9 +120,14 @@ export class VersionHistoryPanelComponent implements OnInit {
                         this.versionsList[idx] = updated;
                     }
                     this.toastService.success(field === 'name' ? 'Version was renamed' : 'Description was updated');
+                    this.cancelEdit();
                 },
                 error: () => {
                     this.toastService.error('Failed to update version');
+                    this.isSaving = false;
+                },
+                complete: () => {
+                    this.isSaving = false;
                 },
             });
     }
@@ -160,13 +176,16 @@ export class VersionHistoryPanelComponent implements OnInit {
     }
 
     private loadVersions(): void {
-        this.flowApiService.getGraphVersions(this.data.graphId).subscribe({
-            next: (result) => {
-                this.versionsList = result;
-            },
-            error: (err) => {
-                console.error('Failed to load graph versions', err);
-            },
-        });
+        this.flowApiService
+            .getGraphVersions(this.data.graphId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (result) => {
+                    this.versionsList = result;
+                },
+                error: (err) => {
+                    console.error('Failed to load graph versions', err);
+                },
+            });
     }
 }
