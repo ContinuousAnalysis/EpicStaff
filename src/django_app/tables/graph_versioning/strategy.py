@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import dataclass
 
 from tables.import_export.enums import EntityType
 from tables.import_export.strategies.graph import GraphStrategy
@@ -17,6 +18,16 @@ from tables.models import (
     PythonNode,
     WebhookTriggerNode,
 )
+
+
+@dataclass
+class _MissingSets:
+    """Dataclass that holds all missing deps"""
+
+    crews: set
+    subgraphs: set
+    llm_configs: set
+    webhooks: set
 
 
 class GraphVersioningStrategy:
@@ -71,30 +82,31 @@ class GraphVersioningStrategy:
 
         return {"available": available_deps, "missing": missing_deps}
 
-    def filter_snapshot(self, snapshot: dict, missing: dict) -> tuple[dict, list[dict]]:
-        """
-        Strip missing-dependency nodes, null orphaned FKs,
-        and drop dangling edges, returning the pipeline-ready snapshot
-        and warnings.
-        """
-        filtered_snapshot = deepcopy(snapshot)
+    def _build_missing_sets(self, missing: dict) -> _MissingSets:
+        """Gather all missing dependencies ids into dataclass structure"""
+        return _MissingSets(
+            crews=set(missing.get(EntityType.CREW.value, [])),
+            subgraphs=set(missing.get(EntityType.GRAPH.value, [])),
+            llm_configs=set(missing.get(EntityType.LLM_CONFIG.value, [])),
+            webhooks=set(missing.get(EntityType.WEBHOOK_TRIGGER.value, [])),
+        )
+
+    def _filter_nodes(
+        self, nodes: list[dict], missing_sets: _MissingSets
+    ) -> tuple[list[dict], set[int], list[dict]]:
+        """Checks all graph nodes that rely on dependencies and skip them"""
+
+        kept_nodes: list[dict] = []
+        skipped_node_ids: set[int] = set()
         warnings: list[dict] = []
 
-        missing_crews = set(missing.get(EntityType.CREW.value, []))
-        missing_subgraphs = set(missing.get(EntityType.GRAPH.value, []))
-        missing_llm_configs = set(missing.get(EntityType.LLM_CONFIG.value, []))
-        missing_webhooks = set(missing.get(EntityType.WEBHOOK_TRIGGER.value, []))
-
-        skipped_node_ids: set[int] = set()
-        kept_nodes: list[dict] = []
-
-        for node in filtered_snapshot.get("nodes", []):
+        for node in nodes:
             node_type = node.get("node_type")
             node_id = node.get("id")
             node_name = node.get("node_name") or node_type
 
             if node_type == "CrewNode":
-                if node.get("crew") in missing_crews:
+                if node.get("crew") in missing_sets.crews:
                     skipped_node_ids.add(node_id)
                     warnings.append(
                         {
@@ -107,7 +119,7 @@ class GraphVersioningStrategy:
                     continue
 
             elif node_type == "SubgraphNode":
-                if node.get("subgraph") in missing_subgraphs:
+                if node.get("subgraph") in missing_sets.subgraphs:
                     skipped_node_ids.add(node_id)
                     warnings.append(
                         {
@@ -120,7 +132,7 @@ class GraphVersioningStrategy:
                     continue
 
             elif node_type == "LLMNode":
-                if node.get("llm_config") in missing_llm_configs:
+                if node.get("llm_config") in missing_sets.llm_configs:
                     skipped_node_ids.add(node_id)
                     warnings.append(
                         {
@@ -134,7 +146,7 @@ class GraphVersioningStrategy:
 
             elif node_type == "CodeAgentNode":
                 missing_id = node.get("llm_config")
-                if missing_id in missing_llm_configs:
+                if missing_id in missing_sets.llm_configs:
                     node["llm_config"] = None
                     warnings.append(
                         {
@@ -148,7 +160,7 @@ class GraphVersioningStrategy:
 
             elif node_type == "WebhookTriggerNode":
                 missing_id = node.get("webhook_trigger")
-                if missing_id in missing_webhooks:
+                if missing_id in missing_sets.webhooks:
                     node["webhook_trigger"] = None
                     warnings.append(
                         {
@@ -162,7 +174,7 @@ class GraphVersioningStrategy:
 
             elif node_type == "TelegramTriggerNode":
                 missing_id = node.get("webhook_trigger")
-                if missing_id in missing_webhooks:
+                if missing_id in missing_sets.webhooks:
                     node["webhook_trigger"] = None
                     warnings.append(
                         {
@@ -176,7 +188,18 @@ class GraphVersioningStrategy:
 
             kept_nodes.append(node)
 
-        for node in kept_nodes:
+        return kept_nodes, skipped_node_ids, warnings
+
+    def _clean_decision_table_refs(
+        self, snapshot_nodes: list[dict], skipped_node_ids: set[int]
+    ) -> list[dict]:
+        """
+        Check DecisionTableNode connections.
+        Set None if related entity doesn't exist
+        """
+        warnings: list[dict] = []
+
+        for node in snapshot_nodes:
             if node.get("node_type") != "DecisionTableNode":
                 continue
             node_name = node.get("node_name") or "DecisionTableNode"
@@ -206,10 +229,19 @@ class GraphVersioningStrategy:
                         }
                     )
 
-        filtered_snapshot["nodes"] = kept_nodes
+        return warnings
+
+    def _filter_edges(
+        self, edges: list[dict], skipped_node_ids: set[int]
+    ) -> tuple[list[dict], list[dict]]:
+        """
+        Filter all edges based on non existing nodes
+        """
 
         kept_edges = []
-        for edge in filtered_snapshot.get("edge_list", []):
+        warnings = []
+
+        for edge in edges:
             start = edge.get("start_node_id")
             end = edge.get("end_node_id")
             if start in skipped_node_ids or end in skipped_node_ids:
@@ -221,10 +253,18 @@ class GraphVersioningStrategy:
                 )
                 continue
             kept_edges.append(edge)
-        filtered_snapshot["edge_list"] = kept_edges
 
+        return kept_edges, warnings
+
+    def _filter_conditional_edges(
+        self, conditional_edges: list[dict], skipped_node_ids: set[int]
+    ) -> tuple[list[dict], list[dict]]:
+        """
+        Filter conditional edges based on non existing nodes
+        """
         kept_cond_edges = []
-        for edge in filtered_snapshot.get("conditional_edge_list", []):
+        warnings = []
+        for edge in conditional_edges:
             source = edge.get("source_node_id")
             if source in skipped_node_ids:
                 warnings.append(
@@ -235,7 +275,43 @@ class GraphVersioningStrategy:
                 )
                 continue
             kept_cond_edges.append(edge)
+
+        return kept_cond_edges, warnings
+
+    def filter_snapshot(self, snapshot: dict, missing: dict) -> tuple[dict, list[dict]]:
+        """
+        Strip missing-dependency nodes, null orphaned FKs,
+        and drop dangling edges, returning the pipeline-ready snapshot
+        and warnings.
+        """
+        filtered_snapshot = deepcopy(snapshot)
+        warnings: list[dict] = []
+
+        missing_sets = self._build_missing_sets(missing)
+
+        kept_nodes, skipped_node_ids, node_warnings = self._filter_nodes(
+            filtered_snapshot.get("nodes", []), missing_sets
+        )
+        filtered_snapshot["nodes"] = kept_nodes
+        warnings.extend(node_warnings)
+
+        warnings.extend(
+            self._clean_decision_table_refs(
+                filtered_snapshot["nodes"], skipped_node_ids
+            )
+        )
+
+        kept_edges, edge_warnings = self._filter_edges(
+            filtered_snapshot.get("edge_list", []), skipped_node_ids
+        )
+        filtered_snapshot["edge_list"] = kept_edges
+        warnings.extend(edge_warnings)
+
+        kept_cond_edges, cond_warnings = self._filter_conditional_edges(
+            filtered_snapshot.get("conditional_edge_list", []), skipped_node_ids
+        )
         filtered_snapshot["conditional_edge_list"] = kept_cond_edges
+        warnings.extend(cond_warnings)
 
         return filtered_snapshot, warnings
 
