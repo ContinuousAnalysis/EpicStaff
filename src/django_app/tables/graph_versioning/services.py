@@ -55,7 +55,7 @@ class GraphVersioningService:
                 deps_validation["available"]
             )
 
-            result = self._strategy.apply_snapshot_to_graph(
+            self._strategy.apply_snapshot_to_graph(
                 graph,
                 {
                     "nodes": filtered_snapshot.get("nodes", []),
@@ -72,5 +72,4 @@ class GraphVersioningService:
             "graph_id": graph.id,
             "warnings": warnings,
             "auto_backup_version_id": auto_backup_id,
-            "node_id_map": result.get("node_id_map", {}),
         }

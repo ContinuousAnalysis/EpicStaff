@@ -241,8 +241,8 @@ class GraphVersioningStrategy:
 
     def apply_snapshot_to_graph(
         self, graph: Graph, data: dict, id_mapper: IDMapper
-    ) -> dict:
-        return self._graph_strategy.recreate_graph_children(graph, data, id_mapper)
+    ) -> None:
+        self._graph_strategy.recreate_graph_children(graph, data, id_mapper)
 
     def _wipe_graph_children(self, graph: Graph) -> None:
         """

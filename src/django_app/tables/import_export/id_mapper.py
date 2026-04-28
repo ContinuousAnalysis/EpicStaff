@@ -57,12 +57,6 @@ class IDMapper:
     def get_new_ids(self, entity_type: str) -> list[int]:
         return [mapping.new_id for mapping in self._mappings[entity_type].values()]
 
-    def get_id_map(self, entity_type: str) -> dict[int, int]:
-        return {
-            old_id: mapping.new_id
-            for old_id, mapping in self._mappings[entity_type].items()
-        }
-
     def get_created_ids(self, entity_type: str) -> list[int]:
         return [
             mapping.new_id
