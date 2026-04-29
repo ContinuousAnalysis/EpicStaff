@@ -25,6 +25,7 @@ from rest_framework.exceptions import (
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
 from tables.exceptions import (
     AgentSerializerError,
@@ -38,6 +39,7 @@ from tables.graph_versioning.services import GraphVersioningService
 from tables.graph_versioning.serializers import (
     GraphVersionCreateSerializer,
     GraphVersionReadSerializer,
+    GraphVersionUpdateSerializer,
 )
 
 from tables.import_export.enums import EntityType
@@ -869,13 +871,23 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class GraphVersionViewSet(viewsets.ModelViewSet):
-    queryset = GraphVersion.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["graph_id"]
+
+    def get_queryset(self):
+        manager = (
+            GraphVersion.all_objects if self.action == "all" else GraphVersion.objects
+        )
+        qs = manager.all()
+        if self.action in ("list", "all"):
+            qs = qs.defer("snapshot", "dependencies")
+        return qs
 
     def get_serializer_class(self):
         if self.action == "create":
             return GraphVersionCreateSerializer
+        if self.action in ("update", "partial_update"):
+            return GraphVersionUpdateSerializer
         return GraphVersionReadSerializer
 
     def create(self, request, *args, **kwargs):
@@ -893,6 +905,10 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
             GraphVersionReadSerializer(version).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=False, methods=["get"], url_path="all")
+    def all(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
 
 class IdempotentNodeCreateMixin:

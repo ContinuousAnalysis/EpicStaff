@@ -568,6 +568,16 @@ class GraphNote(BaseGraphEntity, BaseGlobalNode):
     content = models.TextField()
 
 
+class ActiveManager(models.Manager):
+    """
+    Manager for models that using SoftDeleteMixin.
+    Filters the active records
+    """
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_active=True, deleted_at__isnull=True)
+
+
 class GraphVersion(SoftDeleteMixin, models.Model):
     graph = models.ForeignKey(
         "Graph",
@@ -584,6 +594,9 @@ class GraphVersion(SoftDeleteMixin, models.Model):
         help_text="Lightweight manifest of external dependency IDs referenced at snapshot time.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ActiveManager()
+    all_objects = models.Manager()
 
     class Meta:
         ordering = ["-created_at"]
