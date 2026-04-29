@@ -48,23 +48,8 @@ class GraphVersioningService:
             auto_backup_id = backup_version.id
 
         with transaction.atomic():
-            self._strategy._wipe_graph_children(graph)
-            self._strategy._update_graph_scalars(graph, filtered_snapshot)
-
-            id_mapper = self._strategy._build_identity_id_mapper(
-                deps_validation["available"]
-            )
-
             self._strategy.apply_snapshot_to_graph(
-                graph,
-                {
-                    "nodes": filtered_snapshot.get("nodes", []),
-                    "edge_list": filtered_snapshot.get("edge_list", []),
-                    "conditional_edge_list": filtered_snapshot.get(
-                        "conditional_edge_list", []
-                    ),
-                },
-                id_mapper,
+                graph, filtered_snapshot, deps_validation["available"]
             )
 
         return {

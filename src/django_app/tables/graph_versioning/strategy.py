@@ -316,9 +316,18 @@ class GraphVersioningStrategy:
         return filtered_snapshot, warnings
 
     def apply_snapshot_to_graph(
-        self, graph: Graph, data: dict, id_mapper: IDMapper
+        self, graph: Graph, filtered_snapshot: dict, available_deps: dict
     ) -> None:
-        self._graph_strategy.recreate_graph_children(graph, data, id_mapper)
+        self._wipe_graph_children(graph)
+        self._update_graph_scalars(graph, filtered_snapshot)
+
+        id_mapper = self._build_identity_id_mapper(available_deps)
+
+        self._graph_strategy.recreate_graph_children(
+            graph,
+            filtered_snapshot,
+            id_mapper,
+        )
 
     def _wipe_graph_children(self, graph: Graph) -> None:
         """
