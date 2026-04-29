@@ -6,6 +6,12 @@ from tables.models import (
     WebhookTrigger,
 )
 
+_EXCLUDED_GRAPH_SCALARS = (
+    "id",
+    "created_at",
+    "updated_at",
+)
+
 
 _DEPENDENCY_ENTITY_TYPES = {
     EntityType.CREW.value: EntityType.CREW,

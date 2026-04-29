@@ -6,6 +6,7 @@ from tables.import_export.strategies.graph import GraphStrategy
 from tables.import_export.id_mapper import IDMapper
 
 from tables.graph_versioning.constants import (
+    _EXCLUDED_GRAPH_SCALARS,
     _DEPENDENCY_ENTITY_TYPES,
     _DEPENDENCY_MODELS,
     _GRAPH_RELATION_NAMES,
@@ -369,7 +370,9 @@ class GraphVersioningStrategy:
         """
         update_fields = []
         graph_scalar_fields = [
-            field.name for field in graph._meta.get_fields() if not field.is_relation
+            field.name
+            for field in graph._meta.get_fields()
+            if not field.is_relation and field.name not in _EXCLUDED_GRAPH_SCALARS
         ]
         for field in graph_scalar_fields:
             if field in snapshot:
