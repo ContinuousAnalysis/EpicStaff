@@ -596,8 +596,29 @@ class ClassificationDecisionTableNode(BaseGraphEntity, BaseGlobalNode):
         blank=True,
         related_name="cdt_nodes_as_default",
     )
-    default_next_node = models.CharField(max_length=255, null=True, default=None)
-    next_error_node = models.CharField(max_length=255, null=True, default=None)
+    default_next_node_id = models.BigIntegerField(null=True, default=None)
+    next_error_node_id = models.BigIntegerField(null=True, default=None)
+
+    def clean(self):
+        super().clean()
+
+        if self.default_next_node_id:
+            default_next_node = BaseGlobalNode.find_globally(self.default_next_node_id)
+            if not default_next_node:
+                raise ValidationError(
+                    {
+                        "default_next_node_id": f"Default next node with ID '{self.default_next_node_id}' not found."
+                    }
+                )
+
+        if self.next_error_node_id:
+            next_error_node = BaseGlobalNode.find_globally(self.next_error_node_id)
+            if not next_error_node:
+                raise ValidationError(
+                    {
+                        "next_error_node_id": f"Error node with ID '{self.next_error_node_id}' not found."
+                    }
+                )
 
     class Meta:
         constraints = [
@@ -647,9 +668,29 @@ class ClassificationConditionGroup(BaseGraphEntity, models.Model):
     dock_visible = models.BooleanField(default=True)
     field_expressions = models.JSONField(default=dict, blank=True)
     field_manipulations = models.JSONField(default=dict, blank=True)
+    route_code = models.CharField(max_length=128, null=True, default=None, blank=True)
 
     class Meta:
         ordering = ["order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["classification_decision_table_node", "route_code"],
+                condition=models.Q(route_code__isnull=False),
+                name="unique_route_code_per_cdt_node",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+
+        if self.next_node_id is not None:
+            next_node = BaseGlobalNode.find_globally(self.next_node_id)
+            if not next_node:
+                raise ValidationError(
+                    {
+                        "next_node_id": f"Error node with ID '{self.next_node_id}' not found."
+                    }
+                )
 
 
 class GraphNote(BaseGraphEntity, BaseGlobalNode):
@@ -678,7 +719,8 @@ class GraphVersion(SoftDeleteMixin, models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        
+
+
 class StorageFile(models.Model):
     org = models.ForeignKey(
         "Organization", on_delete=models.CASCADE, related_name="storage_files"

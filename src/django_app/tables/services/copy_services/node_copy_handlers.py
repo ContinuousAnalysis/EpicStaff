@@ -230,8 +230,8 @@ def copy_classification_decision_table_node(
         post_input_map=node.post_input_map,
         post_output_variable_path=node.post_output_variable_path,
         default_llm_config=node.default_llm_config,
-        default_next_node=node.default_next_node,
-        next_error_node=node.next_error_node,
+        default_next_node_id=node.default_next_node_id,
+        next_error_node_id=node.next_error_node_id,
         metadata=node.metadata,
     )
 

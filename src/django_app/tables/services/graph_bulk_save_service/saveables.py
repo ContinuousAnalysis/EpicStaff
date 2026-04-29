@@ -1,5 +1,6 @@
 from tables.models.graph_models import (
     ClassificationConditionGroup,
+    ClassificationDecisionTableNode,
     Condition,
     ConditionGroup,
     DecisionTableNode,
@@ -125,6 +126,63 @@ class _DecisionTableNodeRefsSaveable:
                 )
 
 
+class _ClassificationDecisionTableNodeRefsSaveable:
+    """
+    Deferred resolver for the routing node-id fields of ClassificationDecisionTableNode
+    that may reference a temp_id belonging to a node created in the same request:
+        - ClassificationDecisionTableNode.default_next_node_id
+        - ClassificationDecisionTableNode.next_error_node_id
+        - ClassificationConditionGroup.next_node_id  (one per condition group)
+    """
+
+    def __init__(
+        self,
+        default_next_ref: NodeRef | None,
+        next_error_ref: NodeRef | None,
+        group_refs: list[NodeRef | None],
+    ):
+        self._default_next_ref = default_next_ref
+        self._next_error_ref = next_error_ref
+        self._group_refs = group_refs
+
+        self._cdt_node_id: int | None = None
+        self._group_ids: list[int] = []
+
+    def set_node_id(self, node_id: int) -> None:
+        self._cdt_node_id = node_id
+
+    def set_group_ids(self, groups: list) -> None:
+        self._group_ids = [g.id for g in groups]
+
+    def resolve_and_save(self, temp_id_map: dict) -> None:
+        node_updates: dict = {}
+
+        if self._default_next_ref is not None:
+            ref = self._default_next_ref
+            node_updates["default_next_node_id"] = (
+                temp_id_map[str(ref.value)] if ref.is_temp else ref.value
+            )
+
+        if self._next_error_ref is not None:
+            ref = self._next_error_ref
+            node_updates["next_error_node_id"] = (
+                temp_id_map[str(ref.value)] if ref.is_temp else ref.value
+            )
+
+        if node_updates:
+            ClassificationDecisionTableNode.objects.filter(id=self._cdt_node_id).update(
+                **node_updates
+            )
+
+        for group_id, ref in zip(self._group_ids, self._group_refs):
+            if ref is not None:
+                ClassificationConditionGroup.objects.filter(id=group_id).update(
+                    next_node_id=temp_id_map[str(ref.value)]
+                    if ref.is_temp
+                    else ref.value
+                )
+
+
 class DecisionTableNodeSaveable:
     """
     Wraps a validated DecisionTableNodeBulkSerializer and its condition_groups data.
@@ -234,12 +292,25 @@ class ClassificationDecisionTableNodeSaveable:
     On update, deletes old ClassificationConditionGroup records and bulk_creates new ones.
     """
 
-    def __init__(self, serializer, condition_groups_data, instance=None):
+    def __init__(
+        self,
+        serializer,
+        condition_groups_data,
+        deferred_refs_saveable=None,
+        instance=None,
+    ):
         self._serializer = serializer
         self._condition_groups_data = condition_groups_data
+        self._deferred = deferred_refs_saveable  # _ClassificationDecisionTableNodeRefsSaveable | None
         self._instance = instance
 
-    _GROUP_EXCLUDED_FIELDS = frozenset({"id", "classification_decision_table_node"})
+    _GROUP_EXCLUDED_FIELDS = frozenset(
+        {
+            "id",
+            "classification_decision_table_node",
+            "next_node_temp_id",
+        }
+    )
 
     def save(self):
         s = self._serializer
@@ -256,6 +327,11 @@ class ClassificationDecisionTableNodeSaveable:
                 classification_decision_table_node=node
             ).delete()
 
+        if self._deferred is not None:
+            self._deferred.set_node_id(node.id)
+
+        created_groups = []
+
         if self._condition_groups_data:
             excluded = self._GROUP_EXCLUDED_FIELDS
             groups_to_create = []
@@ -268,7 +344,12 @@ class ClassificationDecisionTableNodeSaveable:
                     )
                 )
 
-            ClassificationConditionGroup.objects.bulk_create(groups_to_create)
+            created_groups = ClassificationConditionGroup.objects.bulk_create(
+                groups_to_create
+            )
+
+        if self._deferred is not None:
+            self._deferred.set_group_ids(created_groups)
 
         return node
 

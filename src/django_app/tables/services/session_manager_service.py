@@ -11,6 +11,7 @@ from tables.models import (
     Session,
 )
 from tables.models.graph_models import (
+    ClassificationConditionGroup,
     ClassificationDecisionTableNode,
     ConditionalEdge,
     ConditionGroup,
@@ -377,6 +378,12 @@ class SessionManagerService(metaclass=SingletonMeta):
             ).values_list("next_node_id", flat=True)
         )
 
+        classification_condition_group_next_ids = list(
+            ClassificationConditionGroup.objects.filter(
+                classification_decision_table_node__in=classification_decision_table_node_list
+            ).values_list("next_node_id", flat=True)
+        )
+
         # Build name cache directly from already-fetched node instances
         # to avoid re-querying the same tables via NodeNameResolver
         name_cache: dict[int, str] = {}
@@ -401,10 +408,13 @@ class SessionManagerService(metaclass=SingletonMeta):
         edge_referenced_ids = set(
             [n.default_next_node_id for n in decision_table_node_list]
             + [n.next_error_node_id for n in decision_table_node_list]
+            + [n.default_next_node_id for n in classification_decision_table_node_list]
+            + [n.next_error_node_id for n in classification_decision_table_node_list]
             + [e.start_node_id for e in edge_list]
             + [e.end_node_id for e in edge_list]
             + [e.source_node_id for e in conditional_edge_list]
             + condition_group_next_ids
+            + classification_condition_group_next_ids
         )
         missing_ids = [
             i for i in edge_referenced_ids if i is not None and i not in name_cache

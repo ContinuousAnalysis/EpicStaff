@@ -2,6 +2,7 @@ import uuid
 from copy import deepcopy
 
 from tables.models import Graph, Crew
+from tables.models.graph_models import ClassificationConditionGroup
 from tables.serializers.model_serializers import (
     CrewSerializer,
     GraphOrganization,
@@ -111,6 +112,7 @@ class GraphStrategy(EntityImportExportStrategy):
         self._create_edges(edges_data, graph, node_mapper)
         self._create_conditional_edges(conditional_edges_data, graph, node_mapper)
         self._remap_decision_table_references(graph, node_mapper)
+        self._remap_classification_decision_table_references(graph, node_mapper)
         self._update_metadata_node_ids(graph, node_mapper)
 
         return graph
@@ -212,6 +214,40 @@ class GraphStrategy(EntityImportExportStrategy):
                 )
 
             for group in dt_node.condition_groups.all():
+                if group.next_node_id:
+                    new_id = id_mapper.get_or_none(NODE_MAPPING_KEY, group.next_node_id)
+                    if new_id:
+                        group.next_node_id = new_id
+                        group.save(update_fields=["next_node_id"])
+
+    def _remap_classification_decision_table_references(
+        self, graph: Graph, id_mapper: IDMapper
+    ):
+        for cdt_node in graph.classification_decision_table_node_list.all():
+            updated = False
+
+            if cdt_node.default_next_node_id:
+                new_id = id_mapper.get_or_none(
+                    NODE_MAPPING_KEY, cdt_node.default_next_node_id
+                )
+                if new_id:
+                    cdt_node.default_next_node_id = new_id
+                    updated = True
+
+            if cdt_node.next_error_node_id:
+                new_id = id_mapper.get_or_none(
+                    NODE_MAPPING_KEY, cdt_node.next_error_node_id
+                )
+                if new_id:
+                    cdt_node.next_error_node_id = new_id
+                    updated = True
+
+            if updated:
+                cdt_node.save(
+                    update_fields=["default_next_node_id", "next_error_node_id"]
+                )
+
+            for group in cdt_node.condition_groups.all():
                 if group.next_node_id:
                     new_id = id_mapper.get_or_none(NODE_MAPPING_KEY, group.next_node_id)
                     if new_id:
