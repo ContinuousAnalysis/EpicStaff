@@ -19,17 +19,24 @@
         <h3 class="select-rag__config-title">AI Model Configuration</h3>
 
         <div class="select-rag__config-row">
-            <label for="collection-name" class="select-rag__config-label"> Embedder </label>
+            <label
+                for="collection-name"
+                class="select-rag__config-label"
+            >
+                Embedder
+            </label>
 
-            <app-svg-icon
-                icon="help"
+            <app-help-tooltip
                 class="select-rag__config-tooltip"
-                matTooltip="Select the embedding model that will convert your documents into vector representations. Different models have different capabilities and performance characteristics."
-                matTooltipPosition="above"
-                matTooltipClass="dialog__label-tooltip"
+                text="Select the embedding model that will convert your documents into vector representations. Different models have different capabilities and performance characteristics."
+                position="right"
+                tooltipClass="dialog__label-tooltip"
             />
 
-            <app-select [items]="embeddingConfigs()" [(selectedValue)]="selectedEmbedder" />
+            <app-select
+                [items]="embeddingConfigs()"
+                [(selectedValue)]="selectedEmbedder"
+            />
         </div>
 
         @if (selectedRag() === 'graph') {
@@ -41,14 +48,12 @@
                     LLM Model
                 </label>
 
-                <mat-icon
+                <app-help-tooltip
                     class="select-rag__config-tooltip"
-                    matTooltip="Select LLM Model"
-                    matTooltipPosition="above"
-                    matTooltipClass="dialog__label-tooltip"
-                >
-                    help_outline
-                </mat-icon>
+                    text="Select LLM Model"
+                    position="right"
+                    tooltipClass="dialog__label-tooltip"
+                />
 
                 <app-select
                     [items]="llmModels()"

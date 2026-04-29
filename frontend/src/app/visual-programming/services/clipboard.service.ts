@@ -108,7 +108,7 @@ export class ClipboardService {
             const newNodeId = uuidv4();
             oldToNewIdMap.set(oldNode.id, newNodeId);
 
-            const newPorts: ViewPort[] = generatePortsForNode(newNodeId, oldNode.type);
+            const newPorts: ViewPort[] = generatePortsForNode(newNodeId, oldNode.type, oldNode.data);
 
             return {
                 ...oldNode,

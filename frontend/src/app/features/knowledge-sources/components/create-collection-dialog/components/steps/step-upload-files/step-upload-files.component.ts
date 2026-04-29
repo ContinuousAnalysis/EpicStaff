@@ -2,7 +2,7 @@ import { UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, model, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AppSvgIconComponent, ValidationErrorsComponent } from '@shared/components';
+import { HelpTooltipComponent, ValidationErrorsComponent } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 import { EMPTY, filter } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -23,7 +23,7 @@ import { FilesListComponent } from './files-list/files-list.component';
     templateUrl: './step-upload-files.component.html',
     styleUrls: ['./step-upload-files.component.scss'],
     imports: [
-        AppSvgIconComponent,
+        HelpTooltipComponent,
         MATERIAL_FORMS,
         ReactiveFormsModule,
         FileUploaderComponent,

@@ -19,23 +19,55 @@ SAVE_FLOW_SWAGGER = dict(
     request=inline_serializer(
         name="SaveFlowRequest",
         fields={
-            "crew_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "python_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "file_extractor_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "audio_transcription_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "llm_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "start_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "end_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "subgraph_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "decision_table_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "graph_note_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "webhook_trigger_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "telegram_trigger_node_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "edge_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
-            "conditional_edge_list": drf_serializers.ListField(child=drf_serializers.DictField(), required=False),
+            "code_agent_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "crew_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "python_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "file_extractor_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "audio_transcription_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "llm_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "start_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "end_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "subgraph_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "decision_table_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "graph_note_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "webhook_trigger_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "telegram_trigger_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "edge_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
+            "conditional_edge_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
             "deleted": inline_serializer(
                 name="DeletedIds",
                 fields={
+                    "code_agent_node_ids": _id_list_field,
                     "crew_node_ids": _id_list_field,
                     "python_node_ids": _id_list_field,
                     "file_extractor_node_ids": _id_list_field,
@@ -174,7 +206,9 @@ SAVE_FLOW_SWAGGER = dict(
     ],
     responses={
         200: OpenApiResponse(description="Full updated graph state after save."),
-        400: OpenApiResponse(description="Validation errors — no DB changes were made."),
+        400: OpenApiResponse(
+            description="Validation errors — no DB changes were made."
+        ),
         404: OpenApiResponse(description="Graph not found."),
     },
 )

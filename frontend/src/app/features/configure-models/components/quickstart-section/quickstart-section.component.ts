@@ -17,6 +17,7 @@ import {
     ConfirmationDialogData,
     ConfirmationDialogService,
     CustomInputComponent,
+    HelpTooltipComponent,
     SelectComponent,
     SelectItem,
 } from '@shared/components';
@@ -45,6 +46,7 @@ import { QuickstartService } from '../../services/quickstart.service';
         MATERIAL_FORMS,
         CustomInputComponent,
         ButtonComponent,
+        HelpTooltipComponent,
         SelectComponent,
     ],
     templateUrl: './quickstart-section.component.html',

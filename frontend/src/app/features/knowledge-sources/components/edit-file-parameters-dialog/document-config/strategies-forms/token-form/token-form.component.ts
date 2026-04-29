@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { InputNumberComponent, ValidationErrorsComponent } from '@shared/components';
+import { HelpTooltipComponent, InputNumberComponent, ValidationErrorsComponent } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 
-import { AppSvgIconComponent } from '../../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { TokenStrategyModel } from '../../../../../models/strategy.model';
 import { StrategyForm } from '../strategy-config-form.abstract';
 
@@ -12,7 +11,13 @@ import { StrategyForm } from '../strategy-config-form.abstract';
     templateUrl: './token-form.component.html',
     styleUrls: ['../../document-config.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [InputNumberComponent, AppSvgIconComponent, MATERIAL_FORMS, ReactiveFormsModule, ValidationErrorsComponent],
+    imports: [
+        InputNumberComponent,
+        MATERIAL_FORMS,
+        ReactiveFormsModule,
+        ValidationErrorsComponent,
+        HelpTooltipComponent,
+    ],
 })
 export class TokenFormComponent extends StrategyForm<TokenStrategyModel> {
     initializeForm(config: TokenStrategyModel): FormGroup {

@@ -1,25 +1,42 @@
-<div class="decision-table" appClickOrDrag (actualClick)="onEditClick()">
+<div
+    class="decision-table"
+    appClickOrDrag
+    (actualClick)="onEditClick()"
+>
     @if (inputPort; as port) {
         <div class="input-port-wrapper">
             <div
                 class="port-circle"
                 fNodeInput
+                fNodeOutput
                 [fInputMultiple]="port.multiple"
+                [fOutputMultiple]="port.multiple"
                 [fInputId]="port.id"
+                [fOutputId]="port.id"
+                [fCanBeConnectedInputs]="getPortConnections(port.id)"
+                [isSelfConnectable]="false"
                 [fInputConnectableSide]="port.position"
+                [fOutputConnectableSide]="port.position"
                 [ngStyle]="{
                     'border-color': 'hsl(0, 0%, 15%)',
                     'background-color': port.color,
                 }"
             >
-                <i class="fa-solid fa-plus plus-icon" [ngStyle]="{ color: 'hsl(0, 0%, 15%)' }"></i>
+                <i
+                    class="fa-solid fa-plus plus-icon"
+                    [ngStyle]="{ color: 'hsl(0, 0%, 15%)' }"
+                ></i>
             </div>
         </div>
     }
 
     <div class="decision-table__header">
         <div class="icon-wrapper">
-            <i [class]="node.icon" [style.color]="node.color" style="font-size: 1.4rem"></i>
+            <i
+                [class]="node.icon"
+                [style.color]="node.color"
+                style="font-size: 1.4rem"
+            ></i>
         </div>
         <div class="title">{{ node.node_name || 'Decision Table' }}</div>
     </div>
@@ -34,16 +51,25 @@
                         <div class="port-wrapper">
                             <div
                                 class="port-circle"
+                                fNodeInput
                                 fNodeOutput
+                                [fInputMultiple]="port.multiple"
                                 [fOutputMultiple]="port.multiple"
+                                [fInputId]="port.id"
                                 [fOutputId]="port.id"
+                                [fCanBeConnectedInputs]="getPortConnections(port.id)"
+                                [isSelfConnectable]="false"
+                                [fInputConnectableSide]="port.position"
                                 [fOutputConnectableSide]="port.position"
                                 [ngStyle]="{
                                     'border-color': port.color,
                                     'background-color': 'hsl(0, 0%, 15%)',
                                 }"
                             >
-                                <i class="fa-solid fa-plus plus-icon" [ngStyle]="{ color: port.color }"></i>
+                                <i
+                                    class="fa-solid fa-plus plus-icon"
+                                    [ngStyle]="{ color: port.color }"
+                                ></i>
                             </div>
                         </div>
                     }
@@ -69,16 +95,25 @@
                 <div class="port-wrapper">
                     <div
                         class="port-circle"
+                        fNodeInput
                         fNodeOutput
+                        [fInputMultiple]="port.multiple"
                         [fOutputMultiple]="port.multiple"
+                        [fInputId]="port.id"
                         [fOutputId]="port.id"
+                        [fCanBeConnectedInputs]="getPortConnections(port.id)"
+                        [isSelfConnectable]="false"
+                        [fInputConnectableSide]="port.position"
                         [fOutputConnectableSide]="port.position"
                         [ngStyle]="{
                             'border-color': port.color,
                             'background-color': 'hsl(0, 0%, 15%)',
                         }"
                     >
-                        <i class="fa-solid fa-plus plus-icon" [ngStyle]="{ color: port.color }"></i>
+                        <i
+                            class="fa-solid fa-plus plus-icon"
+                            [ngStyle]="{ color: port.color }"
+                        ></i>
                     </div>
                 </div>
             }
@@ -98,16 +133,25 @@
                 <div class="port-wrapper">
                     <div
                         class="port-circle"
+                        fNodeInput
                         fNodeOutput
+                        [fInputMultiple]="port.multiple"
                         [fOutputMultiple]="port.multiple"
+                        [fInputId]="port.id"
                         [fOutputId]="port.id"
+                        [fCanBeConnectedInputs]="getPortConnections(port.id)"
+                        [isSelfConnectable]="false"
+                        [fInputConnectableSide]="port.position"
                         [fOutputConnectableSide]="port.position"
                         [ngStyle]="{
                             'border-color': port.color,
                             'background-color': 'hsl(0, 0%, 15%)',
                         }"
                     >
-                        <i class="fa-solid fa-plus plus-icon" [ngStyle]="{ color: port.color }"></i>
+                        <i
+                            class="fa-solid fa-plus plus-icon"
+                            [ngStyle]="{ color: port.color }"
+                        ></i>
                     </div>
                 </div>
             }

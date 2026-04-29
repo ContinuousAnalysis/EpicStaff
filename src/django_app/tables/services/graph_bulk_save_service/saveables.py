@@ -10,6 +10,12 @@ strip them automatically via _clean_for_write().
 _WIRE_ONLY_FIELDS: frozenset[str] = frozenset(
     {
         "temp_id",  # client-side temp node reference, not a model field, never persisted
+        "start_temp_id",
+        "end_temp_id",
+        "source_temp_id",
+        "default_next_node_temp_id",
+        "next_error_node_temp_id",
+        "next_node_temp_id",
     }
 )
 
@@ -170,7 +176,15 @@ class DecisionTableNodeSaveable:
 
         return node
 
-    _GROUP_EXCLUDED_FIELDS = frozenset({"conditions", "decision_table_node", "id"})
+    _GROUP_EXCLUDED_FIELDS = frozenset(
+        {
+            "conditions",
+            "decision_table_node",
+            "id",
+            # Wire-only routing hint; never a DB model field.
+            "next_node_temp_id",
+        }
+    )
     _CONDITION_EXCLUDED_FIELDS = frozenset({"condition_group", "id"})
 
     @staticmethod

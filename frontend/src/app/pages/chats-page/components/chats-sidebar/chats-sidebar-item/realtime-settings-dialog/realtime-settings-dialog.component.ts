@@ -116,12 +116,10 @@ export class RealtimeSettingsDialogComponent implements OnInit {
             gemini_config: [geminiConfigId],
         });
 
-        // Load all provider configs
         this.openaiStorage.getAllConfigs().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
         this.elevenLabsStorage.getAllConfigs().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
         this.geminiStorage.getAllConfigs().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
 
-        // Load voices (cached by the service)
         this.voicesService
             .getVoices()
             .pipe(takeUntilDestroyed(this.destroyRef))

@@ -11,7 +11,6 @@ from tables.serializers.telegram_trigger_serializers import (
 from tables.utils.telegram_fields import load_telegram_trigger_fields
 from tables.models import Tool
 from tables.models import Crew
-from tables.models import GraphFile
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
 from tables.services.realtime_service import RealtimeService
@@ -20,7 +19,7 @@ from utils.logger import logger
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, inline_serializer
 from rest_framework import serializers as drf_serializers
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Exists, OuterRef
 from django.conf import settings
 
 
@@ -56,6 +55,7 @@ from tables.models import (
     OrganizationUser,
     Graph,
     SessionWarningMessage,
+    SessionStorageFile,
 )
 from tables.serializers.model_serializers import (
     SessionSerializer,
@@ -64,6 +64,7 @@ from tables.serializers.model_serializers import (
     DefaultEmbeddingConfigSerializer,
     ToolSerializer,
 )
+from tables.serializers.storage_serializers import SessionOutputFileSerializer
 from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
@@ -145,7 +146,17 @@ class SessionViewSet(
         return SessionSerializer
 
     def get_queryset(self):
-        return Session.objects.select_related("graph")
+        qs = Session.objects.select_related("graph")
+        detailed = self.request.query_params.get("detailed", "true").lower()
+
+        if detailed == "false":
+            qs = qs.annotate(
+                has_output_files=Exists(
+                    SessionStorageFile.objects.filter(session_id=OuterRef("pk"))
+                )
+            )
+
+        return qs
 
     @extend_schema(
         description="Get counts of each status grouped by graph ID",
@@ -215,6 +226,24 @@ class SessionViewSet(
         )
 
         return Response(warning, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="List session output files",
+        description=(
+            "Returns all storage files recorded as output during the given session, "
+            "ordered by the time they were added."
+        ),
+        responses={200: SessionOutputFileSerializer(many=True)},
+    )
+    @action(detail=True, methods=["get"], url_path="output-files")
+    def output_files(self, request, pk=None):
+        session = self.get_object()
+        qs = (
+            SessionStorageFile.objects.filter(session=session)
+            .select_related("storage_file")
+            .order_by("added_at")
+        )
+        return Response(SessionOutputFileSerializer(qs, many=True).data)
 
 
 class RunSession(APIView):
@@ -301,13 +330,6 @@ class RunSession(APIView):
             )
 
         variables = serializer.validated_data.get("variables", {})
-        graph_files = GraphFile.objects.filter(graph__id=graph_id)
-
-        for graph_file in graph_files:
-            files_dict[graph_file.domain_key] = self._get_file_data(
-                graph_file.file, graph_file.content_type
-            )
-
         for key, file in request.FILES.items():
             files_dict[key] = self._get_file_data(file, file.content_type)
 

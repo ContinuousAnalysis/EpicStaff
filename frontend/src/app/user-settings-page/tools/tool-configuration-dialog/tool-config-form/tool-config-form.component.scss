@@ -118,7 +118,7 @@ label,
 }
 
 .required-asterisk {
-    color: $gray-500;
+    color: var(--color-required-asterisk, var(--accent-color));
     font-weight: bold;
 }
 
@@ -127,8 +127,8 @@ label,
     font-style: normal;
     font-weight: bold;
     cursor: help;
-    color: $gray-500;
-    border: 1px solid $gray-600;
+    color: var(--accent-color);
+    border: 1px solid var(--accent-color);
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
@@ -140,8 +140,7 @@ label,
     text-align: center;
 
     &:hover {
-        color: $gray-300;
-        background-color: $gray-700;
+        opacity: 0.7;
     }
 }
 

@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
     ChipsInputComponent,
+    HelpTooltipComponent,
     InputNumberComponent,
     JsonEditorComponent,
     RadioButtonComponent,
@@ -22,6 +23,7 @@ import { GraphRagFileType, GraphRagIndexConfig } from '../../../models/graph-rag
         RadioButtonComponent,
         ChipsInputComponent,
         InputNumberComponent,
+        HelpTooltipComponent,
         ReactiveFormsModule,
         ValidationErrorsComponent,
         JsonEditorComponent,

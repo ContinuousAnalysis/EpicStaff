@@ -10,6 +10,13 @@ import {
 
 export type UnsavedChangesResult = 'save' | 'dont-save' | 'cancel' | 'close';
 
+export const UNSAVED_CHANGES_RESULT = {
+    save: 'save',
+    dontSave: 'dont-save',
+    cancel: 'cancel',
+    close: 'close',
+} as const satisfies Record<string, UnsavedChangesResult>;
+
 @Injectable({
     providedIn: 'root',
 })
@@ -18,7 +25,7 @@ export class UnsavedChangesDialogService {
 
     confirm(options: UnsavedChangesDialogData): Observable<UnsavedChangesResult> {
         const dialogRef = this.dialog.open<UnsavedChangesDialogResult>(UnsavedChangesDialogComponent, {
-            width: '400px',
+            width: '485px',
             data: options,
         });
 

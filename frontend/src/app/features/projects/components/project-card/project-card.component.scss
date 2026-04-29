@@ -1,7 +1,7 @@
 .project-card {
     background: var(--color-sidenav-background);
     border-radius: 12px;
-    padding: 0.8rem;
+    padding: 13px;
     color: var(--color-text-primary);
 
     box-shadow:
@@ -27,10 +27,12 @@
 
     .card-header {
         display: flex;
-        align-items: stretch;
-        margin-bottom: 0.75rem;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
 
-        .icon-container {
+        &__icon {
             width: 40px;
             height: 40px;
             background-color: #2a2c34;
@@ -38,9 +40,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 0.8rem;
             flex-shrink: 0;
-            align-self: flex-start;
 
             i {
                 font-size: 1.05rem;
@@ -71,59 +71,66 @@
             }
         }
 
-        .title-section {
+        &__content {
             flex: 1;
             min-width: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 0.2rem;
-            height: 100%;
+            overflow: hidden;
+        }
 
-            .title {
-                margin-top: 2px;
-                font-size: 14px;
-                font-weight: 500;
-                color: var(--color-text-primary);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
+        &__title {
+            margin: 0 0 2px;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.2;
+            color: var(--color-text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-            .meta-info {
-                display: flex;
-                gap: 0.5em;
-                font-size: 12px;
-                color: var(--color-text-secondary);
-                font-weight: 400;
-                flex-wrap: nowrap;
-                align-items: center;
-                min-width: 0;
-                overflow: hidden;
-                white-space: nowrap;
+        &__menu {
+            flex-shrink: 0;
+        }
 
-                .meta-item {
-                    white-space: nowrap;
-                    opacity: 0.85;
-                }
+        ::ng-deep .menu-container {
+            margin-left: 0;
+        }
+    }
 
-                .meta-sep {
-                    margin: 0 0.4em;
-                    opacity: 0.6;
-                    font-weight: 500;
-                    font-size: 10px;
-                    user-select: none;
-                }
-            }
+    .card-meta {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        font-weight: 400;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+
+        &__item {
+            white-space: nowrap;
+            opacity: 0.85;
+        }
+
+        &__sep {
+            margin: 0 6px;
+            opacity: 0.6;
+            font-weight: 500;
+            font-size: 10px;
+            user-select: none;
         }
     }
 
     .description {
+        padding-left: 52px;
         color: var(--color-text-secondary);
         font-size: 12px;
         font-weight: 400;
         line-height: 1.4;
-        flex: 1;
         overflow: hidden;
         display: -webkit-box;
         -webkit-line-clamp: 3;
@@ -135,11 +142,12 @@
 
     .tags-container {
         margin-top: auto;
+        padding-left: 52px;
 
         .tags {
             display: flex;
             flex-wrap: nowrap;
-            gap: 0.5rem;
+            gap: 8px;
             overflow: hidden;
             white-space: nowrap;
             align-items: center;
@@ -147,7 +155,7 @@
             .more-tags {
                 font-size: 11px;
                 color: var(--color-text-secondary);
-                padding: 0.25rem 0.5rem;
+                padding: 4px 8px;
                 border-radius: 12px;
                 flex-shrink: 0;
                 opacity: 0.8;

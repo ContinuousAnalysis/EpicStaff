@@ -4,9 +4,9 @@ import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators 
 
 import { GetGraphLightRequest } from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
-import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { GoToButtonComponent } from '../../../../shared/components/go-to-button/go-to-button.component';
+import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
 // import { flowUrl } from '../../../../shared/utils/flow-links';
 import { SubGraphNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
@@ -26,12 +26,15 @@ interface InputMapPair {
         CustomInputComponent,
         InputMapComponent,
         GoToButtonComponent,
-        AppSvgIconComponent,
+        HelpTooltipComponent,
     ],
     template: `
         <div class="panel-container">
             <div class="panel-content">
-                <form [formGroup]="form" class="form-container">
+                <form
+                    [formGroup]="form"
+                    class="form-container"
+                >
                     <app-custom-input
                         label="Node Name"
                         tooltipText="The unique identifier used to reference this subgraph node. This name must be unique within the flow."
@@ -56,15 +59,23 @@ interface InputMapPair {
                     <div class="field">
                         <label>
                             Selected Flow
-                            <app-svg-icon
-                                icon="help"
-                                class="tooltip-icon"
-                                title="Select the flow that this node will execute"
-                            ></app-svg-icon>
+                            <app-help-tooltip
+                                text="Select the flow that this node will execute"
+                                size="1rem"
+                            />
                         </label>
                         <div class="selected-flow-row">
-                            <select formControlName="selectedFlowId" class="select-field" (change)="onFlowChange()">
-                                <option [value]="null" disabled>Select a flow</option>
+                            <select
+                                formControlName="selectedFlowId"
+                                class="select-field"
+                                (change)="onFlowChange()"
+                            >
+                                <option
+                                    [value]="null"
+                                    disabled
+                                >
+                                    Select a flow
+                                </option>
                                 @for (flow of filteredFlows(); track flow.id) {
                                     <option [value]="flow.id">{{ flow.name }}</option>
                                 }
@@ -114,12 +125,6 @@ interface InputMapPair {
                 color: rgba(255, 255, 255, 0.7);
                 font-weight: 500;
                 margin-bottom: 0.5rem;
-            }
-
-            .tooltip-icon {
-                font-size: 16px;
-                color: rgba(255, 255, 255, 0.5);
-                cursor: help;
             }
 
             .select-field {

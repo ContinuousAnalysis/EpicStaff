@@ -87,7 +87,7 @@
                         font-weight: 500;
 
                         .required {
-                            color: #ff4444;
+                            color: var(--color-required-asterisk, var(--accent-color));
                             margin-left: 4px;
                         }
                     }

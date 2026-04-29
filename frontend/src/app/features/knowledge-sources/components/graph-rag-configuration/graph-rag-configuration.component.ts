@@ -17,6 +17,7 @@ import { catchError, debounceTime, distinctUntilChanged, switchMap, tap } from '
 
 import { ToastService } from '../../../../services/notifications';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
 import { CollectionGraphRag, CreateGraphRagIndexConfigRequest, GraphRagFileType } from '../../models/graph-rag.model';
 import { RagConfiguration } from '../../models/rag-configuration';
 import { GraphRagService } from '../../services/graph-rag.service';
@@ -34,6 +35,7 @@ import { AppGraphRagParametersComponent } from './index-parameters/index-paramet
         MATERIAL_FORMS,
         AppGraphRagParametersComponent,
         AppSvgIconComponent,
+        HelpTooltipComponent,
     ],
 })
 export class GraphRagConfigurationComponent implements OnInit, AfterViewInit, RagConfiguration {

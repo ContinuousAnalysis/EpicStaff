@@ -1,10 +1,11 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Subscription } from 'rxjs';
 import { ErrorStateMatcher } from '@angular/material/core';
+import { Subscription } from 'rxjs';
 
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
 import { CustomErrorStateMatcher } from '../../../../shared/error-state-matcher/custom-error-state-matcher';
 import { MATERIAL_FORMS } from '../../../../shared/material-forms';
 import { CreateProjectRequest, ProjectProcess } from '../../models/project.model';
@@ -26,7 +27,7 @@ interface ProjectFormData {
     selector: 'app-create-project',
     templateUrl: './create-project.component.html',
     styleUrls: ['./create-project.component.scss'],
-    imports: [ReactiveFormsModule, ...MATERIAL_FORMS, AppSvgIconComponent],
+    imports: [ReactiveFormsModule, ...MATERIAL_FORMS, AppSvgIconComponent, HelpTooltipComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [
         {

@@ -22,7 +22,10 @@ interface FlowGraphBlock {
                     [style.border-left-color]="block.color"
                     [class.disabled]="isDisabled(block.type)"
                 >
-                    <i [class]="block.icon" [style.color]="block.color"></i>
+                    <i
+                        [class]="block.icon"
+                        [style.color]="block.color"
+                    ></i>
                     {{ block.label }}
                     <i class="ti ti-plus plus-icon"></i>
                 </li>
@@ -112,12 +115,6 @@ export class FlowGraphCoreMenuComponent {
             type: NodeType.END,
             icon: NODE_ICONS[NodeType.END],
             color: NODE_COLORS[NodeType.END],
-        },
-        {
-            label: 'Conditional Edge',
-            type: NodeType.EDGE,
-            icon: NODE_ICONS[NodeType.EDGE],
-            color: NODE_COLORS[NodeType.EDGE],
         },
         {
             label: 'Note',
