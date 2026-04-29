@@ -130,6 +130,7 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
     def _start_session(self, node: ScheduleTriggerNode) -> None:
         self.session_manager_service.run_session(
             graph_id=node.graph_id,
+            variables={},
             entrypoint=generate_node_name(node.id, node.node_name),
         )
         logger.info(
