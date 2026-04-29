@@ -12,6 +12,12 @@
         </app-icon-button>
     </div>
 
+    @if (errorMessage()) {
+        <div class="error-message">
+            <p>{{ errorMessage() }}</p>
+        </div>
+    }
+
     <div
         class="form"
         [formGroup]="form"
