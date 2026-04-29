@@ -49,7 +49,6 @@ from tables.views.model_view_sets import (
     RealtimeModelViewSet,
     RealtimeAgentViewSet,
     RealtimeAgentChatViewSet,
-    OrganizationViewSet,
     OrganizationUserViewSet,
     GraphOrganizationViewSet,
     GraphOrganizationUserViewSet,
@@ -120,6 +119,8 @@ from tables.views.sse_views import (
     FilteredRunSessionSSEView,
 )
 
+from tables.views.organization_admin_views import OrganizationAdminViewSet
+
 router = DefaultRouter()
 router.register(r"template-agents", TemplateAgentReadWriteViewSet)
 router.register(r"providers", ProviderReadWriteViewSet)
@@ -177,7 +178,6 @@ router.register(r"decision-table-node", DecisionTableNodeModelViewSet)
 
 router.register(r"sessions", SessionViewSet, basename="session")
 router.register(r"mcp-tools", McpToolViewSet)
-router.register(r"organizations", OrganizationViewSet)
 router.register(r"organization-users", OrganizationUserViewSet)
 router.register(r"graph-organizations", GraphOrganizationViewSet)
 router.register(r"graph-organization-users", GraphOrganizationUserViewSet)
@@ -194,12 +194,18 @@ router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
 router.register(r"labels", LabelViewSet)
 router.register(r"storage", StorageAPIView, basename="storage")
 
+admin_router = DefaultRouter()
+admin_router.register(
+    r"organizations", OrganizationAdminViewSet, basename="admin-organization"
+)
+
 urlpatterns = [
     path(
         "documents/bulk-delete/",
         DocumentManagementViewSet.as_view({"post": "bulk_delete"}),
         name="document-bulk-delete",
     ),
+    path("admin/", include(admin_router.urls)),
     path("", include(router.urls)),
     path("run-session/", RunSession.as_view(), name="run-session"),
     path("answer-to-llm/", AnswerToLLM.as_view(), name="answer-to-llm"),
