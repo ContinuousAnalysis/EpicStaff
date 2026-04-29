@@ -7,7 +7,10 @@ import { IHeaderParams } from 'ag-grid-community';
     selector: 'app-icon-header',
     imports: [CommonModule],
     template: `
-        <div class="icon-header" [title]="tooltip">
+        <div
+            class="icon-header"
+            [title]="tooltip"
+        >
             @if (label) {
                 <span class="icon-header-label">{{ label }}</span>
             }
@@ -65,7 +68,7 @@ import { IHeaderParams } from 'ag-grid-community';
             .icon-header-clickable:hover {
                 background: rgba(104, 95, 255, 0.5) !important;
                 color: #fff !important;
-                border-color: #685fff;
+                border-color: var(--accent-color);
             }
             .icon-header-delete {
                 cursor: pointer;

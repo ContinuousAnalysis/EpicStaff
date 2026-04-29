@@ -110,7 +110,7 @@ export class ClassificationDecisionTableNodeComponent {
     }
 
     getPortForGroup(group: ConditionGroup) {
-        const key = group.route_code ?? group.group_name;
+        const key = group.route_code || group.group_name;
         if (!key) {
             return undefined;
         }

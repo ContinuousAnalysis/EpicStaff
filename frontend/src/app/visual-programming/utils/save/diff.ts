@@ -239,19 +239,14 @@ interface CdtConditionGroupUi {
     manipulation?: string | null;
     continue_flag?: boolean;
     continue?: boolean;
-    next_node?: string | null;
+    route_code?: string | null;
     dock_visible?: boolean;
     field_expressions?: Record<string, unknown>;
     field_manipulations?: Record<string, unknown>;
 }
 
-function toCdtComparable(node: ClassificationDecisionTableNodeModel, allNodes: NodeModel[]): unknown {
+function toCdtComparable(node: ClassificationDecisionTableNodeModel): unknown {
     const tableData = node.data?.table;
-    const resolveRef = (uuid: string | null): number | `temp:${string}` | null => {
-        if (!uuid) return null;
-        const backendId = allNodes.find((n) => n.id === uuid)?.backendId ?? null;
-        return backendId != null ? backendId : (`temp:${uuid}` as const);
-    };
 
     const preCode = tableData?.pre_computation?.code || tableData?.pre_computation_code || null;
     const postCode = tableData?.post_computation?.code || tableData?.post_computation_code || null;
@@ -268,7 +263,7 @@ function toCdtComparable(node: ClassificationDecisionTableNodeModel, allNodes: N
                 prompt_id: g.prompt_id || null,
                 manipulation: g.manipulation || null,
                 continue_flag: !!(g.continue_flag ?? g.continue),
-                next_node_id: resolveRef(g.next_node ?? null),
+                route_code: g.route_code || null,
                 dock_visible: g.dock_visible !== false,
                 field_expressions: g.field_expressions || {},
                 field_manipulations: (g.field_manipulations || {}) as Record<string, string>,
@@ -369,7 +364,7 @@ export function getNodeDiff(previous: FlowModel, current: FlowModel): NodeDiffBy
         classificationDecisionTableNodes: diffNodesByBackendId(
             nodesByType<ClassificationDecisionTableNodeModel>(previous.nodes, NodeType.CLASSIFICATION_TABLE),
             nodesByType<ClassificationDecisionTableNodeModel>(current.nodes, NodeType.CLASSIFICATION_TABLE),
-            (n) => toCdtComparable(n, current.nodes)
+            (n) => toCdtComparable(n)
         ),
     };
 }

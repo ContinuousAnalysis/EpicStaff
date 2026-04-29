@@ -24,7 +24,10 @@ interface PromptIdEditorParams extends ICellEditorParams {
     standalone: true,
     imports: [CommonModule, FormsModule],
     template: `
-        <div class="prompt-editor-popup" (keydown)="onKeyDown($event)">
+        <div
+            class="prompt-editor-popup"
+            (keydown)="onKeyDown($event)"
+        >
             <!-- Search / filter -->
             <div class="pe-search">
                 <input
@@ -40,11 +43,23 @@ interface PromptIdEditorParams extends ICellEditorParams {
             </div>
 
             <!-- Existing prompts list -->
-            <div class="pe-list" *ngIf="filteredPrompts.length > 0">
-                <div *ngFor="let p of filteredPrompts" class="pe-item" [class.pe-item-selected]="p.id === value">
-                    <div class="pe-item-main" (click)="selectPrompt(p.id)">
+            <div
+                class="pe-list"
+                *ngIf="filteredPrompts.length > 0"
+            >
+                <div
+                    *ngFor="let p of filteredPrompts"
+                    class="pe-item"
+                    [class.pe-item-selected]="p.id === value"
+                >
+                    <div
+                        class="pe-item-main"
+                        (click)="selectPrompt(p.id)"
+                    >
                         <span class="pe-item-id">{{ p.id }}</span>
-                        <span class="pe-item-var" *ngIf="p.config.result_variable"
+                        <span
+                            class="pe-item-var"
+                            *ngIf="p.config.result_variable"
                             >→ {{ p.config.result_variable }}</span
                         >
                     </div>
@@ -56,24 +71,39 @@ interface PromptIdEditorParams extends ICellEditorParams {
                         title="LLM"
                     >
                         <option value="">Default LLM</option>
-                        <option *ngFor="let llm of llmOptions" [value]="llm.id">{{ llm.label }}</option>
+                        <option
+                            *ngFor="let llm of llmOptions"
+                            [value]="llm.id"
+                        >
+                            {{ llm.label }}
+                        </option>
                     </select>
                 </div>
             </div>
 
-            <div class="pe-empty" *ngIf="filteredPrompts.length === 0 && !showNewForm">
+            <div
+                class="pe-empty"
+                *ngIf="filteredPrompts.length === 0 && !showNewForm"
+            >
                 <span>No matching prompts</span>
             </div>
 
             <!-- Divider + Add new -->
             <div class="pe-divider"></div>
 
-            <div *ngIf="!showNewForm" class="pe-add-btn" (click)="openNewForm()">
+            <div
+                *ngIf="!showNewForm"
+                class="pe-add-btn"
+                (click)="openNewForm()"
+            >
                 <i class="ti ti-plus"></i> Add New Prompt
             </div>
 
             <!-- New prompt form -->
-            <div *ngIf="showNewForm" class="pe-new-form">
+            <div
+                *ngIf="showNewForm"
+                class="pe-new-form"
+            >
                 <div class="pe-field">
                     <label class="pe-label">Prompt ID</label>
                     <input
@@ -86,7 +116,12 @@ interface PromptIdEditorParams extends ICellEditorParams {
                 </div>
                 <div class="pe-field">
                     <label class="pe-label">Result Variable</label>
-                    <input type="text" class="pe-input" [(ngModel)]="newResultVar" placeholder="e.g. classification" />
+                    <input
+                        type="text"
+                        class="pe-input"
+                        [(ngModel)]="newResultVar"
+                        placeholder="e.g. classification"
+                    />
                 </div>
                 <div class="pe-field">
                     <label class="pe-label">Prompt Text</label>
@@ -108,21 +143,44 @@ interface PromptIdEditorParams extends ICellEditorParams {
                 </div>
                 <div class="pe-field">
                     <label class="pe-label">LLM</label>
-                    <select class="pe-select" [(ngModel)]="newLlmId">
+                    <select
+                        class="pe-select"
+                        [(ngModel)]="newLlmId"
+                    >
                         <option value="">Default LLM</option>
-                        <option *ngFor="let llm of llmOptions" [value]="llm.id">{{ llm.label }}</option>
+                        <option
+                            *ngFor="let llm of llmOptions"
+                            [value]="llm.id"
+                        >
+                            {{ llm.label }}
+                        </option>
                     </select>
                 </div>
                 <div class="pe-actions">
-                    <button class="pe-btn pe-btn-cancel" (click)="showNewForm = false">Cancel</button>
-                    <button class="pe-btn pe-btn-create" [disabled]="!newId.trim()" (click)="createPrompt()">
+                    <button
+                        class="pe-btn pe-btn-cancel"
+                        (click)="showNewForm = false"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        class="pe-btn pe-btn-create"
+                        [disabled]="!newId.trim()"
+                        (click)="createPrompt()"
+                    >
                         Create & Select
                     </button>
                 </div>
             </div>
 
             <!-- Clear selection -->
-            <div *ngIf="value" class="pe-clear" (click)="clearSelection()"><i class="ti ti-x"></i> Clear prompt</div>
+            <div
+                *ngIf="value"
+                class="pe-clear"
+                (click)="clearSelection()"
+            >
+                <i class="ti ti-x"></i> Clear prompt
+            </div>
         </div>
     `,
     styles: [
@@ -176,7 +234,7 @@ interface PromptIdEditorParams extends ICellEditorParams {
             }
             .pe-item-selected {
                 background: rgba(104, 95, 255, 0.2) !important;
-                border-left: 2px solid #685fff;
+                border-left: 2px solid var(--accent-color);
             }
             .pe-item-main {
                 display: flex;
@@ -245,7 +303,7 @@ interface PromptIdEditorParams extends ICellEditorParams {
                 align-items: center;
                 gap: 6px;
                 padding: 8px 12px;
-                color: #685fff;
+                color: var(--accent-color);
                 font-size: 13px;
                 cursor: pointer;
                 transition: background 0.1s;
@@ -324,7 +382,7 @@ interface PromptIdEditorParams extends ICellEditorParams {
                 background: rgba(255, 255, 255, 0.12);
             }
             .pe-btn-create {
-                background: #685fff;
+                background: var(--accent-color);
                 color: #fff;
             }
             .pe-btn-create:hover {

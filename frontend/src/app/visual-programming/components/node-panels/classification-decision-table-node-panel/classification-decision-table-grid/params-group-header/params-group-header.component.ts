@@ -6,14 +6,25 @@ import { IHeaderGroupParams } from 'ag-grid-community';
     selector: 'app-params-group-header',
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="params-group-header" [class.params-group-header--add-only]="mode === 'add-only'">
-            <button class="add-btn" (click)="handleAdd($event)" title="Add variable">
+        <div
+            class="params-group-header"
+            [class.params-group-header--add-only]="mode === 'add-only'"
+        >
+            <button
+                class="add-btn"
+                (click)="handleAdd($event)"
+                title="Add variable"
+            >
                 <i class="ti ti-plus"></i>
             </button>
             @if (mode === 'full') {
                 <span class="params-label">Params</span>
                 <div class="dropdown-wrapper">
-                    <button class="chevron-btn" (click)="toggleDropdown($event)" title="Column options">
+                    <button
+                        class="chevron-btn"
+                        (click)="toggleDropdown($event)"
+                        title="Column options"
+                    >
                         <i class="ti ti-chevron-down"></i>
                     </button>
                 </div>
@@ -25,8 +36,18 @@ import { IHeaderGroupParams } from 'ag-grid-community';
                     [style.left.px]="dropdownPos()!.left"
                     (click)="$event.stopPropagation()"
                 >
-                    <div class="params-dropdown-item" (click)="handleFreeze()">Freeze</div>
-                    <div class="params-dropdown-item" (click)="handleHide()">Hide</div>
+                    <div
+                        class="params-dropdown-item"
+                        (click)="handleFreeze()"
+                    >
+                        Freeze
+                    </div>
+                    <div
+                        class="params-dropdown-item"
+                        (click)="handleHide()"
+                    >
+                        Hide
+                    </div>
                 </div>
             }
         </div>
@@ -65,7 +86,7 @@ import { IHeaderGroupParams } from 'ag-grid-community';
             .add-btn:hover {
                 background: rgba(104, 95, 255, 0.5);
                 color: #fff;
-                border-color: #685fff;
+                border-color: var(--accent-color);
             }
             .chevron-btn {
                 cursor: pointer;
