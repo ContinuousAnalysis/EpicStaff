@@ -532,7 +532,9 @@ export class InputMapComponent implements OnInit, OnChanges {
     onRunTest(): void {
         if (this.testRunning) return;
         const inputs = Object.fromEntries(
-            this.testPairs.controls.map((c) => [c.value.key as string, c.value.value as string])
+            this.testPairs.controls
+                .map((c) => [((c.value.key as string) ?? '').trim(), (c.value.value as string) ?? ''] as const)
+                .filter(([key]) => key !== '')
         );
         this.runTest.emit(inputs);
     }
