@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from django.db import transaction
@@ -7,6 +6,7 @@ from django.utils import timezone
 from loguru import logger
 
 from tables.models.graph_models import ScheduleTriggerNode
+from tables.services.schedule_condition_strategies import get_end_condition_strategy
 from tables.validators.schedule_trigger_validator import ScheduleTriggerValidator
 from utils.singleton_meta import SingletonMeta
 from utils.graph_utils import generate_node_name
@@ -85,14 +85,28 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
             node = self._lock_active_node(node_id)
             if node is None:
                 return
-            if self._deactivate_if_end_date_passed(node, now):
+
+            strategy = get_end_condition_strategy(node.end_type)
+
+            if strategy.is_end_date_passed(node, now):
+                self._deactivate(node, f"end date {node.end_date_time} has passed")
                 return
-            if self._is_run_limit_reached(node):
+
+            if strategy.is_run_limit_reached(node):
+                logger.info(
+                    f"[ScheduleTriggerService] Node {node.id}: "
+                    f"run limit reached ({node.current_runs}/{node.max_runs}). Skipping."
+                )
                 return
 
             self._start_session(node)
             self._increment_runs(node)
-            self._deactivate_if_max_runs_reached(node)
+
+            if strategy.is_run_limit_reached(node):
+                self._deactivate(
+                    node,
+                    f"max runs reached ({node.current_runs}/{node.max_runs})",
+                )
 
         except Exception as exc:
             logger.error(
@@ -113,37 +127,9 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
             )
         return node
 
-    def _deactivate_if_end_date_passed(
-        self, node: ScheduleTriggerNode, now: datetime
-    ) -> bool:
-        if not (
-            node.end_type == ScheduleTriggerNode.EndType.ON_DATE
-            and node.end_date_time
-            and node.end_date_time <= now
-        ):
-            return False
-
-        node.is_active = False
-        node.save(update_fields=["is_active", "updated_at"])
-        logger.info(
-            f"[ScheduleTriggerService] Node {node.id}: "
-            f"end date {node.end_date_time} has passed, deactivated."
-        )
-        return True
-
-    def _is_run_limit_reached(self, node: ScheduleTriggerNode) -> bool:
-        if not self._max_runs_reached(node):
-            return False
-        logger.info(
-            f"[ScheduleTriggerService] Node {node.id}: "
-            f"run limit reached ({node.current_runs}/{node.max_runs}). Skipping."
-        )
-        return True
-
     def _start_session(self, node: ScheduleTriggerNode) -> None:
         self.session_manager_service.run_session(
             graph_id=node.graph_id,
-            variables={},
             entrypoint=generate_node_name(node.id, node.node_name),
         )
         logger.info(
@@ -157,21 +143,7 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
         )
         node.refresh_from_db()
 
-    def _deactivate_if_max_runs_reached(self, node: ScheduleTriggerNode) -> None:
-        if not self._max_runs_reached(node):
-            return
+    def _deactivate(self, node: ScheduleTriggerNode, reason: str) -> None:
         node.is_active = False
         node.save(update_fields=["is_active", "updated_at"])
-        logger.info(
-            f"[ScheduleTriggerService] Node {node.id}: "
-            f"max runs reached ({node.current_runs}/{node.max_runs}), "
-            f"deactivated."
-        )
-
-    @staticmethod
-    def _max_runs_reached(node: ScheduleTriggerNode) -> bool:
-        return (
-            node.end_type == ScheduleTriggerNode.EndType.AFTER_N_RUNS
-            and node.max_runs is not None
-            and node.current_runs >= node.max_runs
-        )
+        logger.info(f"[ScheduleTriggerService] Node {node.id}: {reason}, deactivated.")

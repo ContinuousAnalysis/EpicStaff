@@ -30,6 +30,7 @@ from tables.models import (
 )
 from tables.services.telegram_trigger_service import TelegramTriggerService
 from tables.services.webhook_trigger_service import WebhookTriggerService
+from tables.services.schedule_trigger_service import ScheduleTriggerService
 from src.shared.models import (
     CodeResultData,
     GraphSessionMessageData,
@@ -730,8 +731,6 @@ class RedisPubSub:
         Input:  node_id — PK of the ScheduleTriggerNode
         """
         try:
-            from tables.services.schedule_trigger_service import ScheduleTriggerService
-
             close_old_connections()
             ScheduleTriggerService().handle_schedule_trigger(node_id)
             logger.info(f"[SchedulePubSub] run_session completed for node {node_id}")
@@ -742,8 +741,6 @@ class RedisPubSub:
 
     def _handle_schedule_deactivate(self, node_id: int):
         try:
-            from tables.services.schedule_trigger_service import ScheduleTriggerService
-
             close_old_connections()
             ScheduleTriggerService().deactivate_node(node_id)
         except Exception as e:
