@@ -1,6 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 
 import { GraphSessionStatus } from '../../../features/flows/services/flows-sessions.service';
+import { SseTicketService } from '../../../services/auth/sse-ticket.service';
 import { ConfigService } from '../../../services/config/config.service';
 import { Memory } from '../components/memory-sidebar/models/memory.model';
 import { GraphMessage } from '../models/graph-session-message.model';
@@ -9,7 +10,8 @@ import { GraphMessage } from '../models/graph-session-message.model';
     providedIn: 'root',
 })
 export class RunSessionSSEService {
-    constructor(private configService: ConfigService) {}
+    private configService = inject(ConfigService);
+    private sseTicketService = inject(SseTicketService);
 
     private eventSource: EventSource | null = null;
     private currentSessionId: string | null = null;
@@ -83,7 +85,17 @@ export class RunSessionSSEService {
 
         this.connectionStatusSignal.set('connecting');
 
-        const eventSourceUrl = this.apiUrl;
+        this.sseTicketService.fetchTicket().subscribe({
+            next: (ticket) => this.openEventSource(ticket),
+            error: (err) => {
+                console.error('Failed to fetch SSE ticket:', err);
+                this.handleConnectionLoss();
+            },
+        });
+    }
+
+    private openEventSource(ticket: string): void {
+        const eventSourceUrl = `${this.apiUrl}?ticket=${encodeURIComponent(ticket)}`;
         this.eventSource = new EventSource(eventSourceUrl);
 
         this.eventSource.onopen = () => {
@@ -159,11 +171,19 @@ export class RunSessionSSEService {
 
         this.eventSource.addEventListener('fatal-error', () => {
             console.error('Fatal SSE error received');
+            if (this.eventSource) {
+                this.eventSource.close();
+                this.eventSource = null;
+            }
             this.handleConnectionLoss();
         });
 
         this.eventSource.onerror = (err) => {
             console.error('SSE error:', err);
+            if (this.eventSource) {
+                this.eventSource.close();
+                this.eventSource = null;
+            }
             this.handleConnectionLoss();
         };
     }
