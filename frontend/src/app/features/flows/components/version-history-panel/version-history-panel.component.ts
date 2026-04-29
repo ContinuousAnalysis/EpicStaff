@@ -20,17 +20,19 @@ import { filter, switchMap } from 'rxjs';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
 import { ConfirmationDialogService } from '../../../../shared/components/cofirm-dialog/confimation-dialog.service';
+import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
 import { GraphVersionDto } from '../../models/graph.model';
 import { FlowsApiService } from '../../services/flows-api.service';
 
 @Component({
     selector: 'app-version-history-panel',
-    imports: [IconButtonComponent, CommonModule, FormsModule],
+    imports: [IconButtonComponent, CommonModule, FormsModule, SpinnerComponent],
     templateUrl: './version-history-panel.component.html',
     styleUrl: './version-history-panel.component.scss',
 })
 export class VersionHistoryPanelComponent implements OnInit {
     public versionsList: GraphVersionDto[] = [];
+    public isLoading = true;
     public openMenuId: number | null = null;
     public editingVersionId: number | null = null;
     public editingField: 'name' | 'description' | null = null;
@@ -182,9 +184,11 @@ export class VersionHistoryPanelComponent implements OnInit {
             .subscribe({
                 next: (result) => {
                     this.versionsList = result;
+                    this.isLoading = false;
                 },
                 error: (err) => {
                     console.error('Failed to load graph versions', err);
+                    this.isLoading = false;
                 },
             });
     }
