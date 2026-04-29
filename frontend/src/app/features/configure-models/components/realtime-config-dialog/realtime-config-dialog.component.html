@@ -4,7 +4,13 @@
     </div>
 
     <div class="dialog__provider-section">
-        <div class="dialog__provider-label">Realtime Provider</div>
+        <div class="dialog__provider-label">
+            Realtime Provider
+            <app-help-tooltip
+                text="Select the realtime voice provider this configuration will use"
+                position="right"
+            />
+        </div>
         <div class="dialog__provider-buttons">
             @for (p of providers; track p.key) {
                 <button

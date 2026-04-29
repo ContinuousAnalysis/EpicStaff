@@ -6,6 +6,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import {
     ButtonComponent,
     CustomInputComponent,
+    HelpTooltipComponent,
     IconButtonComponent,
     InputNumberComponent,
     JsonEditorFormFieldComponent,
@@ -34,6 +35,7 @@ export type ConfigTab = 'llm' | 'realtime';
         ReactiveFormsModule,
         NgIf,
         IconButtonComponent,
+        HelpTooltipComponent,
         ButtonComponent,
         CustomInputComponent,
         ValidationErrorsComponent,

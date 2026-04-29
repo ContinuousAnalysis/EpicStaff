@@ -1,11 +1,21 @@
 <div class="dialog">
     <div class="header">
         <h2 class="title">Add Configuration</h2>
-        <app-icon-button icon="x" ariaLabel="Close dialog" size="2rem" (onClick)="dialogRef.close()" />
+        <app-icon-button
+            icon="x"
+            ariaLabel="Close dialog"
+            size="2rem"
+            (onClick)="dialogRef.close()"
+        />
     </div>
 
     <div class="tabs">
-        <button class="tab" [class.active]="activeTab() === 'llm'" (click)="setActiveTab('llm')" type="button">
+        <button
+            class="tab"
+            [class.active]="activeTab() === 'llm'"
+            (click)="setActiveTab('llm')"
+            type="button"
+        >
             LLM
         </button>
         <span class="tab-divider">/</span>
@@ -20,7 +30,10 @@
     </div>
 
     @if (activeTab() === 'llm') {
-        <form class="form" [formGroup]="llmForm">
+        <form
+            class="form"
+            [formGroup]="llmForm"
+        >
             <section class="section">
                 <h3 class="section-title">MODEL INFORMATION</h3>
                 <div>
@@ -159,7 +172,10 @@
         <div class="provider-section">
             <div class="provider-label">
                 Realtime Provider
-                <i class="ti ti-help-circle" style="font-size: 1rem; opacity: 0.6"></i>
+                <app-help-tooltip
+                    text="Select the realtime voice provider this configuration will use"
+                    position="right"
+                />
             </div>
             <div class="provider-buttons">
                 @for (p of realtimeProviders; track p.key) {
@@ -176,8 +192,14 @@
         </div>
 
         @if (selectedProvider() === 'openai') {
-            <form class="form" [formGroup]="openaiForm">
-                <div *ngIf="errorMessage()" class="error">
+            <form
+                class="form"
+                [formGroup]="openaiForm"
+            >
+                <div
+                    *ngIf="errorMessage()"
+                    class="error"
+                >
                     <p>{{ errorMessage() }}</p>
                 </div>
                 <div>
@@ -238,8 +260,14 @@
         }
 
         @if (selectedProvider() === 'elevenlabs') {
-            <form class="form" [formGroup]="elevenLabsForm">
-                <div *ngIf="errorMessage()" class="error">
+            <form
+                class="form"
+                [formGroup]="elevenLabsForm"
+            >
+                <div
+                    *ngIf="errorMessage()"
+                    class="error"
+                >
                     <p>{{ errorMessage() }}</p>
                 </div>
                 <div>
@@ -283,8 +311,14 @@
         }
 
         @if (selectedProvider() === 'gemini') {
-            <form class="form" [formGroup]="geminiForm">
-                <div *ngIf="errorMessage()" class="error">
+            <form
+                class="form"
+                [formGroup]="geminiForm"
+            >
+                <div
+                    *ngIf="errorMessage()"
+                    class="error"
+                >
                     <p>{{ errorMessage() }}</p>
                 </div>
                 <div>
@@ -329,8 +363,16 @@
     }
 
     <div class="footer">
-        <app-button type="outline-primary" (click)="onCancel()">Cancel</app-button>
-        <app-button type="primary" (click)="onSubmit()" [disabled]="isSubmitting()">
+        <app-button
+            type="outline-primary"
+            (click)="onCancel()"
+            >Cancel</app-button
+        >
+        <app-button
+            type="primary"
+            (click)="onSubmit()"
+            [disabled]="isSubmitting()"
+        >
             @if (isSubmitting()) {
                 Creating…
             } @else {

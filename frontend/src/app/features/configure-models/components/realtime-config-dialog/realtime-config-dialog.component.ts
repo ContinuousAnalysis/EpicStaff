@@ -3,7 +3,12 @@ import { NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ButtonComponent, CustomInputComponent, ValidationErrorsComponent } from '@shared/components';
+import {
+    ButtonComponent,
+    CustomInputComponent,
+    HelpTooltipComponent,
+    ValidationErrorsComponent,
+} from '@shared/components';
 import { catchError, EMPTY, Observable, tap } from 'rxjs';
 
 import { ElevenLabsRealtimeConfig } from '../../../../shared/models/realtime-voice/elevenlabs-realtime-config.model';
@@ -25,7 +30,14 @@ export interface RealtimeConfigDialogData {
     selector: 'app-realtime-config-dialog',
     templateUrl: './realtime-config-dialog.component.html',
     styleUrls: ['./realtime-config-dialog.component.scss'],
-    imports: [ReactiveFormsModule, CustomInputComponent, ButtonComponent, ValidationErrorsComponent, NgIf],
+    imports: [
+        ReactiveFormsModule,
+        CustomInputComponent,
+        ButtonComponent,
+        ValidationErrorsComponent,
+        HelpTooltipComponent,
+        NgIf,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RealtimeConfigDialogComponent {
