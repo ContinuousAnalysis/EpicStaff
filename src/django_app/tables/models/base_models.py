@@ -8,6 +8,7 @@ from typing import Self
 from django.apps import apps
 from django.db import connection, models
 from django.db.models import Func, Value
+from django.utils import timezone
 
 
 class AbstractDefaultFillableModel(models.Model):
@@ -236,6 +237,22 @@ class BaseGlobalNode(models.Model):
 
     class Meta:
         abstract = True
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self._touch_graph_updated_at()
+
+    def delete(self, *args, **kwargs):
+        self._touch_graph_updated_at()
+        super().delete(*args, **kwargs)
+
+    def _touch_graph_updated_at(self):
+        graph_id = getattr(self, "graph_id", None)
+        if graph_id:
+            # using lazy import because of circular dependency
+            from tables.models import Graph
+
+            Graph.objects.filter(pk=graph_id).update(updated_at=timezone.now())
 
     @classmethod
     def get_all_node_models(cls):
