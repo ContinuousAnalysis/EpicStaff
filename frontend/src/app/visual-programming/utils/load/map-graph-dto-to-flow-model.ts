@@ -92,16 +92,11 @@ export function mapGraphDtoToFlowModel(graph: GraphDto): FlowModel {
     // ── 4. Patch DT node data: replace backend integer refs with UUIDs ───
     resolveDecisionTableNodeRefs(decisionTableNodes, graph.decision_table_node_list ?? [], backendIdToUuid);
 
-    // ── 4b. Build nodeByName map and resolve CDT refs ────────────────────
-    const nodeByName = new Map<string, string>();
-    for (const n of allNodes) {
-        if (n.node_name) nodeByName.set(n.node_name, n.id);
-    }
+    // ── 4b. Resolve CDT refs (default/error nodes + condition group next_node) ──
     resolveClassificationDecisionTableNodeRefs(
         classificationDecisionTableNodes,
         graph.classification_decision_table_node_list ?? [],
-        backendIdToUuid,
-        nodeByName
+        backendIdToUuid
     );
 
     // ── 4c. Build nodeByUuid map for CDT connections ─────────────────────

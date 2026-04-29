@@ -42,8 +42,29 @@ export function mapClassificationDecisionTableToConnections(
             }
         }
 
-        // CDT per-group routing is handled via route_code-based ports.
-        // Connections for route ports are restored by the flow service from saved edge data.
+        // Per-group route connections: restored from next_node resolved in ref-resolvers
+        for (const group of table.condition_groups ?? []) {
+            if (!group.next_node) continue;
+            const targetNode = nodeByUuid.get(group.next_node);
+            if (!targetNode || targetNode.type === NodeType.EDGE) continue;
+
+            // Port ID follows decision-route-${slug(route_code)}, with fallback to decision-out-${group_name}.
+            // Slug transform must match generatePortsForClassificationDecisionTableNode in helpers.ts
+            // (lowercase + whitespace -> '-') otherwise the connection won't visually attach to its port.
+            const slug = (s: string): string => s.toLowerCase().replace(/\s+/g, '-');
+            const portRole = group.route_code
+                ? `decision-route-${slug(group.route_code)}`
+                : `decision-out-${group.group_name}`;
+
+            connections.push(
+                createFlowConnection(
+                    cdtNode.id,
+                    targetNode.id,
+                    `${cdtNode.id}_${portRole}` as CustomPortId,
+                    `${targetNode.id}_${getInputPortRole(targetNode.type)}` as CustomPortId
+                )
+            );
+        }
     }
 
     return connections;

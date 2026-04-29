@@ -92,6 +92,7 @@ interface CdtConditionGroupUi {
     continue_flag?: boolean;
     continue?: boolean;
     route_code?: string | null;
+    next_node?: string | null;
     dock_visible?: boolean;
     field_expressions?: Record<string, unknown>;
     field_manipulations?: Record<string, unknown>;
@@ -100,7 +101,9 @@ interface CdtConditionGroupUi {
 function buildCdtNodePayload(
     node: ClassificationDecisionTableNodeModel,
     graphId: number,
-    allNodes: NodeModel[]
+    allNodes: NodeModel[],
+    idMap: Map<string, number>,
+    connections: ConnectionModel[]
 ): Record<string, unknown> {
     const tableData = node.data?.table;
     const preComp = tableData?.pre_computation || {};
@@ -110,23 +113,47 @@ function buildCdtNodePayload(
 
     const conditionGroups = ((tableData?.condition_groups || []) as CdtConditionGroupUi[])
         .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
-        .map((g, idx) => ({
-            group_name: g.group_name,
-            order: typeof g.order === 'number' ? g.order : idx + 1,
-            expression: g.expression || null,
-            prompt_id: g.prompt_id || null,
-            manipulation: g.manipulation || null,
-            continue_flag: !!(g.continue_flag ?? g.continue),
-            route_code: g.route_code || null,
-            dock_visible: g.dock_visible !== false,
-            field_expressions: serializeCDTFieldExpressions(g.field_expressions || {}),
-            field_manipulations: (g.field_manipulations || {}) as Record<string, string>,
-        }));
+        .map((g, idx) => {
+            // Primary: resolve via group.next_node (FE UUID kept in sync by flow.service)
+            let nextNodeId: number | null = null;
+            if (g.next_node) {
+                nextNodeId = idMap.get(g.next_node) ?? null;
+                if (nextNodeId == null) {
+                    const targetNode = allNodes.find((n) => n.id === g.next_node);
+                    nextNodeId = targetNode?.backendId ?? null;
+                }
+            }
 
-    const resolveNodeName = (uuid: string | null): string | null => {
-        if (!uuid) return null;
-        return allNodes.find((n) => n.id === uuid)?.node_name ?? null;
-    };
+            // Fallback: live-connection lookup using the same slug transform as helpers.ts
+            if (nextNodeId == null && g.route_code) {
+                const slugified = g.route_code.toLowerCase().replace(/\s+/g, '-');
+                const routePortId = `${node.id}_decision-route-${slugified}`;
+                const conn = connections.find((c) => c.sourceNodeId === node.id && c.sourcePortId === routePortId);
+                if (conn) {
+                    nextNodeId = idMap.get(conn.targetNodeId) ?? null;
+                    if (nextNodeId == null) {
+                        const targetNode = allNodes.find((n) => n.id === conn.targetNodeId);
+                        nextNodeId = targetNode?.backendId ?? null;
+                    }
+                }
+            }
+            return {
+                group_name: g.group_name,
+                order: typeof g.order === 'number' ? g.order : idx + 1,
+                expression: g.expression || null,
+                prompt_id: g.prompt_id || null,
+                manipulation: g.manipulation || null,
+                continue_flag: !!(g.continue_flag ?? g.continue),
+                route_code: g.route_code || null,
+                next_node_id: nextNodeId,
+                dock_visible: g.dock_visible !== false,
+                field_expressions: serializeCDTFieldExpressions(g.field_expressions || {}),
+                field_manipulations: (g.field_manipulations || {}) as Record<string, string>,
+            };
+        });
+
+    const defaultRef = resolveNodeRef(tableData?.default_next_node ?? null, allNodes, idMap);
+    const errorRef = resolveNodeRef(tableData?.next_error_node ?? null, allNodes, idMap);
 
     return {
         graph: graphId,
@@ -165,8 +192,10 @@ function buildCdtNodePayload(
                 }) satisfies CreatePromptConfigRequest
         ),
         default_llm_config: tableData?.default_llm_config ?? null,
-        default_next_node: resolveNodeName(tableData?.default_next_node),
-        next_error_node: resolveNodeName(tableData?.next_error_node),
+        ...(defaultRef.backendId != null ? { default_next_node_id: defaultRef.backendId } : {}),
+        ...(defaultRef.tempId != null ? { default_next_node_temp_id: defaultRef.tempId } : {}),
+        ...(errorRef.backendId != null ? { next_error_node_id: errorRef.backendId } : {}),
+        ...(errorRef.tempId != null ? { next_error_node_temp_id: errorRef.tempId } : {}),
         condition_groups: conditionGroups,
         metadata: toNodeMetadata(node),
     } satisfies CreateClassificationDecisionTableNodeRequest & Record<string, unknown>;
@@ -331,7 +360,7 @@ export function buildBulkSavePayload(
             metadata: toNodeMetadata(n),
         })),
         classification_decision_table_node_list: nodeItems(nodeDiff.classificationDecisionTableNodes, (n) =>
-            buildCdtNodePayload(n, graphId, current.nodes)
+            buildCdtNodePayload(n, graphId, current.nodes, idMap, current.connections)
         ),
         edge_list: edgeList,
         deleted,

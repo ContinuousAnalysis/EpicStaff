@@ -30,7 +30,6 @@ export interface ClassificationConditionGroupBackend {
     dock_visible: boolean;
     field_expressions: Record<string, string>;
     field_manipulations: Record<string, string>;
-    // next_node_id kept as optional for backward-compat during transition
     next_node_id?: number | null;
 }
 
@@ -42,6 +41,7 @@ export interface CreateClassificationConditionGroupRequest {
     manipulation: string | null;
     continue_flag: boolean;
     route_code: string | null;
+    next_node_id?: number | null;
     dock_visible: boolean;
     field_expressions: Record<string, string>;
     field_manipulations: Record<string, string>;
@@ -67,8 +67,8 @@ export interface GetClassificationDecisionTableNodeRequest {
     post_output_variable_path: string | null;
     prompt_configs: PromptConfigBackend[];
     default_llm_config: number | null;
-    default_next_node: string | null;
-    next_error_node: string | null;
+    default_next_node_id: number | null;
+    next_error_node_id: number | null;
     condition_groups: ClassificationConditionGroupBackend[];
     metadata?: unknown;
 }
@@ -84,8 +84,10 @@ export interface CreateClassificationDecisionTableNodeRequest {
     post_output_variable_path: string | null;
     prompt_configs: CreatePromptConfigRequest[];
     default_llm_config: number | null;
-    default_next_node: string | null;
-    next_error_node: string | null;
+    default_next_node_id?: number | null;
+    default_next_node_temp_id?: string | null;
+    next_error_node_id?: number | null;
+    next_error_node_temp_id?: string | null;
     condition_groups: CreateClassificationConditionGroupRequest[];
     metadata?: unknown;
 }

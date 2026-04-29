@@ -4,18 +4,16 @@ import { ClassificationDecisionTableNodeModel } from '../../../core/models/node.
 /**
  * After all nodes are built and the backendId → UUID map exists, fills in
  * UUID references inside each CDT node's table data:
- *   - default_next_node (stored as node name → resolve to UUID)
- *   - next_error_node (stored as node name → resolve to UUID)
- *
- * CDT condition groups do NOT carry per-row next_node; routing is via route_code → port matching.
+ *   - default_next_node (stored as backend integer ID → resolve to UUID)
+ *   - next_error_node (stored as backend integer ID → resolve to UUID)
+ *   - each condition group's next_node (stored as backend integer ID → resolve to UUID)
  *
  * Mutates models in place — called once at load time before connections are built.
  */
 export function resolveClassificationDecisionTableNodeRefs(
     cdtNodes: ClassificationDecisionTableNodeModel[],
     backendCdtNodes: GetClassificationDecisionTableNodeRequest[],
-    _backendIdToUuid: Map<number, string>,
-    nodeByName: Map<string, string>
+    backendIdToUuid: Map<number, string>
 ): void {
     for (const cdtNode of cdtNodes) {
         const backendCdt = backendCdtNodes.find((d) => d.id === cdtNode.backendId);
@@ -23,9 +21,24 @@ export function resolveClassificationDecisionTableNodeRefs(
 
         const table = cdtNode.data.table;
 
-        // default_next_node and next_error_node come back as node names from the backend
-        table.default_next_node = table.default_next_node ? (nodeByName.get(table.default_next_node) ?? null) : null;
+        // default_next_node and next_error_node come back as backend integer IDs — resolve to FE UUID
+        table.default_next_node =
+            backendCdt.default_next_node_id != null
+                ? (backendIdToUuid.get(backendCdt.default_next_node_id) ?? null)
+                : null;
 
-        table.next_error_node = table.next_error_node ? (nodeByName.get(table.next_error_node) ?? null) : null;
+        table.next_error_node =
+            backendCdt.next_error_node_id != null ? (backendIdToUuid.get(backendCdt.next_error_node_id) ?? null) : null;
+
+        // Condition groups carry next_node_id (backend integer) — resolve to FE UUID
+        for (let j = 0; j < table.condition_groups.length; j++) {
+            const group = table.condition_groups[j];
+            const backendGroup = backendCdt.condition_groups[j];
+            if (backendGroup?.next_node_id != null) {
+                group.next_node = backendIdToUuid.get(backendGroup.next_node_id) ?? null;
+            } else {
+                group.next_node = null;
+            }
+        }
     }
 }

@@ -61,8 +61,7 @@ export class ClassificationDecisionTableNodeService {
 
     buildCreatePayload(
         graphId: number,
-        node: ClassificationDecisionTableNodeModel,
-        resolveNodeName: (idOrName: string | null) => string | null
+        node: ClassificationDecisionTableNodeModel
     ): CreateClassificationDecisionTableNodeRequest {
         const tableData = node.data?.table;
 
@@ -81,7 +80,7 @@ export class ClassificationDecisionTableNodeService {
                 // TODO: resolve group.next_node UUID to backend integer ID when an ID resolver is available here.
                 // The primary save path (save-graph.diff.ts buildClassificationDecisionTablePayload) handles this correctly.
                 next_node_id: null,
-                // route_code: group.route_code || null,  // TEMP: testing without route_code
+                route_code: group.route_code || null,
                 dock_visible: group.dock_visible !== false,
                 field_expressions: this.serializeFieldExpressions(group.field_expressions || {}),
                 field_manipulations: group.field_manipulations || {},
@@ -129,8 +128,10 @@ export class ClassificationDecisionTableNodeService {
                     }) as CreatePromptConfigRequest
             ),
             default_llm_config: tableData?.default_llm_config ?? null,
-            default_next_node: resolveNodeName(tableData?.default_next_node),
-            next_error_node: resolveNodeName(tableData?.next_error_node),
+            // TODO: resolve default_next_node / next_error_node UUIDs to backend integer IDs when
+            // allNodes + idMap are available here. Primary save path (buildCdtNodePayload) handles this correctly.
+            default_next_node_id: null,
+            next_error_node_id: null,
             condition_groups: conditionGroups,
         };
     }

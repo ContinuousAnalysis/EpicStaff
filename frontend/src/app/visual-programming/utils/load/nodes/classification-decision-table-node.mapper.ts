@@ -41,8 +41,8 @@ export function mapClassificationDecisionTableNodeToModel(
                     return dict;
                 })(),
                 default_llm_config: n.default_llm_config ?? null,
-                default_next_node: n.default_next_node,
-                next_error_node: n.next_error_node,
+                default_next_node: null, // resolved in ref-resolvers/classification-decision-table-refs.ts
+                next_error_node: null, // resolved in ref-resolvers/classification-decision-table-refs.ts
                 pre_computation: {
                     code: n.pre_python_code?.code ?? '',
                     input_map: n.pre_input_map ?? {},
@@ -62,6 +62,7 @@ export function mapClassificationDecisionTableNodeToModel(
                     prompt_id: g.prompt_id,
                     manipulation: g.manipulation,
                     continue_flag: g.continue_flag,
+                    route_code: g.route_code ?? null,
                     dock_visible: g.dock_visible,
                     field_expressions: g.field_expressions ?? {},
                     field_manipulations: g.field_manipulations ?? {},

@@ -1,4 +1,8 @@
-<div class="decision-table" appClickOrDrag (actualClick)="onEditClick()">
+<div
+    class="decision-table"
+    appClickOrDrag
+    (actualClick)="onEditClick()"
+>
     @if (inputPort; as port) {
         <div class="input-port-wrapper">
             <div
@@ -12,14 +16,20 @@
                     'background-color': port.color,
                 }"
             >
-                <i class="fa-solid fa-plus plus-icon" [ngStyle]="{ color: 'hsl(0, 0%, 15%)' }"></i>
+                <i
+                    class="fa-solid fa-plus plus-icon"
+                    [ngStyle]="{ color: 'hsl(0, 0%, 15%)' }"
+                ></i>
             </div>
         </div>
     }
 
     <div class="decision-table__header">
         <div class="icon-wrapper">
-            <i [class]="node.icon" [style.color]="node.color"></i>
+            <i
+                [class]="node.icon"
+                [style.color]="node.color"
+            ></i>
         </div>
         <div class="title">{{ node.node_name || 'Classification Table' }}</div>
     </div>
@@ -27,27 +37,32 @@
     <div class="decision-table__groups">
         @if (conditionGroups.length > 0) {
             @for (group of conditionGroups; track trackConditionGroup($index, group)) {
-                <div class="decision-table__group">
-                    <span class="group-name">{{ group.group_name || 'Group ' + ($index + 1) }}</span>
+                @if (group.route_code) {
+                    <div class="decision-table__group">
+                        <span class="group-name">{{ group.route_code }}</span>
 
-                    @if (getPortForGroup(group); as port) {
-                        <div class="port-wrapper">
-                            <div
-                                class="port-circle"
-                                fNodeOutput
-                                [fOutputMultiple]="port.multiple"
-                                [fOutputId]="port.id"
-                                [fOutputConnectableSide]="port.position"
-                                [ngStyle]="{
-                                    'border-color': port.color,
-                                    'background-color': 'hsl(0, 0%, 15%)',
-                                }"
-                            >
-                                <i class="fa-solid fa-plus plus-icon" [ngStyle]="{ color: port.color }"></i>
+                        @if (getPortForGroup(group); as port) {
+                            <div class="port-wrapper">
+                                <div
+                                    class="port-circle"
+                                    fNodeOutput
+                                    [fOutputMultiple]="port.multiple"
+                                    [fOutputId]="port.id"
+                                    [fOutputConnectableSide]="port.position"
+                                    [ngStyle]="{
+                                        'border-color': port.color,
+                                        'background-color': 'hsl(0, 0%, 15%)',
+                                    }"
+                                >
+                                    <i
+                                        class="fa-solid fa-plus plus-icon"
+                                        [ngStyle]="{ color: port.color }"
+                                    ></i>
+                                </div>
                             </div>
-                        </div>
-                    }
-                </div>
+                        }
+                    </div>
+                }
             }
         } @else {
             <div class="decision-table__group decision-table__empty">
@@ -78,7 +93,10 @@
                             'background-color': 'hsl(0, 0%, 15%)',
                         }"
                     >
-                        <i class="fa-solid fa-plus plus-icon" [ngStyle]="{ color: port.color }"></i>
+                        <i
+                            class="fa-solid fa-plus plus-icon"
+                            [ngStyle]="{ color: port.color }"
+                        ></i>
                     </div>
                 </div>
             }
@@ -107,7 +125,10 @@
                             'background-color': 'hsl(0, 0%, 15%)',
                         }"
                     >
-                        <i class="fa-solid fa-plus plus-icon" [ngStyle]="{ color: port.color }"></i>
+                        <i
+                            class="fa-solid fa-plus plus-icon"
+                            [ngStyle]="{ color: port.color }"
+                        ></i>
                     </div>
                 </div>
             }

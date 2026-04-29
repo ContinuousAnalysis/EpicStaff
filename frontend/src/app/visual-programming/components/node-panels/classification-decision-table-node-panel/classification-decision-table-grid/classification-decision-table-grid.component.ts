@@ -1320,7 +1320,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             conditions: [],
             manipulation: null,
             continue_flag: false,
-            route_code: `ROUTE_${index + 1}`,
+            route_code: '',
             dock_visible: true,
             next_node: null,
             order: index + 1,
