@@ -1,7 +1,11 @@
 .dialog {
     background-color: var(--color-modals-background);
     border-radius: 8px;
-    width: min(520px, calc(100vw - 2rem));
+    width: 480px;
+    height: 95vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     box-sizing: border-box;
     color: var(--color-text-primary);
 
@@ -10,6 +14,7 @@
         border-bottom: 1px solid var(--color-divider-subtle);
         font-size: 1.25rem;
         font-weight: 500;
+        flex-shrink: 0;
     }
 
     &__error-message {
@@ -25,13 +30,20 @@
     }
 
     &__form {
+        flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 1rem;
-        padding: 1.25rem;
-        max-height: 70vh;
+        gap: 0.9rem;
+        padding: 1.25rem 1.25rem 1.5rem;
+        min-height: 0;
         overflow-y: auto;
         min-width: 0;
+
+        app-select,
+        app-custom-input {
+            display: block;
+            overflow: visible;
+        }
     }
 
     &__section-divider {
@@ -69,5 +81,6 @@
         gap: 0.75rem;
         padding: 1.25rem;
         border-top: 1px solid var(--color-divider-subtle);
+        flex-shrink: 0;
     }
 }

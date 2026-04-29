@@ -6,7 +6,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonComponent, CustomInputComponent, ValidationErrorsComponent } from '@shared/components';
 import { catchError, EMPTY, Observable, tap } from 'rxjs';
 
-import { TabButtonComponent } from '../../../../shared/components/tab-button/tab-button.component';
 import { ElevenLabsRealtimeConfig } from '../../../../shared/models/realtime-voice/elevenlabs-realtime-config.model';
 import { GeminiRealtimeConfig } from '../../../../shared/models/realtime-voice/gemini-realtime-config.model';
 import { OpenAIRealtimeConfig } from '../../../../shared/models/realtime-voice/openai-realtime-config.model';
@@ -26,14 +25,7 @@ export interface RealtimeConfigDialogData {
     selector: 'app-realtime-config-dialog',
     templateUrl: './realtime-config-dialog.component.html',
     styleUrls: ['./realtime-config-dialog.component.scss'],
-    imports: [
-        ReactiveFormsModule,
-        CustomInputComponent,
-        ButtonComponent,
-        ValidationErrorsComponent,
-        NgIf,
-        TabButtonComponent,
-    ],
+    imports: [ReactiveFormsModule, CustomInputComponent, ButtonComponent, ValidationErrorsComponent, NgIf],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RealtimeConfigDialogComponent {

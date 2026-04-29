@@ -3,24 +3,32 @@
         {{ data.action === 'create' ? 'Add Configuration' : 'Edit Configuration' }}
     </div>
 
-    <div class="dialog__provider-selector">
-        <span class="dialog__provider-label">Realtime Provider</span>
+    <div class="dialog__provider-section">
+        <div class="dialog__provider-label">Realtime Provider</div>
         <div class="dialog__provider-buttons">
             @for (p of providers; track p.key) {
-                <app-tab-button
-                    [active]="selectedProvider() === p.key"
+                <button
+                    type="button"
+                    class="dialog__provider-btn"
+                    [class.active]="selectedProvider() === p.key"
                     [disabled]="data.action === 'update' && selectedProvider() !== p.key"
-                    (action)="selectProvider(p.key)"
+                    (click)="selectProvider(p.key)"
                 >
                     {{ p.label }}
-                </app-tab-button>
+                </button>
             }
         </div>
     </div>
 
     @if (selectedProvider() === 'openai') {
-        <form class="dialog__form" [formGroup]="openaiForm">
-            <div *ngIf="errorMessage()" class="dialog__error-message">
+        <form
+            class="dialog__form"
+            [formGroup]="openaiForm"
+        >
+            <div
+                *ngIf="errorMessage()"
+                class="dialog__error"
+            >
                 <p>{{ errorMessage() }}</p>
             </div>
             <div>
@@ -81,8 +89,14 @@
     }
 
     @if (selectedProvider() === 'elevenlabs') {
-        <form class="dialog__form" [formGroup]="elevenLabsForm">
-            <div *ngIf="errorMessage()" class="dialog__error-message">
+        <form
+            class="dialog__form"
+            [formGroup]="elevenLabsForm"
+        >
+            <div
+                *ngIf="errorMessage()"
+                class="dialog__error"
+            >
                 <p>{{ errorMessage() }}</p>
             </div>
             <div>
@@ -126,8 +140,14 @@
     }
 
     @if (selectedProvider() === 'gemini') {
-        <form class="dialog__form" [formGroup]="geminiForm">
-            <div *ngIf="errorMessage()" class="dialog__error-message">
+        <form
+            class="dialog__form"
+            [formGroup]="geminiForm"
+        >
+            <div
+                *ngIf="errorMessage()"
+                class="dialog__error"
+            >
                 <p>{{ errorMessage() }}</p>
             </div>
             <div>
@@ -171,8 +191,16 @@
     }
 
     <div class="dialog__actions">
-        <app-button type="outline-primary" (click)="onCancel()">Cancel</app-button>
-        <app-button type="primary" (click)="onSubmit()" [disabled]="isSubmitting()">
+        <app-button
+            type="outline-primary"
+            (click)="onCancel()"
+            >Cancel</app-button
+        >
+        <app-button
+            type="primary"
+            (click)="onSubmit()"
+            [disabled]="isSubmitting()"
+        >
             @if (isSubmitting()) {
                 {{ data.action === 'create' ? 'Creating…' : 'Saving…' }}
             } @else {

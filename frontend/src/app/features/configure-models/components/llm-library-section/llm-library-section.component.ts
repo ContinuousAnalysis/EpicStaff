@@ -213,10 +213,7 @@ export class LlmLibrarySectionComponent implements OnInit {
     }
 
     public onAddModel(): void {
-        this.dialog.open(AddConfigurationDialogComponent, {
-            width: '560px',
-            height: '800px',
-        });
+        this.dialog.open(AddConfigurationDialogComponent);
     }
 
     public onEdit(model: LlmLibraryModel): void {

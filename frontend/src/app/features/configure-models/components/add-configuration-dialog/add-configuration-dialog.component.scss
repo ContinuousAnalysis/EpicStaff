@@ -1,10 +1,10 @@
 .dialog {
-    width: 560px;
-    height: 800px;
+    width: 480px;
+    height: 95vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--color-background-body, #212325);
+    background: var(--color-modals-background);
     border: 1px solid var(--color-ks-line, #2b2d30);
     border-radius: 10px;
     color: var(--color-text-primary);
