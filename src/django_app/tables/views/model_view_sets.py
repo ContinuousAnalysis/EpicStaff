@@ -115,12 +115,11 @@ from tables.models.graph_models import (
     GraphOrganizationUser,
     LLMNode,
     GraphNote,
-    Organization,
-    OrganizationUser,
     TelegramTriggerNode,
     TelegramTriggerNodeField,
     WebhookTriggerNode,
 )
+from tables.models.rbac_models import Organization, OrganizationUser
 from tables.models.llm_models import (
     RealtimeConfig,
     RealtimeTranscriptionConfig,
@@ -799,9 +798,7 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         created_graph = serializer.save()
-        organization, _ = Organization.objects.get_or_create(
-            name=DEFAULT_ORGANIZATION_NAME
-        )
+        organization = Organization.objects.get(name=DEFAULT_ORGANIZATION_NAME)
         GraphOrganization.objects.create(graph=created_graph, organization=organization)
 
     @action(detail=True, methods=["get"])

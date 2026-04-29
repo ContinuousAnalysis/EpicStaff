@@ -82,9 +82,7 @@ class GraphStrategy(EntityImportExportStrategy):
         serializer.is_valid(raise_exception=True)
         graph = serializer.save()
 
-        organization, _ = Organization.objects.get_or_create(
-            name=DEFAULT_ORGANIZATION_NAME
-        )
+        organization = Organization.objects.get(name=DEFAULT_ORGANIZATION_NAME)
         GraphOrganization.objects.get_or_create(graph=graph, organization=organization)
 
         node_mapper = IDMapper()
