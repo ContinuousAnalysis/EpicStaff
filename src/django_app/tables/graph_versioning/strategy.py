@@ -8,7 +8,6 @@ from tables.import_export.id_mapper import IDMapper
 from tables.graph_versioning.constants import (
     _DEPENDENCY_ENTITY_TYPES,
     _DEPENDENCY_MODELS,
-    _GRAPH_SCALAR_FIELDS,
     _GRAPH_RELATION_NAMES,
 )
 from tables.models import (
@@ -369,7 +368,10 @@ class GraphVersioningStrategy:
         Updates graphs fields from version snapshot
         """
         update_fields = []
-        for field in _GRAPH_SCALAR_FIELDS:
+        graph_scalar_fields = [
+            field.name for field in graph._meta.get_fields() if not field.is_relation
+        ]
+        for field in graph_scalar_fields:
             if field in snapshot:
                 setattr(graph, field, snapshot[field])
                 update_fields.append(field)

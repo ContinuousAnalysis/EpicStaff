@@ -6,15 +6,6 @@ from tables.models import (
     WebhookTrigger,
 )
 
-_GRAPH_SCALAR_FIELDS = (
-    "name",
-    "description",
-    "metadata",
-    "uuid",
-    "time_to_live",
-    "epicchat_enabled",
-    "persistent_variables",
-)
 
 _DEPENDENCY_ENTITY_TYPES = {
     EntityType.CREW.value: EntityType.CREW,
