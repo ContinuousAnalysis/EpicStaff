@@ -43,7 +43,12 @@ import { HelpTooltipComponent } from '../help-tooltip/help-tooltip.component';
                     [style.--active-color]="activeColor"
                 />
                 @if (type === 'password') {
-                    <button type="button" class="toggle-visibility" (click)="togglePasswordVisibility()" tabindex="-1">
+                    <button
+                        type="button"
+                        class="toggle-visibility"
+                        (click)="togglePasswordVisibility()"
+                        tabindex="-1"
+                    >
                         <i [class]="'ti ' + (passwordVisible ? 'ti-eye' : 'ti-eye-off')"></i>
                     </button>
                 }
