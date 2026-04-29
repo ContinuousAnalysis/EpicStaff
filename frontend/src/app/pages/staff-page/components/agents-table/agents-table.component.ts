@@ -34,7 +34,12 @@ import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
 import { themeQuartz } from 'ag-grid-community';
 import { catchError, concatMap, EMPTY, finalize, from, map, Observable, of, switchMap, tap, toArray } from 'rxjs';
 
-import { CreateAgentRequest, ToolUniqueName, UpdateAgentRequest } from '../../../../features/staff/models/agent.model';
+import {
+    CreateAgentRequest,
+    RealtimeAgentConfig,
+    ToolUniqueName,
+    UpdateAgentRequest,
+} from '../../../../features/staff/models/agent.model';
 import {
     FullAgent,
     FullAgentService,
@@ -595,6 +600,36 @@ export class AgentsTableComponent {
         }
     }
 
+    /**
+     * Backend read serializer expands provider config FKs into nested objects.
+     * Normalize them back to numeric IDs before sending to the backend.
+     */
+    private normalizeRealtimeAgent(ra: RealtimeAgentConfig | null | undefined): RealtimeAgentConfig {
+        const toId = (v: unknown): number | null => {
+            if (typeof v === 'number') return v;
+            if (v && typeof v === 'object' && 'id' in v) return (v as { id: number }).id;
+            return null;
+        };
+        if (!ra) {
+            return {
+                wake_word: '',
+                stop_prompt: 'stop',
+                voice: 'alloy',
+                openai_config: null,
+                elevenlabs_config: null,
+                gemini_config: null,
+            };
+        }
+        return {
+            wake_word: ra.wake_word,
+            stop_prompt: ra.stop_prompt,
+            voice: ra.voice,
+            openai_config: toId(ra.openai_config),
+            elevenlabs_config: toId(ra.elevenlabs_config),
+            gemini_config: toId(ra.gemini_config),
+        };
+    }
+
     // Function to parse the necessary fields (merged tools and config)
     private parseAgentData = (agentData: TableFullAgent) => {
         // Extract LLM config ID and realtime config ID from mergedConfigs
@@ -615,16 +650,7 @@ export class AgentsTableComponent {
         // Process merged tools
         const mergedTools = agentData.mergedTools || [];
 
-        // Use realtime_agent directly — provider FKs (openai_config/elevenlabs_config/gemini_config)
-        // are set via the RealtimeSettingsDialog and already present on the object
-        const realtime_agent = agentData.realtime_agent || {
-            wake_word: '',
-            stop_prompt: 'stop',
-            voice: 'alloy',
-            openai_config: null,
-            elevenlabs_config: null,
-            gemini_config: null,
-        };
+        const realtime_agent = this.normalizeRealtimeAgent(agentData.realtime_agent);
 
         const parsed = {
             ...agentData,
@@ -867,16 +893,7 @@ export class AgentsTableComponent {
         // Mark for check due to OnPush change detection
         this.cdr.markForCheck();
 
-        // Check if this is a temporary row or one with a real ID
-        // Use realtime_agent directly (provider FKs are set by RealtimeSettingsDialog)
-        const realtime_agent = updatedAgent.realtime_agent || {
-            wake_word: '',
-            stop_prompt: 'stop',
-            voice: 'alloy',
-            openai_config: null,
-            elevenlabs_config: null,
-            gemini_config: null,
-        };
+        const realtime_agent = this.normalizeRealtimeAgent(updatedAgent.realtime_agent);
 
         const allToolsPreBuilding = {
             configured_tools: this.rowData[index].mergedTools
@@ -1089,14 +1106,7 @@ export class AgentsTableComponent {
         this.cdr.markForCheck();
 
         // 3) build CreateAgentRequest
-        const realtime_agent = newAgentData.realtime_agent || {
-            wake_word: '',
-            stop_prompt: 'stop',
-            voice: 'alloy',
-            openai_config: null,
-            elevenlabs_config: null,
-            gemini_config: null,
-        };
+        const realtime_agent = this.normalizeRealtimeAgent(newAgentData.realtime_agent);
 
         const parsedAgentData = this.parseAgentData(newAgentData);
 

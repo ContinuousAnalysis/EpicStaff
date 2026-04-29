@@ -62,16 +62,16 @@
             </div>
         }
 
-        @for (provider of voiceProviders; track provider.key) {
+        @for (provider of filteredVoiceProviders(); track provider.key) {
             <div class="section">
                 <div class="section-header">
                     <h4 class="section-title">{{ provider.label }}:</h4>
                 </div>
-                @if (provider.storage.configs().length === 0) {
+                @if (provider.configs.length === 0) {
                     <p class="empty-hint">No {{ provider.label }} yet.</p>
                 } @else {
                     <div class="grid">
-                        @for (c of provider.storage.configs(); track c.id) {
+                        @for (c of provider.configs; track c.id) {
                             <article class="voice-card">
                                 <div class="top">
                                     <span class="model">{{ c.model_name }}</span>

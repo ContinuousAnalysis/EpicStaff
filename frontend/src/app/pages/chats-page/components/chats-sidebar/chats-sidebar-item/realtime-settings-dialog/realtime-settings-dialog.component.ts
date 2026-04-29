@@ -20,6 +20,7 @@ import { buildToolIdsArray } from '../../../../../../shared/utils/tool-ids-build
 import { VoiceSelectorComponent } from './voice-selector/voice-selector.component';
 
 export type RealtimeProvider = 'openai' | 'elevenlabs' | 'gemini';
+type ProviderConfigValue = number | { id: number } | null | undefined;
 
 @Component({
     selector: 'app-realtime-settings-dialog',
@@ -89,9 +90,14 @@ export class RealtimeSettingsDialogComponent implements OnInit {
     ngOnInit(): void {
         // Determine initial active provider from which FK is non-null
         const ra = this.data.agent.realtime_agent;
-        if (ra.openai_config != null) this.activeProvider.set('openai');
-        else if (ra.elevenlabs_config != null) this.activeProvider.set('elevenlabs');
-        else if (ra.gemini_config != null) this.activeProvider.set('gemini');
+        const openaiConfigId = this.getProviderConfigId(ra.openai_config as ProviderConfigValue);
+        const elevenLabsConfigId = this.getProviderConfigId(ra.elevenlabs_config as ProviderConfigValue);
+        const geminiConfigId = this.getProviderConfigId(ra.gemini_config as ProviderConfigValue);
+
+        if (openaiConfigId != null) this.activeProvider.set('openai');
+        else if (elevenLabsConfigId != null) this.activeProvider.set('elevenlabs');
+        else if (geminiConfigId != null) this.activeProvider.set('gemini');
+        else this.activeProvider.set('openai');
 
         this.settingsForm = this.fb.group({
             voice: [ra.voice ?? ''],
@@ -105,9 +111,9 @@ export class RealtimeSettingsDialogComponent implements OnInit {
             ],
             wakeword: [ra.wake_word],
             stopword: [ra.stop_prompt],
-            openai_config: [ra.openai_config],
-            elevenlabs_config: [ra.elevenlabs_config],
-            gemini_config: [ra.gemini_config],
+            openai_config: [openaiConfigId],
+            elevenlabs_config: [elevenLabsConfigId],
+            gemini_config: [geminiConfigId],
         });
 
         // Load all provider configs
@@ -131,12 +137,18 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         });
     }
 
+    private getProviderConfigId(config: ProviderConfigValue): number | null {
+        if (typeof config === 'number') return config;
+        return config?.id ?? null;
+    }
+
     onProviderSelect(provider: RealtimeProvider): void {
         this.activeProvider.set(provider);
         // Reset all provider FK controls; the selected provider keeps its value
         if (provider !== 'openai') this.settingsForm.patchValue({ openai_config: null });
         if (provider !== 'elevenlabs') this.settingsForm.patchValue({ elevenlabs_config: null });
         if (provider !== 'gemini') this.settingsForm.patchValue({ gemini_config: null });
+        if (provider === 'elevenlabs') this.settingsForm.patchValue({ voice: '' });
     }
 
     onVoiceChange(voiceId: string): void {

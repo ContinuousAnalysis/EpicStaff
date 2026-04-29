@@ -9,7 +9,7 @@
             @for (p of providers; track p.key) {
                 <app-tab-button
                     [active]="selectedProvider() === p.key"
-                    [disabled]="data.action === 'update'"
+                    [disabled]="data.action === 'update' && selectedProvider() !== p.key"
                     (action)="selectProvider(p.key)"
                 >
                     {{ p.label }}

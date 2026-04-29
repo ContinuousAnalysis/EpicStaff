@@ -138,6 +138,21 @@ export class LlmLibrarySectionComponent implements OnInit {
             .filter((group) => group.models.length > 0);
     });
 
+    filteredVoiceProviders = computed(() => {
+        const query = this.searchQuery().toLowerCase();
+        return this.voiceProviders.map((provider) => ({
+            ...provider,
+            configs: provider.storage.configs().filter((c) => {
+                if (!query) return true;
+                return (
+                    c.custom_name.toLowerCase().includes(query) ||
+                    c.model_name.toLowerCase().includes(query) ||
+                    provider.label.toLowerCase().includes(query)
+                );
+            }),
+        }));
+    });
+
     groupedByType = computed(() => {
         const all = this.filteredGroups();
         return this.configTypeSections
