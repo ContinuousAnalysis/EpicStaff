@@ -33,7 +33,7 @@ class ScheduleTriggerInputParser:
         "timezone": "UTC",
     }
 
-    def parse(
+    def parse_to_internal_value(
         self,
         raw_schedule,
         instance: ScheduleTriggerNode | None,
@@ -96,7 +96,7 @@ class ScheduleTriggerInputParser:
         return attrs
 
     @staticmethod
-    def render(instance: ScheduleTriggerNode) -> dict:
+    def render_to_representation(instance: ScheduleTriggerNode) -> dict:
         """Render a node's flat columns back into the wire `schedule` block."""
         tz_name = instance.timezone or "UTC"
         interval = (
@@ -158,6 +158,43 @@ class ScheduleTriggerValidator:
         ScheduleTriggerNode.TimeUnit.DAYS,
         ScheduleTriggerNode.TimeUnit.WEEKS,
     }
+
+    _SCHEDULE_FIELDS = (
+        "is_active",
+        "run_mode",
+        "start_date_time",
+        "every",
+        "unit",
+        "weekdays",
+        "end_type",
+        "end_date_time",
+        "max_runs",
+        "timezone",
+    )
+
+    @classmethod
+    def compose_state(
+        cls,
+        instance: ScheduleTriggerNode | None,
+        attrs: dict,
+        initial_data: object,
+    ) -> dict:
+        """Project attrs over the existing instance to a complete schedule state.
+
+        Validation reasons over the post-write snapshot, so missing fields fall
+        back to the instance and `is_active` reflects the user's stated intent
+        even when to_internal_value forced it to False (schedule cleared).
+        """
+        if instance is not None:
+            state = {f: getattr(instance, f, None) for f in cls._SCHEDULE_FIELDS}
+        else:
+            state = {}
+        state.update(attrs)
+
+        initial = initial_data if isinstance(initial_data, dict) else {}
+        if "is_active" in initial:
+            state["is_active"] = bool(initial["is_active"])
+        return state
 
     @staticmethod
     def parse_naive_to_utc(raw, tz_name: str | None) -> datetime | None:

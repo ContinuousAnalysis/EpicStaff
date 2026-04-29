@@ -1887,19 +1887,6 @@ class ScheduleTriggerNodeSerializer(serializers.Serializer):
     converts naive ISO datetimes between the user's tz and UTC at the boundary.
     """
 
-    _SCHEDULE_FIELDS = (
-        "is_active",
-        "run_mode",
-        "start_date_time",
-        "every",
-        "unit",
-        "weekdays",
-        "end_type",
-        "end_date_time",
-        "max_runs",
-        "timezone",
-    )
-
     id = serializers.IntegerField(read_only=True)
     graph = serializers.PrimaryKeyRelatedField(queryset=Graph.objects.all())
     node_name = serializers.CharField(max_length=255)
@@ -1921,35 +1908,22 @@ class ScheduleTriggerNodeSerializer(serializers.Serializer):
         attrs = super().to_internal_value(data)
         if raw_schedule is not serializers.empty:
             attrs.update(
-                ScheduleTriggerInputParser().parse(raw_schedule, self.instance)
+                ScheduleTriggerInputParser().parse_to_internal_value(
+                    raw_schedule, self.instance
+                )
             )
         return attrs
 
     def validate(self, attrs):
-        ScheduleTriggerValidator().validate(self._compose_state(attrs))
+        state = ScheduleTriggerValidator.compose_state(
+            self.instance, attrs, self.initial_data
+        )
+        ScheduleTriggerValidator().validate(state)
         return attrs
-
-    def _compose_state(self, attrs: dict) -> dict:
-        """Project attrs over the existing instance to a complete schedule state.
-
-        Validation reasons over the post-write snapshot, so missing fields fall
-        back to the instance and `is_active` reflects the user's stated intent
-        even when to_internal_value forced it to False (schedule cleared).
-        """
-        if self.instance is not None:
-            state = {f: getattr(self.instance, f, None) for f in self._SCHEDULE_FIELDS}
-        else:
-            state = {}
-        state.update(attrs)
-
-        initial = self.initial_data if isinstance(self.initial_data, dict) else {}
-        if "is_active" in initial:
-            state["is_active"] = bool(initial["is_active"])
-        return state
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["schedule"] = ScheduleTriggerInputParser.render(instance)
+        rep["schedule"] = ScheduleTriggerInputParser.render_to_representation(instance)
         return rep
 
     def create(self, validated_data):
