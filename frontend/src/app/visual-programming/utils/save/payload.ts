@@ -91,7 +91,7 @@ interface CdtConditionGroupUi {
     manipulation?: string | null;
     continue_flag?: boolean;
     continue?: boolean;
-    next_node?: string | null;
+    route_code?: string | null;
     dock_visible?: boolean;
     field_expressions?: Record<string, unknown>;
     field_manipulations?: Record<string, unknown>;
@@ -100,8 +100,7 @@ interface CdtConditionGroupUi {
 function buildCdtNodePayload(
     node: ClassificationDecisionTableNodeModel,
     graphId: number,
-    allNodes: NodeModel[],
-    idMap: Map<string, number>
+    allNodes: NodeModel[]
 ): Record<string, unknown> {
     const tableData = node.data?.table;
     const preComp = tableData?.pre_computation || {};
@@ -111,22 +110,18 @@ function buildCdtNodePayload(
 
     const conditionGroups = ((tableData?.condition_groups || []) as CdtConditionGroupUi[])
         .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
-        .map((g, idx) => {
-            const resolved = resolveNodeRef(g.next_node ?? null, allNodes, idMap);
-            return {
-                group_name: g.group_name,
-                order: typeof g.order === 'number' ? g.order : idx + 1,
-                expression: g.expression || null,
-                prompt_id: g.prompt_id || null,
-                manipulation: g.manipulation || null,
-                continue_flag: !!(g.continue_flag ?? g.continue),
-                next_node_id: resolved.backendId,
-                ...(resolved.tempId ? { next_node_temp_id: resolved.tempId } : {}),
-                dock_visible: g.dock_visible !== false,
-                field_expressions: serializeCDTFieldExpressions(g.field_expressions || {}),
-                field_manipulations: (g.field_manipulations || {}) as Record<string, string>,
-            };
-        });
+        .map((g, idx) => ({
+            group_name: g.group_name,
+            order: typeof g.order === 'number' ? g.order : idx + 1,
+            expression: g.expression || null,
+            prompt_id: g.prompt_id || null,
+            manipulation: g.manipulation || null,
+            continue_flag: !!(g.continue_flag ?? g.continue),
+            route_code: g.route_code || null,
+            dock_visible: g.dock_visible !== false,
+            field_expressions: serializeCDTFieldExpressions(g.field_expressions || {}),
+            field_manipulations: (g.field_manipulations || {}) as Record<string, string>,
+        }));
 
     const resolveNodeName = (uuid: string | null): string | null => {
         if (!uuid) return null;
@@ -336,7 +331,7 @@ export function buildBulkSavePayload(
             metadata: toNodeMetadata(n),
         })),
         classification_decision_table_node_list: nodeItems(nodeDiff.classificationDecisionTableNodes, (n) =>
-            buildCdtNodePayload(n, graphId, current.nodes, idMap)
+            buildCdtNodePayload(n, graphId, current.nodes)
         ),
         edge_list: edgeList,
         deleted,

@@ -60,7 +60,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    background: #685fff;
+    background: var(--accent-color);
     color: #ffffff;
     border: none;
     border-radius: 6px;
@@ -306,7 +306,7 @@
     &:hover {
         background: rgba(104, 95, 255, 0.5);
         color: #fff;
-        border-color: #685fff;
+        border-color: var(--accent-color);
     }
 
     i {
@@ -377,6 +377,89 @@
 }
 
 :host ::ng-deep {
+    // Override ag-grid's default blue focus/range-selection colours with the project accent purple.
+    // CSS variable approach covers the majority of states; direct class overrides cover any
+    // cases where ag-grid ignores the variables (e.g. quartz theme hard-coded outlines).
+    .ag-theme-quartz,
+    .ag-root-wrapper {
+        --ag-cell-focus-border-color: var(--accent-color);
+        --ag-range-selection-border-color: var(--accent-color);
+        --ag-range-selection-background-color: rgba(104, 95, 255, 0.1);
+        --ag-range-selection-border-style: solid;
+        --ag-input-focus-border-color: var(--accent-color);
+        // Kill the blue box-shadow ag-grid quartz applies to focused inputs
+        --ag-input-focus-box-shadow: none;
+        --ag-selected-row-background-color: rgba(104, 95, 255, 0.08);
+    }
+
+    // Suppress browser-native blue outline on any input/focusable element inside a cell
+    .ag-cell input:focus,
+    .ag-cell textarea:focus,
+    .ag-cell select:focus,
+    .ag-cell-inline-editing input:focus,
+    .ag-cell-inline-editing textarea:focus,
+    .ag-cell-focus,
+    .ag-cell-focus:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    // Exactly ONE 1px purple border on the focused cell — only while the grid has DOM focus.
+    // Covers both the plain-focus case and the focus+range-selected case.
+    // No second ring, no box-shadow.
+    .ag-root-wrapper:focus-within {
+        .ag-cell-focus:not(.ag-cell-range-selected),
+        .ag-cell-range-selected.ag-cell-focus,
+        .ag-cell-range-single-cell.ag-cell-focus {
+            border: 1px solid var(--accent-color) !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+    }
+
+    // When the grid wrapper has lost DOM focus, remove all visible focus/range indicators.
+    .ag-root-wrapper:not(:focus-within) {
+        .ag-cell-focus,
+        .ag-cell-range-selected,
+        .ag-cell-range-single-cell {
+            border: 1px solid transparent !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
+    }
+
+    // Inline-editing cell: single purple border on the CELL wrapper, no box-shadow ring
+    .ag-cell-inline-editing {
+        border: 1px solid var(--accent-color) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
+    // Fix Issue 1 — suppress the inner input's own border/box-shadow so only ONE
+    // border (the cell's purple ring above) is visible for agTextCellEditor columns.
+    .ag-cell-inline-editing .ag-input-field-input,
+    .ag-cell-inline-editing .ag-text-field-input,
+    .ag-cell-inline-editing input {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        width: 100% !important;
+        height: 100% !important;
+        padding: 0 8px !important;
+    }
+
+    // Fix Issue 2 — range-selected cells that are NOT the active focus cell must
+    // not show any visible border or tint. Using transparent border (not none) to
+    // avoid layout shifts caused by border-width changes.
+    .ag-cell-range-selected:not(.ag-cell-focus):not(.ag-cell-inline-editing),
+    .ag-cell-range-single-cell:not(.ag-cell-focus):not(.ag-cell-inline-editing) {
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        box-shadow: none !important;
+    }
+
     .decision-grid {
         .ag-checkbox-input-wrapper {
             width: 16px;
@@ -387,7 +470,7 @@
                 background-color: #ffffff !important;
 
                 &::after {
-                    color: #685fff !important;
+                    color: var(--accent-color) !important;
                     font-size: 10px !important;
                 }
             }
@@ -418,7 +501,7 @@
         }
 
         [col-id='actions'] .icon-header i {
-            color: #685fff !important;
+            color: var(--accent-color) !important;
         }
 
         .cell-warning {

@@ -9,6 +9,7 @@ import {
     input,
     OnDestroy,
     output,
+    Renderer2,
     signal,
 } from '@angular/core';
 import { AgGridModule } from 'ag-grid-angular';
@@ -31,14 +32,10 @@ import { themeQuartz } from 'ag-grid-community';
 
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { HelpTooltipComponent } from '../../../../../shared/components/help-tooltip/help-tooltip.component';
-import { NodeType } from '../../../../core/enums/node-type';
 import { PromptConfig } from '../../../../core/models/classification-decision-table.model';
 import { ConditionGroup } from '../../../../core/models/decision-table.model';
-import { NodeModel } from '../../../../core/models/node.model';
-import { FlowService } from '../../../../services/flow.service';
 import { IconHeaderComponent } from './icon-header/icon-header.component';
 import { MonacoCellRendererComponent } from './monaco-cell-renderer/monaco-cell-renderer.component';
-import { NextNodeCellEditorComponent } from './next-node-cell-editor/next-node-cell-editor.component';
 import { ParamsGroupHeaderComponent } from './params-group-header/params-group-header.component';
 import { PromptIdCellEditorComponent } from './prompt-id-cell-editor/prompt-id-cell-editor.component';
 import { PromptTooltipRendererComponent } from './prompt-tooltip-renderer/prompt-tooltip-renderer.component';
@@ -71,11 +68,12 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }>();
     public promptAdd = output<{ id: string; config: PromptConfig }>();
 
-    private flowService = inject(FlowService);
     private cdr = inject(ChangeDetectorRef);
     private elRef = inject(ElementRef);
+    private renderer = inject(Renderer2);
 
     private gridApi!: GridApi;
+    private outsideClickUnlisten: (() => void) | null = null;
     private fieldColumnsInitialized = false;
     public rowData = signal<ConditionGroup[]>([]);
     public showFieldColumnPicker = signal(false);
@@ -217,16 +215,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     public exprAddPos = signal<{ x: number; y: number } | null>(null);
     public manipAddPos = signal<{ x: number; y: number } | null>(null);
     private positionResizeObserver: ResizeObserver | null = null;
-
-    public availableNodes = computed(() => {
-        const nodes = this.flowService.nodes();
-        return nodes
-            .filter((node: NodeModel) => node.type !== NodeType.NOTE && node.type !== NodeType.EDGE)
-            .map((node: NodeModel) => ({
-                label: node.node_name,
-                value: node.id,
-            }));
-    });
 
     constructor() {
         effect(() => {
@@ -669,17 +657,16 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             manipSection = [manipCol];
         }
 
-        // TEMP: route_code column disabled
-        // const routeCodeCol: ColDef = {
-        //     headerName: 'Route Code',
-        //     field: 'route_code',
-        //     editable: true,
-        //     width: 150,
-        //     suppressMovable: true,
-        //     cellStyle: {
-        //         fontSize: '14px',
-        //     },
-        // };
+        const routeCodeCol: ColDef = {
+            headerName: 'Route Code',
+            field: 'route_code',
+            editable: true,
+            width: 150,
+            suppressMovable: true,
+            cellStyle: {
+                fontSize: '14px',
+            },
+        };
 
         const skipCol: ColDef = {
             headerName: 'Continue',
@@ -693,33 +680,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-            },
-        };
-
-        const nextNodeCol: ColDef = {
-            headerName: 'Next Node',
-            field: 'next_node',
-            suppressMovable: true,
-            editable: true,
-            flex: 1,
-            minWidth: 140,
-            cellRenderer: (params: { value: string }) => {
-                const nodeId = params.value;
-                if (!nodeId) return '<span style="color: rgba(255,255,255,0.35); font-size:13px;">Select node</span>';
-                const node = this.availableNodes().find((n) => n.value === nodeId);
-                return node
-                    ? `<span style="font-size:13px;">${node.label}</span>`
-                    : '<span style="color: rgba(255,255,255,0.35); font-size:13px;">Select node</span>';
-            },
-            cellEditor: NextNodeCellEditorComponent,
-            cellEditorParams: () => ({
-                nodes: this.availableNodes(),
-            }),
-            cellEditorPopup: false,
-            cellStyle: {
-                display: 'flex',
-                alignItems: 'center',
-                cursor: 'pointer',
             },
         };
 
@@ -750,9 +710,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             },
         };
 
-        // TEMP: route_code column disabled — routeCodeCol removed from layout
-        // return [...staticBefore, ...exprSection, promptIdCol, ...manipSection, routeCodeCol, skipCol, nextNodeCol, deleteCol];
-        return [...staticBefore, ...exprSection, promptIdCol, ...manipSection, skipCol, nextNodeCol, deleteCol];
+        return [...staticBefore, ...exprSection, promptIdCol, ...manipSection, routeCodeCol, skipCol, deleteCol];
     }
 
     private getMergeableColIds(): string[] {
@@ -1224,6 +1182,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     onGridReady(params: GridReadyEvent): void {
         this.gridApi = params.api;
         this.setupBodyClickListener();
+        this.setupOutsideClickListener();
         // Apply saved column widths after grid is ready
         if (this.savedColumnWidths.size > 0) {
             const colState = this.gridApi.getColumnState().map((s) => {
@@ -1313,8 +1272,33 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         document.addEventListener('click', this.bodyClickHandler);
     }
 
+    private setupOutsideClickListener(): void {
+        this.outsideClickUnlisten = this.renderer.listen('document', 'pointerdown', (event: PointerEvent) => {
+            const target = event.target as Node | null;
+            if (!target) return;
+            const gridRoot = this.elRef.nativeElement as HTMLElement;
+            // Click was inside the grid — keep focus
+            if (gridRoot.contains(target)) return;
+            // Click was inside an ag-grid popup rendered to document body (dropdowns, menus)
+            const path = (event.composedPath?.() ?? []) as HTMLElement[];
+            const inAgPopup = path.some(
+                (el) => el?.classList?.contains?.('ag-popup') || el?.classList?.contains?.('ag-popup-child')
+            );
+            if (inAgPopup) return;
+            // Clear focused cell so the purple border disappears
+            this.gridApi?.clearFocusedCell();
+            try {
+                // clearRangeSelection is Enterprise-only; guard against its absence
+                (this.gridApi as GridApi & { clearRangeSelection?: () => void })?.clearRangeSelection?.();
+            } catch {
+                // Community edition — safe to ignore
+            }
+        });
+    }
+
     ngOnDestroy(): void {
         document.removeEventListener('click', this.bodyClickHandler);
+        this.outsideClickUnlisten?.();
         this.positionResizeObserver?.disconnect();
     }
 
@@ -1336,8 +1320,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             conditions: [],
             manipulation: null,
             continue_flag: false,
-            // TEMP: route_code disabled
-            // route_code: `ROUTE_${index + 1}`,
+            route_code: `ROUTE_${index + 1}`,
             dock_visible: true,
             next_node: null,
             order: index + 1,

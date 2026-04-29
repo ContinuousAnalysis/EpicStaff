@@ -25,7 +25,10 @@ interface NextNodeEditorParams extends ICellEditorParams {
     selector: 'app-next-node-cell-editor',
     imports: [CommonModule, FormsModule],
     template: `
-        <div class="node-editor-popup" (keydown)="onKeyDown($event)">
+        <div
+            class="node-editor-popup"
+            (keydown)="onKeyDown($event)"
+        >
             <div class="ne-search">
                 <input
                     #searchInput
@@ -46,9 +49,20 @@ interface NextNodeEditorParams extends ICellEditorParams {
                 >
                     {{ node.label }}
                 </div>
-                <div *ngIf="filteredNodes.length === 0" class="ne-empty">No nodes found</div>
+                <div
+                    *ngIf="filteredNodes.length === 0"
+                    class="ne-empty"
+                >
+                    No nodes found
+                </div>
             </div>
-            <div *ngIf="value" class="ne-clear" (click)="clearSelection()"><i class="ti ti-x"></i> Clear</div>
+            <div
+                *ngIf="value"
+                class="ne-clear"
+                (click)="clearSelection()"
+            >
+                <i class="ti ti-x"></i> Clear
+            </div>
         </div>
     `,
     styles: [
@@ -102,7 +116,7 @@ interface NextNodeEditorParams extends ICellEditorParams {
             }
             .ne-item-selected {
                 background: rgba(104, 95, 255, 0.2) !important;
-                border-left: 2px solid #685fff;
+                border-left: 2px solid var(--accent-color);
             }
             .ne-empty {
                 padding: 12px;

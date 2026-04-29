@@ -26,11 +26,12 @@ export interface ClassificationConditionGroupBackend {
     prompt_id: string | null;
     manipulation: string | null;
     continue_flag: boolean;
-    next_node_id: number | null;
-    // route_code: string | null;  // TEMP: testing without route_code
+    route_code: string | null;
     dock_visible: boolean;
     field_expressions: Record<string, string>;
     field_manipulations: Record<string, string>;
+    // next_node_id kept as optional for backward-compat during transition
+    next_node_id?: number | null;
 }
 
 export interface CreateClassificationConditionGroupRequest {
@@ -40,8 +41,7 @@ export interface CreateClassificationConditionGroupRequest {
     prompt_id: string | null;
     manipulation: string | null;
     continue_flag: boolean;
-    next_node_id: number | null;
-    // route_code: string | null;  // TEMP: testing without route_code
+    route_code: string | null;
     dock_visible: boolean;
     field_expressions: Record<string, string>;
     field_manipulations: Record<string, string>;

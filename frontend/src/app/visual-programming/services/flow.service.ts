@@ -425,23 +425,29 @@ export class FlowService {
         const normalizedSourceRole = this.normalizeDecisionPortRole(sourcePortRole);
 
         const isCdt = sourceNode.type === NodeType.CLASSIFICATION_TABLE;
-        const updatedTable = {
-            ...tableData,
-            condition_groups: (tableData.condition_groups || []).map((group: ConditionGroup) => {
-                const key = isCdt ? (group.route_code ?? group.group_name) : group.group_name;
-                const prefix = isCdt ? 'decision-route-' : 'decision-out-';
-                const normalizedGroupRole = key ? this.normalizeDecisionPortRole(`${prefix}${key}`) : null;
 
-                if (normalizedGroupRole === normalizedSourceRole) {
-                    return {
-                        ...group,
-                        next_node: targetNode.id,
-                    };
-                }
+        let updatedTable: typeof tableData;
+        if (isCdt) {
+            // CDT: condition groups do not carry next_node; only update top-level routing fields
+            updatedTable = { ...tableData };
+        } else {
+            updatedTable = {
+                ...tableData,
+                condition_groups: (tableData.condition_groups || []).map((group: ConditionGroup) => {
+                    const key = group.group_name;
+                    const normalizedGroupRole = key ? this.normalizeDecisionPortRole(`decision-out-${key}`) : null;
 
-                return group;
-            }),
-        };
+                    if (normalizedGroupRole === normalizedSourceRole) {
+                        return {
+                            ...group,
+                            next_node: targetNode.id,
+                        };
+                    }
+
+                    return group;
+                }),
+            };
+        }
 
         let defaultNextNode = tableData.default_next_node;
         let nextErrorNode = tableData.next_error_node;
@@ -515,21 +521,27 @@ export class FlowService {
         }
 
         const isCdt = sourceNode.type === NodeType.CLASSIFICATION_TABLE;
-        const updatedTable = {
-            ...tableData,
-            condition_groups: (tableData.condition_groups || []).map((group: ConditionGroup) => {
-                const key = isCdt ? (group.route_code ?? group.group_name) : group.group_name;
-                const prefix = isCdt ? 'decision-route-' : 'decision-out-';
-                const normalizedGroupRole = key ? this.normalizeDecisionPortRole(`${prefix}${key}`) : null;
-                if (normalizedGroupRole === normalizedSourceRole) {
-                    return {
-                        ...group,
-                        next_node: null,
-                    };
-                }
-                return group;
-            }),
-        };
+
+        let updatedTable: typeof tableData;
+        if (isCdt) {
+            // CDT: condition groups do not carry next_node; only update top-level routing fields
+            updatedTable = { ...tableData };
+        } else {
+            updatedTable = {
+                ...tableData,
+                condition_groups: (tableData.condition_groups || []).map((group: ConditionGroup) => {
+                    const key = group.group_name;
+                    const normalizedGroupRole = key ? this.normalizeDecisionPortRole(`decision-out-${key}`) : null;
+                    if (normalizedGroupRole === normalizedSourceRole) {
+                        return {
+                            ...group,
+                            next_node: null,
+                        };
+                    }
+                    return group;
+                }),
+            };
+        }
 
         let defaultNextNode = tableData.default_next_node;
         let nextErrorNode = tableData.next_error_node;

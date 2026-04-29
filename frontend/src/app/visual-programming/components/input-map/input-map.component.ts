@@ -25,7 +25,7 @@ import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app
     template: `
         <div
             class="input-map-container"
-            formArrayName="input_map"
+            [formArrayName]="arrayName"
         >
             <div class="input-map-header">
                 <label>Input List</label>

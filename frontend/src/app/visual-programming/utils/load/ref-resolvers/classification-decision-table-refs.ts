@@ -6,14 +6,15 @@ import { ClassificationDecisionTableNodeModel } from '../../../core/models/node.
  * UUID references inside each CDT node's table data:
  *   - default_next_node (stored as node name → resolve to UUID)
  *   - next_error_node (stored as node name → resolve to UUID)
- *   - each condition group's next_node (stored as backend integer ID → resolve to UUID)
+ *
+ * CDT condition groups do NOT carry per-row next_node; routing is via route_code → port matching.
  *
  * Mutates models in place — called once at load time before connections are built.
  */
 export function resolveClassificationDecisionTableNodeRefs(
     cdtNodes: ClassificationDecisionTableNodeModel[],
     backendCdtNodes: GetClassificationDecisionTableNodeRequest[],
-    backendIdToUuid: Map<number, string>,
+    _backendIdToUuid: Map<number, string>,
     nodeByName: Map<string, string>
 ): void {
     for (const cdtNode of cdtNodes) {
@@ -26,16 +27,5 @@ export function resolveClassificationDecisionTableNodeRefs(
         table.default_next_node = table.default_next_node ? (nodeByName.get(table.default_next_node) ?? null) : null;
 
         table.next_error_node = table.next_error_node ? (nodeByName.get(table.next_error_node) ?? null) : null;
-
-        // Condition groups use backend integer IDs
-        for (let j = 0; j < table.condition_groups.length; j++) {
-            const group = table.condition_groups[j];
-            const backendGroup = backendCdt.condition_groups[j];
-            if (backendGroup?.next_node_id != null) {
-                group.next_node = backendIdToUuid.get(backendGroup.next_node_id) ?? null;
-            } else {
-                group.next_node = null;
-            }
-        }
     }
 }
