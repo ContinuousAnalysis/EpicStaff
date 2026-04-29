@@ -29,3 +29,21 @@ _DEPENDENCY_MODELS = {
     EntityType.WEBHOOK_TRIGGER.value: WebhookTrigger,
     EntityType.GRAPH.value: Graph,
 }
+
+_GRAPH_RELATION_NAMES = (
+    "crew_node_list",
+    "subgraph_node_list",
+    "python_node_list",
+    "llm_node_list",
+    "webhook_trigger_node_list",
+    "file_extractor_node_list",
+    "audio_transcription_node_list",
+    "start_node_list",
+    "decision_table_node_list",
+    "telegram_trigger_node_list",
+    "end_node",
+    "graph_note_list",
+    "code_agent_node_list",
+    "edge_list",
+    "conditional_edge_list",
+)
