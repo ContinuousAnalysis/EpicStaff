@@ -178,7 +178,7 @@ import { SidePanelService } from '../../services/side-panel.service';
                     <button
                         type="button"
                         class="btn-primary"
-                        [disabled]="!canRunTest() || !pythonNodeId"
+                        [disabled]="testRunning || !canRunTest() || !pythonNodeId"
                         [matTooltip]="getRunTestButtonTooltip()"
                         matTooltipPosition="above"
                         (click)="onRunTest()"
@@ -398,6 +398,7 @@ export class InputMapComponent implements OnInit, OnChanges {
     @Input() pythonNodeId: number | null = null;
     @Input() graphId: number | null = null;
     @Input() nodeName: string | null = null;
+    @Input() testRunning: boolean = false;
     @Output() testModeChange = new EventEmitter<boolean>();
     @Output() runTest = new EventEmitter<Record<string, string>>();
 
@@ -539,6 +540,7 @@ export class InputMapComponent implements OnInit, OnChanges {
     }
 
     onRunTest(): void {
+        if (this.testRunning) return;
         const inputs = Object.fromEntries(
             this.testPairs.controls.map((c) => [c.value.key as string, c.value.value as string])
         );
@@ -686,6 +688,9 @@ export class InputMapComponent implements OnInit, OnChanges {
     }
 
     getRunTestButtonTooltip(): string {
+        if (this.testRunning) {
+            return 'Test is already running...';
+        }
         if (!this.pythonNodeId) {
             return 'Click Save in the top panel to save the graph before running a test';
         }

@@ -72,6 +72,7 @@ interface InputMapPair {
                                     [pythonNodeId]="node().backendId"
                                     [graphId]="graphId()"
                                     [nodeName]="node().node_name"
+                                    [testRunning]="testRunning()"
                                     (testModeChange)="isOpenTestMode.set($event)"
                                     (runTest)="onRunTest($event)"
                                 ></app-input-map>
