@@ -431,6 +431,54 @@ def test_reset_user_requires_authentication(api_client):
     assert r.status_code in (401, 403)
 
 
+@pytest.mark.django_db
+def test_reset_user_creates_default_org_membership(auth_client):
+    """Bug 1 regression: after POST /api/auth/reset-user/, the new superadmin
+    must have an OrganizationUser row in the DEFAULT_ORGANIZATION_NAME-named
+    org with role 'Superadmin'.
+    """
+    from django.conf import settings
+    from tables.models.rbac_models import Organization, OrganizationUser
+
+    r = auth_client.post(
+        reverse("reset_user"),
+        data={"email": "new-admin@example.com", "password": "StrongPass123!"},
+        format="json",
+    )
+    assert r.status_code == 201, r.content
+
+    new_user = get_user_model().objects.get(email="new-admin@example.com")
+    org = Organization.objects.get(name__iexact=settings.DEFAULT_ORGANIZATION_NAME)
+    membership = OrganizationUser.objects.get(user=new_user, org=org)
+    assert membership.role.name == "Superadmin"
+    assert membership.role.is_built_in is True
+
+
+@pytest.mark.django_db
+def test_reset_user_creates_default_org_when_missing(auth_client):
+    """If the default org doesn't exist at reset time (e.g. it was deleted
+    out of band), reset-user creates it via SuperadminBootstrap and the
+    new superadmin's membership lands in the freshly-created org.
+    """
+    from django.conf import settings
+    from tables.models.rbac_models import Organization, OrganizationUser
+
+    Organization.objects.filter(
+        name__iexact=settings.DEFAULT_ORGANIZATION_NAME
+    ).delete()
+
+    r = auth_client.post(
+        reverse("reset_user"),
+        data={"email": "new-admin2@example.com", "password": "StrongPass123!"},
+        format="json",
+    )
+    assert r.status_code == 201, r.content
+
+    new_user = get_user_model().objects.get(email="new-admin2@example.com")
+    org = Organization.objects.get(name__iexact=settings.DEFAULT_ORGANIZATION_NAME)
+    assert OrganizationUser.objects.filter(user=new_user, org=org).exists()
+
+
 # ---------------- Password recovery: request ----------------
 
 
@@ -841,13 +889,18 @@ def test_admin_password_reset_superadmin_succeeds(
 
 @pytest.mark.django_db
 def test_admin_password_reset_non_superadmin_returns_403(auth_client, regular_user):
+    """Non-superadmin is rejected at the IsSuperadmin permission class layer
+    with the project's standard 403 envelope (code: permission_denied). The
+    in-service is_superadmin check inside admin_reset stays as defense-in-depth
+    but is unreachable in normal flows.
+    """
     r = auth_client.post(
         reverse("admin_password_reset"),
         data={"user_id": regular_user.id, "new_password": "AdminSet123!"},
         format="json",
     )
     assert r.status_code == 403
-    assert r.json()["code"] == "superadmin_required"
+    assert r.json()["code"] == "permission_denied"
     regular_user.refresh_from_db()
     assert regular_user.check_password("UserStrongPass123!")
 

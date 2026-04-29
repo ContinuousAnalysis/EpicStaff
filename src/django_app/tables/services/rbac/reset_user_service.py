@@ -1,34 +1,35 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
-
 from tables.models.rbac_models import ApiKey
+from tables.services.rbac.utils.superadmin_bootstrap import SuperadminBootstrap
 
 
 class ResetUserService:
     """
-    Wipes all Users and ApiKeys, then recreates a superadmin + a default
-    realtime API key. Does NOT touch Organizations (D3 option A).
+    Wipes all Users and ApiKeys, then provisions a fresh superadmin with a
+    default-org membership + system API key via SuperadminBootstrap. The
+    Organizations table is preserved across the wipe — the bootstrap re-uses
+    the existing default org if present, or creates one if not.
 
-    Superadmin gets no automatic org membership — is_superadmin bypasses all
-    permission checks, and we don't want to silently rewrite existing org
-    ownership. Callers who need a membership can add one manually.
+    Returns the new user and the raw API key. The view layer wraps both in
+    the response payload.
     """
 
     REALTIME_KEY_NAME = "realtime-default"
 
+    _bootstrap = SuperadminBootstrap()
+
     @transaction.atomic
     def reset(self, *, email: str, password: str) -> tuple:
-        user_model = get_user_model()
-
-        user_model.objects.all().delete()
+        UserModel = get_user_model()
+        UserModel.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        user = user_model.objects.create_superuser(email=email, password=password)
+        result = self._bootstrap.provision(
+            email=email,
+            password=password,
+            api_key_name=self.REALTIME_KEY_NAME,
+        )
 
-        raw_key = ApiKey.generate_raw_key()
-        key = ApiKey(name=self.REALTIME_KEY_NAME, created_by=user)
-        key.set_key(raw_key)
-        key.save()
-
-        return user, raw_key
+        return result.user, result.raw_key
