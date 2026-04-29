@@ -9,14 +9,17 @@ from apscheduler.executors.asyncio import AsyncIOExecutor
 from apscheduler.jobstores.base import JobLookupError
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.date import DateTrigger
-from apscheduler.triggers.interval import IntervalTrigger
 from pydantic import ValidationError
 
 from helpers.logger import logger
 from repositories.schedule_trigger_repository import ScheduleTriggerNodeRepository
 from services.redis_service import RedisService
+from services.schedule_trigger_strategies import (
+    ONCE_STRATEGY,
+    UNIT_STRATEGIES,
+    TriggerContext,
+    ensure_aware,
+)
 from src.shared.models import (
     ScheduleTriggerNodeDeletePayload,
     ScheduleTriggerNodePayload,
@@ -34,8 +37,6 @@ class ScheduleService:
     Fired schedules do not call Django via HTTP — they publish a Redis signal
     on schedule_channel; Django's RedisPubSub routes it to ScheduleTriggerService.
     """
-
-    _WEEKDAY_SHORT = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 
     def __init__(self, redis_service: RedisService):
         self.redis_service = redis_service
@@ -55,15 +56,6 @@ class ScheduleService:
 
         self.schedule_nodes: dict[int, str] = {}
         self._manual_removals: set[str] = set()
-
-        self._unit_builders = {
-            "seconds": self._build_seconds_trigger,
-            "minutes": self._build_minutes_trigger,
-            "hours": self._build_hours_trigger,
-            "days": self._build_days_trigger,
-            "weeks": self._build_weeks_trigger,
-            "months": self._build_months_trigger,
-        }
 
     async def start(self):
         """Load active schedules, start APScheduler, subscribe to the Redis channel."""
@@ -112,7 +104,7 @@ class ScheduleService:
             )
             return
 
-        start_dt = self._ensure_aware(node.start_date_time)
+        start_dt = ensure_aware(node.start_date_time)
         now = datetime.now(node_tz)
 
         next_run_time = start_dt if (start_dt and start_dt > now) else None
@@ -249,15 +241,8 @@ class ScheduleService:
             )
             return self.tz
 
-    def _local_start(self, node: ScheduleTriggerNodePayload, tz):
-        """start_date_time (UTC in DB) converted into the node's tz, or None."""
-        dt = self._ensure_aware(node.start_date_time)
-        if dt is None:
-            return None
-        return dt.astimezone(tz)
-
     def _build_trigger(self, node: ScheduleTriggerNodePayload, node_tz=None):
-        """Build an APScheduler trigger from node data.
+        """Resolve an APScheduler trigger via the Strategy registry.
 
         Two semantics, picked per (unit, weekdays, every):
 
@@ -277,130 +262,34 @@ class ScheduleService:
             node_tz = self._resolve_tz(node.timezone)
 
         end_dt = (
-            self._ensure_aware(node.end_date_time)
-            if node.end_type == "on_date"
-            else None
+            ensure_aware(node.end_date_time) if node.end_type == "on_date" else None
         )
-        start_dt = self._ensure_aware(node.start_date_time)
+        start_dt = ensure_aware(node.start_date_time)
+
+        ctx = TriggerContext(
+            node=node,
+            node_tz=node_tz,
+            start_dt=start_dt,
+            end_dt=end_dt,
+            every=node.every or 0,
+            weekdays=node.weekdays or [],
+        )
 
         if node.run_mode == "once":
-            if start_dt is None:
-                return None
-            return DateTrigger(run_date=start_dt, timezone=node_tz)
+            return ONCE_STRATEGY.build(ctx)
 
-        every = node.every
-        unit = node.unit
-        weekdays = node.weekdays or []
-
-        if not every or not unit:
+        if not node.every or not node.unit:
             logger.error(
                 f"[ScheduleService] Missing every/unit for repeat node {node.id}"
             )
             return None
 
-        builder = self._unit_builders.get(unit)
-        if builder is None:
-            logger.error(f"[ScheduleService] Unknown unit: {unit}")
+        strategy = UNIT_STRATEGIES.get(node.unit)
+        if strategy is None:
+            logger.error(f"[ScheduleService] Unknown unit: {node.unit}")
             return None
 
-        return builder(
-            node=node,
-            node_tz=node_tz,
-            start_dt=start_dt,
-            end_dt=end_dt,
-            every=every,
-            weekdays=weekdays,
-        )
-
-    def _build_seconds_trigger(self, *, node_tz, start_dt, end_dt, every, **_):
-        return IntervalTrigger(
-            seconds=every, timezone=node_tz, start_date=start_dt, end_date=end_dt
-        )
-
-    def _build_minutes_trigger(self, *, node_tz, start_dt, end_dt, every, **_):
-        return IntervalTrigger(
-            minutes=every, timezone=node_tz, start_date=start_dt, end_date=end_dt
-        )
-
-    def _build_hours_trigger(self, *, node_tz, start_dt, end_dt, every, **_):
-        return IntervalTrigger(
-            hours=every, timezone=node_tz, start_date=start_dt, end_date=end_dt
-        )
-
-    def _build_days_trigger(
-        self, *, node, node_tz, start_dt, end_dt, every, weekdays, **_
-    ):
-        minute, hour, _day, _wd = self._local_clock(node, node_tz)
-        if weekdays:
-            return self._make_cron(
-                f"{minute} {hour} * * {','.join(weekdays)}",
-                end_dt=end_dt,
-                tz=node_tz,
-            )
-        if every == 1:
-            return self._make_cron(f"{minute} {hour} * * *", end_dt=end_dt, tz=node_tz)
-        return IntervalTrigger(
-            days=every, timezone=node_tz, start_date=start_dt, end_date=end_dt
-        )
-
-    def _build_weeks_trigger(self, *, node, node_tz, end_dt, every, weekdays, **_):
-        minute, hour, _day, weekday = self._local_clock(node, node_tz)
-        wd = ",".join(weekdays) if weekdays else self._WEEKDAY_SHORT[weekday]
-        if every == 1:
-            return self._make_cron(
-                f"{minute} {hour} * * {wd}", end_dt=end_dt, tz=node_tz
-            )
-        return CronTrigger(
-            second="0",
-            minute=minute,
-            hour=hour,
-            day_of_week=wd,
-            week=f"*/{every}",
-            timezone=node_tz,
-            end_date=end_dt,
-        )
-
-    def _build_months_trigger(self, *, node, node_tz, end_dt, every, **_):
-        minute, hour, day, _wd = self._local_clock(node, node_tz)
-        return self._make_cron(
-            f"{minute} {hour} {day} */{every} *", end_dt=end_dt, tz=node_tz
-        )
-
-    def _local_clock(self, node, node_tz) -> tuple[int, int, int, int]:
-        """Return (minute, hour, day, weekday) of start_date_time in node tz.
-        Falls back to (0, 0, 1, 0) when start_date_time is missing.
-        """
-        local = self._local_start(node, node_tz)
-        if local is None:
-            return 0, 0, 1, 0
-        return local.minute, local.hour, local.day, local.weekday()
-
-    def _make_cron(self, crontab: str, end_dt=None, tz=None) -> CronTrigger:
-        """Build a CronTrigger from a 5-field crontab with an optional end_date.
-
-        CronTrigger.from_crontab() has no end_date parameter, so the fields are
-        parsed manually. second="0" matches crontab's once-per-minute semantics.
-        """
-        minute, hour, day, month, day_of_week = crontab.split()
-        return CronTrigger(
-            second="0",
-            minute=minute,
-            hour=hour,
-            day=day,
-            month=month,
-            day_of_week=day_of_week,
-            timezone=tz or self.tz,
-            end_date=end_dt,
-        )
-
-    @staticmethod
-    def _ensure_aware(dt: datetime | None) -> datetime | None:
-        """Force tz-awareness on a Pydantic-parsed datetime (UTC fallback)."""
-        if dt is None:
-            return None
-        if dt.tzinfo is None:
-            return pytz.UTC.localize(dt)
-        return dt
+        return strategy.build(ctx)
 
     async def _start_redis_listener(self):
         """Subscribe to schedule_channel and apply live node updates from Django."""
