@@ -495,10 +495,6 @@ export class InputMapComponent implements OnInit, OnChanges {
                 }
             });
 
-            const snapshotKeySet = new Set(
-                this.normalModeSnapshot.map((item) => item.key?.trim()).filter((k): k is string => !!k)
-            );
-
             this.testPairs.clear({ emitEvent: false });
             this.normalModeSnapshot
                 .filter((item) => item.key?.trim() !== '')
@@ -512,12 +508,6 @@ export class InputMapComponent implements OnInit, OnChanges {
                         { emitEvent: false }
                     );
                 });
-
-            existingTestValues.forEach((value, key) => {
-                if (!snapshotKeySet.has(key)) {
-                    this.testPairs.push(this.fb.group({ key: [key], value: [value] }), { emitEvent: false });
-                }
-            });
 
             this.testPairs.markAsPristine();
         } else {
