@@ -239,14 +239,15 @@ class BaseGlobalNode(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        self._touch_graph_updated_at()
+        graph_id = getattr(self, "graph_id", None)
+        self._touch_graph_updated_at(graph_id)
 
     def delete(self, *args, **kwargs):
-        self._touch_graph_updated_at()
-        super().delete(*args, **kwargs)
-
-    def _touch_graph_updated_at(self):
         graph_id = getattr(self, "graph_id", None)
+        super().delete(*args, **kwargs)
+        self._touch_graph_updated_at(graph_id)
+
+    def _touch_graph_updated_at(self, graph_id):
         if graph_id:
             # using lazy import because of circular dependency
             from tables.models import Graph
