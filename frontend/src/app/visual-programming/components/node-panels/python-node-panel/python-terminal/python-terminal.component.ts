@@ -10,35 +10,77 @@ import {
     OnDestroy,
     output,
     Renderer2,
+    signal,
     ViewChild,
 } from '@angular/core';
 
+import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { TerminalLogEntry } from './terminal-log.model';
 
 @Component({
     standalone: true,
     selector: 'app-python-terminal',
-    imports: [CommonModule],
+    imports: [CommonModule, AppSvgIconComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="python-terminal">
-            <div class="terminal-resize-handle" (pointerdown)="onResizeStart($event)"></div>
+        <div
+            class="python-terminal"
+            [class.is-collapsed]="isCollapsed()"
+        >
+            @if (!isCollapsed()) {
+                <div
+                    class="terminal-resize-handle"
+                    (pointerdown)="onResizeStart($event)"
+                ></div>
+            }
             <div class="terminal-header">
                 <span class="terminal-title">Terminal Output</span>
-                <button type="button" class="clear-btn" (click)="clearLogs.emit()">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                </button>
+                <div class="terminal-actions">
+                    @if (!isCollapsed()) {
+                        <button
+                            type="button"
+                            class="icon-btn"
+                            title="Clear terminal"
+                            aria-label="Clear terminal"
+                            (click)="clearLogs.emit()"
+                        >
+                            <app-svg-icon
+                                icon="trash"
+                                size="14px"
+                            />
+                        </button>
+                    }
+                    <button
+                        type="button"
+                        class="icon-btn"
+                        [title]="isCollapsed() ? 'Show terminal' : 'Hide terminal'"
+                        [attr.aria-label]="isCollapsed() ? 'Show terminal' : 'Hide terminal'"
+                        (click)="toggleCollapsed()"
+                    >
+                        <app-svg-icon
+                            [icon]="isCollapsed() ? 'chevron-up' : 'chevron-down'"
+                            size="14px"
+                        />
+                    </button>
+                </div>
             </div>
-            <div class="terminal-body" #terminalBody [style.height.px]="terminalHeight()">
-                @for (entry of logs(); track $index) {
-                    <div class="terminal-line" [ngClass]="'log-' + entry.type">
-                        <span class="timestamp">{{ formatTime(entry.timestamp) }}</span>
-                        <span class="message">{{ entry.message }}</span>
-                    </div>
-                }
-            </div>
+            @if (!isCollapsed()) {
+                <div
+                    class="terminal-body"
+                    #terminalBody
+                    [style.height.px]="terminalHeight()"
+                >
+                    @for (entry of logs(); track $index) {
+                        <div
+                            class="terminal-line"
+                            [ngClass]="'log-' + entry.type"
+                        >
+                            <span class="timestamp">{{ formatTime(entry.timestamp) }}</span>
+                            <span class="message">{{ entry.message }}</span>
+                        </div>
+                    }
+                </div>
+            }
         </div>
     `,
     styles: [
@@ -84,7 +126,13 @@ import { TerminalLogEntry } from './terminal-log.model';
                 user-select: none;
             }
 
-            .clear-btn {
+            .terminal-actions {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+            .icon-btn {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -152,6 +200,9 @@ export class PythonTerminalComponent implements OnDestroy {
     heightChange = output<number>();
     clearLogs = output<void>();
 
+    isCollapsed = signal(false);
+    private previousLogCount = 0;
+
     @ViewChild('terminalBody') terminalBody!: ElementRef<HTMLDivElement>;
 
     private isResizing = false;
@@ -166,9 +217,17 @@ export class PythonTerminalComponent implements OnDestroy {
         @Inject(DOCUMENT) private document: Document
     ) {
         effect(() => {
-            this.logs();
+            const count = this.logs().length;
+            if (count > this.previousLogCount && this.isCollapsed()) {
+                this.isCollapsed.set(false);
+            }
+            this.previousLogCount = count;
             this.scrollToBottom();
         });
+    }
+
+    toggleCollapsed(): void {
+        this.isCollapsed.update((v) => !v);
     }
 
     formatTime(date: Date): string {
