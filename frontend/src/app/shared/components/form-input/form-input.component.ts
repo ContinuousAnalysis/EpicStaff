@@ -95,6 +95,10 @@ import { HelpTooltipComponent } from '../help-tooltip/help-tooltip.component';
                 .text-input {
                     width: 100%;
                     padding: 8px 12px;
+
+                    &::-ms-reveal {
+                        display: none;
+                    }
                     background-color: var(--color-input-background);
                     border: 1px solid var(--color-input-border);
                     border-radius: 6px;

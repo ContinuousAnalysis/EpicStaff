@@ -56,7 +56,6 @@ from tables.views.model_view_sets import (
     TwilioChannelViewSet,
     ConversationRecordingViewSet,
     RealtimeVoicesView,
-    GraphFileViewSet,
     OrganizationViewSet,
     OrganizationUserViewSet,
     GraphOrganizationViewSet,

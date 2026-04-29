@@ -77,12 +77,11 @@ from tables.models.graph_models import (
     EndNode,
     LLMNode,
     StartNode,
-    Organization,
-    OrganizationUser,
     GraphOrganization,
     GraphOrganizationUser,
     WebhookTriggerNode,
 )
+from tables.models.rbac_models import Organization, OrganizationUser
 from tables.models.llm_models import (
     DefaultLLMConfig,
     RealtimeModel,
@@ -2024,13 +2023,15 @@ class GraphSerializer(serializers.ModelSerializer):
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ["id", "name"]
+        fields = ["id", "name", "is_active", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
 
 class OrganizationUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrganizationUser
-        fields = ["id", "organization", "name"]
+        fields = ["id", "user", "org", "role", "joined_at"]
+        read_only_fields = ["id", "joined_at"]
 
 
 class GraphOrganizationSerializer(serializers.ModelSerializer):
@@ -2087,7 +2088,7 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
 class GraphOrganizationUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = GraphOrganizationUser
-        fields = ["id", "graph", "user", "persistent_variables"]
+        fields = ["id", "graph", "organization_user", "persistent_variables"]
         read_only_fields = ["id", "persistent_variables"]
 
 

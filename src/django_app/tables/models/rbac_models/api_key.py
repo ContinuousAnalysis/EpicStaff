@@ -12,6 +12,15 @@ class ApiKey(models.Model):
     prefix = models.CharField(max_length=12, db_index=True)
     key_hash = models.CharField(max_length=64)
     scopes = models.JSONField(default=list, blank=True)
+    # Nullable: env-seeded "system" keys (DJANGO_API_KEY in entrypoint.sh) have
+    # no owning user. Auth layer treats null-owner keys as AnonymousUser.
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="api_keys",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
