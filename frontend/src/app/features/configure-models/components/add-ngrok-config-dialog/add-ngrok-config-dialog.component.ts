@@ -96,8 +96,10 @@ export class AddNgrokConfigDialogComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.dialogRef.close(),
-                error: () => {
-                    this.errorMessage.set('Failed to create configuration. Please try again.');
+                error: (err) => {
+                    this.errorMessage.set(
+                        this.extractErrorMessage(err, 'Failed to create configuration. Please try again.')
+                    );
                     this.isSubmitting.set(false);
                 },
             });
@@ -109,11 +111,42 @@ export class AddNgrokConfigDialogComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.dialogRef.close(),
-                error: () => {
-                    this.errorMessage.set('Failed to update configuration. Please try again.');
+                error: (err) => {
+                    this.errorMessage.set(
+                        this.extractErrorMessage(err, 'Failed to update configuration. Please try again.')
+                    );
                     this.isSubmitting.set(false);
                 },
             });
+    }
+
+    private extractErrorMessage(err: unknown, fallback: string): string {
+        const error = (err as { error?: { message?: unknown } } | null)?.error;
+        const raw = error?.message;
+
+        if (typeof raw === 'string') {
+            const matches = [...raw.matchAll(/string=(['"])(.*?)\1/g)].map((m) => m[2]);
+            if (matches.length) {
+                return matches.join(' ');
+            }
+            return raw;
+        }
+
+        if (raw && typeof raw === 'object') {
+            const parts: string[] = [];
+            for (const value of Object.values(raw as Record<string, unknown>)) {
+                if (Array.isArray(value)) {
+                    parts.push(...value.map(String));
+                } else if (value != null) {
+                    parts.push(String(value));
+                }
+            }
+            if (parts.length) {
+                return parts.join(' ');
+            }
+        }
+
+        return fallback;
     }
 
     onCancel(): void {
