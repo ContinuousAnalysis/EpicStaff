@@ -2,11 +2,10 @@ import { animate, style, transition, trigger } from '@angular/animations';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import {
     CustomInputComponent,
     DatePickerComponent,
+    HelpTooltipComponent,
     NumberStepperComponent,
     RadioButtonComponent,
     RoundButtonComponent,
@@ -40,16 +39,15 @@ const panelFadeSlide = trigger('panelFadeSlide', [
     selector: 'app-schedule-trigger-node-panel',
     imports: [
         ReactiveFormsModule,
-        MatIconModule,
-        MatTooltipModule,
         CustomInputComponent,
         DatePickerComponent,
+        HelpTooltipComponent,
+        NumberStepperComponent,
+        RadioButtonComponent,
+        RoundButtonComponent,
+        SelectComponent,
         TimePickerComponent,
         TimezoneSelectorComponent,
-        RadioButtonComponent,
-        SelectComponent,
-        NumberStepperComponent,
-        RoundButtonComponent,
         ToggleSwitchComponent,
     ],
     templateUrl: 'schedule-trigger-node-panel.component.html',
