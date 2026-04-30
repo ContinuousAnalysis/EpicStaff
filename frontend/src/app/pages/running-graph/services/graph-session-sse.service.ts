@@ -33,7 +33,21 @@ export class RunSessionSSEService {
     public readonly memories = this.memoriesSignal.asReadonly();
     public readonly connectionStatus = this.connectionStatusSignal.asReadonly();
 
+    private readonly TERMINAL_STATUSES: ReadonlySet<GraphSessionStatus> = new Set([
+        GraphSessionStatus.ENDED,
+        GraphSessionStatus.ERROR,
+        GraphSessionStatus.STOP,
+        GraphSessionStatus.EXPIRED,
+    ]);
+
     public setStatus(status: GraphSessionStatus): void {
+        const current = this.statusSignal();
+        // Терминальный статус — авторитетный конец сессии. Не даём запоздавшим
+        // SSE status events или ответу get-updates понизить его обратно в run/pending.
+        // Переходы между терминальными (ENDED → ERROR/STOP) пропускаем: уточнение от API.
+        if (this.TERMINAL_STATUSES.has(current) && !this.TERMINAL_STATUSES.has(status)) {
+            return;
+        }
         this.statusSignal.set(status);
     }
 
@@ -138,7 +152,7 @@ export class RunSessionSSEService {
 
         this.eventSource.addEventListener('status', (event: MessageEvent) => {
             const statusData = JSON.parse(event.data);
-            this.statusSignal.set(statusData.status as GraphSessionStatus);
+            this.setStatus(statusData.status as GraphSessionStatus);
         });
 
         this.eventSource.addEventListener('memory', (event: MessageEvent) => {
