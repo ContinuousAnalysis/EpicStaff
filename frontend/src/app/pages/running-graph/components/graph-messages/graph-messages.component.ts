@@ -164,9 +164,6 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
     public messages: GraphMessage[] = [];
     public visibleMessageEntries: MessageViewEntry[] = [];
 
-    private isFinishing = false;
-    private finishTimer: ReturnType<typeof setTimeout> | null = null;
-    private readonly DRAIN_DELAY_MS = 3000;
     private drillPaths = new Map<string, string[]>();
     private breadcrumbsByRoot = new Map<string, { key: string; label: string }[]>();
     private filteredBreadcrumbsByRoot = new Map<string, { key: string; label: string; index: number }[]>();
@@ -279,10 +276,6 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
 
     public ngOnDestroy(): void {
         this.sseService.stopStream();
-        if (this.finishTimer !== null) {
-            clearTimeout(this.finishTimer);
-            this.finishTimer = null;
-        }
         this.destroy$.next();
         this.destroy$.complete();
         if (this.breadcrumbOverflowRefreshId !== null) {
@@ -295,16 +288,11 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
         if (changes['sessionId'] && !changes['sessionId'].firstChange) {
             this.destroy$.next();
             this.sseService.stopStream();
-            if (this.finishTimer !== null) {
-                clearTimeout(this.finishTimer);
-                this.finishTimer = null;
-            }
             this.isLoading = true;
             this.session = null;
             this.animatedIndices = {};
             this.updateSessionStatusData = null;
             this.statusWaitForUser = false;
-            this.isFinishing = false;
             this.showUserInputWithDelay = false;
             this.warningMessages = null;
             this.messages = [];
@@ -523,18 +511,8 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
 
             // Check for graph_end message - marks the session as finished
             if (sameTimeMessages.some((msg) => msg.message_data.message_type === MessageType.GRAPH_END)) {
-                if (this.isFinishing) return;
-                this.isFinishing = true;
-                // graph_end authoritatively ends the session — flip the badge immediately.
-                // The SSE service will block any late status: run from overwriting it.
-                this.sseService.setStatus(GraphSessionStatus.ENDED);
-                // Short drain — keep the stream open to catch any late messages,
-                // then stop it and refine the final status once (ENDED/ERROR/STOP/...).
-                this.finishTimer = setTimeout(() => {
-                    this.finishTimer = null;
-                    this.sseService.stopStream();
-                    this.updateSessionStatus();
-                }, this.DRAIN_DELAY_MS);
+                this.sseService.stopStream();
+                this.updateSessionStatus();
                 return;
             }
 
@@ -549,22 +527,40 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
                 this.sseService.stopStream();
                 this.updateSessionStatus();
             }
+
+            // if (
+            //   sameTimeMessages.some(
+            //     (msg) => msg.message_data.message_type === 'finish'
+            //   ) &&
+            //   sessionStatus === GraphSessionStatus.ENDED
+            // ) {
+            //   this.sseService.stopStream();
+            // } else if (
+            //   sameTimeMessages.some(
+            //     (msg) => msg.message_data.message_type === 'error'
+            //   ) &&
+            //   sessionStatus === GraphSessionStatus.ERROR
+            // ) {
+            //   this.sseService.stopStream();
+            // } else if (sessionStatus === GraphSessionStatus.EXPIRED) {
+            //   this.sseService.stopStream();
+            // } else if (sessionStatus === GraphSessionStatus.STOP) {
+            //   this.sseService.stopStream();
+            // } else if (sessionStatus === GraphSessionStatus.ERROR) {
+            //   this.sseService.stopStream();
+            // } else if (sessionStatus === GraphSessionStatus.ENDED) {
+            //   this.sseService.stopStream();
+            // }
+            // Note: PENDING is a transitional state - don't stop stream, wait for final status
         }
     }
 
     private updateSessionStatus(): void {
-        const currentSessionId = this.sessionId;
         this.graphSessionService
             .getSessionUpdates(this.sessionId!)
             .pipe(takeUntil(this.destroy$))
             .subscribe({
-                next: ({ status }: SessionUpdates) => {
-                    if (this.sessionId !== currentSessionId) return;
-                    // Refine the final status. The lock in the SSE service allows
-                    // transitions between terminal statuses (ENDED → ERROR/STOP)
-                    // but blocks downgrades back to run.
-                    this.sseService.setStatus(status);
-                },
+                next: ({ status }: SessionUpdates) => this.sseService.setStatus(status),
                 error: (err) => console.error(err),
             });
     }
