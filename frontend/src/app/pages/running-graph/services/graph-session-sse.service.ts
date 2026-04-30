@@ -33,22 +33,7 @@ export class RunSessionSSEService {
     public readonly memories = this.memoriesSignal.asReadonly();
     public readonly connectionStatus = this.connectionStatusSignal.asReadonly();
 
-    private readonly TERMINAL_STATUSES: ReadonlySet<GraphSessionStatus> = new Set([
-        GraphSessionStatus.ENDED,
-        GraphSessionStatus.ERROR,
-        GraphSessionStatus.STOP,
-        GraphSessionStatus.EXPIRED,
-    ]);
-
     public setStatus(status: GraphSessionStatus): void {
-        const current = this.statusSignal();
-        // Terminal status is an authoritative end of the session. Don't let late SSE
-        // status events or get-updates responses downgrade it back to run/pending.
-        // Transitions between terminal statuses (ENDED → ERROR/STOP) are allowed
-        // so the API can refine the final status.
-        if (this.TERMINAL_STATUSES.has(current) && !this.TERMINAL_STATUSES.has(status)) {
-            return;
-        }
         this.statusSignal.set(status);
     }
 
@@ -153,7 +138,7 @@ export class RunSessionSSEService {
 
         this.eventSource.addEventListener('status', (event: MessageEvent) => {
             const statusData = JSON.parse(event.data);
-            this.setStatus(statusData.status as GraphSessionStatus);
+            this.statusSignal.set(statusData.status as GraphSessionStatus);
         });
 
         this.eventSource.addEventListener('memory', (event: MessageEvent) => {
