@@ -180,6 +180,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
+    {
+        "NAME": "tables.services.rbac.utils.printable_ascii_password_validator.PrintableAsciiPasswordValidator",
+    },
 ]
 
 TELEGRAM_TRIGGER_FIELDS_PATH = (

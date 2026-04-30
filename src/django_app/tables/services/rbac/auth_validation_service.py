@@ -1,3 +1,4 @@
+import re
 from dataclasses import asdict, dataclass
 from typing import Any, Optional
 from uuid import UUID
@@ -135,6 +136,14 @@ class AuthValidationService:
         required = self._require_nonblank_string("email", value)
         if required:
             return required
+        if re.search(r"\s", value):
+            return [
+                FieldError(
+                    "email",
+                    self._echo("email", value),
+                    "Email must not contain whitespace.",
+                )
+            ]
         try:
             validate_email(value)
         except DjangoValidationError as exc:

@@ -907,3 +907,240 @@ def test_admin_password_reset_validates_user_id_shape(api_client, superadmin_use
     assert r.status_code == 400
     fields = {e["field"] for e in r.json()["errors"]}
     assert "user_id" in fields
+
+
+# ------------------------------------------------------------------
+# PrintableAsciiPasswordValidator — unit tests (EST-2418)
+# ------------------------------------------------------------------
+from django.core.exceptions import ValidationError as _DjangoValidationError
+
+from tables.services.rbac.utils.printable_ascii_password_validator import (
+    PrintableAsciiPasswordValidator,
+)
+
+
+class TestPrintableAsciiPasswordValidator:
+    """Pure unit tests for the alphabet validator. No DB, no client."""
+
+    def setup_method(self):
+        self.validator = PrintableAsciiPasswordValidator()
+
+    @pytest.mark.parametrize(
+        "password",
+        [
+            "Abcd1234",
+            "P@ssw0rd!",
+            "hunter2!@#$%^&*()",
+            "ALLCAPS123",
+            "all_lower_99",
+            "~!@#$%^&*()_+`-={}[]|\\:;\"'<>,.?/",
+        ],
+    )
+    def test_accepts_printable_ascii(self, password):
+        self.validator.validate(password)
+
+    @pytest.mark.parametrize(
+        "password",
+        [
+            "        ",
+            "abcd 1234",
+            " abcd1234",
+            "abcd1234 ",
+            "abcd\t1234",
+            "abcd\n1234",
+            "abcd\r1234",
+            "Pässwörd1",
+            "♫abcd1234",
+            "emoji😀1234",
+            "abc​1234",  # zero-width space
+            "abc\x7f1234",
+            "abc\x01def",
+            "",
+        ],
+    )
+    def test_rejects_disallowed(self, password):
+        with pytest.raises(_DjangoValidationError) as exc_info:
+            self.validator.validate(password)
+        assert exc_info.value.code == "password_invalid_characters"
+
+    def test_help_text_mentions_allowed_set(self):
+        text = self.validator.get_help_text()
+        assert "Latin letters" in text
+        assert "digits" in text
+        assert "ASCII" in text
+
+
+# ------------------------------------------------------------------
+# Password alphabet — integration tests across all 4 endpoints (EST-2418)
+# ------------------------------------------------------------------
+
+_BAD_PASSWORDS = [
+    "        ",
+    "abcd 1234",
+    " abcd1234",
+    "abcd1234 ",
+    "abcd\t1234",
+    "abcd\n1234",
+    "Pässwörd1",
+    "♫abcd1234",
+    "emoji😀1234",
+    "abc​1234",
+    "abc\x7f1234",
+]
+
+_REJECTION_SUBSTRING = "only Latin letters, digits, and standard ASCII symbols"
+
+
+def _assert_password_rejected(response):
+    assert response.status_code == 400, response.content
+    body = response.json()
+    assert body["code"] == "invalid"
+    password_errors = [
+        e for e in body["errors"] if e["field"] in ("password", "new_password")
+    ]
+    assert password_errors, body
+    assert any(_REJECTION_SUBSTRING in e["reason"] for e in password_errors), body
+
+
+@pytest.mark.django_db
+class TestFirstSetupPasswordAlphabet:
+    """POST /api/auth/first-setup/ rejects passwords outside the alphabet."""
+
+    @pytest.mark.parametrize("password", _BAD_PASSWORDS)
+    def test_rejects(self, api_client, password):
+        get_user_model().objects.all().delete()
+        r = api_client.post(
+            reverse("first_setup"),
+            data={"email": "admin@acme.com", "password": password},
+            format="json",
+        )
+        _assert_password_rejected(r)
+
+    def test_accepts_symbol_password(self, api_client):
+        get_user_model().objects.all().delete()
+        r = api_client.post(
+            reverse("first_setup"),
+            data={"email": "admin@acme.com", "password": "P@ssw0rd!9"},
+            format="json",
+        )
+        assert r.status_code == 201, r.content
+
+
+@pytest.mark.django_db
+class TestPasswordResetConfirmAlphabet:
+    """POST /api/auth/password-reset/confirm/ rejects passwords outside the alphabet."""
+
+    @pytest.mark.parametrize("password", _BAD_PASSWORDS)
+    def test_rejects(self, api_client, regular_user, password):
+        token = _issue_token(regular_user)
+        r = api_client.post(
+            reverse("password_reset_confirm"),
+            data={"token": str(token.token), "new_password": password},
+            format="json",
+        )
+        _assert_password_rejected(r)
+
+
+@pytest.mark.django_db
+class TestPasswordChangeAlphabet:
+    """POST /api/auth/password-change/ rejects passwords outside the alphabet."""
+
+    @pytest.mark.parametrize("password", _BAD_PASSWORDS)
+    def test_rejects(self, auth_client, password):
+        # `auth_client` is JWT-authed regular_user (password "UserStrongPass123!")
+        r = auth_client.post(
+            reverse("password_change"),
+            data={
+                "current_password": "UserStrongPass123!",
+                "new_password": password,
+            },
+            format="json",
+        )
+        _assert_password_rejected(r)
+
+
+@pytest.mark.django_db
+class TestAdminPasswordResetAlphabet:
+    """POST /api/auth/admin/password-reset/ rejects passwords outside the alphabet."""
+
+    @pytest.mark.parametrize("password", _BAD_PASSWORDS)
+    def test_rejects(self, api_client, superadmin_user, regular_user, password):
+        api_client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(superadmin_user).access_token}"
+        )
+        r = api_client.post(
+            reverse("admin_password_reset"),
+            data={"user_id": regular_user.id, "new_password": password},
+            format="json",
+        )
+        _assert_password_rejected(r)
+
+
+# ------------------------------------------------------------------
+# Email whitespace + throttle non-string guard (EST-2418)
+# ------------------------------------------------------------------
+
+_BAD_EMAILS_WHITESPACE = [
+    "user @example.com",
+    " user@example.com",
+    "user@example.com\n",
+    "user@\texample.com",
+]
+
+
+@pytest.mark.django_db
+class TestEmailWhitespaceRejection:
+    """Email field rejects whitespace at endpoints that validate email."""
+
+    @pytest.mark.parametrize("email", _BAD_EMAILS_WHITESPACE)
+    def test_first_setup_rejects(self, api_client, email):
+        get_user_model().objects.all().delete()
+        r = api_client.post(
+            reverse("first_setup"),
+            data={"email": email, "password": "P@ssw0rd!9"},
+            format="json",
+        )
+        assert r.status_code == 400, r.content
+        body = r.json()
+        email_errors = [e for e in body["errors"] if e["field"] == "email"]
+        assert email_errors
+        assert any(
+            "must not contain whitespace" in e["reason"].lower() for e in email_errors
+        ), body
+
+    @pytest.mark.parametrize("email", _BAD_EMAILS_WHITESPACE)
+    def test_password_reset_request_rejects(self, api_client, email):
+        cache.clear()
+        r = api_client.post(
+            reverse("password_reset_request"),
+            data={"email": email},
+            format="json",
+        )
+        assert r.status_code == 400, r.content
+        body = r.json()
+        email_errors = [e for e in body["errors"] if e["field"] == "email"]
+        assert email_errors
+        assert any(
+            "must not contain whitespace" in e["reason"].lower() for e in email_errors
+        ), body
+
+
+@pytest.mark.django_db
+class TestPasswordResetRequestThrottleNonString:
+    """POST /api/auth/password-reset/request/ returns 400 (not 500) for non-string email."""
+
+    @pytest.mark.parametrize("bad_value", [123, ["x@y.com"], {"a": 1}, True])
+    def test_non_string_email_returns_400(self, api_client, bad_value):
+        cache.clear()
+        r = api_client.post(
+            reverse("password_reset_request"),
+            data={"email": bad_value},
+            format="json",
+        )
+        assert r.status_code == 400, r.content
+        body = r.json()
+        email_errors = [e for e in body["errors"] if e["field"] == "email"]
+        assert email_errors
+        assert any(
+            "must be a string" in e["reason"].lower() for e in email_errors
+        ), body
