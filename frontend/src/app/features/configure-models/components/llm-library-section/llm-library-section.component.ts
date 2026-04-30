@@ -36,8 +36,6 @@ import { GeminiRealtimeConfigStorageService } from '../../services/llms/gemini-r
 import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
 import { LLMLibraryService } from '../../services/llms/llm-library.service';
 import { OpenAIRealtimeConfigStorageService } from '../../services/llms/openai-realtime-config-storage.service';
-import { RealtimeConfigStorageService } from '../../services/llms/realtime-config-storage.service';
-import { TranscriptionConfigStorageService } from '../../services/llms/transcription-config-storage.service';
 import { AddConfigurationDialogComponent } from '../add-configuration-dialog/add-configuration-dialog.component';
 import { EmbeddingModelConfigDialogComponent } from '../embedding-model-config-dialog/embedding-model-config-dialog.component';
 import { LlmLibraryCardComponent } from '../llm-library-card/llm-library-card.component';
@@ -46,8 +44,6 @@ import {
     RealtimeConfigDialogComponent,
     RealtimeProvider,
 } from '../realtime-config-dialog/realtime-config-dialog.component';
-import { TranscriptionModelConfigDialogComponent } from '../transcription-model-config-dialog/transcription-model-config-dialog.component';
-import { VoiceModelConfigDialogComponent } from '../voice-config-model/voice-model-config-dialog.component';
 
 interface VoiceProviderConfig {
     id: number;
@@ -85,8 +81,6 @@ export class LlmLibrarySectionComponent implements OnInit {
     private readonly llmLibraryService = inject(LLMLibraryService);
     private readonly llmConfigStorageService = inject(LlmConfigStorageService);
     private readonly embeddingConfigStorage = inject(EmbeddingConfigStorageService);
-    private readonly realtimeConfigStorage = inject(RealtimeConfigStorageService);
-    private readonly transcriptionConfigStorage = inject(TranscriptionConfigStorageService);
     private readonly openaiRealtimeStorage = inject(OpenAIRealtimeConfigStorageService);
     private readonly elevenLabsRealtimeStorage = inject(ElevenLabsRealtimeConfigStorageService);
     private readonly geminiRealtimeStorage = inject(GeminiRealtimeConfigStorageService);
@@ -111,8 +105,6 @@ export class LlmLibrarySectionComponent implements OnInit {
     readonly configTypeSections: { type: ModelTypes; label: string }[] = [
         { type: ModelTypes.LLM, label: 'LLM' },
         { type: ModelTypes.EMBEDDING, label: 'Embedding' },
-        { type: ModelTypes.REALTIME, label: 'Voice' },
-        { type: ModelTypes.TRANSCRIPTION, label: 'Transcription' },
     ];
 
     filteredGroups = computed<LlmLibraryProviderGroup[]>(() => {
@@ -217,13 +209,13 @@ export class LlmLibrarySectionComponent implements OnInit {
     }
 
     public onEdit(model: LlmLibraryModel): void {
-        const dialogComponents: Record<ModelTypes, ComponentType<unknown>> = {
+        const dialogComponents: Partial<Record<ModelTypes, ComponentType<unknown>>> = {
             [ModelTypes.LLM]: LlmModelConfigDialogComponent,
             [ModelTypes.EMBEDDING]: EmbeddingModelConfigDialogComponent,
-            [ModelTypes.REALTIME]: VoiceModelConfigDialogComponent,
-            [ModelTypes.TRANSCRIPTION]: TranscriptionModelConfigDialogComponent,
         };
-        this.dialog.open(dialogComponents[model.configType], {
+        const component = dialogComponents[model.configType];
+        if (!component) return;
+        this.dialog.open(component, {
             height: '90vh',
             width: '600px',
             data: { configId: model.id },
@@ -243,14 +235,12 @@ export class LlmLibrarySectionComponent implements OnInit {
             .subscribe((result) => {
                 if (result !== true) return;
 
-                const delete$: Record<ModelTypes, () => Observable<void>> = {
+                const delete$: Partial<Record<ModelTypes, () => Observable<void>>> = {
                     [ModelTypes.LLM]: () => this.llmConfigStorageService.deleteConfig(model.id),
                     [ModelTypes.EMBEDDING]: () => this.embeddingConfigStorage.deleteConfig(model.id),
-                    [ModelTypes.REALTIME]: () => this.realtimeConfigStorage.deleteConfig(model.id),
-                    [ModelTypes.TRANSCRIPTION]: () => this.transcriptionConfigStorage.deleteConfig(model.id),
                 };
 
-                delete$[model.configType]().subscribe({
+                delete$[model.configType]?.().subscribe({
                     next: () => {
                         this.toast.success('Configuration deleted.');
                         this.defaultModelsStorageService.markDefaultModelsOutdated();

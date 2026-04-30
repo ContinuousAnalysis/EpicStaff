@@ -90,7 +90,7 @@ export class AddConfigurationDialogComponent implements OnInit {
     geminiForm = this.fb.nonNullable.group({
         custom_name: ['', Validators.required],
         api_key: [''],
-        model_name: ['gemini-2.0-flash-live-001', Validators.required],
+        model_name: ['gemini-3.1-flash-live-preview', Validators.required],
         voice_recognition_prompt: [''],
     });
 

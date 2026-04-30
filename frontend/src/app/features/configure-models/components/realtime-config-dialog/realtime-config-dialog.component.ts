@@ -117,7 +117,7 @@ export class RealtimeConfigDialogComponent {
         api_key: [(this.data.provider === 'gemini' ? (this.data.config as GeminiRealtimeConfig)?.api_key : null) ?? ''],
         model_name: [
             (this.data.provider === 'gemini' ? (this.data.config as GeminiRealtimeConfig)?.model_name : null) ??
-                'gemini-2.0-flash-live-001',
+                'gemini-3.1-flash-live-preview',
             Validators.required,
         ],
         voice_recognition_prompt: [

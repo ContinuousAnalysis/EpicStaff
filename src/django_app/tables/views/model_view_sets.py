@@ -29,7 +29,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse
 
 from tables.exceptions import (
     AgentSerializerError,
@@ -515,6 +515,10 @@ class AgentViewSet(CopyActionMixin, ModelViewSet):
     def export(self, request, pk: int):
         return self.import_export_service.export_entity(self.get_object())
 
+    @extend_schema(
+        request={"multipart/form-data": ImportRequestSerializer},
+        responses={200: OpenApiResponse(description="Import summary with created/skipped entity counts")},
+    )
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
         file_serializer = ImportRequestSerializer(data=request.data)
@@ -556,6 +560,10 @@ class CrewReadWriteViewSet(CopyActionMixin, ModelViewSet):
     def export(self, request, pk: int):
         return self.import_export_service.export_entity(self.get_object())
 
+    @extend_schema(
+        request={"multipart/form-data": ImportRequestSerializer},
+        responses={200: OpenApiResponse(description="Import summary with created/skipped entity counts")},
+    )
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
         file_serializer = ImportRequestSerializer(data=request.data)
@@ -844,6 +852,10 @@ class GraphViewSet(CopyActionMixin, viewsets.ModelViewSet):
 
         return self.import_export_service.bulk_export(entity_ids)
 
+    @extend_schema(
+        request={"multipart/form-data": ImportRequestSerializer},
+        responses={200: OpenApiResponse(description="Import summary with created/skipped entity counts")},
+    )
     @action(detail=False, methods=["post"], url_path="import")
     def import_entity(self, request):
         file_serializer = ImportRequestSerializer(data=request.data)

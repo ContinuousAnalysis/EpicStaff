@@ -304,6 +304,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "CrewAI SheetsUI API",
     "VERSION": "v1",
     "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
     "SWAGGER_UI_SETTINGS": {
         "persistAuthorization": True,
     },

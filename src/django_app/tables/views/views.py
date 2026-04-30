@@ -830,10 +830,6 @@ class QuickstartView(APIView):
                         "config_name": config_name,
                         "llm_config": result["llm_config"],
                         "embedding_config": result["embedding_config"],
-                        "realtime_config": result["realtime_config"],
-                        "realtime_transcription_config": result[
-                            "realtime_transcription_config"
-                        ],
                     }
                 ).data
                 return Response(

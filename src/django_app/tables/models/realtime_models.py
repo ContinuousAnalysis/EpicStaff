@@ -15,6 +15,7 @@ class AudioFormatChoices(models.TextChoices):
 # Provider-specific realtime configuration models
 # ---------------------------------------------------------------------------
 
+
 class OpenAIRealtimeConfig(models.Model):
     class Meta:
         db_table = "openai_realtime_config"
@@ -40,8 +41,10 @@ class ElevenLabsRealtimeConfig(models.Model):
     api_key = models.TextField(null=True, blank=True)
     model_name = models.CharField(max_length=250, default="eleven_turbo_v2_5")
     language = models.CharField(
-        max_length=10, null=True, blank=True,
-        help_text="ISO-639-1 language code, e.g. 'en'"
+        max_length=10,
+        null=True,
+        blank=True,
+        help_text="ISO-639-1 language code, e.g. 'en'",
     )
 
     def __str__(self):
@@ -55,7 +58,7 @@ class GeminiRealtimeConfig(models.Model):
     custom_name = models.CharField(max_length=250)
     api_key = models.TextField(null=True, blank=True)
     model_name = models.CharField(
-        max_length=250, default="gemini-2.0-flash-live-001"
+        max_length=250, default="gemini-3.1-flash-live-preview"
     )
     voice_recognition_prompt = models.TextField(null=True, blank=True)
 
@@ -66,6 +69,7 @@ class GeminiRealtimeConfig(models.Model):
 # ---------------------------------------------------------------------------
 # RealtimeAgent
 # ---------------------------------------------------------------------------
+
 
 class RealtimeAgent(AbstractDefaultFillableModel):
     class Meta:
@@ -110,11 +114,13 @@ class RealtimeAgent(AbstractDefaultFillableModel):
     )
 
     def clean(self):
-        set_count = sum([
-            self.openai_config_id is not None,
-            self.elevenlabs_config_id is not None,
-            self.gemini_config_id is not None,
-        ])
+        set_count = sum(
+            [
+                self.openai_config_id is not None,
+                self.elevenlabs_config_id is not None,
+                self.gemini_config_id is not None,
+            ]
+        )
         if set_count > 1:
             raise ValidationError(
                 "A RealtimeAgent may have at most one provider config set "
@@ -153,6 +159,7 @@ class RealtimeAgent(AbstractDefaultFillableModel):
 # RealtimeAgentChat  (session snapshot)
 # ---------------------------------------------------------------------------
 
+
 class RealtimeAgentChat(models.Model):
     class EndReason(models.TextChoices):
         COMPLETED = "completed", "Completed"
@@ -181,17 +188,20 @@ class RealtimeAgentChat(models.Model):
 
     # Generic snapshot fields (always filled)
     wake_word = models.CharField(max_length=255, null=True, blank=True)
-    stop_prompt = models.CharField(max_length=255, null=True, blank=True, default="stop")
+    stop_prompt = models.CharField(
+        max_length=255, null=True, blank=True, default="stop"
+    )
     voice = models.CharField(max_length=100, default="alloy")
 
     # Provider-specific snapshot text fields (null when not applicable)
     language = models.CharField(
-        max_length=10, null=True, blank=True,
-        help_text="ElevenLabs: ISO-639-1 language code"
+        max_length=10,
+        null=True,
+        blank=True,
+        help_text="ElevenLabs: ISO-639-1 language code",
     )
     voice_recognition_prompt = models.TextField(
-        null=True, blank=True,
-        help_text="OpenAI / Gemini: transcription hint"
+        null=True, blank=True, help_text="OpenAI / Gemini: transcription hint"
     )
     input_audio_format = models.CharField(
         max_length=20,
@@ -232,6 +242,7 @@ class RealtimeAgentChat(models.Model):
 # ConversationRecording
 # ---------------------------------------------------------------------------
 
+
 class ConversationRecording(models.Model):
     class RecordingType(models.TextChoices):
         INBOUND = "inbound", "Inbound (user audio)"
@@ -260,6 +271,7 @@ class ConversationRecording(models.Model):
 # RealtimeSessionItem
 # ---------------------------------------------------------------------------
 
+
 class RealtimeSessionItem(models.Model):
     class Meta:
         db_table = "realtime_session_items"
@@ -272,6 +284,7 @@ class RealtimeSessionItem(models.Model):
 # ---------------------------------------------------------------------------
 # DefaultRealtimeAgentConfig  (singleton defaults — mirrors simplified RealtimeAgent)
 # ---------------------------------------------------------------------------
+
 
 class DefaultRealtimeAgentConfig(DefaultBaseModel):
     class Meta:

@@ -11,6 +11,11 @@ from tables.models import (
     RealtimeTranscriptionModel,
     RealtimeTranscriptionConfig,
 )
+from tables.models.realtime_models import (
+    OpenAIRealtimeConfig,
+    ElevenLabsRealtimeConfig,
+    GeminiRealtimeConfig,
+)
 
 
 class BaseConfigImportSerializer(serializers.ModelSerializer):
@@ -100,3 +105,54 @@ class RealtimeTranscriptionConfigImportSerializer(BaseConfigImportSerializer):
 
     class Meta(BaseConfigImportSerializer.Meta):
         model = RealtimeTranscriptionConfig
+
+
+class OpenAIRealtimeConfigImportSerializer(serializers.ModelSerializer):
+    api_key = serializers.CharField(
+        write_only=True, required=False, allow_null=True, allow_blank=True
+    )
+
+    class Meta:
+        model = OpenAIRealtimeConfig
+        fields = "__all__"
+
+    def create(self, validated_data):
+        if not validated_data.get("api_key"):
+            validated_data["api_key"] = (
+                OpenAIRealtimeConfig.objects.values_list("api_key", flat=True).first()
+            )
+        return super().create(validated_data)
+
+
+class ElevenLabsRealtimeConfigImportSerializer(serializers.ModelSerializer):
+    api_key = serializers.CharField(
+        write_only=True, required=False, allow_null=True, allow_blank=True
+    )
+
+    class Meta:
+        model = ElevenLabsRealtimeConfig
+        fields = "__all__"
+
+    def create(self, validated_data):
+        if not validated_data.get("api_key"):
+            validated_data["api_key"] = (
+                ElevenLabsRealtimeConfig.objects.values_list("api_key", flat=True).first()
+            )
+        return super().create(validated_data)
+
+
+class GeminiRealtimeConfigImportSerializer(serializers.ModelSerializer):
+    api_key = serializers.CharField(
+        write_only=True, required=False, allow_null=True, allow_blank=True
+    )
+
+    class Meta:
+        model = GeminiRealtimeConfig
+        fields = "__all__"
+
+    def create(self, validated_data):
+        if not validated_data.get("api_key"):
+            validated_data["api_key"] = (
+                GeminiRealtimeConfig.objects.values_list("api_key", flat=True).first()
+            )
+        return super().create(validated_data)
