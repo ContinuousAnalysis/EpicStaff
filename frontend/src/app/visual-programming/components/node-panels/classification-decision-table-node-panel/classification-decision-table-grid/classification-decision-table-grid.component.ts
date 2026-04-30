@@ -11,6 +11,7 @@ import {
     output,
     Renderer2,
     signal,
+    ViewChild,
 } from '@angular/core';
 import { AgGridModule } from 'ag-grid-angular';
 import {
@@ -32,6 +33,8 @@ import { themeQuartz } from 'ag-grid-community';
 
 import { ButtonComponent } from '../../../../../shared/components/buttons/button/button.component';
 import { HelpTooltipComponent } from '../../../../../shared/components/help-tooltip/help-tooltip.component';
+import { MultiSelectComponent } from '../../../../../shared/components/multi-select/multi-select.component';
+import { SelectItem } from '../../../../../shared/components/select/select.component';
 import { PromptConfig } from '../../../../core/models/classification-decision-table.model';
 import { ConditionGroup } from '../../../../core/models/decision-table.model';
 import { IconHeaderComponent } from './icon-header/icon-header.component';
@@ -44,7 +47,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
     selector: 'app-classification-decision-table-grid',
-    imports: [AgGridModule, ButtonComponent, ParamsGroupHeaderComponent, HelpTooltipComponent],
+    imports: [AgGridModule, ButtonComponent, HelpTooltipComponent, MultiSelectComponent],
     templateUrl: './classification-decision-table-grid.component.html',
     styleUrls: ['./classification-decision-table-grid.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,12 +79,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     private outsideClickUnlisten: (() => void) | null = null;
     private fieldColumnsInitialized = false;
     public rowData = signal<ConditionGroup[]>([]);
-    public showFieldColumnPicker = signal(false);
-    public fieldSearchQuery = signal('');
-    public fieldPickerPos = signal<{ x: number; y: number } | null>(null);
-    public showManipFieldPicker = signal(false);
-    public manipFieldSearchQuery = signal('');
-    public manipPickerPos = signal<{ x: number; y: number } | null>(null);
     public contextMenu = signal<{ x: number; y: number; rowIndex: number } | null>(null);
 
     // Ordered list of ALL movable colIds (field_* and expression), including hidden
@@ -103,50 +100,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     public isEmpty = computed(() => this.rowData().length === 0);
 
-    public availableInputMapFields = computed(() => {
-        const active = new Set(this.activeFieldColumns());
-        const q = this.fieldSearchQuery().toLowerCase();
-        return this.preInputMapKeys().filter((k) => !active.has(k) && (!q || k.toLowerCase().includes(q)));
-    });
-
-    public availableDomainFields = computed(() => {
-        const active = new Set(this.activeFieldColumns());
-        const inputMapKeys = new Set(this.preInputMapKeys());
-        const q = this.fieldSearchQuery().toLowerCase();
-        return this.domainKeys().filter(
-            (k) => !active.has(k) && !inputMapKeys.has(k) && (!q || k.toLowerCase().includes(q))
-        );
-    });
-
-    public hiddenFieldColumns = computed(() => {
-        const visible = new Set(this.activeFieldColumns());
-        const q = this.fieldSearchQuery().toLowerCase();
-        const hidden = new Set<string>();
-        // Fields in movableColumnOrder that are hidden
-        this.movableColumnOrder()
-            .filter((id) => id.startsWith('field_'))
-            .map((id) => id.substring(6))
-            .forEach((name) => {
-                if (!visible.has(name)) hidden.add(name);
-            });
-        // Also check row data for orphaned fields
-        this.rowData().forEach((row) => {
-            if (row.field_expressions) {
-                Object.entries(row.field_expressions).forEach(([k, v]) => {
-                    if (v && !visible.has(k)) hidden.add(k);
-                });
-            }
-        });
-        return [...hidden].filter((k) => !q || k.toLowerCase().includes(q));
-    });
-
-    public hasAvailableFields = computed(
-        () =>
-            this.availableInputMapFields().length > 0 ||
-            this.availableDomainFields().length > 0 ||
-            this.hiddenFieldColumns().length > 0
-    );
-
     // Manipulation field computed properties
     public activeManipFieldColumns = computed(() => {
         const hidden = this.hiddenManipFieldsSet();
@@ -154,48 +107,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             .filter((id) => id.startsWith('manip_') && !hidden.has(id.substring(6)))
             .map((id) => id.substring(6));
     });
-
-    public availableManipInputMapFields = computed(() => {
-        const active = new Set(this.activeManipFieldColumns());
-        const q = this.manipFieldSearchQuery().toLowerCase();
-        return this.preInputMapKeys().filter((k) => !active.has(k) && (!q || k.toLowerCase().includes(q)));
-    });
-
-    public availableManipDomainFields = computed(() => {
-        const active = new Set(this.activeManipFieldColumns());
-        const inputMapKeys = new Set(this.preInputMapKeys());
-        const q = this.manipFieldSearchQuery().toLowerCase();
-        return this.domainKeys().filter(
-            (k) => !active.has(k) && !inputMapKeys.has(k) && (!q || k.toLowerCase().includes(q))
-        );
-    });
-
-    public hiddenManipFieldColumns = computed(() => {
-        const visible = new Set(this.activeManipFieldColumns());
-        const q = this.manipFieldSearchQuery().toLowerCase();
-        const hidden = new Set<string>();
-        this.manipColumnOrder()
-            .filter((id) => id.startsWith('manip_'))
-            .map((id) => id.substring(6))
-            .forEach((name) => {
-                if (!visible.has(name)) hidden.add(name);
-            });
-        this.rowData().forEach((row) => {
-            if (row.field_manipulations) {
-                Object.entries(row.field_manipulations).forEach(([k, v]) => {
-                    if (v && !visible.has(k)) hidden.add(k);
-                });
-            }
-        });
-        return [...hidden].filter((k) => !q || k.toLowerCase().includes(q));
-    });
-
-    public hasAvailableManipFields = computed(
-        () =>
-            this.availableManipInputMapFields().length > 0 ||
-            this.availableManipDomainFields().length > 0 ||
-            this.hiddenManipFieldColumns().length > 0
-    );
 
     public hasFieldCols = computed(() =>
         this.movableColumnOrder().some((id) => id.startsWith('field_') && !this.hiddenFieldsSet().has(id.substring(6)))
@@ -206,6 +117,117 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             (id) => id.startsWith('manip_') && !this.hiddenManipFieldsSet().has(id.substring(6))
         )
     );
+
+    // ── Multi-select items for the field pickers ──
+
+    /** Items for the expression-side field picker, grouped by Hidden / Input Map / Domain.
+     *  Precedence for deduplication: Input Map > Domain > Hidden. */
+    public exprMultiSelectItems = computed<SelectItem[]>(() => {
+        const inputMapKeys = new Set(this.preInputMapKeys());
+        const domainKeys = this.domainKeys();
+        const allMovable = this.movableColumnOrder()
+            .filter((id) => id.startsWith('field_'))
+            .map((id) => id.substring(6));
+        const hiddenSet = this.hiddenFieldsSet();
+        const hiddenNames = allMovable.filter((n) => hiddenSet.has(n));
+
+        // Collect field data from rows for orphaned hidden fields
+        const orphanedHidden = new Set<string>();
+        this.rowData().forEach((row) => {
+            if (row.field_expressions) {
+                Object.entries(row.field_expressions).forEach(([k, v]) => {
+                    if (v && hiddenSet.has(k)) orphanedHidden.add(k);
+                });
+            }
+        });
+
+        const allHidden = [...new Set([...hiddenNames, ...orphanedHidden])];
+
+        // Build deduplicated item list with group precedence: Input Map > Domain > Hidden
+        const seen = new Set<string>();
+        const items: SelectItem[] = [];
+
+        // Input Map
+        for (const k of this.preInputMapKeys()) {
+            if (!seen.has(k)) {
+                seen.add(k);
+                items.push({ name: k, value: k, group: 'Input Map' });
+            }
+        }
+
+        // Domain (exclude keys already in Input Map)
+        for (const k of domainKeys) {
+            if (!seen.has(k) && !inputMapKeys.has(k)) {
+                seen.add(k);
+                items.push({ name: k, value: k, group: 'Domain' });
+            }
+        }
+
+        // Hidden (fields already added to the table but currently hidden)
+        for (const k of allHidden) {
+            if (!seen.has(k)) {
+                seen.add(k);
+                items.push({ name: k, value: k, group: 'Hidden' });
+            }
+        }
+
+        return items;
+    });
+
+    /** Items for the manipulation-side field picker. */
+    public manipMultiSelectItems = computed<SelectItem[]>(() => {
+        const inputMapKeys = new Set(this.preInputMapKeys());
+        const domainKeys = this.domainKeys();
+        const allMovable = this.manipColumnOrder()
+            .filter((id) => id.startsWith('manip_'))
+            .map((id) => id.substring(6));
+        const hiddenSet = this.hiddenManipFieldsSet();
+        const hiddenNames = allMovable.filter((n) => hiddenSet.has(n));
+
+        const orphanedHidden = new Set<string>();
+        this.rowData().forEach((row) => {
+            if (row.field_manipulations) {
+                Object.entries(row.field_manipulations).forEach(([k, v]) => {
+                    if (v && hiddenSet.has(k)) orphanedHidden.add(k);
+                });
+            }
+        });
+
+        const allHidden = [...new Set([...hiddenNames, ...orphanedHidden])];
+
+        const seen = new Set<string>();
+        const items: SelectItem[] = [];
+
+        for (const k of this.preInputMapKeys()) {
+            if (!seen.has(k)) {
+                seen.add(k);
+                items.push({ name: k, value: k, group: 'Input Map' });
+            }
+        }
+
+        for (const k of domainKeys) {
+            if (!seen.has(k) && !inputMapKeys.has(k)) {
+                seen.add(k);
+                items.push({ name: k, value: k, group: 'Domain' });
+            }
+        }
+
+        for (const k of allHidden) {
+            if (!seen.has(k)) {
+                seen.add(k);
+                items.push({ name: k, value: k, group: 'Hidden' });
+            }
+        }
+
+        return items;
+    });
+
+    // Pre-open model value signals for the multi-selects
+    public exprSelectedFieldsModel = signal<unknown[]>([]);
+    public manipSelectedFieldsModel = signal<unknown[]>([]);
+
+    @ViewChild('exprMultiSelect') exprMultiSelect!: MultiSelectComponent;
+    @ViewChild('manipMultiSelect') manipMultiSelect!: MultiSelectComponent;
 
     public showExprParamsMenu = signal(false);
     public exprParamsMenuPos = signal<{ x: number; y: number } | null>(null);
@@ -1042,14 +1064,12 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     toggleFieldPicker(event?: MouseEvent): void {
-        const isOpen = this.showFieldColumnPicker();
-        if (!isOpen && event) {
-            const rect = (event.target as HTMLElement).getBoundingClientRect();
-            this.fieldPickerPos.set({ x: rect.left, y: rect.bottom + 4 });
-        }
-        this.showFieldColumnPicker.set(!isOpen);
-        if (isOpen) {
-            this.fieldSearchQuery.set('');
+        this.exprSelectedFieldsModel.set([...this.activeFieldColumns()]);
+        const anchor = (event?.currentTarget ?? event?.target) as HTMLElement | undefined;
+        if (anchor) {
+            this.exprMultiSelect.openAt(anchor);
+        } else {
+            this.exprMultiSelect.openDropdown();
         }
     }
 
@@ -1069,8 +1089,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 this.movableColumnOrder.set(newOrder);
             }
         }
-        this.showFieldColumnPicker.set(false);
-        this.fieldSearchQuery.set('');
         this.saveGridState();
     }
 
@@ -1087,15 +1105,26 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         this.saveGridState();
     }
 
-    toggleManipFieldPicker(event?: MouseEvent): void {
-        const isOpen = this.showManipFieldPicker();
-        if (!isOpen && event) {
-            const rect = (event.target as HTMLElement).getBoundingClientRect();
-            this.manipPickerPos.set({ x: rect.left, y: rect.bottom + 4 });
+    onExprSelectionChange(values: unknown[]): void {
+        const newSet = new Set(values as string[]);
+        const currentSet = new Set(this.activeFieldColumns());
+        // Newly checked → add
+        for (const name of newSet) {
+            if (!currentSet.has(name)) this.addFieldColumn(name);
         }
-        this.showManipFieldPicker.set(!isOpen);
-        if (isOpen) {
-            this.manipFieldSearchQuery.set('');
+        // Newly unchecked → remove
+        for (const name of currentSet) {
+            if (!newSet.has(name)) this.removeFieldColumn(name);
+        }
+    }
+
+    toggleManipFieldPicker(event?: MouseEvent): void {
+        this.manipSelectedFieldsModel.set([...this.activeManipFieldColumns()]);
+        const anchor = (event?.currentTarget ?? event?.target) as HTMLElement | undefined;
+        if (anchor) {
+            this.manipMultiSelect.openAt(anchor);
+        } else {
+            this.manipMultiSelect.openDropdown();
         }
     }
 
@@ -1161,8 +1190,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 this.manipColumnOrder.set(newOrder);
             }
         }
-        this.showManipFieldPicker.set(false);
-        this.manipFieldSearchQuery.set('');
         this.saveGridState();
     }
 
@@ -1177,6 +1204,19 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             this.manipColumnOrder.set(this.manipColumnOrder().filter((id) => id !== colId));
         }
         this.saveGridState();
+    }
+
+    onManipSelectionChange(values: unknown[]): void {
+        const newSet = new Set(values as string[]);
+        const currentSet = new Set(this.activeManipFieldColumns());
+        // Newly checked → add
+        for (const name of newSet) {
+            if (!currentSet.has(name)) this.addManipFieldColumn(name);
+        }
+        // Newly unchecked → remove
+        for (const name of currentSet) {
+            if (!newSet.has(name)) this.removeManipFieldColumn(name);
+        }
     }
 
     onGridReady(params: GridReadyEvent): void {

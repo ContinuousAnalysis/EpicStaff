@@ -30,7 +30,6 @@ interface GroupedItems {
 
 @Component({
     selector: 'app-multi-select',
-    standalone: true,
     imports: [AppSvgIconComponent, CheckboxComponent, ButtonComponent],
     templateUrl: './multi-select.component.html',
     styleUrls: ['./multi-select.component.scss'],
@@ -45,6 +44,13 @@ export class MultiSelectComponent implements OnInit {
     selectionChange = output<unknown[]>();
 
     grouped = input<boolean>(false);
+    showSearch = input<boolean>(true);
+    checkboxPosition = input<'left' | 'right'>('right');
+    color = input<'primary' | 'white'>('primary');
+
+    /** When true the default trigger button is not rendered.
+     *  Use openAt(element) to open the dropdown anchored to an external element. */
+    hideTrigger = input<boolean>(false);
 
     isOpen = signal(false);
     search = signal('');
@@ -102,34 +108,44 @@ export class MultiSelectComponent implements OnInit {
         this.isOpen() ? this.close() : this.openDropdown();
     }
 
-    openDropdown() {
-        if (!this.overlayRef) {
-            const positionStrategy = this.overlayPositionBuilder
-                .flexibleConnectedTo(this.triggerBtn)
-                .withPositions([
-                    {
-                        originX: 'start',
-                        originY: 'bottom',
-                        overlayX: 'start',
-                        overlayY: 'top',
-                        offsetY: 4,
-                    },
-                ])
-                .withPush(true);
+    openDropdown(): void {
+        this.openAt(this.triggerBtn.nativeElement);
+    }
 
-            this.overlayRef = this.overlay.create({
-                positionStrategy,
-                scrollStrategy: this.overlay.scrollStrategies.reposition(),
-                hasBackdrop: true,
-                backdropClass: 'transparent-backdrop',
-            });
+    openAt(originElement: HTMLElement): void {
+        const positionStrategy = this.overlayPositionBuilder
+            .flexibleConnectedTo(originElement)
+            .withPositions([
+                {
+                    originX: 'start',
+                    originY: 'bottom',
+                    overlayX: 'start',
+                    overlayY: 'top',
+                    offsetY: 4,
+                },
+            ])
+            .withPush(true);
 
-            this.overlayRef
-                .backdropClick()
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe(() => this.close());
+        if (this.overlayRef) {
+            this.overlayRef.detach();
+            this.overlayRef.dispose();
+            this.overlayRef = undefined!;
         }
 
+        this.overlayRef = this.overlay.create({
+            positionStrategy,
+            scrollStrategy: this.overlay.scrollStrategies.reposition(),
+            hasBackdrop: true,
+            backdropClass: 'transparent-backdrop',
+        });
+
+        this.overlayRef
+            .backdropClick()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.close());
+
+        this.tempSelected.set([...this.selectedValues()]);
+        this.search.set('');
         const portal = new TemplatePortal(this.dropdownTemplate, this.vcr);
         this.overlayRef.attach(portal);
         this.isOpen.set(true);
