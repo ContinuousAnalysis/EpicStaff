@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from tables.import_export.enums import EntityType
 from tables.import_export.strategies.graph import GraphStrategy
 from tables.import_export.id_mapper import IDMapper
+from tables.import_export.version_conversions.base import VersionConverter
 
 from tables.graph_versioning.constants import (
     _EXCLUDED_GRAPH_SCALARS,
@@ -390,3 +391,12 @@ class GraphVersioningStrategy:
             for entity_id in ids:
                 id_mapper.map(entity_type, entity_id, entity_id, was_created=False)
         return id_mapper
+
+    def convert_snapshot_to_current_version(self, snapshot: dict) -> dict:
+        pseudo_bundle = {
+            EntityType.GRAPH: [snapshot],
+            "version": snapshot.get("version", 1),
+            "main_entity": EntityType.GRAPH,
+        }
+        converted = VersionConverter.convert(pseudo_bundle)
+        return converted[EntityType.GRAPH][0]
