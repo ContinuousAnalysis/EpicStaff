@@ -3,9 +3,9 @@ import { EmbeddingModel, GetEmbeddingConfigRequest, LLMProvider, ModelTypes } fr
 import { forkJoin, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { EmbeddingConfigStorageService } from '../../../features/configure-models/services/llms/embedding-config-storage.service';
-import { EmbeddingModelsStorageService } from '../../../features/configure-models/services/llms/embedding-models-storage.service';
-import { LlmProvidersStorageService } from '../../../features/configure-models/services/llms/llm-providers-storage.service';
+import { LlmProvidersStorageService } from '../llms/llm-providers-storage.service';
+import { EmbeddingConfigStorageService } from './embedding-config-storage.service';
+import { EmbeddingModelsStorageService } from './embedding-models-storage.service';
 
 export interface FullEmbeddingConfig extends GetEmbeddingConfigRequest {
     modelDetails: EmbeddingModel | null;

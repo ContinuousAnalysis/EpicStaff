@@ -3,15 +3,15 @@ import { GetLlmModelRequest, LLMProvider, RealtimeModel } from '@shared/models';
 import {
     FullLLMConfig,
     FullRealtimeConfig,
+    LlmConfigStorageService,
+    LlmModelsStorageService,
+    LlmProvidersStorageService,
     RealtimeModelConfigsService,
     RealtimeModelsService,
 } from '@shared/services';
 import { forkJoin, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { LlmConfigStorageService } from '../../../features/configure-models/services/llms/llm-config-storage.service';
-import { LlmModelsStorageService } from '../../../features/configure-models/services/llms/llm-models-storage.service';
-import { LlmProvidersStorageService } from '../../../features/configure-models/services/llms/llm-providers-storage.service';
 import { PythonCodeToolService } from '../../../user-settings-page/tools/custom-tool-editor/services/pythonCodeToolService.service';
 import { ProjectsStorageService } from '../../projects/services/projects-storage.service';
 import { GetMcpToolRequest } from '../../tools/models/mcp-tool.model';

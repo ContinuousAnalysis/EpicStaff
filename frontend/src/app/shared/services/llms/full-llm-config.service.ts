@@ -4,10 +4,10 @@ import { LLMProvider, ModelTypes } from '@shared/models';
 import { forkJoin, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { LlmConfigStorageService } from '../../../features/configure-models/services/llms/llm-config-storage.service';
-import { LlmModelsStorageService } from '../../../features/configure-models/services/llms/llm-models-storage.service';
-import { LlmProvidersStorageService } from '../../../features/configure-models/services/llms/llm-providers-storage.service';
 import { GetLlmModelRequest } from '../../models/llms/llm.model';
+import { LlmConfigStorageService } from './llm-config-storage.service';
+import { LlmModelsStorageService } from './llm-models-storage.service';
+import { LlmProvidersStorageService } from './llm-providers-storage.service';
 
 export interface FullLLMConfig extends GetLlmConfigRequest {
     modelDetails: GetLlmModelRequest | null;

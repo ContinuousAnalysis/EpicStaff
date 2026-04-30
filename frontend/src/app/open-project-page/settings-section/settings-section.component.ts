@@ -19,10 +19,15 @@ import {
     LlmModelSelectorComponent,
 } from '@shared/components';
 import { GetEmbeddingConfigRequest, GetLlmConfigRequest } from '@shared/models';
-import { FullEmbeddingConfig, FullEmbeddingConfigService, FullLLMConfig, FullLLMConfigService } from '@shared/services';
+import {
+    EmbeddingConfigStorageService,
+    FullEmbeddingConfig,
+    FullEmbeddingConfigService,
+    FullLLMConfig,
+    FullLLMConfigService,
+    LlmConfigStorageService,
+} from '@shared/services';
 
-import { EmbeddingConfigStorageService } from '../../features/configure-models/services/llms/embedding-config-storage.service';
-import { LlmConfigStorageService } from '../../features/configure-models/services/llms/llm-config-storage.service';
 import { GetProjectRequest } from '../../features/projects/models/project.model';
 
 @Component({
