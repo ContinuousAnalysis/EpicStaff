@@ -1,5 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Inject, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { of, Subscription } from 'rxjs';
@@ -93,10 +94,21 @@ export class CreateFlowDialogComponent implements OnInit, OnDestroy {
             return;
         }
 
-        this.isSubmitting = true;
         this.errorMessage = null;
 
+        const trimmedName = (this.flowForm.value.name as string).trim();
+        this.flowForm.get('name')?.setValue(trimmedName, { emitEvent: false });
         const formValue = this.flowForm.value;
+
+        const isDuplicate = this.flowsStorageService
+            .flows()
+            .some((f) => f.name.toLowerCase() === trimmedName.toLowerCase() && f.id !== this.originalFlow?.id);
+        if (isDuplicate) {
+            this.errorMessage = 'A flow with this name already exists. Please choose a different name.';
+            return;
+        }
+
+        this.isSubmitting = true;
 
         if (this.isEditMode && this.originalFlow) {
             this.flowsStorageService
@@ -115,7 +127,7 @@ export class CreateFlowDialogComponent implements OnInit, OnDestroy {
                 )
                 .subscribe({
                     next: (updatedFlow) => this.dialogRef.close(updatedFlow),
-                    error: () => (this.errorMessage = 'Failed to update flow. Please try again.'),
+                    error: (err: HttpErrorResponse) => (this.errorMessage = this.parseNameError(err, 'update')),
                 });
             return;
         }
@@ -148,9 +160,8 @@ export class CreateFlowDialogComponent implements OnInit, OnDestroy {
                 next: (newFlow: GraphDto) => {
                     this.dialogRef.close(newFlow);
                 },
-                error: (error) => {
-                    console.error('Error creating flow:', error);
-                    this.errorMessage = 'Failed to create flow. Please try again.';
+                error: (err: HttpErrorResponse) => {
+                    this.errorMessage = this.parseNameError(err, 'create');
                 },
             });
     }
@@ -162,5 +173,15 @@ export class CreateFlowDialogComponent implements OnInit, OnDestroy {
     onIconSelected(icon: string | null): void {
         this.selectedIcon = icon;
         this.flowForm.get('flow_icon')?.setValue(icon || '');
+    }
+
+    private parseNameError(err: HttpErrorResponse, action: 'create' | 'update'): string {
+        const nameError = err?.error?.name?.[0] as string | undefined;
+        if (nameError?.toLowerCase().includes('already exists')) {
+            return 'A flow with this name already exists. Please choose a different name.';
+        }
+        return action === 'create'
+            ? 'Failed to create flow. Please try again.'
+            : 'Failed to update flow. Please try again.';
     }
 }
