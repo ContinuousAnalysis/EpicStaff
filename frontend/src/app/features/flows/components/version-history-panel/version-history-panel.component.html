@@ -9,7 +9,14 @@
         ></app-icon-button>
     </div>
     <div class="dialog-content">
-        @if (versionsList.length === 0) {
+        @if (isLoading) {
+            <app-spinner
+                [isOverlay]="false"
+                [size]="32"
+                [borderWidth]="3"
+                text="Loading versions..."
+            ></app-spinner>
+        } @else if (versionsList.length === 0) {
             <div class="empty-state">
                 <h2>No versions saved yet</h2>
                 <h3>Click "Save version" to create one</h3>
@@ -25,6 +32,7 @@
                 <div class="version-info">
                     @if (editingVersionId === version.id && editingField === 'name') {
                         <input
+                            #versionEditInput
                             class="version-edit-input"
                             [(ngModel)]="editingValue"
                             (keydown)="onEditKeydown($event, version)"
@@ -34,6 +42,7 @@
                     }
                     @if (editingVersionId === version.id && editingField === 'description') {
                         <textarea
+                            #versionEditInput
                             class="version-edit-input version-edit-textarea"
                             rows="1"
                             [(ngModel)]="editingValue"
@@ -46,7 +55,7 @@
                 </div>
                 <div
                     class="version-menu"
-                    (click)="$event.stopPropagation()"
+                    #versionMenu
                 >
                     <app-icon-button
                         icon="dots-vertical"
@@ -74,7 +83,12 @@
                             >
                                 Change Description
                             </button>
-                            <button class="dropdown-item dropdown-item--danger">Delete</button>
+                            <button
+                                class="dropdown-item dropdown-item--danger"
+                                (click)="deleteVersion(version, $event)"
+                            >
+                                Delete
+                            </button>
                         </div>
                     }
                 </div>
