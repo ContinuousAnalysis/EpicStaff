@@ -158,6 +158,12 @@ we tell the user an email is coming?" — inspect it, not `EMAIL_BACKEND`.
 * **Strength enforced uniformly.** Every entry point runs Django's
   `AUTH_PASSWORD_VALIDATORS`, via the same
   `AuthValidationService._validate_password_field`.
+* **Alphabet restricted.** Passwords must consist only of printable
+  ASCII excluding whitespace (bytes 0x21–0x7E): Latin letters, digits,
+  and standard symbols `!"#$%&'()*+,-./:;<=>?@[\]^_` `` ` `` `{|}~`.
+  Enforced uniformly by `PrintableAsciiPasswordValidator` plugged into
+  `AUTH_PASSWORD_VALIDATORS`. Email fields likewise reject any
+  whitespace character.
 * **Admin gate in service.** `is_superadmin` check is inside
   `admin_reset`, not the view — shared with any future non-HTTP
   caller.
