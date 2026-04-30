@@ -1,0 +1,135 @@
+import { Dialog } from '@angular/cdk/dialog';
+import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+    AppSvgIconComponent,
+    AppTableCellDirective,
+    AppTableColumnDef,
+    AppTableComponent,
+    ButtonComponent,
+    ConfirmationDialogService,
+    LoadingSpinnerComponent,
+    SearchComponent,
+    SelectItem,
+    TableRow,
+} from '@shared/components';
+import { GetMeResponse, GetOrganizationResponse } from '@shared/models';
+import { finalize, forkJoin } from 'rxjs';
+
+import { AuthService } from '../../../../../services/auth/auth.service';
+import { CreateOrganizationDialogComponent } from '../../../components/create-organization-dialog/create-organization-dialog.component';
+import { OrgAvatarComponent } from '../../../components/org-avatar/org-avatar.component';
+import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
+import { UserAvatarComponent } from '../../../components/user-avatar/user-avatar.component';
+import { OrganizationsStorageService } from '../../../services/admin/organizations-storage.service';
+
+const STATUS_ITEMS: SelectItem[] = [
+    { name: 'Active', value: 'active' },
+    { name: 'Deactivated', value: 'deactivated' },
+];
+
+@Component({
+    selector: 'app-organizations-tab',
+    templateUrl: './organizations-tab.component.html',
+    styleUrls: ['./organizations-tab.component.scss'],
+    imports: [
+        AppTableComponent,
+        AppTableCellDirective,
+        ButtonComponent,
+        SearchComponent,
+        AppSvgIconComponent,
+        LoadingSpinnerComponent,
+        StatusBadgeComponent,
+        OrgAvatarComponent,
+        UserAvatarComponent,
+        DatePipe,
+    ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class OrganizationsTabComponent implements OnInit {
+    private dialog = inject(Dialog);
+    private destroyRef = inject(DestroyRef);
+    private confirmation = inject(ConfirmationDialogService);
+    private organizationStorage = inject(OrganizationsStorageService);
+    private authService = inject(AuthService);
+
+    readonly searchTerm = signal('');
+    readonly isLoading = signal(true);
+    readonly currentUser = signal<GetMeResponse | null>(null);
+
+    readonly columns: AppTableColumnDef[] = [
+        { key: 'organization', label: 'Organization', width: '1fr' },
+        { key: 'admin', label: 'Admin', width: '1fr' },
+        { key: 'members', label: 'Members', width: '120px' },
+        { key: 'created', label: 'Created', width: '160px' },
+        { key: 'status', label: 'Status', width: '160px', filterItems: STATUS_ITEMS },
+        { key: 'actions', label: 'Actions', width: '120px', align: 'center' },
+    ];
+
+    readonly organizations = this.organizationStorage.organizations;
+
+    readonly tableData = computed<TableRow[]>(() => this.organizations().map((org) => this.orgToRow(org)));
+
+    readonly filteredOrgs = computed<TableRow[]>(() => {
+        const term = this.searchTerm().toLowerCase().trim();
+        const rows = this.tableData();
+        if (!term) return rows;
+        return rows.filter((o) => String(o['name']).toLowerCase().includes(term));
+    });
+
+    ngOnInit(): void {
+        forkJoin([this.organizationStorage.getOrganizations(), this.authService.getCurrentUser()])
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => this.isLoading.set(false))
+            )
+            .subscribe({
+                next: ([, user]) => this.currentUser.set(user),
+            });
+    }
+
+    onCreateOrganization(): void {
+        this.dialog.open(CreateOrganizationDialogComponent, {
+            width: 'calc(100vw - 2rem)',
+            height: 'calc(100vh - 2rem)',
+            disableClose: true,
+        });
+    }
+
+    onDeactivateOrganization(row: TableRow): void {
+        const id = row['id'] as number;
+        this.confirmation
+            .confirm({
+                title: 'Deactivate the organization?',
+                message: `The ${row['name']} organization will be deactivated, but all data will be preserved.`,
+                caution: 'Access will be revoked for all members of this organization',
+                type: 'danger',
+                confirmText: 'Deactivate',
+                cancelText: 'Cancel',
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((confirmed) => {
+                if (confirmed !== true) return;
+                this.organizationStorage
+                    .deactivateOrganization(id)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe();
+            });
+    }
+
+    onReactivateOrganization(row: TableRow): void {
+        const id = row['id'] as number;
+        this.organizationStorage.reactivateOrganization(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+    }
+
+    private orgToRow(org: GetOrganizationResponse): TableRow {
+        return {
+            id: org.id,
+            name: org.name,
+            members: org.member_count,
+            created: org.created_at,
+            status: org.is_active ? 'active' : 'deactivated',
+        };
+    }
+}

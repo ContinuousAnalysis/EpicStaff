@@ -11,6 +11,7 @@ export * from './ngrok/ngrok-config.model';
 export * from './realtime-voice/realtime-llm-config.model';
 export * from './realtime-voice/realtime-model.model';
 export * from './realtime-voice/voice-settings.model';
+export * from './role-based-access';
 export * from './RunCrewSession.model';
 export * from './tag.model';
 export * from './task-message.model';

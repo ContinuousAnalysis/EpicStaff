@@ -1,0 +1,115 @@
+<div class="toolbar">
+    <app-search
+        placeholder="Search by name..."
+        [width]="'200px'"
+        [(searchTerm)]="searchTerm"
+    />
+
+    <span class="count-label"> {{ filteredOrgs().length }} of {{ organizations().length }} organizations </span>
+
+    <div class="toolbar-actions">
+        <app-button
+            type="primary"
+            leftIcon="plus"
+            (click)="onCreateOrganization()"
+        >
+            Create Organization</app-button
+        >
+    </div>
+</div>
+@if (isLoading()) {
+    <app-loading-spinner size="sm" />
+} @else {
+    <app-table
+        [columns]="columns"
+        [data]="filteredOrgs()"
+        [selectable]="true"
+        rowId="id"
+    >
+        <!-- ORGANIZATION -->
+        <ng-template
+            appTableCell="organization"
+            let-row
+        >
+            <div class="org-cell">
+                <app-org-avatar [name]="$any(row['name'])" />
+                <span class="org-name">{{ row['name'] }}</span>
+            </div>
+        </ng-template>
+
+        <!-- ADMIN -->
+        <ng-template appTableCell="admin">
+            @if (currentUser(); as user) {
+                <div class="user-cell">
+                    <app-user-avatar [name]="user.display_name || user.email" />
+                    <div class="user-info">
+                        <span class="user-name">{{ user.display_name || user.email }}</span>
+                        <span class="user-role">Super Admin</span>
+                    </div>
+                </div>
+            }
+        </ng-template>
+
+        <!-- MEMBERS -->
+        <ng-template
+            appTableCell="members"
+            let-row
+        >
+            <span class="cell-text">{{ row['members'] }}</span>
+        </ng-template>
+
+        <!-- CREATED -->
+        <ng-template
+            appTableCell="created"
+            let-row
+        >
+            <span class="cell-text">{{ row['created'] | date: 'mediumDate' }}</span>
+        </ng-template>
+
+        <!-- STATUS -->
+        <ng-template
+            appTableCell="status"
+            let-row
+        >
+            <app-status-badge
+                [modifier]="$any(row['status'])"
+                [label]="row['status'] === 'active' ? 'Active' : 'Deactivated'"
+                [icon]="row['status'] === 'deactivated' ? 'clock' : null"
+            />
+        </ng-template>
+
+        <!-- ACTIONS -->
+        <ng-template
+            appTableCell="actions"
+            let-row
+        >
+            <div class="actions-cell">
+                @if (row['status'] === 'active') {
+                    <button
+                        class="action-btn danger"
+                        type="button"
+                        title="Deactivate"
+                        (click)="onDeactivateOrganization(row)"
+                    >
+                        <app-svg-icon
+                            icon="stop"
+                            size="16px"
+                        />
+                    </button>
+                } @else {
+                    <button
+                        class="action-btn action-btn--muted"
+                        type="button"
+                        title="Activate"
+                        (click)="onReactivateOrganization(row)"
+                    >
+                        <app-svg-icon
+                            icon="play"
+                            size="16px"
+                        />
+                    </button>
+                }
+            </div>
+        </ng-template>
+    </app-table>
+}
