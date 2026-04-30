@@ -1,14 +1,46 @@
+import json
+import random
+import uuid
 from time import sleep
 
 import pytest
 
-from utils.utils import *
-from utils.knowledge_utils import *
-from utils.cleaning_utils import *
-import uuid
 from loguru import logger
+from pathlib import Path
 
-from utils.variables import MANAGER_URL, TEST_TOOL_NAME
+import requests
+
+from utils.cleaning_utils import (
+    delete_crews,
+    delete_custom_tools,
+    delete_graph,
+    delete_session,
+    validate_response,
+)
+from utils.knowledge_utils import knowledge_search
+from utils.utils import (
+    create_agent,
+    create_conditional_edge,
+    create_crew,
+    create_crew_node,
+    create_edge,
+    create_end_node,
+    create_graph,
+    create_llm_config,
+    create_llm_node,
+    create_mcp_tool,
+    create_python_code_tool,
+    create_python_node,
+    create_start_node,
+    create_task,
+    create_tool_config,
+    get_headers,
+    get_python_code_tool_by_name,
+    get_tool,
+    run_session,
+    wait_for_results_sse,
+)
+from utils.variables import DJANGO_URL, MANAGER_URL, TEST_TOOL_NAME
 
 
 def test_create_and_run_session():
@@ -24,16 +56,16 @@ def test_create_and_run_session():
     author_crew_id = create_author_crew(config_id_2)
     user_crew_id = create_user_crew(config_id)
 
-    graph_id = create_graph("Integration graph2")  # TODO: Change this
+    graph_id = create_graph("Integration graph")
 
-    create_crew_node(
+    wiki_crew_node_id = create_crew_node(
         crew_id=wikipedia_crew_id,
         node_name="wiki_crew_node",
         graph_id=graph_id,
         input_map={},
         output_variable_path="variables",
     )
-    create_crew_node(
+    author_crew_node_id = create_crew_node(
         crew_id=author_crew_id,
         node_name="author_crew_node",
         graph_id=graph_id,
@@ -42,7 +74,7 @@ def test_create_and_run_session():
         },
         output_variable_path="variables.result",
     )
-    create_crew_node(
+    user_crew_node_id = create_crew_node(
         crew_id=user_crew_id,
         node_name="user_crew_node",
         graph_id=graph_id,
@@ -51,7 +83,7 @@ def test_create_and_run_session():
         },
         output_variable_path="variables",
     )
-    create_llm_node(
+    llm_node_id = create_llm_node(
         llm_config_id=config_id,
         node_name="llm_node1",
         graph_id=graph_id,
@@ -60,20 +92,31 @@ def test_create_and_run_session():
         },
         output_variable_path="variables",
     )
-    create_start_node(graph_id=graph_id)
-    create_hash_message_python_node(graph_id=graph_id)
-    create_option_1_python_node(graph_id=graph_id)
-    create_option_2_python_node(graph_id=graph_id)
-    create_edge(start_key="__start__", end_key="hash_message", graph=graph_id)
-    create_edge(start_key="hash_message", end_key="user_crew_node", graph=graph_id)
-    create_user_name_conditional_edge(source="user_crew_node", graph=graph_id)
-
-    create_edge(start_key="option_1", end_key="llm_node1", graph=graph_id)
-    create_edge(start_key="option_2", end_key="author_crew_node", graph=graph_id)
-    create_edge(start_key="author_crew_node", end_key="wiki_crew_node", graph=graph_id)
-    create_end_node(graph_id=graph_id)
-    create_edge(start_key="wiki_crew_node", end_key="__end_node__", graph=graph_id)
-    create_edge(start_key="llm_node1", end_key="__end_node__", graph=graph_id)
+    start_node_id = create_start_node(graph_id=graph_id)
+    hash_message_node_id = create_hash_message_python_node(graph_id=graph_id)
+    option_1_node_id = create_option_1_python_node(graph_id=graph_id)
+    option_2_node_id = create_option_2_python_node(graph_id=graph_id)
+    end_node_id = create_end_node(graph_id=graph_id)
+    create_edge(
+        start_node_id=start_node_id, end_node_id=hash_message_node_id, graph=graph_id
+    )
+    create_edge(
+        start_node_id=hash_message_node_id,
+        end_node_id=user_crew_node_id,
+        graph=graph_id,
+    )
+    create_user_name_conditional_edge(source_node_id=user_crew_node_id, graph=graph_id)
+    create_edge(start_node_id=option_1_node_id, end_node_id=llm_node_id, graph=graph_id)
+    create_edge(
+        start_node_id=option_2_node_id, end_node_id=author_crew_node_id, graph=graph_id
+    )
+    create_edge(
+        start_node_id=author_crew_node_id, end_node_id=wiki_crew_node_id, graph=graph_id
+    )
+    create_edge(
+        start_node_id=wiki_crew_node_id, end_node_id=end_node_id, graph=graph_id
+    )
+    create_edge(start_node_id=llm_node_id, end_node_id=end_node_id, graph=graph_id)
 
     # Run sessions
     session1 = run_session(
@@ -124,13 +167,13 @@ def test_get_tool_class_data():
         tool_class_data_response = requests.post(
             f"{MANAGER_URL}/tool/{tool_alias}/class-data",
             json={"tool_init_configuration": None},
-            headers={"Host": rhost},
+            headers=get_headers(),
         )
         try:
             validate_response(response=tool_class_data_response)
             tool_alias_list = tool_class_data_response.json()["classdata"]
             print(tool_alias)
-        except HTTPError:
+        except requests.HTTPError:
             error_tools.append(
                 {"tool_alias": tool_alias, "message": tool_class_data_response.reason}
             )
@@ -147,18 +190,20 @@ def test_mcp_session(run_mcp_tool):
     config_id = create_llm_config(llm_id=llm_id)
     mcp_test_crew_id = create_mcp_test_crew(config_id)
 
-    graph_id = create_graph("Integration graph2")  # TODO: Change this
-    create_crew_node(
+    graph_id = create_graph("Integration graph2")
+    mcp_crew_node_id = create_crew_node(
         crew_id=mcp_test_crew_id,
         node_name="mcp_test_crew_node",
         graph_id=graph_id,
         input_map={},
         output_variable_path="variables",
     )
-    create_end_node(graph_id=graph_id)
-    create_start_node(graph_id=graph_id)
-    create_edge(start_key="__start__", end_key="mcp_test_crew_node", graph=graph_id)
-    create_edge(start_key="mcp_test_crew_node", end_key="__end_node__", graph=graph_id)
+    end_node_id = create_end_node(graph_id=graph_id)
+    start_node_id = create_start_node(graph_id=graph_id)
+    create_edge(
+        start_node_id=start_node_id, end_node_id=mcp_crew_node_id, graph=graph_id
+    )
+    create_edge(start_node_id=mcp_crew_node_id, end_node_id=end_node_id, graph=graph_id)
     # Run sessions
     session_id = run_session(
         graph_id=graph_id,
@@ -235,7 +280,7 @@ def create_wikipedia_tool_config() -> int:
 
 def create_wiki_task(crew_id: int, agent_id: int) -> tuple:
     task_data = {
-        "name": f"Test wiki task {random.randint(1,100000)}",
+        "name": f"Test wiki task {random.randint(1, 100000)}",
         "instructions": "Find inpormation about cars",
         "expected_output": "What is car",
         "order": 1,
@@ -248,7 +293,7 @@ def create_wiki_task(crew_id: int, agent_id: int) -> tuple:
 
 def create_poem_task(crew_id: int, agent_id: int) -> tuple:
     task_data = {
-        "name": f"Test write poem task {random.randint(1,100000)}",
+        "name": f"Test write poem task {random.randint(1, 100000)}",
         "instructions": "Write short rhyming poem about nature",
         "expected_output": "Short rhyming poem",
         "order": 1,
@@ -471,7 +516,7 @@ def main(*args, **kwargs):
     return create_python_node(**python_node_data)
 
 
-def create_user_name_conditional_edge(source: str, graph: int):
+def create_user_name_conditional_edge(source_node_id: int, graph: int):
     code = """
 def main():
     user_name = state["variables"]["user_name"]
@@ -483,7 +528,7 @@ def main():
 """
 
     conditional_edge_data = {
-        "source": source,
+        "source_node_id": source_node_id,
         "graph": graph,
         "code": code,
     }
@@ -492,7 +537,7 @@ def main():
 
 def get_llm_model(name: str = "gpt-4o-mini"):
     llm_model_response = requests.get(
-        f"{DJANGO_URL}/llm-models?name={name}", headers={"Host": rhost}
+        f"{DJANGO_URL}/llm-models?name={name}", headers=get_headers()
     )
     llm_model = None
     if llm_model_response.ok:
