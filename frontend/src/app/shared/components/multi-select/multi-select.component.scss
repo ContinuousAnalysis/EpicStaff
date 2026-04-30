@@ -17,9 +17,6 @@
     }
 
     &__dropdown {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0;
         border-radius: 10px;
         border: 1px solid var(--color-input-border);
         background-color: var(--color-input-background);
