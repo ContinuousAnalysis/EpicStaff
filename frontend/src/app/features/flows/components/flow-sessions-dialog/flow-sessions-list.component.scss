@@ -124,12 +124,14 @@
     transition:
         background 0.18s,
         color 0.18s;
-}
-.delete-btn:hover {
-    background: #b32b36 !important;
-    color: #fff !important;
-}
-.delete-btn--hidden {
-    visibility: hidden;
-    pointer-events: none;
+
+    &:hover {
+        background: #b32b36 !important;
+        color: #fff !important;
+    }
+
+    &--hidden {
+        visibility: hidden;
+        pointer-events: none;
+    }
 }
