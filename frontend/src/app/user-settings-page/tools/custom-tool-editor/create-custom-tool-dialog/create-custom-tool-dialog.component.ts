@@ -16,11 +16,14 @@ import { CustomToolsService } from '../../../../features/tools/services/custom-t
 import { ToastService } from '../../../../services/notifications';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ChipsInputComponent } from '../../../../shared/components/chips-input/chips-input.component';
+import { ToggleSwitchComponent } from '../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
 import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 import { TextareaComponent } from '../../../../shared/components/textarea/textarea.component';
 import { CodeEditorComponent } from '../code-editor/code-editor.component';
+import { parseToolVariablesJson, ToolVariable } from './components/parameters-table.config';
+import { ParametersTableViewComponent } from './components/parameters-table-view/parameters-table-view.component';
 import { toCreatePayload } from './models/create-custom-tool-form.model';
 
 enum ActiveEditor {
@@ -37,10 +40,31 @@ const DEFAULT_VARIABLES_JSON = `[
   {
     "name": "query",
     "type": "string",
-    "description": "Description of the parameter",
-    "input_type": "user_input"
+    "description": "Search query provided by the agent",
+    "input_type": "agent_input",
+    "required": true,
+    "default_value": null
+  },
+  {
+    "name": "api_key",
+    "type": "string",
+    "description": "API key configured by the user",
+    "input_type": "user_input",
+    "required": true,
+    "default_value": null
+  },
+  {
+    "name": "max_results",
+    "type": "integer",
+    "description": "Maximum number of results. Agent may override the default.",
+    "input_type": "mixed",
+    "required": false,
+    "default_value": 10
   }
 ]`;
+
+const VARIABLES_SCHEMA_TOOLTIP =
+    'Variables must be a JSON array. Each item defines one parameter: name, type, description, input_type, required, and default_value. input_type can be agent_input (agent supplies it), user_input (configured/default value, hidden from the agent), or mixed (agent may override configured/default value).';
 
 @Component({
     selector: 'app-create-custom-tool-dialog',
@@ -54,6 +78,8 @@ const DEFAULT_VARIABLES_JSON = `[
         CodeEditorComponent,
         JsonEditorComponent,
         TextareaComponent,
+        ToggleSwitchComponent,
+        ParametersTableViewComponent,
     ],
     templateUrl: './create-custom-tool-dialog.component.html',
     styleUrls: ['./create-custom-tool-dialog.component.scss'],
@@ -75,13 +101,18 @@ export class CreateCustomToolDialogComponent {
     });
 
     public readonly ActiveEditor = ActiveEditor;
+    public readonly variablesSchemaTooltip = VARIABLES_SCHEMA_TOOLTIP;
+
+    public readonly tableVariables = signal<ToolVariable[]>([]);
 
     public readonly activeEditor = signal<ActiveEditor>(ActiveEditor.Python);
     public readonly pythonSectionExpanded = signal(false);
     public readonly jsonSectionExpanded = signal(false);
+    public readonly parametersTableMode = signal(true);
     public readonly isJsonValid = signal(true);
     public readonly pythonHasError = signal(false);
     public readonly isSaving = signal(false);
+    private tableImportWasInvalid = false;
 
     private monacoJsonEditor: MonacoEditor.IStandaloneCodeEditor | null = null;
 
@@ -96,6 +127,9 @@ export class CreateCustomToolDialogComponent {
                 queueMicrotask(() => this.monacoJsonEditor?.layout());
             }
         });
+
+        const parsedDefault = parseToolVariablesJson(this.form.controls.variablesJson.value);
+        this.tableVariables.set(parsedDefault.valid ? parsedDefault.variables : []);
     }
 
     public toggleEditor(target: ActiveEditor.Python | ActiveEditor.Json): void {
@@ -131,6 +165,31 @@ export class CreateCustomToolDialogComponent {
         }
     }
 
+    public setParametersTableMode(enabled: boolean): void {
+        if (this.parametersTableMode() === enabled) {
+            return;
+        }
+
+        if (enabled) {
+            const parsed = parseToolVariablesJson(this.form.controls.variablesJson.value);
+            this.tableImportWasInvalid = !parsed.valid;
+            this.tableVariables.set(parsed.valid ? parsed.variables : []);
+            this.parametersTableMode.set(true);
+            this.jsonSectionExpanded.set(false);
+            if (this.activeEditor() === ActiveEditor.Json) {
+                this.activeEditor.set(ActiveEditor.None);
+            }
+            return;
+        }
+
+        this.parametersTableMode.set(false);
+        this.form.controls.variablesJson.setValue(JSON.stringify(this.tableVariables(), null, 2));
+        this.form.controls.variablesJson.markAsDirty();
+        this.isJsonValid.set(true);
+        this.tableImportWasInvalid = false;
+        this.jsonSectionExpanded.set(true);
+    }
+
     public copyPythonCode(): void {
         this.copyToClipboard(this.form.controls.pythonCode.value, 'Python code copied');
     }
@@ -161,6 +220,10 @@ export class CreateCustomToolDialogComponent {
         this.pythonHasError.set(hasError);
     }
 
+    public onVariablesChange(vars: ToolVariable[]): void {
+        this.tableVariables.set(vars);
+    }
+
     public closeEditorPane(): void {
         this.activeEditor.set(ActiveEditor.None);
     }
@@ -179,6 +242,13 @@ export class CreateCustomToolDialogComponent {
     public submit(): void {
         if (this.isSaving()) {
             return;
+        }
+
+        if (this.parametersTableMode()) {
+            this.form.controls.variablesJson.setValue(JSON.stringify(this.tableVariables(), null, 2));
+            this.form.controls.variablesJson.markAsDirty();
+            this.isJsonValid.set(true);
+            this.tableImportWasInvalid = false;
         }
 
         this.form.markAllAsTouched();

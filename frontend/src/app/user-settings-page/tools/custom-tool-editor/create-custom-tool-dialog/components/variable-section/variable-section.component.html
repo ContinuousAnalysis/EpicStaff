@@ -1,0 +1,37 @@
+<div
+    class="section__header"
+    [class.section__header--with-table]="rows().length > 0"
+>
+    <app-svg-icon
+        [icon]="config().icon"
+        size="1rem"
+        class="section__icon"
+    />
+    <span class="section__label">{{ config().label }}</span>
+    <button
+        type="button"
+        class="section__add-btn"
+        (click)="addRow()"
+        title="Add row"
+    >
+        <app-svg-icon
+            icon="plus"
+            size="1rem"
+        />
+    </button>
+</div>
+
+@if (rows().length > 0) {
+    <app-dynamic-table
+        #table
+        title=""
+        [icon]="null"
+        [showHeader]="false"
+        [columnDefs]="config().columnDefs"
+        [initialRows]="rows()"
+        [allowColumnDrag]="false"
+        [rowNavigable]="isObjectRow"
+        (rowsChange)="onRowsChange($event)"
+        (navigateRow)="onNavigate($event)"
+    />
+}

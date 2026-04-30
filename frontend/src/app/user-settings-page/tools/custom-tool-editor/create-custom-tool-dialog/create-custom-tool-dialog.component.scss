@@ -201,6 +201,30 @@
         gap: 8px;
     }
 
+    .parameters-header {
+        justify-content: space-between;
+    }
+
+    .section-header-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .parameters-mode-switch {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #9b9ba6;
+        font-size: 14px;
+        line-height: 18px;
+
+        app-toggle-switch {
+            display: inline-flex;
+        }
+    }
+
     .editor-card {
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.08);

@@ -40,13 +40,18 @@ export class DynamicTableComponent implements OnInit {
     // Feature flags
     allowRowDrag = input<boolean>(true);
     allowColumnDrag = input<boolean>(true);
+    showHeader = input<boolean>(true);
 
     // Constraints
     maxHeight = input<string | null>(null); // e.g. '400px', null = no limit
     maxRows = input<number | null>(null); // null = unlimited
 
+    // Navigate-into-row (e.g. for object-type rows)
+    rowNavigable = input<((row: TableRow) => boolean) | null>(null);
+
     // Outputs
     rowsChange = output<Record<string, unknown>[]>();
+    navigateRow = output<{ row: TableRow; rowIndex: number }>();
 
     // Internal state
     columns = signal<TableColumnDef[]>([]);
@@ -66,8 +71,9 @@ export class DynamicTableComponent implements OnInit {
 
     // Column resize
     colWidths = signal<Record<string, number>>({});
+    actionColWidth = computed(() => (this.rowNavigable() !== null ? 68 : 36));
     tableMinWidth = computed(() => {
-        const spacers = (this.allowRowDrag() ? 36 : 0) + 36; // drag handle + action
+        const spacers = (this.allowRowDrag() ? 36 : 0) + this.actionColWidth();
         return this.columns().reduce((sum, col) => sum + this.getColWidth(col.key), spacers);
     });
     private resizeMoveHandler: ((e: MouseEvent) => void) | null = null;

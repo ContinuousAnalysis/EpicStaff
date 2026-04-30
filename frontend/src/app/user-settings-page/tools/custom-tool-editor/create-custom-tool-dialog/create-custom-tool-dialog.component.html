@@ -119,13 +119,27 @@
                 }
 
                 <div class="form-section parameters-section">
-                    <div class="section-header">
-                        <h3>Parameters</h3>
-                        <app-help-tooltip
-                            text="Configure the JSON parameters your custom tool accepts."
-                        ></app-help-tooltip>
+                    <div class="section-header parameters-header">
+                        <div class="section-header-label">
+                            <h3>Parameters</h3>
+                            <app-help-tooltip
+                                text="Configure the JSON parameters your custom tool accepts."
+                            ></app-help-tooltip>
+                        </div>
+                        <div class="parameters-mode-switch">
+                            <span>Table mode</span>
+                            <app-toggle-switch
+                                [checked]="parametersTableMode()"
+                                (checkedChange)="setParametersTableMode($event)"
+                            ></app-toggle-switch>
+                        </div>
                     </div>
-                    @if (activeEditor() !== ActiveEditor.Json) {
+                    @if (parametersTableMode()) {
+                        <app-parameters-table-view
+                            [variables]="tableVariables()"
+                            (variablesChange)="onVariablesChange($event)"
+                        />
+                    } @else if (activeEditor() !== ActiveEditor.Json) {
                         <div
                             class="editor-card"
                             [class.has-inline]="jsonSectionExpanded()"
@@ -137,6 +151,10 @@
                                         size="1rem"
                                     ></app-svg-icon>
                                     <span>JSON</span>
+                                    <app-help-tooltip
+                                        [text]="variablesSchemaTooltip"
+                                        position="top"
+                                    ></app-help-tooltip>
                                 </div>
                                 <div class="editor-card-actions">
                                     <button
@@ -219,6 +237,10 @@
                                     size="1rem"
                                 ></app-svg-icon>
                                 JSON
+                                <app-help-tooltip
+                                    [text]="variablesSchemaTooltip"
+                                    position="top"
+                                ></app-help-tooltip>
                             }
                         </span>
                         <div class="editor-pane-actions">
