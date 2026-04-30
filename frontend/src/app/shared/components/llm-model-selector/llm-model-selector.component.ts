@@ -111,6 +111,15 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
 
                 <!-- Models List -->
                 <div class="models-list">
+                    @if (selectedConfig && !searchTerm) {
+                        <div
+                            class="deselect-option"
+                            (click)="deselectConfig()"
+                        >
+                            <i class="ti ti-x"></i>
+                            <span>Clear</span>
+                        </div>
+                    }
                     <div
                         *ngIf="filteredConfigs.length === 0"
                         class="no-results"
@@ -284,6 +293,27 @@ import { LlmModelItemComponent } from './llm-model-item/llm-model-item.component
                 padding: 4px 4px 8px 4px;
             }
 
+            .deselect-option {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                padding: 8px 12px;
+                cursor: pointer;
+                font-size: 0.875rem;
+                color: var(--color-text-secondary);
+                border-bottom: 1px solid var(--color-divider-subtle);
+                transition: background-color 0.15s ease;
+
+                &:hover {
+                    background-color: rgba(255, 255, 255, 0.05);
+                    color: var(--color-text-primary);
+                }
+
+                i {
+                    font-size: 16px;
+                }
+            }
+
             .no-results {
                 padding: 12px;
                 text-align: center;
@@ -417,6 +447,15 @@ export class LlmModelSelectorComponent implements OnInit, OnDestroy, OnChanges, 
             });
         }
         this.cdr.markForCheck();
+    }
+
+    deselectConfig(): void {
+        this.selectedConfigId = null;
+        this.selectedConfig = null;
+        this.onChange(null);
+        this.onTouched();
+        this.modelSelected.emit(undefined);
+        this.closeDropdown();
     }
 
     selectConfig(config: FullLLMConfig): void {
