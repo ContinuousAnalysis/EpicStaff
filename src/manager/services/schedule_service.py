@@ -17,7 +17,7 @@ from services.redis_service import RedisService
 from services.schedule_trigger_strategies import (
     ONCE_STRATEGY,
     UNIT_STRATEGIES,
-    TriggerContext,
+    ScheduleTriggerContext,
 )
 from utils.timezone_utils import ensure_aware
 from src.shared.models import (
@@ -266,7 +266,7 @@ class ScheduleService:
         )
         start_dt = ensure_aware(node.start_date_time)
 
-        ctx = TriggerContext(
+        ctx = ScheduleTriggerContext(
             node=node,
             node_tz=node_tz,
             start_dt=start_dt,
