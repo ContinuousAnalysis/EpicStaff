@@ -419,11 +419,9 @@ def main(user_id: int):
         2: "Max",
         36: "Igor",
     }
-    print(state["variables"])
     return ids.get(user_id, "Not found")
 """
 
-    test_state = {"input": {"user_surname": "Zelensky"}}
     args_schema = {
         "type": "object",
         "title": "ArgumentsSchema",
@@ -438,7 +436,7 @@ def main(user_id: int):
         "code": code,
         "entrypoint": "main",
         "libraries": ["requests"],
-        "global_kwargs": {"state": test_state},
+        "global_kwargs": {},
         "args_schema": args_schema,
     }
     tool = get_python_code_tool_by_name(tool_data["name"])

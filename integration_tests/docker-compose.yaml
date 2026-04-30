@@ -19,6 +19,8 @@ services:
 
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - DJANGO_API_KEY=epicstaff_realtime_api_key
 
       - DB_HOST_NAME=crewdb
       - DB_PORT=5432
@@ -54,6 +56,7 @@ services:
 
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - MANAGER_HOST=manager_container
       - MANAGER_PORT=8000
       - DB_NAME=crew
@@ -61,6 +64,8 @@ services:
       - DB_PORT=5432
       - DB_REALTIME_USER=realtime_user_integ
       - DB_REALTIME_PASSWORD=realtime_password_integ
+      - DJANGO_AUTH_URL=http://django_app:8000
+      - DJANGO_API_KEY=epicstaff_realtime_api_key
     networks:
       - backend-network
     depends_on:
@@ -149,6 +154,12 @@ services:
   redis:
     image: redis
     container_name: redis
+    environment:
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    command: >
+      sh -c "redis-server --port $${REDIS_PORT:-6379}
+      $${REDIS_PASSWORD:+--requirepass \"$${REDIS_PASSWORD}\"}"
     networks:
       - backend-network
     ports:
@@ -206,6 +217,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - CODE_RESULT_CHANNEL=code_results
       - CODE_EXEC_TASK_CHANNEL=code_exec_tasks
       - BASE_VENV_PATH=/home/user/root/app/venvs/
@@ -229,8 +241,11 @@ services:
       - KNOWLEDGE_SEARCH_GET_CHANNEL=knowledge:search:get
       - KNOWLEDGE_SEARCH_RESPONSE_CHANNEL=knowledge:search:response
 
+      - OPENAI_KEY=${OPENAI_KEY}
+
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - DB_NAME=crew
       - DB_HOST_NAME=crewdb
       - DB_PORT=5432
@@ -258,6 +273,8 @@ services:
       - REDIS_PORT=6379
       - DJANGO_URL=http://django_app:8000/api
       - MANAGER_URL=http://manager:8000
+      - DJANGO_ADMIN_EMAIL=${DJANGO_ADMIN_EMAIL:-admin@example.com}
+      - DJANGO_ADMIN_PASSWORD=${DJANGO_ADMIN_PASSWORD:-AdminPass123!}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       # - /usr/bin/docker:/usr/bin/docker

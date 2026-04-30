@@ -179,7 +179,7 @@ def wait_for_results_sse(session_id: int):
 
         assert False, f"Session status is {status}"
 
-    if not end_node_result:
+    if end_node_result is None:
         raise ValueError("Did not receive graph_end message in time.")
 
     # # assertation values from endnode.output_map
