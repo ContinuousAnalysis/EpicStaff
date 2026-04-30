@@ -2,57 +2,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, tzinfo
 
-import pytz
 from apscheduler.triggers.base import BaseTrigger
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from src.shared.models import ScheduleTriggerNodePayload
-
-
-_WEEKDAY_SHORT = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
-
-
-def ensure_aware(dt: datetime | None) -> datetime | None:
-    """Force tz-awareness on a Pydantic-parsed datetime (UTC fallback)."""
-    if dt is None:
-        return None
-    if dt.tzinfo is None:
-        return pytz.UTC.localize(dt)
-    return dt
-
-
-def _local_start(node: ScheduleTriggerNodePayload, tz: tzinfo) -> datetime | None:
-    dt = ensure_aware(node.start_date_time)
-    if dt is None:
-        return None
-    return dt.astimezone(tz)
-
-
-def _local_clock(
-    node: ScheduleTriggerNodePayload, node_tz: tzinfo
-) -> tuple[int, int, int, int]:
-    """(minute, hour, day, weekday) of start_date_time in node tz; (0,0,1,0) fallback."""
-    local = _local_start(node, node_tz)
-    if local is None:
-        return 0, 0, 1, 0
-    return local.minute, local.hour, local.day, local.weekday()
-
-
-def _make_cron(crontab: str, end_dt: datetime | None, tz: tzinfo) -> CronTrigger:
-    """5-field crontab + optional end_date. second='0' matches once-per-minute semantics."""
-    minute, hour, day, month, day_of_week = crontab.split()
-    return CronTrigger(
-        second="0",
-        minute=minute,
-        hour=hour,
-        day=day,
-        month=month,
-        day_of_week=day_of_week,
-        timezone=tz,
-        end_date=end_dt,
-    )
+from utils.timezone_utils import ensure_aware
 
 
 @dataclass(frozen=True)
@@ -66,6 +22,32 @@ class TriggerContext:
 
 
 class TriggerStrategy(ABC):
+    _WEEKDAY_SHORT = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+    @staticmethod
+    def _extract_start_clock(ctx: TriggerContext) -> tuple[int, int, int, int]:
+        """(minute, hour, day, weekday) of start_date_time in ctx.node_tz; (0,0,1,0) fallback."""
+        dt = ensure_aware(ctx.node.start_date_time)
+        if dt is None:
+            return 0, 0, 1, 0
+        local = dt.astimezone(ctx.node_tz)
+        return local.minute, local.hour, local.day, local.weekday()
+
+    @staticmethod
+    def _build_cron_trigger(ctx: TriggerContext, crontab: str) -> CronTrigger:
+        """5-field crontab + ctx end_date / tz. second='0' matches once-per-minute semantics."""
+        minute, hour, day, month, day_of_week = crontab.split()
+        return CronTrigger(
+            second="0",
+            minute=minute,
+            hour=hour,
+            day=day,
+            month=month,
+            day_of_week=day_of_week,
+            timezone=ctx.node_tz,
+            end_date=ctx.end_dt,
+        )
+
     @abstractmethod
     def build(self, ctx: TriggerContext) -> BaseTrigger | None: ...
 
@@ -109,17 +91,13 @@ class HoursTriggerStrategy(TriggerStrategy):
 
 class DaysTriggerStrategy(TriggerStrategy):
     def build(self, ctx: TriggerContext) -> BaseTrigger:
-        minute, hour, _day, _wd = _local_clock(ctx.node, ctx.node_tz)
+        minute, hour, _day, _wd = self._extract_start_clock(ctx)
         if ctx.weekdays:
-            return _make_cron(
-                f"{minute} {hour} * * {','.join(ctx.weekdays)}",
-                end_dt=ctx.end_dt,
-                tz=ctx.node_tz,
+            return self._build_cron_trigger(
+                ctx, f"{minute} {hour} * * {','.join(ctx.weekdays)}"
             )
         if ctx.every == 1:
-            return _make_cron(
-                f"{minute} {hour} * * *", end_dt=ctx.end_dt, tz=ctx.node_tz
-            )
+            return self._build_cron_trigger(ctx, f"{minute} {hour} * * *")
         return IntervalTrigger(
             days=ctx.every,
             timezone=ctx.node_tz,
@@ -130,12 +108,10 @@ class DaysTriggerStrategy(TriggerStrategy):
 
 class WeeksTriggerStrategy(TriggerStrategy):
     def build(self, ctx: TriggerContext) -> BaseTrigger:
-        minute, hour, _day, weekday = _local_clock(ctx.node, ctx.node_tz)
-        wd = ",".join(ctx.weekdays) if ctx.weekdays else _WEEKDAY_SHORT[weekday]
+        minute, hour, _day, weekday = self._extract_start_clock(ctx)
+        wd = ",".join(ctx.weekdays) if ctx.weekdays else self._WEEKDAY_SHORT[weekday]
         if ctx.every == 1:
-            return _make_cron(
-                f"{minute} {hour} * * {wd}", end_dt=ctx.end_dt, tz=ctx.node_tz
-            )
+            return self._build_cron_trigger(ctx, f"{minute} {hour} * * {wd}")
         return CronTrigger(
             second="0",
             minute=minute,
@@ -149,12 +125,8 @@ class WeeksTriggerStrategy(TriggerStrategy):
 
 class MonthsTriggerStrategy(TriggerStrategy):
     def build(self, ctx: TriggerContext) -> BaseTrigger:
-        minute, hour, day, _wd = _local_clock(ctx.node, ctx.node_tz)
-        return _make_cron(
-            f"{minute} {hour} {day} */{ctx.every} *",
-            end_dt=ctx.end_dt,
-            tz=ctx.node_tz,
-        )
+        minute, hour, day, _wd = self._extract_start_clock(ctx)
+        return self._build_cron_trigger(ctx, f"{minute} {hour} {day} */{ctx.every} *")
 
 
 ONCE_STRATEGY: TriggerStrategy = OnceTriggerStrategy()

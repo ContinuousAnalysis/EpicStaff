@@ -18,8 +18,8 @@ from services.schedule_trigger_strategies import (
     ONCE_STRATEGY,
     UNIT_STRATEGIES,
     TriggerContext,
-    ensure_aware,
 )
+from utils.timezone_utils import ensure_aware
 from src.shared.models import (
     ScheduleTriggerNodeDeletePayload,
     ScheduleTriggerNodePayload,
