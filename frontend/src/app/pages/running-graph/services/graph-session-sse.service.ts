@@ -42,9 +42,10 @@ export class RunSessionSSEService {
 
     public setStatus(status: GraphSessionStatus): void {
         const current = this.statusSignal();
-        // Терминальный статус — авторитетный конец сессии. Не даём запоздавшим
-        // SSE status events или ответу get-updates понизить его обратно в run/pending.
-        // Переходы между терминальными (ENDED → ERROR/STOP) пропускаем: уточнение от API.
+        // Terminal status is an authoritative end of the session. Don't let late SSE
+        // status events or get-updates responses downgrade it back to run/pending.
+        // Transitions between terminal statuses (ENDED → ERROR/STOP) are allowed
+        // so the API can refine the final status.
         if (this.TERMINAL_STATUSES.has(current) && !this.TERMINAL_STATUSES.has(status)) {
             return;
         }

@@ -525,11 +525,11 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             if (sameTimeMessages.some((msg) => msg.message_data.message_type === MessageType.GRAPH_END)) {
                 if (this.isFinishing) return;
                 this.isFinishing = true;
-                // graph_end авторитетно завершает сессию — переключаем бейдж сразу.
-                // SSE-сервис теперь не даст запоздавшему status: run перезаписать его.
+                // graph_end authoritatively ends the session — flip the badge immediately.
+                // The SSE service will block any late status: run from overwriting it.
                 this.sseService.setStatus(GraphSessionStatus.ENDED);
-                // Короткий drain — даём догнать запоздавшим messages, не закрывая стрим,
-                // затем стопаем и один раз уточняем финальный статус (ENDED/ERROR/STOP/...).
+                // Short drain — keep the stream open to catch any late messages,
+                // then stop it and refine the final status once (ENDED/ERROR/STOP/...).
                 this.finishTimer = setTimeout(() => {
                     this.finishTimer = null;
                     this.sseService.stopStream();
@@ -560,8 +560,9 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             .subscribe({
                 next: ({ status }: SessionUpdates) => {
                     if (this.sessionId !== currentSessionId) return;
-                    // Уточняем финальный статус. Lock в SSE-сервисе пропускает переходы
-                    // между терминальными (ENDED → ERROR/STOP), но режет понижение в run.
+                    // Refine the final status. The lock in the SSE service allows
+                    // transitions between terminal statuses (ENDED → ERROR/STOP)
+                    // but blocks downgrades back to run.
                     this.sseService.setStatus(status);
                 },
                 error: (err) => console.error(err),
