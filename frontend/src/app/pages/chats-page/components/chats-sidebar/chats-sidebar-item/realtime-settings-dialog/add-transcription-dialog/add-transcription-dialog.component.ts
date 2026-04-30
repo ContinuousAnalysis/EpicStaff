@@ -3,18 +3,14 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, Inject, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-
 import {
     CreateTranscriptionConfigRequest,
     GetRealtimeTranscriptionModelRequest,
     GetTranscriptionConfigRequest,
     UpdateTranscriptionConfigRequest,
-} from '../../../../../../../features/transcription/models/transcription-config.model';
-import { TranscriptionConfigsService } from '../../../../../../../features/transcription/services/transcription-config.service';
-import {
-    ApiGetResponse,
-    RealtimeTranscriptionModelsService,
-} from '../../../../../../../features/transcription/services/transcription-models.service';
+} from '@shared/models';
+import { ApiGetResponse, RealtimeTranscriptionModelsService, TranscriptionConfigsService } from '@shared/services';
+
 import { ToastService } from '../../../../../../../services/notifications/toast.service';
 
 export interface AddTranscriptionConfigDialogData {

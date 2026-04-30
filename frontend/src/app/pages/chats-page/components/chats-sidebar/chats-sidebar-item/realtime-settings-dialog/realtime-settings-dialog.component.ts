@@ -3,14 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, Inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RealtimeModelConfigsService } from '@shared/services';
+import { EnhancedTranscriptionConfig } from '@shared/models';
+import { RealtimeModelConfigsService, TranscriptionConfigsService } from '@shared/services';
 import { finalize } from 'rxjs';
 
 import { PartialUpdateAgentRequest, RealtimeAgentConfig } from '../../../../../../features/staff/models/agent.model';
 import { FullAgent, PartialAgent } from '../../../../../../features/staff/services/full-agent.service';
 import { AgentsService } from '../../../../../../features/staff/services/staff.service';
-import { EnhancedTranscriptionConfig } from '../../../../../../features/transcription/models/transcription-config.model';
-import { TranscriptionConfigsService } from '../../../../../../features/transcription/services/transcription-config.service';
 import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { HelpTooltipComponent } from '../../../../../../shared/components/help-tooltip/help-tooltip.component';
 import { AVAILABLE_LANGUAGES } from '../../../../../../shared/constants/languages-selector.constants';
