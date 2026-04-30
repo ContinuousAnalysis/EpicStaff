@@ -7,7 +7,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from tables.services.rbac.authentication import JwtOrApiKeyAuthentication
+from tables.services.rbac.authentication import IsAuthenticatedOrApiKey, JwtOrApiKeyAuthentication
 from tables.models.rbac_models import ApiKey
 from tables.serializers.rbac_serializers import (
     ApiKeyValidateResponseSerializer,
@@ -215,7 +215,7 @@ class AuthMeView(APIView):
 
 class TokenIntrospectView(APIView):
     authentication_classes = [JwtOrApiKeyAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrApiKey]
 
     @extend_schema(
         summary="Introspect a JWT access token",
@@ -262,7 +262,7 @@ class TokenIntrospectView(APIView):
 
 class ApiKeyValidateView(APIView):
     authentication_classes = [JwtOrApiKeyAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrApiKey]
 
     @extend_schema(
         summary="Validate the current API key",

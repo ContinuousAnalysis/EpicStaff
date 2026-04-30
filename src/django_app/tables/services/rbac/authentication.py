@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -91,3 +92,13 @@ class JwtOrApiKeyAuthentication(BaseAuthentication):
                 return owner, key
 
         raise AuthenticationFailed("Invalid API key")
+
+
+class IsAuthenticatedOrApiKey(BasePermission):
+    """Allow requests authenticated by a valid ApiKey (including env-seeded
+    system keys whose owner is AnonymousUser) or by a regular user session."""
+
+    def has_permission(self, request, view) -> bool:
+        if isinstance(request.auth, ApiKey):
+            return True
+        return bool(request.user and request.user.is_authenticated)
