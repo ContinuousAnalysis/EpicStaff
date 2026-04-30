@@ -12,7 +12,7 @@ import {
 } from '@shared/components';
 import { notNumericOnlyValidator } from '@shared/form-validators';
 import { ApiErrorItem } from '@shared/models';
-import { tap } from 'rxjs';
+import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
 import { ToastService } from '../../../../services/notifications';
@@ -77,7 +77,7 @@ export class ResetPasswordPageComponent {
             .confirmResetPassword(data)
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
-                tap(() => this.loading.set(false))
+                finalize(() => this.loading.set(false))
             )
             .subscribe({
                 next: () => {
