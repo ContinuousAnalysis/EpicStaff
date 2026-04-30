@@ -153,6 +153,34 @@ export class RealtimeSettingsDialogComponent implements OnInit {
         });
     }
 
+    editTranscriptionConfig(configId: number): void {
+        const editConfig = this.transcriptionConfigs.find((c) => c.id === configId);
+        if (!editConfig) {
+            return;
+        }
+
+        const dialogRef = this.dialog.open(AddTranscriptionConfigDialogComponent, {
+            data: { editConfig },
+            width: '500px',
+        });
+
+        dialogRef.closed.subscribe((result: unknown) => {
+            if (!result) {
+                return;
+            }
+
+            const updated = result as { id: number };
+            this.loadTranscriptionConfigs();
+
+            const currentSelected = this.settingsForm.get('realtime_transcription_config')?.value;
+            if (currentSelected === updated.id) {
+                setTimeout(() => {
+                    this.onTranscriptionConfigChange(updated.id);
+                }, 300);
+            }
+        });
+    }
+
     deleteTranscriptionConfig(configId: number): void {
         this.settingsForm.patchValue({ realtime_transcription_config: null });
 
