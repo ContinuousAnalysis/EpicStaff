@@ -81,141 +81,70 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     public rowData = signal<ConditionGroup[]>([]);
     public contextMenu = signal<{ x: number; y: number; rowIndex: number } | null>(null);
 
-    // Ordered list of ALL movable colIds (field_* and expression), including hidden
+    // Ordered list of ALL movable colIds (field_* and expression)
     private movableColumnOrder = signal<string[]>(['expression']);
-    // Which field names are currently hidden
-    private hiddenFieldsSet = signal<Set<string>>(new Set());
 
     // Manipulation field columns (manip_* and manipulation)
     private manipColumnOrder = signal<string[]>(['manipulation']);
-    private hiddenManipFieldsSet = signal<Set<string>>(new Set());
 
-    // Computed: visible field names in their column order
-    public activeFieldColumns = computed(() => {
-        const hidden = this.hiddenFieldsSet();
-        return this.movableColumnOrder()
-            .filter((id) => id.startsWith('field_') && !hidden.has(id.substring(6)))
-            .map((id) => id.substring(6));
-    });
+    // Computed: field names in their column order
+    public activeFieldColumns = computed(() =>
+        this.movableColumnOrder()
+            .filter((id) => id.startsWith('field_'))
+            .map((id) => id.substring(6))
+    );
 
     public isEmpty = computed(() => this.rowData().length === 0);
 
     // Manipulation field computed properties
-    public activeManipFieldColumns = computed(() => {
-        const hidden = this.hiddenManipFieldsSet();
-        return this.manipColumnOrder()
-            .filter((id) => id.startsWith('manip_') && !hidden.has(id.substring(6)))
-            .map((id) => id.substring(6));
-    });
-
-    public hasFieldCols = computed(() =>
-        this.movableColumnOrder().some((id) => id.startsWith('field_') && !this.hiddenFieldsSet().has(id.substring(6)))
+    public activeManipFieldColumns = computed(() =>
+        this.manipColumnOrder()
+            .filter((id) => id.startsWith('manip_'))
+            .map((id) => id.substring(6))
     );
 
-    public hasManipCols = computed(() =>
-        this.manipColumnOrder().some(
-            (id) => id.startsWith('manip_') && !this.hiddenManipFieldsSet().has(id.substring(6))
-        )
-    );
+    public hasFieldCols = computed(() => this.movableColumnOrder().some((id) => id.startsWith('field_')));
+
+    public hasManipCols = computed(() => this.manipColumnOrder().some((id) => id.startsWith('manip_')));
 
     // ── Multi-select items for the field pickers ──
 
-    /** Items for the expression-side field picker, grouped by Hidden / Input Map / Domain.
-     *  Precedence for deduplication: Input Map > Domain > Hidden. */
+    /** Items for the expression-side field picker, grouped by Domain then Input Map.
+     *  Deduplication: Domain takes precedence over Input Map. */
     public exprMultiSelectItems = computed<SelectItem[]>(() => {
-        const inputMapKeys = new Set(this.preInputMapKeys());
         const domainKeys = this.domainKeys();
-        const allMovable = this.movableColumnOrder()
-            .filter((id) => id.startsWith('field_'))
-            .map((id) => id.substring(6));
-        const hiddenSet = this.hiddenFieldsSet();
-        const hiddenNames = allMovable.filter((n) => hiddenSet.has(n));
-
-        // Collect field data from rows for orphaned hidden fields
-        const orphanedHidden = new Set<string>();
-        this.rowData().forEach((row) => {
-            if (row.field_expressions) {
-                Object.entries(row.field_expressions).forEach(([k, v]) => {
-                    if (v && hiddenSet.has(k)) orphanedHidden.add(k);
-                });
-            }
-        });
-
-        const allHidden = [...new Set([...hiddenNames, ...orphanedHidden])];
-
-        // Build deduplicated item list with group precedence: Input Map > Domain > Hidden
+        const domainSet = new Set(domainKeys);
         const seen = new Set<string>();
         const items: SelectItem[] = [];
 
-        // Input Map
-        for (const k of this.preInputMapKeys()) {
-            if (!seen.has(k)) {
-                seen.add(k);
-                items.push({ name: k, value: k, group: 'Input Map' });
-            }
-        }
-
-        // Domain (exclude keys already in Input Map)
+        // Domain first
         for (const k of domainKeys) {
-            if (!seen.has(k) && !inputMapKeys.has(k)) {
+            if (!seen.has(k)) {
                 seen.add(k);
                 items.push({ name: k, value: k, group: 'Domain' });
             }
         }
 
-        // Hidden (fields already added to the table but currently hidden)
-        for (const k of allHidden) {
-            if (!seen.has(k)) {
+        // Input Map (exclude keys already classified as Domain)
+        for (const k of this.preInputMapKeys()) {
+            if (!seen.has(k) && !domainSet.has(k)) {
                 seen.add(k);
-                items.push({ name: k, value: k, group: 'Hidden' });
+                items.push({ name: k, value: k, group: 'Input Map' });
             }
         }
 
         return items;
     });
 
-    /** Items for the manipulation-side field picker. */
+    /** Items for the manipulation-side field picker. Domain only. */
     public manipMultiSelectItems = computed<SelectItem[]>(() => {
-        const inputMapKeys = new Set(this.preInputMapKeys());
-        const domainKeys = this.domainKeys();
-        const allMovable = this.manipColumnOrder()
-            .filter((id) => id.startsWith('manip_'))
-            .map((id) => id.substring(6));
-        const hiddenSet = this.hiddenManipFieldsSet();
-        const hiddenNames = allMovable.filter((n) => hiddenSet.has(n));
-
-        const orphanedHidden = new Set<string>();
-        this.rowData().forEach((row) => {
-            if (row.field_manipulations) {
-                Object.entries(row.field_manipulations).forEach(([k, v]) => {
-                    if (v && hiddenSet.has(k)) orphanedHidden.add(k);
-                });
-            }
-        });
-
-        const allHidden = [...new Set([...hiddenNames, ...orphanedHidden])];
-
         const seen = new Set<string>();
         const items: SelectItem[] = [];
 
-        for (const k of this.preInputMapKeys()) {
+        for (const k of this.domainKeys()) {
             if (!seen.has(k)) {
-                seen.add(k);
-                items.push({ name: k, value: k, group: 'Input Map' });
-            }
-        }
-
-        for (const k of domainKeys) {
-            if (!seen.has(k) && !inputMapKeys.has(k)) {
                 seen.add(k);
                 items.push({ name: k, value: k, group: 'Domain' });
-            }
-        }
-
-        for (const k of allHidden) {
-            if (!seen.has(k)) {
-                seen.add(k);
-                items.push({ name: k, value: k, group: 'Hidden' });
             }
         }
 
@@ -228,11 +157,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     @ViewChild('exprMultiSelect') exprMultiSelect!: MultiSelectComponent;
     @ViewChild('manipMultiSelect') manipMultiSelect!: MultiSelectComponent;
-
-    public showExprParamsMenu = signal(false);
-    public exprParamsMenuPos = signal<{ x: number; y: number } | null>(null);
-    public showManipParamsMenu = signal(false);
-    public manipParamsMenuPos = signal<{ x: number; y: number } | null>(null);
 
     public exprAddPos = signal<{ x: number; y: number } | null>(null);
     public manipAddPos = signal<{ x: number; y: number } | null>(null);
@@ -257,9 +181,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         });
         effect(() => {
             this.movableColumnOrder();
-            this.hiddenFieldsSet();
             this.manipColumnOrder();
-            this.hiddenManipFieldsSet();
             this.rebuildColumnDefs();
         });
     }
@@ -326,9 +248,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             const state = {
                 widths,
                 order: this.movableColumnOrder(),
-                hidden: [...this.hiddenFieldsSet()],
                 manipOrder: this.manipColumnOrder(),
-                hiddenManip: [...this.hiddenManipFieldsSet()],
             };
             try {
                 localStorage.setItem(this.storageKey, JSON.stringify(state));
@@ -347,14 +267,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             if (state.order?.length > 0) {
                 this.movableColumnOrder.set(state.order);
             }
-            if (state.hidden?.length > 0) {
-                this.hiddenFieldsSet.set(new Set(state.hidden));
-            }
             if (state.manipOrder?.length > 0) {
                 this.manipColumnOrder.set(state.manipOrder);
-            }
-            if (state.hiddenManip?.length > 0) {
-                this.hiddenManipFieldsSet.set(new Set(state.hiddenManip));
             }
         } catch {}
     }
@@ -392,47 +306,11 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             const allVisible = colState.map((s) => s.colId!);
 
             // Update expression column order
-            const exprVisible = allVisible.filter((id) => id?.startsWith('field_') || id === 'expression');
-            const oldExprOrder = this.movableColumnOrder();
-            const hiddenExpr = this.hiddenFieldsSet();
-            const hiddenExprIds = oldExprOrder.filter(
-                (id) => id.startsWith('field_') && hiddenExpr.has(id.substring(6))
-            );
-            const exprResult = [...exprVisible];
-            for (const hid of hiddenExprIds) {
-                const oldIdx = oldExprOrder.indexOf(hid);
-                let insertAfter = -1;
-                for (let i = oldIdx - 1; i >= 0; i--) {
-                    const pos = exprResult.indexOf(oldExprOrder[i]);
-                    if (pos >= 0) {
-                        insertAfter = pos;
-                        break;
-                    }
-                }
-                exprResult.splice(insertAfter + 1, 0, hid);
-            }
+            const exprResult = allVisible.filter((id) => id?.startsWith('field_') || id === 'expression');
             this.movableColumnOrder.set(exprResult);
 
             // Update manipulation column order
-            const manipVisible = allVisible.filter((id) => id?.startsWith('manip_') || id === 'manipulation');
-            const oldManipOrder = this.manipColumnOrder();
-            const hiddenManip = this.hiddenManipFieldsSet();
-            const hiddenManipIds = oldManipOrder.filter(
-                (id) => id.startsWith('manip_') && hiddenManip.has(id.substring(6))
-            );
-            const manipResult = [...manipVisible];
-            for (const hid of hiddenManipIds) {
-                const oldIdx = oldManipOrder.indexOf(hid);
-                let insertAfter = -1;
-                for (let i = oldIdx - 1; i >= 0; i--) {
-                    const pos = manipResult.indexOf(oldManipOrder[i]);
-                    if (pos >= 0) {
-                        insertAfter = pos;
-                        break;
-                    }
-                }
-                manipResult.splice(insertAfter + 1, 0, hid);
-            }
+            const manipResult = allVisible.filter((id) => id?.startsWith('manip_') || id === 'manipulation');
             this.manipColumnOrder.set(manipResult);
             this.saveGridState();
         },
@@ -583,9 +461,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         ];
 
         // Expression section
-        const hidden = this.hiddenFieldsSet();
         const visibleFieldCols: ColDef[] = this.movableColumnOrder()
-            .filter((id) => id.startsWith('field_') && !hidden.has(id.substring(6)))
+            .filter((id) => id.startsWith('field_'))
             .map((id) => this.buildFieldColDef(id.substring(6)));
 
         const hasFieldCols = visibleFieldCols.length > 0;
@@ -602,7 +479,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     headerGroupComponentParams: {
                         mode: 'full',
                         onAdd: (event: MouseEvent) => this.toggleFieldPicker(event),
-                        onChevronClick: (event: MouseEvent) => this.openExprParamsMenu(event),
                     },
                     children: visibleFieldCols,
                 } as ColGroupDef,
@@ -651,9 +527,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         };
 
         // Manipulation section
-        const hiddenManip = this.hiddenManipFieldsSet();
         const visibleManipCols: ColDef[] = this.manipColumnOrder()
-            .filter((id) => id.startsWith('manip_') && !hiddenManip.has(id.substring(6)))
+            .filter((id) => id.startsWith('manip_'))
             .map((id) => this.buildManipFieldColDef(id.substring(6)));
 
         const hasManipCols = visibleManipCols.length > 0;
@@ -670,7 +545,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     headerGroupComponentParams: {
                         mode: 'full',
                         onAdd: (event: MouseEvent) => this.toggleManipFieldPicker(event),
-                        onChevronClick: (event: MouseEvent) => this.openManipParamsMenu(event),
                     },
                     children: visibleManipCols,
                 } as ColGroupDef,
@@ -979,26 +853,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         return { startRow: start, endRow: end };
     }
 
-    hideAllExprParams(): void {
-        const allFieldNames = this.movableColumnOrder()
-            .filter((id) => id.startsWith('field_'))
-            .map((id) => id.substring(6));
-        const newHidden = new Set(this.hiddenFieldsSet());
-        allFieldNames.forEach((name) => newHidden.add(name));
-        this.hiddenFieldsSet.set(newHidden);
-        this.saveGridState();
-    }
-
-    hideAllManipParams(): void {
-        const allManipNames = this.manipColumnOrder()
-            .filter((id) => id.startsWith('manip_'))
-            .map((id) => id.substring(6));
-        const newHidden = new Set(this.hiddenManipFieldsSet());
-        allManipNames.forEach((name) => newHidden.add(name));
-        this.hiddenManipFieldsSet.set(newHidden);
-        this.saveGridState();
-    }
-
     private applyWidths(defs: (ColDef | ColGroupDef)[], widthMap: Map<string, number>): (ColDef | ColGroupDef)[] {
         return defs.map((def) => {
             if ('children' in def) {
@@ -1074,34 +928,17 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     addFieldColumn(fieldName: string): void {
-        const hidden = this.hiddenFieldsSet();
-        if (hidden.has(fieldName)) {
-            // Unhide - position preserved in movableColumnOrder
-            const newHidden = new Set(hidden);
-            newHidden.delete(fieldName);
-            this.hiddenFieldsSet.set(newHidden);
-        } else {
-            // New field - append to end of movableColumnOrder
-            const colId = `field_${fieldName}`;
-            const order = this.movableColumnOrder();
-            if (!order.includes(colId)) {
-                const newOrder = [...order, colId];
-                this.movableColumnOrder.set(newOrder);
-            }
+        const colId = `field_${fieldName}`;
+        const order = this.movableColumnOrder();
+        if (!order.includes(colId)) {
+            this.movableColumnOrder.set([...order, colId]);
         }
         this.saveGridState();
     }
 
     removeFieldColumn(fieldName: string): void {
-        const hasData = this.rowData().some((row) => row.field_expressions && !!row.field_expressions[fieldName]);
-        if (hasData) {
-            const newHidden = new Set(this.hiddenFieldsSet());
-            newHidden.add(fieldName);
-            this.hiddenFieldsSet.set(newHidden);
-        } else {
-            const colId = `field_${fieldName}`;
-            this.movableColumnOrder.set(this.movableColumnOrder().filter((id) => id !== colId));
-        }
+        const colId = `field_${fieldName}`;
+        this.movableColumnOrder.set(this.movableColumnOrder().filter((id) => id !== colId));
         this.saveGridState();
     }
 
@@ -1128,81 +965,18 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         }
     }
 
-    openExprParamsMenu(event: MouseEvent): void {
-        const isOpen = this.showExprParamsMenu();
-        if (!isOpen) {
-            const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-            this.exprParamsMenuPos.set({ x: rect.left, y: rect.bottom + 4 });
-        } else {
-            this.exprParamsMenuPos.set(null);
-        }
-        this.showExprParamsMenu.set(!isOpen);
-        this.showManipParamsMenu.set(false);
-    }
-
-    openManipParamsMenu(event: MouseEvent): void {
-        const isOpen = this.showManipParamsMenu();
-        if (!isOpen) {
-            const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-            this.manipParamsMenuPos.set({ x: rect.left, y: rect.bottom + 4 });
-        } else {
-            this.manipParamsMenuPos.set(null);
-        }
-        this.showManipParamsMenu.set(!isOpen);
-        this.showExprParamsMenu.set(false);
-    }
-
-    freezeExprParams(): void {
-        this.saveGridState();
-        this.showExprParamsMenu.set(false);
-        this.exprParamsMenuPos.set(null);
-    }
-
-    hideExprParams(): void {
-        this.hideAllExprParams();
-        this.showExprParamsMenu.set(false);
-        this.exprParamsMenuPos.set(null);
-    }
-
-    freezeManipParams(): void {
-        this.saveGridState();
-        this.showManipParamsMenu.set(false);
-        this.manipParamsMenuPos.set(null);
-    }
-
-    hideManipParams(): void {
-        this.hideAllManipParams();
-        this.showManipParamsMenu.set(false);
-        this.manipParamsMenuPos.set(null);
-    }
-
     addManipFieldColumn(fieldName: string): void {
-        const hidden = this.hiddenManipFieldsSet();
-        if (hidden.has(fieldName)) {
-            const newHidden = new Set(hidden);
-            newHidden.delete(fieldName);
-            this.hiddenManipFieldsSet.set(newHidden);
-        } else {
-            const colId = `manip_${fieldName}`;
-            const order = this.manipColumnOrder();
-            if (!order.includes(colId)) {
-                const newOrder = [...order, colId];
-                this.manipColumnOrder.set(newOrder);
-            }
+        const colId = `manip_${fieldName}`;
+        const order = this.manipColumnOrder();
+        if (!order.includes(colId)) {
+            this.manipColumnOrder.set([...order, colId]);
         }
         this.saveGridState();
     }
 
     removeManipFieldColumn(fieldName: string): void {
-        const hasData = this.rowData().some((row) => row.field_manipulations && !!row.field_manipulations[fieldName]);
-        if (hasData) {
-            const newHidden = new Set(this.hiddenManipFieldsSet());
-            newHidden.add(fieldName);
-            this.hiddenManipFieldsSet.set(newHidden);
-        } else {
-            const colId = `manip_${fieldName}`;
-            this.manipColumnOrder.set(this.manipColumnOrder().filter((id) => id !== colId));
-        }
+        const colId = `manip_${fieldName}`;
+        this.manipColumnOrder.set(this.manipColumnOrder().filter((id) => id !== colId));
         this.saveGridState();
     }
 
@@ -1237,15 +1011,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     private bodyClickHandler = (event: MouseEvent) => {
-        if (this.showExprParamsMenu()) {
-            this.showExprParamsMenu.set(false);
-            this.exprParamsMenuPos.set(null);
-        }
-        if (this.showManipParamsMenu()) {
-            this.showManipParamsMenu.set(false);
-            this.manipParamsMenuPos.set(null);
-        }
-
         // Close context menu on any click
         if (this.contextMenu()) {
             this.contextMenu.set(null);

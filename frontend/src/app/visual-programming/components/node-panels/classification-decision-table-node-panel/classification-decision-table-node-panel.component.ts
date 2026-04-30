@@ -126,7 +126,12 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     public domainKeys = computed(() => {
         const state = this.flowService.startNodeInitialState();
         if (!state || typeof state !== 'object') return [];
-        return Object.keys(state);
+        const obj = state as Record<string, unknown>;
+        const vars = obj['variables'];
+        if (vars && typeof vars === 'object') {
+            return Object.keys(vars as Record<string, unknown>);
+        }
+        return [];
     });
 
     public get llmConfigOptions(): { id: number; label: string }[] {
