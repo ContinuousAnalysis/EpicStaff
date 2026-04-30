@@ -12,6 +12,7 @@ import {
 } from '@shared/components';
 import { notNumericOnlyValidator } from '@shared/form-validators';
 import { ApiErrorItem } from '@shared/models';
+import { tap } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
 import { ToastService } from '../../../../services/notifications';
@@ -74,14 +75,15 @@ export class ResetPasswordPageComponent {
         this.loading.set(true);
         this.authService
             .confirmResetPassword(data)
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                tap(() => this.loading.set(false))
+            )
             .subscribe({
                 next: () => {
-                    this.loading.set(false);
                     this.state.set('success');
                 },
                 error: (err) => {
-                    this.loading.set(false);
                     const errors: ApiErrorItem[] = err?.error?.errors ?? [];
 
                     if (errors.length) {

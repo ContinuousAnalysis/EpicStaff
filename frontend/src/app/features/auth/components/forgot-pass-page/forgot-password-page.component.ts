@@ -8,8 +8,11 @@ import {
     CustomInputComponent,
     ValidationErrorsComponent,
 } from '@shared/components';
+import { strictEmailValidator } from '@shared/form-validators';
+import { finalize, tap } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
+import { ToastService } from '../../../../services/notifications';
 
 type PageState = 'request' | 'email-sent';
 
@@ -29,6 +32,7 @@ type PageState = 'request' | 'email-sent';
 export class ForgotPasswordPageComponent {
     private authService = inject(AuthService);
     private router = inject(Router);
+    private toast = inject(ToastService);
     private destroyRef = inject(DestroyRef);
 
     state = signal<PageState>('request');
@@ -37,7 +41,7 @@ export class ForgotPasswordPageComponent {
 
     readonly emailControl = new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.email],
+        validators: [Validators.required, strictEmailValidator()],
     });
 
     onRequestReset(): void {
@@ -48,11 +52,14 @@ export class ForgotPasswordPageComponent {
         this.loading.set(true);
         this.authService
             .requestResetPassword({ email })
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(() => {
-                this.submittedEmail.set(this.emailControl.getRawValue());
-                this.loading.set(false);
-                this.state.set('email-sent');
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                tap(() => this.submittedEmail.set(this.emailControl.getRawValue())),
+                finalize(() => this.loading.set(false))
+            )
+            .subscribe({
+                next: () => this.state.set('email-sent'),
+                error: (err) => this.toast.error(err.error.message),
             });
     }
 
