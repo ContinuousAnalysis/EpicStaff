@@ -70,6 +70,33 @@
         min-height: 40px;
     }
 
+    &__empty-drop-zone {
+        min-height: 0;
+        overflow: hidden;
+        margin: 0;
+        line-height: 0;
+
+        &--active {
+            min-height: 0;
+            margin: 0;
+        }
+    }
+
+    &__table--hover-preview {
+        thead .dt__th {
+            border-top: 1px solid var(--color-divider-subtle);
+            border-right: 1px solid var(--color-divider-subtle);
+        }
+
+        thead .dt__th:first-child {
+            border-left: 1px solid var(--color-divider-subtle);
+        }
+
+        thead .dt__th--action-spacer {
+            border-right: none;
+        }
+    }
+
     &__th {
         position: relative;
         height: 28px;

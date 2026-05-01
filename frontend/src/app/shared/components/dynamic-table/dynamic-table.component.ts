@@ -27,6 +27,7 @@ import { TableColumnDef, TableRow } from './dynamic-table.models';
 })
 export class DynamicTableComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
+    private lastAppliedRowSyncRevision = 0;
 
     // Header
     title = input.required<string>();
@@ -82,6 +83,7 @@ export class DynamicTableComponent implements OnInit {
     // Internal state
     columns = signal<TableColumnDef[]>([]);
     rows = signal<TableRow[]>([]);
+    emptyDropPreview = signal(false);
 
     // FormControls map: key = `${rowId}_${colKey}`
     private cellControls = new Map<string, FormControl>();
@@ -105,6 +107,10 @@ export class DynamicTableComponent implements OnInit {
         const spacers = (this.allowRowDrag() ? 36 : 0) + this.actionColWidth();
         return this.columns().reduce((sum, col) => sum + this.getColWidth(col.key), spacers);
     });
+    totalColumnCount = computed(() => this.columns().length + (this.allowRowDrag() ? 1 : 0) + 1);
+    canReceiveExternalRows = computed(
+        () => this.allowRowDrag() && !!this.rowDropListId() && this.rowDropListConnectedTo().length > 0
+    );
     private resizeMoveHandler: ((e: MouseEvent) => void) | null = null;
     private resizeUpHandler: (() => void) | null = null;
 
@@ -130,9 +136,9 @@ export class DynamicTableComponent implements OnInit {
 
         effect(() => {
             const rev = this.rowSyncRevision();
-            const initial = this.initialRows();
-            if (rev > 0) {
-                this.resetRowsFromInitial(initial);
+            if (rev > this.lastAppliedRowSyncRevision) {
+                this.lastAppliedRowSyncRevision = rev;
+                this.resetRowsFromInitial(this.initialRows());
             }
         });
 
@@ -200,6 +206,7 @@ export class DynamicTableComponent implements OnInit {
 
     onRowDrop(event: CdkDragDrop<TableRow[]>): void {
         if (!this.allowRowDrag()) return;
+        this.emptyDropPreview.set(false);
         if (event.previousContainer === event.container) {
             const rows = [...this.rows()];
             moveItemInArray(rows, event.previousIndex, event.currentIndex);
@@ -208,6 +215,14 @@ export class DynamicTableComponent implements OnInit {
             return;
         }
         this.crossListDrop.emit(event);
+    }
+
+    onEmptyDropEnter(): void {
+        this.emptyDropPreview.set(true);
+    }
+
+    onEmptyDropExit(): void {
+        this.emptyDropPreview.set(false);
     }
 
     onColumnDrop(event: CdkDragDrop<TableColumnDef[]>): void {

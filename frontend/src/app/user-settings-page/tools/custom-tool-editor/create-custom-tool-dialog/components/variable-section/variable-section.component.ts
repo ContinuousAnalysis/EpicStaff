@@ -1,4 +1,4 @@
-import { CdkDragDrop } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { ChangeDetectionStrategy, Component, effect, input, output, signal, viewChild } from '@angular/core';
 
 import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
@@ -8,7 +8,7 @@ import { getCellExtraValidators, VariableInputType, VariableSectionConfig } from
 
 @Component({
     selector: 'app-variable-section',
-    imports: [AppSvgIconComponent, DynamicTableComponent],
+    imports: [AppSvgIconComponent, DynamicTableComponent, DragDropModule],
     templateUrl: './variable-section.component.html',
     styleUrls: ['./variable-section.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,7 +25,7 @@ export class VariableSectionComponent {
 
     rowsChange = output<Record<string, unknown>[]>();
     navigateRow = output<{ row: TableRow; rowIndex: number; sectionType: VariableInputType }>();
-    crossListDrop = output<CdkDragDrop<TableRow[]>>();
+    crossListDrop = output<CdkDragDrop<unknown[]>>();
 
     private tableRef = viewChild<DynamicTableComponent>('table');
     readonly rows = signal<Record<string, unknown>[]>([]);
@@ -52,8 +52,16 @@ export class VariableSectionComponent {
         this.tableRef()?.addRow();
     }
 
-    onCrossListDrop(event: CdkDragDrop<TableRow[]>): void {
+    onCrossListDrop(event: CdkDragDrop<unknown[]>): void {
         this.crossListDrop.emit(event);
+    }
+
+    onEmptySectionDropEnter(): void {
+        this.tableRef()?.onEmptyDropEnter();
+    }
+
+    onEmptySectionDropExit(): void {
+        this.tableRef()?.onEmptyDropExit();
     }
 
     onRowsChange(rows: Record<string, unknown>[]): void {

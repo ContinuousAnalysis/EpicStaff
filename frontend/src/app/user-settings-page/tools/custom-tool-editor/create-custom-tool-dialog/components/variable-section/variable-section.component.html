@@ -1,42 +1,54 @@
 <div
-    class="section__header"
-    [class.section__header--with-table]="rows().length > 0"
+    class="section__drop-target"
+    cdkDropList
+    [id]="rowDropListId() ?? ''"
+    [cdkDropListData]="rows()"
+    [cdkDropListConnectedTo]="rowDropListConnectedTo()"
+    [cdkDropListDisabled]="rows().length > 0 || !rowDropListId()"
+    (cdkDropListEntered)="onEmptySectionDropEnter()"
+    (cdkDropListExited)="onEmptySectionDropExit()"
+    (cdkDropListDropped)="onCrossListDrop($event)"
 >
-    <app-svg-icon
-        [icon]="config().icon"
-        size="1rem"
-        class="section__icon"
-    />
-    <span class="section__label">{{ config().label }}</span>
-    <button
-        type="button"
-        class="section__add-btn"
-        (click)="addRow()"
-        title="Add row"
+    <div
+        class="section__header"
+        [class.section__header--with-table]="rows().length > 0"
     >
         <app-svg-icon
-            icon="plus"
+            [icon]="config().icon"
             size="1rem"
+            class="section__icon"
         />
-    </button>
-</div>
+        <span class="section__label">{{ config().label }}</span>
+        <button
+            type="button"
+            class="section__add-btn"
+            (click)="addRow()"
+            title="Add row"
+        >
+            <app-svg-icon
+                icon="plus"
+                size="1rem"
+            />
+        </button>
+    </div>
 
-<app-dynamic-table
-    #table
-    title=""
-    [icon]="null"
-    [showHeader]="false"
-    [columnDefs]="config().columnDefs"
-    [initialRows]="rows()"
-    [allowColumnDrag]="false"
-    [rowNavigable]="isObjectRow"
-    [isCellDisabled]="isCellDisabled"
-    [externalDuplicates]="externalDuplicates()"
-    [getCellExtraValidators]="getCellExtraValidators"
-    [rowDropListId]="rowDropListId()"
-    [rowDropListConnectedTo]="rowDropListConnectedTo()"
-    [rowSyncRevision]="rowSyncRevision()"
-    (rowsChange)="onRowsChange($event)"
-    (navigateRow)="onNavigate($event)"
-    (crossListDrop)="onCrossListDrop($event)"
-/>
+    <app-dynamic-table
+        #table
+        title=""
+        [icon]="null"
+        [showHeader]="false"
+        [columnDefs]="config().columnDefs"
+        [initialRows]="rows()"
+        [allowColumnDrag]="false"
+        [rowNavigable]="isObjectRow"
+        [isCellDisabled]="isCellDisabled"
+        [externalDuplicates]="externalDuplicates()"
+        [getCellExtraValidators]="getCellExtraValidators"
+        [rowDropListId]="rows().length > 0 ? rowDropListId() : null"
+        [rowDropListConnectedTo]="rows().length > 0 ? rowDropListConnectedTo() : []"
+        [rowSyncRevision]="rowSyncRevision()"
+        (rowsChange)="onRowsChange($event)"
+        (navigateRow)="onNavigate($event)"
+        (crossListDrop)="onCrossListDrop($event)"
+    />
+</div>

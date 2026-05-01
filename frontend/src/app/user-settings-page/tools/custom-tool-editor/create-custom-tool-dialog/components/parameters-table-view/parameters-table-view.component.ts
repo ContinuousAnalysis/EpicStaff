@@ -147,7 +147,7 @@ export class ParametersTableViewComponent implements OnInit {
         return this.isDrilling() ? [] : [...this.parameterRowDropConnectedIds];
     }
 
-    onCrossListDrop(event: CdkDragDrop<TableRow[]>): void {
+    onCrossListDrop(event: CdkDragDrop<unknown[]>): void {
         const sourceType = this.dropListElementIdToInputType(event.previousContainer.id);
         const targetType = this.dropListElementIdToInputType(event.container.id);
         if (!sourceType || !targetType || sourceType === targetType) {
