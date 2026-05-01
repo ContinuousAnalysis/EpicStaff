@@ -1,7 +1,6 @@
 .status-filter-dropdown-custom {
     position: relative;
     display: inline-block;
-    min-width: 220px;
 }
 
 .dropdown-toggle {
@@ -92,9 +91,9 @@
     background: rgba(94, 158, 255, 0.18);
 }
 .dropdown-menu .status-icon {
-  min-width: 18px;
-  text-align: center;
-  margin-right: 0.5rem;
+    min-width: 18px;
+    text-align: center;
+    margin-right: 0.5rem;
 }
 
 .checkmark {
