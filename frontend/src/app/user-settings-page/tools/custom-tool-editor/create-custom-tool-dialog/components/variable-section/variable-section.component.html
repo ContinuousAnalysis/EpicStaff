@@ -31,6 +31,9 @@
         [initialRows]="rows()"
         [allowColumnDrag]="false"
         [rowNavigable]="isObjectRow"
+        [isCellDisabled]="isCellDisabled"
+        [externalDuplicates]="externalDuplicates()"
+        [getCellExtraValidators]="getCellExtraValidators"
         (rowsChange)="onRowsChange($event)"
         (navigateRow)="onNavigate($event)"
     />

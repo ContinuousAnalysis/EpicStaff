@@ -63,6 +63,9 @@
                                     }
                                     <div class="dt__th-header">
                                         {{ col.header }}
+                                        @if (col.required) {
+                                            <span class="dt__th-required">*</span>
+                                        }
                                     </div>
                                 </div>
                                 <div
@@ -126,7 +129,7 @@
                                                 [placeholder]="col.placeholder ?? ''"
                                                 [ngModel]="getCellValue(row._id, col.key)"
                                                 (ngModelChange)="onCellChange(row._id, col.key, $event)"
-                                                [class.dt__cell-input--invalid]="isCellInvalid(row._id, col.key)"
+                                                [disabled]="!!isCellDisabled()?.(row, col.key)"
                                             />
                                         }
                                         @case ('select') {
@@ -134,7 +137,7 @@
                                                 class="dt__cell-select"
                                                 [ngModel]="getCellValue(row._id, col.key)"
                                                 (ngModelChange)="onCellChange(row._id, col.key, $event)"
-                                                [class.dt__cell-select--invalid]="isCellInvalid(row._id, col.key)"
+                                                [disabled]="!!isCellDisabled()?.(row, col.key)"
                                             >
                                                 @if (col.placeholder) {
                                                     <option
@@ -153,6 +156,7 @@
                                             <app-checkbox
                                                 class="dt__cell-checkbox"
                                                 [checked]="!!getCellValue(row._id, col.key)"
+                                                [disabled]="!!isCellDisabled()?.(row, col.key)"
                                                 (checkedChange)="onCellChange(row._id, col.key, $event)"
                                             />
                                         }
@@ -181,7 +185,7 @@
                                     >
                                         <app-svg-icon
                                             icon="go-to-arrow"
-                                            size="0.78rem"
+                                            size="14px"
                                         />
                                     </button>
                                 }
@@ -205,12 +209,10 @@
 <!-- Validation error bar -->
 @if (showValidationBar()) {
     <div class="validation">
-        <span class="validation__msg">{{ validationError() }}</span>
-        <div
-            class="validation__chip"
-            (click)="dismissValidationError()"
-        >
-            Input Issues
-        </div>
+        <ul class="validation__list">
+            @for (msg of validationErrors(); track msg) {
+                <li class="validation__msg">{{ msg }}</li>
+            }
+        </ul>
     </div>
 }

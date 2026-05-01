@@ -1,7 +1,7 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import type { editor as MonacoEditor } from 'monaco-editor';
@@ -15,14 +15,16 @@ import {
 import { CustomToolsService } from '../../../../features/tools/services/custom-tools/custom-tools.service';
 import { ToastService } from '../../../../services/notifications';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
 import { ChipsInputComponent } from '../../../../shared/components/chips-input/chips-input.component';
+import { ConfirmationDialogService } from '../../../../shared/components/cofirm-dialog/confimation-dialog.service';
 import { ToggleSwitchComponent } from '../../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { CustomInputComponent } from '../../../../shared/components/form-input/form-input.component';
 import { HelpTooltipComponent } from '../../../../shared/components/help-tooltip/help-tooltip.component';
 import { JsonEditorComponent } from '../../../../shared/components/json-editor/json-editor.component';
 import { TextareaComponent } from '../../../../shared/components/textarea/textarea.component';
 import { CodeEditorComponent } from '../code-editor/code-editor.component';
-import { parseToolVariablesJson, ToolVariable } from './components/parameters-table.config';
+import { parseToolVariablesJson, serializeVariables, ToolVariable } from './components/parameters-table.config';
 import { ParametersTableViewComponent } from './components/parameters-table-view/parameters-table-view.component';
 import { toCreatePayload } from './models/create-custom-tool-form.model';
 
@@ -55,7 +57,7 @@ const DEFAULT_VARIABLES_JSON = `[
   },
   {
     "name": "max_results",
-    "type": "integer",
+    "type": "number",
     "description": "Maximum number of results. Agent may override the default.",
     "input_type": "mixed",
     "required": false,
@@ -72,6 +74,7 @@ const VARIABLES_SCHEMA_TOOLTIP =
         CommonModule,
         ReactiveFormsModule,
         AppSvgIconComponent,
+        ButtonComponent,
         ChipsInputComponent,
         CustomInputComponent,
         HelpTooltipComponent,
@@ -91,6 +94,7 @@ export class CreateCustomToolDialogComponent {
     private readonly destroyRef = inject(DestroyRef);
     private readonly customToolsService = inject(CustomToolsService);
     private readonly toast = inject(ToastService);
+    private readonly confirmDialog = inject(ConfirmationDialogService);
 
     public readonly form = this.fb.group({
         name: this.fb.control('', [Validators.required]),
@@ -102,6 +106,8 @@ export class CreateCustomToolDialogComponent {
 
     public readonly ActiveEditor = ActiveEditor;
     public readonly variablesSchemaTooltip = VARIABLES_SCHEMA_TOOLTIP;
+
+    private readonly parametersTableView = viewChild(ParametersTableViewComponent);
 
     public readonly tableVariables = signal<ToolVariable[]>([]);
 
@@ -172,22 +178,53 @@ export class CreateCustomToolDialogComponent {
 
         if (enabled) {
             const parsed = parseToolVariablesJson(this.form.controls.variablesJson.value);
-            this.tableImportWasInvalid = !parsed.valid;
-            this.tableVariables.set(parsed.valid ? parsed.variables : []);
-            this.parametersTableMode.set(true);
-            this.jsonSectionExpanded.set(false);
-            if (this.activeEditor() === ActiveEditor.Json) {
-                this.activeEditor.set(ActiveEditor.None);
+            if (!parsed.valid) {
+                this.confirmDialog
+                    .confirm({
+                        title: 'Invalid Code Detected',
+                        message: 'The code contains errors and cannot be validated.',
+                        cautionTitle: 'Attention',
+                        caution:
+                            'If you switch to table mode now, your <strong>progress will be lost</strong> and the <strong>table will be empty</strong>.',
+                        confirmText: 'Stay and Fix',
+                        cancelText: 'Switch Anyway',
+                        type: 'warning',
+                    })
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe((result) => {
+                        // result === false  → "Switch Anyway" (cancel button)
+                        // result === true   → "Stay and Fix" (confirm button) → do nothing
+                        // result === 'close'→ user dismissed → do nothing
+                        if (result === false) {
+                            this.applyEnableTableMode([]);
+                            this.tableImportWasInvalid = true;
+                        }
+                    });
+                return;
             }
+
+            this.applyEnableTableMode(parsed.variables);
+            this.tableImportWasInvalid = false;
             return;
         }
 
         this.parametersTableMode.set(false);
-        this.form.controls.variablesJson.setValue(JSON.stringify(this.tableVariables(), null, 2));
+        this.form.controls.variablesJson.setValue(JSON.stringify(serializeVariables(this.tableVariables()), null, 2));
         this.form.controls.variablesJson.markAsDirty();
         this.isJsonValid.set(true);
         this.tableImportWasInvalid = false;
         this.jsonSectionExpanded.set(true);
+    }
+
+    private applyEnableTableMode(variables: ToolVariable[]): void {
+        this.tableVariables.set(variables);
+        this.parametersTableMode.set(true);
+        this.jsonSectionExpanded.set(false);
+        // If the JSON editor was occupying the right pane, swap it to Python
+        // so the user keeps a useful editor visible instead of an empty panel.
+        if (this.activeEditor() === ActiveEditor.Json) {
+            this.activeEditor.set(ActiveEditor.Python);
+        }
     }
 
     public copyPythonCode(): void {
@@ -245,7 +282,10 @@ export class CreateCustomToolDialogComponent {
         }
 
         if (this.parametersTableMode()) {
-            this.form.controls.variablesJson.setValue(JSON.stringify(this.tableVariables(), null, 2));
+            this.parametersTableView()?.validate();
+            this.form.controls.variablesJson.setValue(
+                JSON.stringify(serializeVariables(this.tableVariables()), null, 2)
+            );
             this.form.controls.variablesJson.markAsDirty();
             this.isJsonValid.set(true);
             this.tableImportWasInvalid = false;
@@ -290,6 +330,9 @@ export class CreateCustomToolDialogComponent {
     private getValidationError(): string | null {
         if (this.form.invalid) {
             return 'Please fill in all required fields';
+        }
+        if (this.parametersTableMode() && !(this.parametersTableView()?.isValid() ?? true)) {
+            return 'Please fix the parameter errors before saving';
         }
         if (!this.isJsonValid()) {
             return 'JSON Configuration is invalid';

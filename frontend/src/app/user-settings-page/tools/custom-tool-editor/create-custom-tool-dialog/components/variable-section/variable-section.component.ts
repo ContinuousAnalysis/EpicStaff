@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, effect, input, output, signal, view
 import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { DynamicTableComponent } from '../../../../../../shared/components/dynamic-table/dynamic-table.component';
 import { TableRow } from '../../../../../../shared/components/dynamic-table/dynamic-table.models';
-import { VariableInputType, VariableSectionConfig } from '../parameters-table.config';
+import { getCellExtraValidators, VariableInputType, VariableSectionConfig } from '../parameters-table.config';
 
 @Component({
     selector: 'app-variable-section',
@@ -15,6 +15,7 @@ import { VariableInputType, VariableSectionConfig } from '../parameters-table.co
 export class VariableSectionComponent {
     config = input.required<VariableSectionConfig>();
     initialRows = input<Record<string, unknown>[]>([]);
+    externalDuplicates = input<Map<string, Set<string>> | null>(null);
 
     rowsChange = output<Record<string, unknown>[]>();
     navigateRow = output<{ row: TableRow; rowIndex: number; sectionType: VariableInputType }>();
@@ -22,7 +23,16 @@ export class VariableSectionComponent {
     private tableRef = viewChild<DynamicTableComponent>('table');
     readonly rows = signal<Record<string, unknown>[]>([]);
 
+    readonly getCellExtraValidators = getCellExtraValidators;
+
     readonly isObjectRow = (row: TableRow): boolean => row.data['type'] === 'object';
+
+    readonly isCellDisabled = (row: TableRow, colKey: string): boolean => {
+        if (colKey !== 'default_value') {
+            return false;
+        }
+        return row.data['type'] === 'object';
+    };
 
     constructor() {
         effect(() => {
@@ -48,6 +58,15 @@ export class VariableSectionComponent {
         this.rowsChange.emit(rows);
     }
 
+    validate(): void {
+        this.tableRef()?.touchAll();
+    }
+
+    isValid(): boolean {
+        const table = this.tableRef();
+        return table ? table.isValid() : true;
+    }
+
     onNavigate(event: { row: TableRow; rowIndex: number }): void {
         this.navigateRow.emit({ ...event, sectionType: this.config().inputType });
     }
@@ -55,7 +74,13 @@ export class VariableSectionComponent {
     private createEmptyRowData(): Record<string, unknown> {
         const row: Record<string, unknown> = {};
         for (const col of this.config().columnDefs) {
-            row[col.key] = col.type === 'checkbox' ? false : '';
+            if (col.defaultValue !== undefined) {
+                row[col.key] = col.defaultValue;
+            } else if (col.type === 'checkbox') {
+                row[col.key] = false;
+            } else {
+                row[col.key] = '';
+            }
         }
         return row;
     }

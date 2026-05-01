@@ -9,6 +9,7 @@
             <app-variable-section
                 [config]="section"
                 [initialRows]="getSectionInitialRows(section.inputType)"
+                [externalDuplicates]="externalDuplicatesByType()[section.inputType]"
                 (rowsChange)="onSectionRowsChange(section.inputType, $event)"
                 (navigateRow)="onNavigate($event)"
             />

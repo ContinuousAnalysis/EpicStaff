@@ -5,17 +5,34 @@
     >
         <header class="dialog-header">
             <h2 class="title">Create Custom Tool</h2>
-            <button
-                class="close-btn"
-                type="button"
-                aria-label="Close dialog"
-                (click)="close()"
-            >
-                <app-svg-icon
-                    icon="x"
-                    size="1.2rem"
-                ></app-svg-icon>
-            </button>
+            <div class="dialog-header-right">
+                <div class="dialog-header-actions">
+                    <app-button
+                        type="secondary"
+                        mod="default"
+                        (click)="close()"
+                        >Cancel</app-button
+                    >
+                    <app-button
+                        type="primary"
+                        mod="default"
+                        [disabled]="isSaving()"
+                        (click)="submit()"
+                        >{{ isSaving() ? 'Saving...' : 'Create Tool' }}</app-button
+                    >
+                </div>
+                <button
+                    class="close-btn"
+                    type="button"
+                    aria-label="Close dialog"
+                    (click)="close()"
+                >
+                    <app-svg-icon
+                        icon="x"
+                        size="1.2rem"
+                    ></app-svg-icon>
+                </button>
+            </div>
         </header>
 
         <div

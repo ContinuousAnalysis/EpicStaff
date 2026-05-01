@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, input, output, viewChild } from '@angular/core';
 
 import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 
@@ -17,4 +17,13 @@ export interface BreadcrumbItem {
 export class VariablesBreadcrumbComponent {
     crumbs = input<BreadcrumbItem[]>([]);
     crumbClick = output<number>();
+
+    private readonly track = viewChild<ElementRef<HTMLElement>>('track');
+
+    scrollToStart(): void {
+        const el = this.track()?.nativeElement;
+        if (el) {
+            el.scrollTo({ left: 0, behavior: 'smooth' });
+        }
+    }
 }

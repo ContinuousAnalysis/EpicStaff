@@ -5,13 +5,14 @@ import {
     Component,
     computed,
     DestroyRef,
+    effect,
     inject,
     input,
     OnInit,
     output,
     signal,
 } from '@angular/core';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
 
 import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { CheckboxComponent } from '../checkbox/checkbox.component';
@@ -49,6 +50,16 @@ export class DynamicTableComponent implements OnInit {
     // Navigate-into-row (e.g. for object-type rows)
     rowNavigable = input<((row: TableRow) => boolean) | null>(null);
 
+    // Optionally disable a cell input based on row and column key
+    isCellDisabled = input<((row: TableRow, colKey: string) => boolean) | null>(null);
+
+    // Per-column set of values that are also considered duplicates (e.g. coming from sibling tables)
+    externalDuplicates = input<Map<string, Set<string>> | null>(null);
+
+    // Optional callback to provide extra row-aware validators for a cell. Useful when one column's
+    // validators depend on another column's value (e.g. default_value validation depending on type).
+    getCellExtraValidators = input<((row: TableRow, colKey: string) => ValidatorFn[]) | null>(null);
+
     // Outputs
     rowsChange = output<Record<string, unknown>[]>();
     navigateRow = output<{ row: TableRow; rowIndex: number }>();
@@ -61,8 +72,11 @@ export class DynamicTableComponent implements OnInit {
     private cellControls = new Map<string, FormControl>();
 
     // Validation error bar
-    validationError = signal<string | null>(null);
-    showValidationBar = computed(() => this.validationError() !== null);
+    validationErrors = signal<string[]>([]);
+    showValidationBar = computed(() => this.validationErrors().length > 0);
+
+    // Cells with a uniqueness violation: stored as `${rowId}_${colKey}`
+    duplicateCells = signal<Set<string>>(new Set());
 
     canAddRow = computed(() => {
         const max = this.maxRows();
@@ -79,10 +93,22 @@ export class DynamicTableComponent implements OnInit {
     private resizeMoveHandler: ((e: MouseEvent) => void) | null = null;
     private resizeUpHandler: (() => void) | null = null;
 
-    ngOnInit(): void {
-        this.columns.set([...this.columnDefs()]);
-        this.initColWidths();
+    constructor() {
+        effect(() => {
+            this.columns.set([...this.columnDefs()]);
+            this.initColWidths();
+        });
 
+        effect(() => {
+            // re-validate when rows, columns, or external duplicates change
+            this.rows();
+            this.columnDefs();
+            this.externalDuplicates();
+            this.validateAll();
+        });
+    }
+
+    ngOnInit(): void {
         this.destroyRef.onDestroy(() => {
             if (this.resizeMoveHandler) document.removeEventListener('mousemove', this.resizeMoveHandler);
             if (this.resizeUpHandler) document.removeEventListener('mouseup', this.resizeUpHandler);
@@ -106,8 +132,10 @@ export class DynamicTableComponent implements OnInit {
         };
 
         // Initialize default values
-        for (const col of this.columns()) {
-            if (col.type === 'checkbox') {
+        for (const col of this.columnDefs()) {
+            if (col.defaultValue !== undefined) {
+                newRow.data[col.key] = col.defaultValue;
+            } else if (col.type === 'checkbox') {
                 newRow.data[col.key] = false;
             } else {
                 newRow.data[col.key] = '';
@@ -156,14 +184,49 @@ export class DynamicTableComponent implements OnInit {
             rows.map((r) => (r._id === rowId ? { ...r, data: { ...r.data, [colKey]: value } } : r))
         );
 
-        const control = this.cellControls.get(`${rowId}_${colKey}`);
-        if (control) {
-            control.markAsTouched();
-            control.setValue(value);
+        const control = this.getOrCreateControl(rowId, colKey, value);
+        control.markAsTouched();
+        control.setValue(value);
+
+        // Re-evaluate validators for every cell of this row, since one cell's value
+        // may change another cell's validators (e.g. type → default_value).
+        const updatedRow = this.rows().find((r) => r._id === rowId);
+        if (updatedRow) {
+            for (const col of this.columnDefs()) {
+                const ctrl = this.cellControls.get(`${rowId}_${col.key}`);
+                if (!ctrl) continue;
+                const wasValid = ctrl.valid;
+                ctrl.setValidators(this.computeValidators(updatedRow, col));
+                ctrl.updateValueAndValidity({ emitEvent: false });
+                // Surface dependent errors immediately if the cell flipped to invalid.
+                const cellValue = ctrl.value;
+                if (wasValid && ctrl.invalid && cellValue !== '' && cellValue != null) {
+                    ctrl.markAsTouched();
+                }
+            }
         }
 
         this.validateAll();
         this.emitChange();
+    }
+
+    private computeValidators(row: TableRow, col: TableColumnDef): ValidatorFn[] {
+        const colValidators = col.validators ?? [];
+        const extra = this.getCellExtraValidators()?.(row, col.key) ?? [];
+        return [...colValidators, ...extra];
+    }
+
+    private getOrCreateControl(rowId: string, colKey: string, value: unknown): FormControl {
+        const key = `${rowId}_${colKey}`;
+        let control = this.cellControls.get(key);
+        if (!control) {
+            const row = this.rows().find((r) => r._id === rowId);
+            const col = this.columnDefs().find((c) => c.key === colKey);
+            const validators = row && col ? this.computeValidators(row, col) : (col?.validators ?? []);
+            control = new FormControl(value, validators);
+            this.cellControls.set(key, control);
+        }
+        return control;
     }
 
     getCellValue(rowId: string, colKey: string): unknown {
@@ -184,27 +247,71 @@ export class DynamicTableComponent implements OnInit {
 
     isCellInvalid(rowId: string, colKey: string): boolean {
         const control = this.cellControls.get(`${rowId}_${colKey}`);
-        return !!(control && control.invalid && control.touched);
+        if (control && control.invalid && control.touched) return true;
+        return this.duplicateCells().has(`${rowId}_${colKey}`);
     }
 
     // --- Validation ---
 
     private validateAll(): void {
-        let firstError: string | null = null;
+        const errors: string[] = [];
+        const seenMessages = new Set<string>();
+        const pushError = (msg: string) => {
+            if (!seenMessages.has(msg)) {
+                seenMessages.add(msg);
+                errors.push(msg);
+            }
+        };
 
+        const cols = this.columnDefs();
+
+        // Per-cell validator errors (only if touched)
         for (const row of this.rows()) {
-            for (const col of this.columns()) {
+            for (const col of cols) {
                 if (!col.validators?.length) continue;
                 const control = this.cellControls.get(`${row._id}_${col.key}`);
                 if (control && control.invalid && control.touched) {
-                    firstError = this.getErrorMessage(col, control);
-                    break;
+                    pushError(this.getErrorMessage(col, control));
                 }
             }
-            if (firstError) break;
         }
 
-        this.validationError.set(firstError);
+        // Uniqueness errors (column-level + external duplicates)
+        const duplicates = new Set<string>();
+        const external = this.externalDuplicates();
+        for (const col of cols) {
+            if (!col.unique) continue;
+
+            const valuesToRowIds = new Map<string, string[]>();
+            for (const row of this.rows()) {
+                const raw = row.data[col.key];
+                if (raw == null) continue;
+                const value = String(raw).trim();
+                if (!value) continue;
+                const arr = valuesToRowIds.get(value) ?? [];
+                arr.push(row._id);
+                valuesToRowIds.set(value, arr);
+            }
+
+            const externalSet = external?.get(col.key) ?? null;
+            let columnHasDuplicate = false;
+            for (const [value, rowIds] of valuesToRowIds) {
+                const isDup = rowIds.length > 1 || (externalSet?.has(value) ?? false);
+                if (isDup) {
+                    columnHasDuplicate = true;
+                    for (const rowId of rowIds) {
+                        duplicates.add(`${rowId}_${col.key}`);
+                    }
+                }
+            }
+
+            if (columnHasDuplicate) {
+                pushError(col.uniqueErrorMessage ?? `${col.header} must be unique.`);
+            }
+        }
+
+        this.duplicateCells.set(duplicates);
+        this.validationErrors.set(errors);
     }
 
     private getErrorMessage(col: TableColumnDef, control: FormControl): string {
@@ -226,8 +333,19 @@ export class DynamicTableComponent implements OnInit {
         return defaults[errorKey] ?? `${col.header} is invalid.`;
     }
 
+    touchAll(): void {
+        for (const control of this.cellControls.values()) {
+            control.markAsTouched();
+        }
+        this.validateAll();
+    }
+
+    isValid(): boolean {
+        return this.validationErrors().length === 0 && this.duplicateCells().size === 0;
+    }
+
     dismissValidationError(): void {
-        this.validationError.set(null);
+        this.validationErrors.set([]);
     }
 
     // --- Helpers ---
@@ -239,10 +357,10 @@ export class DynamicTableComponent implements OnInit {
     }
 
     private initRowControls(row: TableRow): void {
-        for (const col of this.columns()) {
+        for (const col of this.columnDefs()) {
             const key = `${row._id}_${col.key}`;
             const value = row.data[col.key] ?? (col.type === 'checkbox' ? false : '');
-            this.cellControls.set(key, new FormControl(value, col.validators ?? []));
+            this.cellControls.set(key, new FormControl(value, this.computeValidators(row, col)));
         }
     }
 

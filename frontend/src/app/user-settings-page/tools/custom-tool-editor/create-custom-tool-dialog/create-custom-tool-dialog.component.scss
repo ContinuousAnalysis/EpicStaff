@@ -33,6 +33,18 @@
             letter-spacing: 0;
         }
 
+        .dialog-header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .dialog-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .close-btn {
             display: flex;
             align-items: center;

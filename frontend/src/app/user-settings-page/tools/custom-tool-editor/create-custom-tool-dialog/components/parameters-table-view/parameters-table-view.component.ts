@@ -1,9 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, input, OnInit, output, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    input,
+    OnInit,
+    output,
+    signal,
+    viewChildren,
+} from '@angular/core';
 
 import { TableRow } from '../../../../../../shared/components/dynamic-table/dynamic-table.models';
 import {
     rowDataToVariable,
     ToolVariable,
+    validateVariablesTree,
     VARIABLE_SECTIONS,
     VariableInputType,
     variableToRowData,
@@ -29,6 +39,8 @@ export class ParametersTableViewComponent implements OnInit {
     variablesChange = output<ToolVariable[]>();
 
     readonly VARIABLE_SECTIONS = VARIABLE_SECTIONS;
+
+    private readonly sectionRefs = viewChildren(VariableSectionComponent);
 
     private readonly userVariables = signal<ToolVariable[]>([]);
     private readonly agentVariables = signal<ToolVariable[]>([]);
@@ -58,6 +70,48 @@ export class ParametersTableViewComponent implements OnInit {
     );
 
     private readonly drillPath = computed<number[]>(() => this.drillStack().map((step) => step.rowIndex));
+
+    public readonly externalDuplicatesByType = computed<Record<VariableInputType, Map<string, Set<string>>>>(() => {
+        const userNames = this.collectNames(this.userVariables());
+        const agentNames = this.collectNames(this.agentVariables());
+        const mixedNames = this.collectNames(this.mixedVariables());
+
+        return {
+            user_input: new Map([['name', this.unionSets(agentNames, mixedNames)]]),
+            agent_input: new Map([['name', this.unionSets(userNames, mixedNames)]]),
+            mixed: new Map([['name', this.unionSets(userNames, agentNames)]]),
+        };
+    });
+
+    validate(): void {
+        for (const section of this.sectionRefs()) {
+            section.validate();
+        }
+    }
+
+    isValid(): boolean {
+        // 1. Visible-cell check (so red borders / inline errors stay accurate).
+        if (!this.sectionRefs().every((section) => section.isValid())) {
+            return false;
+        }
+
+        // 2. Walk the entire data model (including invisible nested children
+        //    after a drill-out) and re-check name validity + sibling uniqueness.
+        const user = this.userVariables();
+        const agent = this.agentVariables();
+        const mixed = this.mixedVariables();
+        if (!validateVariablesTree(user) || !validateVariablesTree(agent) || !validateVariablesTree(mixed)) {
+            return false;
+        }
+
+        // 3. Top-level names must be unique across all 3 sections combined.
+        const topNames = [...user, ...agent, ...mixed].map((v) => v.name?.trim()).filter(Boolean) as string[];
+        if (new Set(topNames).size !== topNames.length) {
+            return false;
+        }
+
+        return true;
+    }
 
     ngOnInit(): void {
         const source = this.variables();
@@ -188,5 +242,20 @@ export class ParametersTableViewComponent implements OnInit {
 
     private emitAll(): void {
         this.variablesChange.emit([...this.userVariables(), ...this.agentVariables(), ...this.mixedVariables()]);
+    }
+
+    private collectNames(vars: ToolVariable[]): Set<string> {
+        const names = new Set<string>();
+        for (const v of vars) {
+            const name = v.name?.trim();
+            if (name) names.add(name);
+        }
+        return names;
+    }
+
+    private unionSets(a: Set<string>, b: Set<string>): Set<string> {
+        const result = new Set<string>(a);
+        for (const v of b) result.add(v);
+        return result;
     }
 }
