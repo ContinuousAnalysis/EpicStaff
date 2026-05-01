@@ -60,9 +60,24 @@ export class DynamicTableComponent implements OnInit {
     // validators depend on another column's value (e.g. default_value validation depending on type).
     getCellExtraValidators = input<((row: TableRow, colKey: string) => ValidatorFn[]) | null>(null);
 
+    /** Stable id for the row tbody `cdkDropList` (cross-list drag). Column header list uses a different id. */
+    rowDropListId = input<string | null>(null);
+
+    /** Other row drop list ids this list can exchange rows with. */
+    rowDropListConnectedTo = input<string[]>([]);
+
+    /**
+     * Increment from parent after cross-table moves so rows reload from `initialRows`
+     * (ToolVariable is source of truth).
+     */
+    rowSyncRevision = input<number>(0);
+
     // Outputs
     rowsChange = output<Record<string, unknown>[]>();
     navigateRow = output<{ row: TableRow; rowIndex: number }>();
+
+    /** Emitted when a row is dropped onto another connected table; parent updates model and bumps `rowSyncRevision`. */
+    crossListDrop = output<CdkDragDrop<TableRow[]>>();
 
     // Internal state
     columns = signal<TableColumnDef[]>([]);
@@ -93,6 +108,12 @@ export class DynamicTableComponent implements OnInit {
     private resizeMoveHandler: ((e: MouseEvent) => void) | null = null;
     private resizeUpHandler: (() => void) | null = null;
 
+    /** Stable id for thead horizontal column drag list (never connect to row lists). */
+    readonly columnDropListId = computed(() => {
+        const id = this.rowDropListId();
+        return id ? `${id}__cols` : null;
+    });
+
     constructor() {
         effect(() => {
             this.columns.set([...this.columnDefs()]);
@@ -105,6 +126,21 @@ export class DynamicTableComponent implements OnInit {
             this.columnDefs();
             this.externalDuplicates();
             this.validateAll();
+        });
+
+        effect(() => {
+            const rev = this.rowSyncRevision();
+            const initial = this.initialRows();
+            if (rev > 0) {
+                this.resetRowsFromInitial(initial);
+            }
+        });
+
+        effect(() => {
+            const initial = this.initialRows();
+            if (this.rows().length === 0 && initial.length > 0 && this.rowSyncRevision() === 0) {
+                this.resetRowsFromInitial(initial);
+            }
         });
     }
 
@@ -164,10 +200,14 @@ export class DynamicTableComponent implements OnInit {
 
     onRowDrop(event: CdkDragDrop<TableRow[]>): void {
         if (!this.allowRowDrag()) return;
-        const rows = [...this.rows()];
-        moveItemInArray(rows, event.previousIndex, event.currentIndex);
-        this.rows.set(rows);
-        this.emitChange();
+        if (event.previousContainer === event.container) {
+            const rows = [...this.rows()];
+            moveItemInArray(rows, event.previousIndex, event.currentIndex);
+            this.rows.set(rows);
+            this.emitChange();
+            return;
+        }
+        this.crossListDrop.emit(event);
     }
 
     onColumnDrop(event: CdkDragDrop<TableColumnDef[]>): void {
@@ -366,6 +406,17 @@ export class DynamicTableComponent implements OnInit {
 
     private emitChange(): void {
         this.rowsChange.emit(this.rows().map((r) => ({ ...r.data })));
+    }
+
+    private resetRowsFromInitial(initial: Record<string, unknown>[]): void {
+        for (const row of this.rows()) {
+            for (const col of this.columns()) {
+                this.cellControls.delete(`${row._id}_${col.key}`);
+            }
+        }
+        const newRows = initial.map((data) => this.createRowFromData(data));
+        this.rows.set(newRows);
+        this.validateAll();
     }
 
     private generateId(): string {

@@ -1,3 +1,4 @@
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { ChangeDetectionStrategy, Component, effect, input, output, signal, viewChild } from '@angular/core';
 
 import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
@@ -17,8 +18,14 @@ export class VariableSectionComponent {
     initialRows = input<Record<string, unknown>[]>([]);
     externalDuplicates = input<Map<string, Set<string>> | null>(null);
 
+    /** Cross-table row drag: stable tbody `cdkDropList` id; null disables connecting to other parameter tables. */
+    rowDropListId = input<string | null>(null);
+    rowDropListConnectedTo = input<string[]>([]);
+    rowSyncRevision = input<number>(0);
+
     rowsChange = output<Record<string, unknown>[]>();
     navigateRow = output<{ row: TableRow; rowIndex: number; sectionType: VariableInputType }>();
+    crossListDrop = output<CdkDragDrop<TableRow[]>>();
 
     private tableRef = viewChild<DynamicTableComponent>('table');
     readonly rows = signal<Record<string, unknown>[]>([]);
@@ -42,15 +49,11 @@ export class VariableSectionComponent {
     }
 
     addRow(): void {
-        const table = this.tableRef();
-        if (table) {
-            table.addRow();
-            return;
-        }
+        this.tableRef()?.addRow();
+    }
 
-        const firstRow = this.createEmptyRowData();
-        this.rows.set([firstRow]);
-        this.rowsChange.emit(this.rows());
+    onCrossListDrop(event: CdkDragDrop<TableRow[]>): void {
+        this.crossListDrop.emit(event);
     }
 
     onRowsChange(rows: Record<string, unknown>[]): void {
@@ -69,19 +72,5 @@ export class VariableSectionComponent {
 
     onNavigate(event: { row: TableRow; rowIndex: number }): void {
         this.navigateRow.emit({ ...event, sectionType: this.config().inputType });
-    }
-
-    private createEmptyRowData(): Record<string, unknown> {
-        const row: Record<string, unknown> = {};
-        for (const col of this.config().columnDefs) {
-            if (col.defaultValue !== undefined) {
-                row[col.key] = col.defaultValue;
-            } else if (col.type === 'checkbox') {
-                row[col.key] = false;
-            } else {
-                row[col.key] = '';
-            }
-        }
-        return row;
     }
 }

@@ -66,6 +66,10 @@
         table-layout: fixed;
     }
 
+    &__tbody-drop {
+        min-height: 40px;
+    }
+
     &__th {
         position: relative;
         height: 28px;

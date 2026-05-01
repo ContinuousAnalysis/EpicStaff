@@ -31,12 +31,13 @@
             class="dt__table"
             [style.min-width.px]="tableMinWidth()"
         >
-            <!-- Column headers -->
-            @if (rows().length > 0) {
+            <!-- Column headers (show when columns exist so empty tables still show Value / Default Value headers) -->
+            @if (columns().length > 0) {
                 <thead>
                     <tr
                         cdkDropList
                         cdkDropListOrientation="horizontal"
+                        [attr.id]="columnDropListId()"
                         (cdkDropListDropped)="onColumnDrop($event)"
                     >
                         <!-- Drag handle spacer for row drag -->
@@ -91,7 +92,11 @@
 
             <!-- Rows -->
             <tbody
+                class="dt__tbody-drop"
                 cdkDropList
+                [attr.id]="rowDropListId()"
+                [cdkDropListData]="rows()"
+                [cdkDropListConnectedTo]="rowDropListConnectedTo()"
                 (cdkDropListDropped)="onRowDrop($event)"
                 [cdkDropListDisabled]="!allowRowDrag()"
             >

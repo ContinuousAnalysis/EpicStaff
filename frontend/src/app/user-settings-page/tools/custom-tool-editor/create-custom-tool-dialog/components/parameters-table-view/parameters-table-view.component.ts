@@ -1,3 +1,4 @@
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -39,6 +40,11 @@ export class ParametersTableViewComponent implements OnInit {
     variablesChange = output<ToolVariable[]>();
 
     readonly VARIABLE_SECTIONS = VARIABLE_SECTIONS;
+
+    /** Stable ids for `cdkDropList` on parameter tables (cross-section row drag). */
+    readonly parameterRowDropConnectedIds = ['ptv-user', 'ptv-agent', 'ptv-mixed'] as const;
+
+    readonly parameterRowSyncRevision = signal(0);
 
     private readonly sectionRefs = viewChildren(VariableSectionComponent);
 
@@ -130,6 +136,44 @@ export class ParametersTableViewComponent implements OnInit {
             type,
             rows.map((data) => rowDataToVariable(data, type))
         );
+        this.emitAll();
+    }
+
+    parameterRowDropListId(type: VariableInputType): string | null {
+        return this.isDrilling() ? null : this.parameterDropIdForType(type);
+    }
+
+    parameterRowDropConnectedTo(): string[] {
+        return this.isDrilling() ? [] : [...this.parameterRowDropConnectedIds];
+    }
+
+    onCrossListDrop(event: CdkDragDrop<TableRow[]>): void {
+        const sourceType = this.dropListElementIdToInputType(event.previousContainer.id);
+        const targetType = this.dropListElementIdToInputType(event.container.id);
+        if (!sourceType || !targetType || sourceType === targetType) {
+            return;
+        }
+
+        const previousIndex = event.previousIndex;
+        const currentIndex = event.currentIndex;
+
+        const sourceVars = [...this.getSectionVariables(sourceType)];
+        const targetVars = [...this.getSectionVariables(targetType)];
+
+        if (previousIndex < 0 || previousIndex >= sourceVars.length) {
+            return;
+        }
+        if (currentIndex < 0 || currentIndex > targetVars.length) {
+            return;
+        }
+
+        const [moved] = sourceVars.splice(previousIndex, 1);
+        const transformed = this.applyVariableTargetSection(moved, targetType);
+        targetVars.splice(currentIndex, 0, transformed);
+
+        this.setSectionVariables(sourceType, sourceVars);
+        this.setSectionVariables(targetType, targetVars);
+        this.parameterRowSyncRevision.update((n) => n + 1);
         this.emitAll();
     }
 
@@ -242,6 +286,38 @@ export class ParametersTableViewComponent implements OnInit {
 
     private emitAll(): void {
         this.variablesChange.emit([...this.userVariables(), ...this.agentVariables(), ...this.mixedVariables()]);
+    }
+
+    private parameterDropIdForType(type: VariableInputType): string {
+        switch (type) {
+            case 'user_input':
+                return 'ptv-user';
+            case 'agent_input':
+                return 'ptv-agent';
+            case 'mixed':
+                return 'ptv-mixed';
+        }
+    }
+
+    private dropListElementIdToInputType(id: string): VariableInputType | null {
+        switch (id) {
+            case 'ptv-user':
+                return 'user_input';
+            case 'ptv-agent':
+                return 'agent_input';
+            case 'ptv-mixed':
+                return 'mixed';
+            default:
+                return null;
+        }
+    }
+
+    private applyVariableTargetSection(variable: ToolVariable, target: VariableInputType): ToolVariable {
+        return {
+            ...variable,
+            input_type: target,
+            required: target === 'agent_input',
+        };
     }
 
     private collectNames(vars: ToolVariable[]): Set<string> {

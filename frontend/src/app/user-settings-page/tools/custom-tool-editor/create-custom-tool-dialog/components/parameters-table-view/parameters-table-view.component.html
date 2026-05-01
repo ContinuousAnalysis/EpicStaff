@@ -10,8 +10,12 @@
                 [config]="section"
                 [initialRows]="getSectionInitialRows(section.inputType)"
                 [externalDuplicates]="externalDuplicatesByType()[section.inputType]"
+                [rowDropListId]="parameterRowDropListId(section.inputType)"
+                [rowDropListConnectedTo]="parameterRowDropConnectedTo()"
+                [rowSyncRevision]="parameterRowSyncRevision()"
                 (rowsChange)="onSectionRowsChange(section.inputType, $event)"
                 (navigateRow)="onNavigate($event)"
+                (crossListDrop)="onCrossListDrop($event)"
             />
         }
     } @else {
@@ -19,6 +23,9 @@
             <app-variable-section
                 [config]="cfg"
                 [initialRows]="currentDrillRows()"
+                [rowDropListId]="null"
+                [rowDropListConnectedTo]="[]"
+                [rowSyncRevision]="parameterRowSyncRevision()"
                 (rowsChange)="onDrillRowsChange($event)"
                 (navigateRow)="onNavigate($event)"
             />

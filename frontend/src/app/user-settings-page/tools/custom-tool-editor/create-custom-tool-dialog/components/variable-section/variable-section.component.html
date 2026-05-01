@@ -21,20 +21,22 @@
     </button>
 </div>
 
-@if (rows().length > 0) {
-    <app-dynamic-table
-        #table
-        title=""
-        [icon]="null"
-        [showHeader]="false"
-        [columnDefs]="config().columnDefs"
-        [initialRows]="rows()"
-        [allowColumnDrag]="false"
-        [rowNavigable]="isObjectRow"
-        [isCellDisabled]="isCellDisabled"
-        [externalDuplicates]="externalDuplicates()"
-        [getCellExtraValidators]="getCellExtraValidators"
-        (rowsChange)="onRowsChange($event)"
-        (navigateRow)="onNavigate($event)"
-    />
-}
+<app-dynamic-table
+    #table
+    title=""
+    [icon]="null"
+    [showHeader]="false"
+    [columnDefs]="config().columnDefs"
+    [initialRows]="rows()"
+    [allowColumnDrag]="false"
+    [rowNavigable]="isObjectRow"
+    [isCellDisabled]="isCellDisabled"
+    [externalDuplicates]="externalDuplicates()"
+    [getCellExtraValidators]="getCellExtraValidators"
+    [rowDropListId]="rowDropListId()"
+    [rowDropListConnectedTo]="rowDropListConnectedTo()"
+    [rowSyncRevision]="rowSyncRevision()"
+    (rowsChange)="onRowsChange($event)"
+    (navigateRow)="onNavigate($event)"
+    (crossListDrop)="onCrossListDrop($event)"
+/>
