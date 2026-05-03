@@ -7,7 +7,7 @@
     [cdkDropListDisabled]="rows().length > 0 || !rowDropListId()"
     (cdkDropListEntered)="onEmptySectionDropEnter()"
     (cdkDropListExited)="onEmptySectionDropExit()"
-    (cdkDropListDropped)="onCrossListDrop($event)"
+    (cdkDropListDropped)="onCrossListDrop($any($event))"
 >
     <div
         class="section__header"
@@ -49,6 +49,6 @@
         [rowSyncRevision]="rowSyncRevision()"
         (rowsChange)="onRowsChange($event)"
         (navigateRow)="onNavigate($event)"
-        (crossListDrop)="onCrossListDrop($event)"
+        (crossListDrop)="onCrossListDrop($any($event))"
     />
 </div>
