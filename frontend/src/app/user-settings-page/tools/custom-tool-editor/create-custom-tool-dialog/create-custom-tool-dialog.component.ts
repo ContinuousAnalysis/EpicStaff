@@ -1,4 +1,4 @@
-import { DialogRef } from '@angular/cdk/dialog';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, viewChild } from '@angular/core';
@@ -32,6 +32,11 @@ enum ActiveEditor {
     None = 'none',
     Python = 'python',
     Json = 'json',
+}
+
+interface CreateCustomToolDialogData {
+    pythonTools?: GetPythonCodeToolRequest[];
+    selectedTool?: GetPythonCodeToolRequest;
 }
 
 const DEFAULT_PYTHON_CODE = `def main() -> dict:
@@ -95,13 +100,20 @@ export class CreateCustomToolDialogComponent {
     private readonly customToolsService = inject(CustomToolsService);
     private readonly toast = inject(ToastService);
     private readonly confirmDialog = inject(ConfirmationDialogService);
+    private readonly dialogData = inject<CreateCustomToolDialogData | null>(DIALOG_DATA, { optional: true });
+
+    public readonly selectedTool: GetPythonCodeToolRequest | null = this.dialogData?.selectedTool ?? null;
+    public readonly isEditMode = this.selectedTool !== null;
 
     public readonly form = this.fb.group({
-        name: this.fb.control('', [Validators.required]),
-        description: this.fb.control('', [Validators.required]),
-        pythonCode: this.fb.control(DEFAULT_PYTHON_CODE, [Validators.required]),
-        variablesJson: this.fb.control(DEFAULT_VARIABLES_JSON, [Validators.required]),
-        libraries: this.fb.control<string[]>([]),
+        name: this.fb.control(this.selectedTool?.name ?? '', [Validators.required]),
+        description: this.fb.control(this.selectedTool?.description ?? '', [Validators.required]),
+        pythonCode: this.fb.control(this.selectedTool?.python_code?.code ?? DEFAULT_PYTHON_CODE, [Validators.required]),
+        variablesJson: this.fb.control(
+            this.selectedTool ? this.initialVariablesJsonFromTool(this.selectedTool) : DEFAULT_VARIABLES_JSON,
+            [Validators.required]
+        ),
+        libraries: this.fb.control<string[]>(this.selectedTool?.python_code?.libraries ?? []),
     });
 
     public readonly ActiveEditor = ActiveEditor;
@@ -309,22 +321,43 @@ export class CreateCustomToolDialogComponent {
 
         this.isSaving.set(true);
 
-        this.customToolsService
-            .createPythonCodeToolV2(payload)
+        const editingTool = this.selectedTool;
+        const request$ = editingTool
+            ? this.customToolsService.updatePythonCodeToolV2(editingTool.id, payload)
+            : this.customToolsService.createPythonCodeToolV2(payload);
+
+        const successMessage = editingTool ? 'Custom tool updated successfully!' : 'Custom tool created successfully!';
+        const errorMessage = editingTool
+            ? 'Failed to update custom tool. Please try again.'
+            : 'Failed to create custom tool. Please try again.';
+
+        request$
             .pipe(
                 tap((result) => {
-                    this.toast.success('Custom tool created successfully!');
+                    this.toast.success(successMessage);
                     this.dialogRef.close(result);
                 }),
                 catchError((err: HttpErrorResponse) => {
-                    console.error('Error creating tool:', err);
-                    this.toast.error('Failed to create custom tool. Please try again.');
+                    console.error(editingTool ? 'Error updating tool:' : 'Error creating tool:', err);
+                    this.toast.error(errorMessage);
                     return EMPTY;
                 }),
                 finalize(() => this.isSaving.set(false)),
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe();
+    }
+
+    /**
+     * Best-effort extraction of the existing tool's variables list as a JSON
+     * string for the dialog form. Prefers the V2 `variables` field; falls back
+     * to an empty list if the backend response only carries the legacy
+     * `args_schema` (which the V2 editor doesn't model).
+     */
+    private initialVariablesJsonFromTool(tool: GetPythonCodeToolRequest): string {
+        const v = tool.variables;
+        const list = Array.isArray(v) ? v : [];
+        return JSON.stringify(list, null, 2);
     }
 
     private getValidationError(): string | null {

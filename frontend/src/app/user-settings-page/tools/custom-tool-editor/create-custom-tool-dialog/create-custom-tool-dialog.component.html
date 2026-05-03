@@ -4,7 +4,7 @@
         (ngSubmit)="submit()"
     >
         <header class="dialog-header">
-            <h2 class="title">Create Custom Tool</h2>
+            <h2 class="title">{{ isEditMode ? 'Edit Custom Tool' : 'Create Custom Tool' }}</h2>
             <div class="dialog-header-right">
                 <div class="dialog-header-actions">
                     <app-button
@@ -18,7 +18,7 @@
                         mod="default"
                         [disabled]="isSaving()"
                         (click)="submit()"
-                        >{{ isSaving() ? 'Saving...' : 'Create Tool' }}</app-button
+                        >{{ isSaving() ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Tool' }}</app-button
                     >
                 </div>
                 <button

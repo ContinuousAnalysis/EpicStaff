@@ -58,6 +58,16 @@ export class CustomToolsService {
         });
     }
 
+    /**
+     * V2 update payload (free-form `variables`, no `args_schema`). Mirrors
+     * {@link createPythonCodeToolV2} on the same endpoint via PUT.
+     */
+    updatePythonCodeToolV2(toolId: number, tool: CreatePythonCodeToolPayload): Observable<GetPythonCodeToolRequest> {
+        return this.http.put<GetPythonCodeToolRequest>(`${this.baseUrl}${toolId}/`, tool, {
+            headers: this.httpHeaders,
+        });
+    }
+
     deletePythonCodeTool(toolId: number): Observable<void> {
         return this.http.delete<void>(`${this.baseUrl}${toolId}/`, {
             headers: this.httpHeaders,

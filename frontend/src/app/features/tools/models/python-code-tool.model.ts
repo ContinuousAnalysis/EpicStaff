@@ -21,6 +21,8 @@ export interface GetPythonCodeToolRequest {
     description: string;
     args_schema: ArgsSchema;
     built_in: boolean;
+    /** V2 free-form variables list. Replaces `args_schema` in newer backend responses. */
+    variables?: unknown[];
 }
 export interface CreatePythonCodeToolRequest {
     python_code: CreatePythonCodeRequest;

@@ -1,9 +1,9 @@
 <div
     class="section__drop-target"
     cdkDropList
-    [id]="rowDropListId() ?? ''"
+    [id]="rows().length === 0 ? (rowDropListId() ?? '') : ''"
     [cdkDropListData]="rows()"
-    [cdkDropListConnectedTo]="rowDropListConnectedTo()"
+    [cdkDropListConnectedTo]="rows().length === 0 ? rowDropListConnectedTo() : []"
     [cdkDropListDisabled]="rows().length > 0 || !rowDropListId()"
     (cdkDropListEntered)="onEmptySectionDropEnter()"
     (cdkDropListExited)="onEmptySectionDropExit()"
