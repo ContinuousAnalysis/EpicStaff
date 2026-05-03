@@ -66,7 +66,7 @@ export class AddTranscriptionConfigDialogComponent implements OnInit {
             api_key: [edit?.api_key ?? '', Validators.required],
         });
         if (edit) {
-            this.lastAutoCustomName = edit.custom_name;
+            this.lastAutoCustomName = null;
         }
     }
 
@@ -172,7 +172,9 @@ export class AddTranscriptionConfigDialogComponent implements OnInit {
         }
 
         const currentName = customNameControl.value;
-        const isCustomized = currentName && currentName !== this.lastAutoCustomName;
+        const isKnownModelName = this.models.some((model) => model.name === currentName);
+        const isAutoName = !currentName || currentName === this.lastAutoCustomName || isKnownModelName;
+        const isCustomized = !isAutoName;
         if (isCustomized) {
             return;
         }
