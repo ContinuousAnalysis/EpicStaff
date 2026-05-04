@@ -640,7 +640,7 @@ export class AgentsTableComponent {
         const parsed = {
             ...agentData,
             llm_config: llmConfigId,
-            fcm_llm_config: agentData.fcm_llm_config ?? agentData.fullFcmLlmConfig?.id ?? llmConfigId,
+            fcm_llm_config: agentData.fcm_llm_config ?? agentData.fullFcmLlmConfig?.id ?? null,
             realtime_agent: realtime_agent, // Use the properly structured realtime_agent object
             configured_tools: mergedTools
                 .filter((tool: { id: number; type: string }) => tool.type === 'tool-config')
