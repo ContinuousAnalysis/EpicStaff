@@ -38,15 +38,21 @@ def _build_prop(var: dict) -> dict:
     return prop
 
 
-def _build_args_schema(variables: list[dict]) -> dict:
+def _build_args_schema(variables: list[dict], global_kwargs: dict | None = None) -> dict:
     properties: dict = {}
     required: list[str] = []
+    resolved = global_kwargs or {}
     for var in variables:
         input_type = var.get("input_type")
-        if input_type in ("agent_input", "mixed"):
-            properties[var["name"]] = _build_prop(var)
-            if var.get("required") and input_type == "agent_input":
-                required.append(var["name"])
+        name = var["name"]
+        if input_type == "agent_input":
+            properties[name] = _build_prop(var)
+            if var.get("required"):
+                required.append(name)
+        elif input_type == "mixed" and name not in resolved:
+            # No user/default value — agent must provide it
+            properties[name] = _build_prop(var)
+            required.append(name)
     return {
         "title": "ArgumentsSchema",
         "type": "object",
@@ -74,7 +80,10 @@ class ProxyToolFactory:
         stop_event: StopEvent,
     ) -> Tool:
         args_schema = generate_model_from_schema(
-            _build_args_schema(python_code_tool_data.variables)
+            _build_args_schema(
+                python_code_tool_data.variables,
+                python_code_tool_data.python_code.global_kwargs,
+            )
         )
         name = python_code_tool_data.name
         description = python_code_tool_data.description

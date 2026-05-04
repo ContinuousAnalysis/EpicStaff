@@ -6,7 +6,7 @@ Tests:
   2. test_user_input_config_override — user_input variable overridden via PythonCodeToolConfig
   3. test_multiple_agent_inputs     — multiple agent_input variables, all supplied by LLM
   4. test_mixed_uses_default        — mixed variable: agent doesn't set it, default_value used
-  5. test_mixed_agent_override      — mixed variable: agent explicitly overrides the default
+  5. test_mixed_agent_required_when_no_default — mixed without default: agent sees it as required
   6. test_nested_object_variable    — agent_input of type object with nested properties
   7. test_array_variable            — agent_input of type array with items schema
 """
@@ -543,12 +543,12 @@ def main(**kwargs):
                 logger.warning(f"Cleanup failed for {url}: {exc}")
 
 
-def test_mixed_agent_override():
+def test_mixed_agent_required_when_no_default():
     """
-    mixed variable: agent explicitly sets it, overriding the default.
-    Tool: item (agent_input, required) + count (mixed, integer, default=3)
-    Task explicitly asks for count=7 → agent should call tool with count=7.
-    Expected: session completes successfully.
+    mixed variable without default_value → no user/server value exists.
+    Agent sees it in schema as required and must supply it.
+    Tool: item (agent_input) + count (mixed, no default)
+    Expected: agent passes count, session completes.
     """
     s = _make_session()
     tool_id = config_id = None
@@ -565,11 +565,11 @@ def main(**kwargs):
             s.post(
                 f"{DJANGO_URL}/python-code-tool/",
                 json={
-                    "name": f"MixedOverride_{uuid.uuid4().hex[:8]}",
+                    "name": f"MixedNoDefault_{uuid.uuid4().hex[:8]}",
                     "description": (
                         "Repeat an item a given number of times. "
                         "Call this tool when asked to repeat or multiply an item. "
-                        "The count parameter controls how many times."
+                        "You must provide both item and count."
                     ),
                     "python_code": {"code": code, "entrypoint": "main", "libraries": [], "global_kwargs": {}},
                     "variables": [
@@ -587,7 +587,7 @@ def main(**kwargs):
                             "description": "How many times to repeat",
                             "input_type": "mixed",
                             "required": False,
-                            "default_value": 3,
+                            "default_value": None,  # no user value → agent must supply
                         },
                     ],
                 },
@@ -599,8 +599,7 @@ def main(**kwargs):
             s,
             tool_id=tool_id,
             task_instructions=(
-                'Use the repeat tool to process the item "ping" exactly 7 times '
-                "(pass count=7 to the tool)."
+                'Use the repeat tool to process the item "ping" 5 times.'
             ),
             llm_config_id=config_id,
         )

@@ -73,19 +73,31 @@ def run_tool_ctx(variables, global_kwargs, run_code_return):
 # args_schema — unit (без event loop)
 # ---------------------------------------------------------------------------
 
-def test_args_schema_exposes_only_agent_and_mixed():
+def test_args_schema_hides_mixed_when_user_value_provided():
+    # mixed + значение в global_kwargs → агент не видит (user input wins)
     variables = [
         {"name": "query",   "type": "string",  "input_type": "agent_input", "required": True,  "default_value": None},
         {"name": "api_key", "type": "string",  "input_type": "user_input",  "required": True,  "default_value": None},
         {"name": "limit",   "type": "integer", "input_type": "mixed",       "required": False, "default_value": 10},
     ]
-    schema = _build_args_schema(variables)
+    schema = _build_args_schema(variables, global_kwargs={"limit": 10})
 
     assert "query" in schema["properties"]
-    assert "limit" in schema["properties"]
-    assert "api_key" not in schema["properties"]   # user_input не видна агенту
+    assert "api_key" not in schema["properties"]   # user_input скрыт
+    assert "limit" not in schema["properties"]     # mixed с user-значением скрыт
     assert "query" in schema["required"]
-    assert "limit" not in schema["required"]        # mixed — не required
+
+
+def test_args_schema_exposes_mixed_as_required_when_no_user_value():
+    # mixed + нет значения в global_kwargs → агент должен предоставить (required)
+    variables = [
+        {"name": "query", "type": "string",  "input_type": "agent_input", "required": True, "default_value": None},
+        {"name": "limit", "type": "integer", "input_type": "mixed",       "required": False, "default_value": None},
+    ]
+    schema = _build_args_schema(variables, global_kwargs={})
+
+    assert "limit" in schema["properties"]
+    assert "limit" in schema["required"]           # нет дефолта — агент обязан передать
 
 
 # ---------------------------------------------------------------------------
@@ -123,12 +135,23 @@ def test_tool_run_returns_stderr_on_failure():
     assert result == "NameError: foo"
 
 
-def test_agent_kwargs_override_global_kwargs_for_mixed_variable():
+def test_mixed_without_user_value_is_required_and_passed_by_agent():
+    # mixed без user-значения → агент видит и передаёт, попадает в sandbox
+    variables = [
+        {"name": "limit", "type": "integer", "input_type": "mixed", "required": False, "default_value": None},
+    ]
+    with run_tool_ctx(variables, global_kwargs={}, run_code_return=SUCCESS_RESULT) as (tool, captured):
+        tool.run(limit=42)
+
+    assert captured["inputs"]["limit"] == 42
+
+
+def test_mixed_with_user_value_is_used_from_global_kwargs():
+    # mixed с user-значением → агент не видит, значение приходит из global_kwargs
     variables = [
         {"name": "limit", "type": "integer", "input_type": "mixed", "required": False, "default_value": 10},
     ]
-    # converter уже положил дефолт в global_kwargs
     with run_tool_ctx(variables, global_kwargs={"limit": 10}, run_code_return=SUCCESS_RESULT) as (tool, captured):
-        tool.run(limit=99)
+        tool.run()  # агент ничего не передаёт — limit не в schema
 
-    assert captured["inputs"]["limit"] == 99
+    assert captured["inputs"]["limit"] == 10
