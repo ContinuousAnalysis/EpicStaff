@@ -163,6 +163,8 @@ def wait_for_results_sse(session_id: int):
         data = json.loads(event.data)
 
         message_data = data.get("message_data", {})
+        logger.info(f"Get message from SSE: {message_data}...")
+
         if message_data.get("message_type") == "graph_end":
             end_node_result = message_data.get("end_node_result") or {}
             logger.info(f"Received graph_end message: {end_node_result}")
@@ -396,6 +398,12 @@ def create_mcp_tool(
     }
     tool_id = get_mcp_tool_by_name(name=name)
     if tool_id is not None:
+        response = requests.put(
+            f"{DJANGO_URL}/mcp-tools/{tool_id}/",
+            json=tool_data,
+            headers=get_headers(),
+        )
+        validate_response(response)
         return tool_id
 
     response = requests.post(

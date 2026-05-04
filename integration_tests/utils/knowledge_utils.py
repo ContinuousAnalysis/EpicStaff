@@ -26,6 +26,27 @@ def validate_response(response):
         raise Exception(f"API call failed: {response.status_code}, {response.text}")
 
 
+def get_rag_type_id_for_collection(collection_id: int) -> tuple[str, int]:
+    """
+    Fetch the naive RAG type and ID for a given collection from the API.
+
+    Returns:
+        Tuple of (rag_type, rag_id), e.g. ("naive", 6)
+    """
+    response = requests.get(
+        f"{DJANGO_URL}/source-collections/{collection_id}/available-rags/",
+        headers=get_headers(),
+    )
+    response.raise_for_status()
+    rag_configs = response.json()
+    naive_rag = next((r for r in rag_configs if r.get("rag_type") == "naive"), None)
+    if not naive_rag:
+        raise ValueError(
+            f"No naive RAG found for collection {collection_id}. Available: {rag_configs}"
+        )
+    return naive_rag["rag_type"], naive_rag["rag_id"]
+
+
 async def knowledge_search(knowledge_collection_id, query, redis_service) -> list[str]:
     """
     Search for knowledge in a collection using Redis pub/sub.
@@ -50,6 +71,8 @@ async def knowledge_search(knowledge_collection_id, query, redis_service) -> lis
 
     execution_uuid = f"test-knowledge-{random.randint(1,1000)}"
 
+    rag_type, rag_id = get_rag_type_id_for_collection(knowledge_collection_id)
+
     pubsub = await redis_service.async_subscribe(
         channel=knowledge_search_response_channel
     )
@@ -58,10 +81,15 @@ async def knowledge_search(knowledge_collection_id, query, redis_service) -> lis
         # Create and publish the search request
         execution_message = KnowledgeSearchMessage(
             collection_id=knowledge_collection_id,
+            rag_id=rag_id,
+            rag_type=rag_type,
             uuid=execution_uuid,
             query=query,
-            search_limit=3,
-            similarity_threshold=0.01,
+            rag_search_config={
+                "rag_type": rag_type,
+                "search_limit": 3,
+                "similarity_threshold": 0.01,
+            },
         )
 
         await redis_service.async_publish(

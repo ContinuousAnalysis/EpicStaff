@@ -187,7 +187,6 @@ def test_get_tool_class_data():
         assert False, str(error_tools)
 
 
-@pytest.mark.skip
 def test_mcp_session(run_mcp_tool):
     # Create configurations
     llm_id = get_llm_model()
@@ -258,9 +257,7 @@ def create_author_crew(llm_config_id):
 
 
 def create_mcp_test_crew(llm_config_id):
-    mcp_tool_id = create_mcp_tool(
-        "test-mcp", "http://localhost:8082/mcp", "test_tool_1"
-    )
+    mcp_tool_id = create_mcp_tool("test-mcp", "http://fastmcp:8000/mcp", "test_tool_1")
     mcp_agent_id = create_mcp_agent(config_id=llm_config_id, mcp_tool_ids=[mcp_tool_id])
     mcp_crew_id = create_crew(
         name="MCP CREW",
