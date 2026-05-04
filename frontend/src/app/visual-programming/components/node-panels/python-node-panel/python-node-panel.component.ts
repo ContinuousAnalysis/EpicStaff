@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, input, signal } from '@angular/core';
 import { inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Subject, switchMap } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
@@ -27,7 +27,7 @@ import {
     initializeInputMap,
     parseCommaSeparatedList,
 } from '../node-panel-form.utils';
-import { PythonTerminalComponent } from './python-terminal/python-terminal.component';
+import { PythonTerminalComponent, TerminalStatus } from './python-terminal/python-terminal.component';
 import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-log.model';
 
 @Component({
@@ -153,6 +153,7 @@ import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-lo
                                     <app-python-terminal
                                         [logs]="terminalLogs()"
                                         [terminalHeight]="terminalHeight()"
+                                        [status]="terminalStatus()"
                                         (heightChange)="onTerminalHeightChange($event)"
                                         (clearLogs)="onClearLogs()"
                                     />
@@ -470,6 +471,14 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     testRunning = signal(false);
     terminalLogs = signal<TerminalLogEntry[]>([]);
     terminalHeight = signal<number>(150);
+
+    terminalStatus = computed<TerminalStatus>(() => {
+        if (this.testRunning()) return 'processing';
+        if (this.testError()) return 'error';
+        const r = this.testResult();
+        if (r) return r.returncode === 0 ? 'done' : 'error';
+        return 'idle';
+    });
 
     pythonCode: string = '';
     initialPythonCode: string = '';

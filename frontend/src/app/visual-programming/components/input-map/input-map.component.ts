@@ -39,10 +39,7 @@ import { SidePanelService } from '../../services/side-panel.service';
         },
     ],
     template: `
-        <div
-            class="input-map-container"
-            formArrayName="input_map"
-        >
+        <div class="input-map-container">
             <div class="input-map-header">
                 <label>Input List</label>
                 <app-help-tooltip

@@ -2,6 +2,7 @@ import { CommonModule, DOCUMENT } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     effect,
     ElementRef,
     Inject,
@@ -16,6 +17,8 @@ import {
 
 import { AppSvgIconComponent } from '../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { TerminalLogEntry } from './terminal-log.model';
+
+export type TerminalStatus = 'idle' | 'processing' | 'done' | 'error';
 
 @Component({
     standalone: true,
@@ -34,7 +37,19 @@ import { TerminalLogEntry } from './terminal-log.model';
                 ></div>
             }
             <div class="terminal-header">
-                <span class="terminal-title">Terminal Output</span>
+                <div class="terminal-title-group">
+                    @if (status() !== 'idle') {
+                        <span
+                            class="status-dot"
+                            [class.status-processing]="status() === 'processing'"
+                            [class.status-done]="status() === 'done'"
+                            [class.status-error]="status() === 'error'"
+                            [title]="statusTitle()"
+                            [attr.aria-label]="statusTitle()"
+                        ></span>
+                    }
+                    <span class="terminal-title">Terminal Output</span>
+                </div>
                 <div class="terminal-actions">
                     @if (!isCollapsed()) {
                         <button
@@ -126,6 +141,47 @@ import { TerminalLogEntry } from './terminal-log.model';
                 user-select: none;
             }
 
+            .terminal-title-group {
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+            }
+
+            .status-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                flex-shrink: 0;
+                display: inline-block;
+
+                &.status-processing {
+                    background: #ffc14d;
+                    box-shadow: 0 0 0 0 rgba(255, 193, 77, 0.6);
+                    animation: terminal-status-pulse 1.4s infinite ease-in-out;
+                }
+                &.status-done {
+                    background: #3fb950;
+                }
+                &.status-error {
+                    background: #f85149;
+                }
+            }
+
+            @keyframes terminal-status-pulse {
+                0% {
+                    opacity: 1;
+                    box-shadow: 0 0 0 0 rgba(255, 193, 77, 0.55);
+                }
+                70% {
+                    opacity: 0.7;
+                    box-shadow: 0 0 0 6px rgba(255, 193, 77, 0);
+                }
+                100% {
+                    opacity: 1;
+                    box-shadow: 0 0 0 0 rgba(255, 193, 77, 0);
+                }
+            }
+
             .terminal-actions {
                 display: flex;
                 align-items: center;
@@ -196,6 +252,20 @@ import { TerminalLogEntry } from './terminal-log.model';
 export class PythonTerminalComponent implements OnDestroy {
     logs = input<TerminalLogEntry[]>([]);
     terminalHeight = input<number>(150);
+    status = input<TerminalStatus>('idle');
+
+    statusTitle = computed(() => {
+        switch (this.status()) {
+            case 'processing':
+                return 'Processing…';
+            case 'done':
+                return 'Completed successfully';
+            case 'error':
+                return 'Failed';
+            default:
+                return '';
+        }
+    });
 
     heightChange = output<number>();
     clearLogs = output<void>();
