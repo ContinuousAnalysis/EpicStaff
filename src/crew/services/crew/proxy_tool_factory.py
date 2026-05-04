@@ -33,8 +33,16 @@ def _build_prop(var: dict) -> dict:
         prop["properties"] = var["properties"]
         if var.get("required_properties"):
             prop["required"] = var["required_properties"]
+        # Embed field list in description so the LLM sees the expected structure
+        fields = ", ".join(
+            f'"{k}": {v.get("type", "string")}'
+            for k, v in var["properties"].items()
+        )
+        prop["description"] = f'{prop["description"]} Expected JSON object with fields: {{{fields}}}'.strip()
     elif var_type == "array" and var.get("items"):
         prop["items"] = var["items"]
+        item_type = var["items"].get("type", "any")
+        prop["description"] = f'{prop["description"]} Expected JSON array of {item_type}'.strip()
     return prop
 
 
