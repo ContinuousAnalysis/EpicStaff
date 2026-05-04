@@ -1,9 +1,10 @@
 from copy import deepcopy
 from dataclasses import dataclass
 
-from tables.import_export.enums import EntityType
+from tables.import_export.enums import EntityType, NodeType
 from tables.import_export.strategies.graph import GraphStrategy
 from tables.import_export.id_mapper import IDMapper
+from tables.import_export.version_conversions.base import VersionConverter
 
 from tables.graph_versioning.constants import (
     _EXCLUDED_GRAPH_SCALARS,
@@ -106,7 +107,7 @@ class GraphVersioningStrategy:
             node_id = node.get("id")
             node_name = node.get("node_name") or node_type
 
-            if node_type == "CrewNode":
+            if node_type == NodeType.CREW_NODE:
                 if node.get("crew") in missing_sets.crews:
                     skipped_node_ids.add(node_id)
                     warnings.append(
@@ -119,7 +120,7 @@ class GraphVersioningStrategy:
                     )
                     continue
 
-            elif node_type == "SubgraphNode":
+            elif node_type == NodeType.SUBGRAPH_NODE:
                 if node.get("subgraph") in missing_sets.subgraphs:
                     skipped_node_ids.add(node_id)
                     warnings.append(
@@ -132,7 +133,7 @@ class GraphVersioningStrategy:
                     )
                     continue
 
-            elif node_type == "LLMNode":
+            elif node_type == NodeType.LLM_NODE:
                 if node.get("llm_config") in missing_sets.llm_configs:
                     skipped_node_ids.add(node_id)
                     warnings.append(
@@ -145,7 +146,7 @@ class GraphVersioningStrategy:
                     )
                     continue
 
-            elif node_type == "CodeAgentNode":
+            elif node_type == NodeType.CODE_AGENT_NODE:
                 missing_id = node.get("llm_config")
                 if missing_id in missing_sets.llm_configs:
                     node["llm_config"] = None
@@ -159,7 +160,7 @@ class GraphVersioningStrategy:
                         }
                     )
 
-            elif node_type == "WebhookTriggerNode":
+            elif node_type == NodeType.WEBHOOK_TRIGGER_NODE:
                 missing_id = node.get("webhook_trigger")
                 if missing_id in missing_sets.webhooks:
                     node["webhook_trigger"] = None
@@ -173,7 +174,7 @@ class GraphVersioningStrategy:
                         }
                     )
 
-            elif node_type == "TelegramTriggerNode":
+            elif node_type == NodeType.TELEGRAM_TRIGGER_NODE:
                 missing_id = node.get("webhook_trigger")
                 if missing_id in missing_sets.webhooks:
                     node["webhook_trigger"] = None
@@ -201,9 +202,9 @@ class GraphVersioningStrategy:
         warnings: list[dict] = []
 
         for node in snapshot_nodes:
-            if node.get("node_type") != "DecisionTableNode":
+            if node.get("node_type") != NodeType.DECISION_TABLE_NODE:
                 continue
-            node_name = node.get("node_name") or "DecisionTableNode"
+            node_name = node.get("node_name") or NodeType.DECISION_TABLE_NODE
             for field in ("default_next_node_id", "next_error_node_id"):
                 target = node.get(field)
                 if target in skipped_node_ids:
@@ -390,3 +391,12 @@ class GraphVersioningStrategy:
             for entity_id in ids:
                 id_mapper.map(entity_type, entity_id, entity_id, was_created=False)
         return id_mapper
+
+    def convert_snapshot_to_current_version(self, snapshot: dict) -> dict:
+        pseudo_bundle = {
+            EntityType.GRAPH: [snapshot],
+            "version": snapshot.get("version", 1),
+            "main_entity": EntityType.GRAPH,
+        }
+        converted = VersionConverter.convert(pseudo_bundle)
+        return converted[EntityType.GRAPH][0]

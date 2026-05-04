@@ -1,6 +1,7 @@
 from django.db import transaction
 
 from tables.graph_versioning.strategy import GraphVersioningStrategy
+from tables.import_export.constants import IMPORT_VERSION
 from tables.models import (
     GraphVersion,
     Graph,
@@ -18,6 +19,7 @@ class GraphVersioningService:
         Create a named version snapshot of the given graph.
         """
         snapshot = self._strategy.create_snapshot(graph)
+        snapshot["version"] = IMPORT_VERSION
         light_deps = self._strategy.collect_dependencies(graph)
 
         return GraphVersion.objects.create(
@@ -30,8 +32,9 @@ class GraphVersioningService:
 
     def restore_version(self, version: GraphVersion, *, backup: bool = False) -> dict:
         graph = version.graph
-        snapshot = version.snapshot
         deps = version.dependencies or {}
+
+        snapshot = self._strategy.convert_snapshot_to_current_version(version.snapshot)
 
         deps_validation = self._strategy.validate_dependencies(deps)
         filtered_snapshot, warnings = self._strategy.filter_snapshot(
