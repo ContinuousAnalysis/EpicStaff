@@ -46,6 +46,37 @@ def _malloc_trim_and_log() -> None:
         logger.warning(f"malloc_trim failed: {e}")
 
 
+_TRIM_INTERVAL_SECONDS = int(os.environ.get("MALLOC_TRIM_INTERVAL_SECONDS", "60"))
+_trim_task_started = False
+
+
+async def _periodic_malloc_trim() -> None:
+    logger.info(
+        f"Periodic malloc_trim task started (interval={_TRIM_INTERVAL_SECONDS}s)"
+    )
+    while True:
+        try:
+            await asyncio.sleep(_TRIM_INTERVAL_SECONDS)
+            await asyncio.to_thread(_malloc_trim_and_log)
+        except asyncio.CancelledError:
+            logger.info("Periodic malloc_trim task cancelled")
+            raise
+        except Exception as e:
+            logger.warning(f"Periodic malloc_trim iteration failed: {e}")
+
+
+def _ensure_trim_task() -> None:
+    global _trim_task_started
+    if _trim_task_started:
+        return
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+    loop.create_task(_periodic_malloc_trim())
+    _trim_task_started = True
+
+
 def _read_rss_mb() -> float:
     try:
         with open(f"/proc/{os.getpid()}/status", "r") as f:
@@ -156,6 +187,7 @@ class SSEMixin(View, ABC):
             yield ": ping\n\n"
 
     async def event_stream(self, test_mode=False):
+        _ensure_trim_task()
         global _active_sse_count
         _active_sse_count += 1
         view_name = self.__class__.__name__
@@ -199,15 +231,6 @@ class SSEMixin(View, ABC):
                     await pubsub.aclose()
                 except Exception as e:
                     logger.warning(f"Error closing SSE pubsub: {e}")
-
-            # TODO: this is temporary solution to free the memory
-            # need to find something better for long term solution
-            # The problem is with glibc memory allocation.
-            # We potentially should trim memory on timer and not based on client calls
-            try:
-                await asyncio.to_thread(_malloc_trim_and_log)
-            except Exception as e:
-                logger.warning(f"malloc_trim async wrapper failed: {e}")
 
             _active_sse_count -= 1
             _log_sse_state("CLOSE", view_name)
