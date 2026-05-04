@@ -9,6 +9,7 @@ from typing import AsyncGenerator, AsyncIterable, Callable, Union
 from asgiref.sync import sync_to_async
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import JsonResponse, StreamingHttpResponse
+from django.conf import settings
 from django.views import View
 from loguru import logger
 
@@ -21,6 +22,36 @@ MAX_FILE_SIZE = 12 * 1024 * 1024  # 12MB
 
 
 redis_service = RedisService()
+
+
+def _read_rss_mb() -> float:
+    try:
+        with open(f"/proc/{os.getpid()}/status", "r") as f:
+            for line in f:
+                if line.startswith("VmRSS:"):
+                    kb = int(line.split()[1])
+                    return kb / 1024
+    except Exception:
+        return -1.0
+    return -1.0
+
+
+# Debug purpose only
+_active_sse_count = 0
+
+
+def _log_sse_state(action: str, view_name: str) -> None:
+    if not settings.DEBUG:
+        return
+    rss_mb = _read_rss_mb()
+    pool = redis_service.async_redis_client.connection_pool
+    redis_used = len(getattr(pool, "_in_use_connections", []) or [])
+    redis_avail = len(getattr(pool, "_available_connections", []) or [])
+    logger.info(
+        f"SSE {action} | view={view_name} active={_active_sse_count} "
+        f"rss={rss_mb:.1f}MB redis_used={redis_used} redis_avail={redis_avail}"
+    )
+
 
 session_status_channel_name = os.environ.get(
     "SESSION_STATUS_CHANNEL", "sessions:session_status"
@@ -112,7 +143,13 @@ class SSEMixin(View, ABC):
             yield ": ping\n\n"
 
     async def event_stream(self, test_mode=False):
+        global _active_sse_count
+        _active_sse_count += 1
+        view_name = self.__class__.__name__
+        _log_sse_state("OPEN", view_name)
+
         self.last_ping = time.time()
+        pubsub = None
         try:
             channels = [
                 session_status_channel_name,
@@ -129,6 +166,7 @@ class SSEMixin(View, ABC):
                 for i in range(3):
                     yield f"data: test event #{i + 1}\n\n"
                 raise GeneratorExit()
+
             async for data in self._data_generator(
                 partial(self.get_live_updates, pubsub)
             ):
@@ -141,6 +179,15 @@ class SSEMixin(View, ABC):
         except Exception as e:
             logger.error(f"Sending fatal-error event due to error: {e}")
             yield "\n\nevent: fatal-error\ndata: unexpected error\n\n"
+        finally:
+            if pubsub is not None:
+                try:
+                    await pubsub.unsubscribe()
+                    await pubsub.aclose()
+                except Exception as e:
+                    logger.warning(f"Error closing SSE pubsub: {e}")
+            _active_sse_count -= 1
+            _log_sse_state("CLOSE", view_name)
 
     async def get(self, request, *args, **kwargs):
         ticket = request.GET.get("ticket", "")
