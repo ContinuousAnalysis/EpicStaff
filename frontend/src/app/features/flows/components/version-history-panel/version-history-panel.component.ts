@@ -1,4 +1,4 @@
-import { Dialog, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
 import {
     ChangeDetectorRef,
@@ -16,7 +16,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { IconButtonComponent } from '@shared/components';
-import { catchError, EMPTY, filter, Observable, switchMap, tap } from 'rxjs';
+import { EMPTY, filter, switchMap } from 'rxjs';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
 import { ConfirmationDialogService } from '../../../../shared/components/cofirm-dialog/confimation-dialog.service';
@@ -24,10 +24,6 @@ import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.
 import { UnsavedChangesDialogService } from '../../../../shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
 import { GraphRestoreResponse, GraphVersionDto } from '../../models/graph.model';
 import { FlowsApiService } from '../../services/flows-api.service';
-import {
-    SaveVersionDialogComponent,
-    SaveVersionDialogResult,
-} from '../save-version-dialog/save-version-dialog.component';
 
 @Component({
     selector: 'app-version-history-panel',
@@ -75,10 +71,9 @@ export class VersionHistoryPanelComponent implements OnInit {
         private toastService: ToastService,
         private confirmationDialogService: ConfirmationDialogService,
         private unsavedChangesDialogService: UnsavedChangesDialogService,
-        private cdkDialog: Dialog,
         private cdr: ChangeDetectorRef,
         @Inject(DIALOG_DATA) public data: { graphId: number; hasUnsavedChanges?: () => boolean },
-        public dialogRef: DialogRef<boolean>
+        public dialogRef: DialogRef<GraphRestoreResponse | undefined>
     ) {}
 
     public ngOnInit(): void {
@@ -202,81 +197,45 @@ export class VersionHistoryPanelComponent implements OnInit {
 
     private restore(version: GraphVersionDto): void {
         const hasUnsaved = this.data.hasUnsavedChanges?.() ?? false;
+        const message = hasUnsaved
+            ? `You have unsaved changes. Restoring <strong>${version.name}</strong> will replace the current flow state. Save a backup of the current state first?`
+            : `Restoring <strong>${version.name}</strong> will replace the current flow state. Save a backup of the current state first?`;
 
-        let action$: Observable<GraphRestoreResponse>;
-
-        if (hasUnsaved) {
-            action$ = this.unsavedChangesDialogService
-                .confirm({
-                    title: 'Unsaved changes',
-                    message: `Restoring <strong>${version.name}</strong> will replace the current flow state. You have unsaved changes — what would you like to do?`,
-                    saveText: 'Save',
-                    dontSaveText: 'Discard and restore',
-                    cancelText: 'Cancel',
-                    type: 'warning',
-                    showDontSave: true,
-                })
-                .pipe(
-                    switchMap((result) => {
-                        if (result === 'dont-save') {
-                            return this.flowApiService.restoreGraphVersion(version.id);
-                        }
-                        if (result === 'save') {
-                            const saveDialogRef = this.cdkDialog.open<SaveVersionDialogResult>(
-                                SaveVersionDialogComponent,
-                                { width: '560px', data: {} }
-                            );
-                            return saveDialogRef.closed.pipe(
-                                switchMap((saveResult) => {
-                                    if (!saveResult) return EMPTY;
-                                    return this.flowApiService
-                                        .saveGraphVersion({
-                                            graph_id: this.data.graphId,
-                                            name: saveResult.name,
-                                            description: saveResult.description,
-                                        })
-                                        .pipe(
-                                            tap(() => this.toastService.success(`Version '${saveResult.name}' saved`)),
-                                            switchMap(() => this.flowApiService.restoreGraphVersion(version.id)),
-                                            catchError(() => {
-                                                this.toastService.error('Failed to save version');
-                                                return EMPTY;
-                                            })
-                                        );
-                                })
-                            );
-                        }
-                        return EMPTY;
-                    })
-                );
-        } else {
-            action$ = this.confirmationDialogService
-                .confirm({
-                    title: 'Restore version',
-                    message: `Restoring <strong>${version.name}</strong> will replace the current flow state. This action cannot be undone.`,
-                    confirmText: 'Restore',
-                    cancelText: 'Cancel',
-                    type: 'warning',
-                })
-                .pipe(
-                    filter((r) => r === true),
-                    switchMap(() => this.flowApiService.restoreGraphVersion(version.id))
-                );
-        }
-
-        action$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: (response) => {
-                if (response.warnings.length > 0) {
-                    this.toastService.warning(
-                        `Version restored with ${response.warnings.length} warning(s): some nodes or edges were removed`
-                    );
-                } else {
-                    this.toastService.success('Version restored successfully');
-                }
-                this.dialogRef.close(true);
-            },
-            error: () => this.toastService.error('Failed to restore version'),
-        });
+        this.unsavedChangesDialogService
+            .confirm({
+                title: 'Restore version',
+                message,
+                saveText: 'Save & Restore',
+                dontSaveText: 'Just Restore',
+                cancelText: 'Cancel',
+                type: 'warning',
+                showDontSave: true,
+            })
+            .pipe(
+                switchMap((result) => {
+                    if (result === 'save') {
+                        return this.flowApiService.restoreGraphVersion(version.id, true);
+                    }
+                    if (result === 'dont-save') {
+                        return this.flowApiService.restoreGraphVersion(version.id, false);
+                    }
+                    return EMPTY;
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: (response) => {
+                    if (response.warnings.length > 0) {
+                        this.toastService.warning(
+                            `Version restored with ${response.warnings.length} warning(s): some nodes or edges were removed`
+                        );
+                    } else {
+                        this.toastService.success('Version restored successfully');
+                    }
+                    this.dialogRef.close(response);
+                },
+                error: () => this.toastService.error('Failed to restore version'),
+            });
     }
 
     private loadVersions(): void {

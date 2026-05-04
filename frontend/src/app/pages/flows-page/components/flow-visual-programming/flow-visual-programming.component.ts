@@ -34,12 +34,18 @@ import {
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
 import { FlowSessionsListComponent } from '../../../../features/flows/components/flow-sessions-dialog/flow-sessions-list.component';
+import { RestoreWarningsDialogComponent } from '../../../../features/flows/components/restore-warnings-dialog/restore-warnings-dialog.component';
 import {
     SaveVersionDialogComponent,
     SaveVersionDialogResult,
 } from '../../../../features/flows/components/save-version-dialog/save-version-dialog.component';
 import { VersionHistoryPanelComponent } from '../../../../features/flows/components/version-history-panel/version-history-panel.component';
-import { GetGraphLightRequest, GraphDto } from '../../../../features/flows/models/graph.model';
+import {
+    GetGraphLightRequest,
+    GraphDto,
+    GraphRestoreResponse,
+    RestoreWarning,
+} from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { RunGraphService } from '../../../../features/flows/services/run-graph-session.service';
@@ -113,6 +119,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
     public isSaving = signal(false);
     public isRunning = signal(false);
+    public restoreWarnings = signal<RestoreWarning[]>([]);
 
     public isPanelOpen = signal(false);
     public isPanelCollapsed = signal(true);
@@ -543,7 +550,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
         const positionStrategy = this.overlay.position().global().right('0').top('5rem');
 
-        const dialogRef = this.dialog.open<boolean>(VersionHistoryPanelComponent, {
+        const dialogRef = this.dialog.open<GraphRestoreResponse | undefined>(VersionHistoryPanelComponent, {
             positionStrategy,
             height: 'calc(100% - 5rem)',
             width: '380px',
@@ -553,9 +560,19 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         dialogRef.closed
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
-                filter((result) => result === true)
+                filter((result): result is GraphRestoreResponse => !!result?.restored)
             )
-            .subscribe(() => this.refreshCurrentFlow());
+            .subscribe((response) => {
+                this.restoreWarnings.set(response.warnings);
+                this.refreshCurrentFlow();
+            });
+    }
+
+    public onShowRestoreWarnings(): void {
+        this.dialog.open(RestoreWarningsDialogComponent, {
+            width: '560px',
+            data: { warnings: this.restoreWarnings() },
+        });
     }
 
     public onSaveVersion(): void {
