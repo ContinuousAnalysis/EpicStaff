@@ -1,3 +1,5 @@
+import asyncio
+import ctypes
 import json
 import os
 import time
@@ -6,8 +8,8 @@ from datetime import datetime
 from functools import partial
 from typing import AsyncGenerator, AsyncIterable, Callable, Union
 
-from asgiref.sync import sync_to_async
 from django.core.serializers.json import DjangoJSONEncoder
+from asgiref.sync import sync_to_async
 from django.http import JsonResponse, StreamingHttpResponse
 from django.conf import settings
 from django.views import View
@@ -24,6 +26,26 @@ MAX_FILE_SIZE = 12 * 1024 * 1024  # 12MB
 redis_service = RedisService()
 
 
+_active_sse_count: int = 0
+
+try:
+    _libc = ctypes.CDLL("libc.so.6")
+except Exception:
+    _libc = None
+
+
+def _malloc_trim_and_log() -> None:
+    if _libc is None:
+        return
+
+    try:
+        _libc.malloc_trim(0)
+        rss_after = _read_rss_mb()
+        logger.info(f"After malloc_trim(0): rss={rss_after:.1f}MB")
+    except Exception as e:
+        logger.warning(f"malloc_trim failed: {e}")
+
+
 def _read_rss_mb() -> float:
     try:
         with open(f"/proc/{os.getpid()}/status", "r") as f:
@@ -36,13 +58,7 @@ def _read_rss_mb() -> float:
     return -1.0
 
 
-# Debug purpose only
-_active_sse_count = 0
-
-
 def _log_sse_state(action: str, view_name: str) -> None:
-    if not settings.DEBUG:
-        return
     rss_mb = _read_rss_mb()
     pool = redis_service.async_redis_client.connection_pool
     redis_used = len(getattr(pool, "_in_use_connections", []) or [])
@@ -72,11 +88,8 @@ class SSEMixin(View, ABC):
     last_ping = None
 
     async def async_orm_generator(self, queryset):
-        entities = await sync_to_async(list)(
-            queryset
-        )  # Convert queryset to a list asynchronously
-        for entity in entities:
-            yield entity  # Yield one entity at a time asynchronously
+        async for entity in queryset.aiterator(chunk_size=200):
+            yield entity
 
     @abstractmethod
     async def get_initial_data(self):
@@ -186,6 +199,16 @@ class SSEMixin(View, ABC):
                     await pubsub.aclose()
                 except Exception as e:
                     logger.warning(f"Error closing SSE pubsub: {e}")
+
+            # TODO: this is temporary solution to free the memory
+            # need to find something better for long term solution
+            # The problem is with glibc memory allocation.
+            # We potentially should trim memory on timer and not based on client calls
+            try:
+                await asyncio.to_thread(_malloc_trim_and_log)
+            except Exception as e:
+                logger.warning(f"malloc_trim async wrapper failed: {e}")
+
             _active_sse_count -= 1
             _log_sse_state("CLOSE", view_name)
 
