@@ -211,7 +211,7 @@ export class AddEditChannelDialogComponent implements OnInit {
               });
 
         obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: () => this.configureWebhookAndClose(channelToken, phoneNumber, accountSid, authToken),
+            next: () => this.configureWebhookAndClose(channelToken, phoneNumber),
             error: () => {
                 this.errorMessage.set('Channel saved but Twilio settings failed to save.');
                 this.isSubmitting.set(false);
@@ -219,12 +219,7 @@ export class AddEditChannelDialogComponent implements OnInit {
         });
     }
 
-    private configureWebhookAndClose(
-        channelToken: string,
-        phoneNumber: string,
-        accountSid: string,
-        authToken: string
-    ): void {
+    private configureWebhookAndClose(channelToken: string, phoneNumber: string): void {
         const ngrokConfig = this.form.get('ngrok_config')?.value;
         if (!phoneNumber || !ngrokConfig) {
             this.dialogRef.close(true);
@@ -238,7 +233,7 @@ export class AddEditChannelDialogComponent implements OnInit {
         }
 
         this.channelService
-            .configureWebhook(phoneSid, channelToken, accountSid, authToken)
+            .configureWebhook(phoneSid, channelToken)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.dialogRef.close(true),

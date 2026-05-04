@@ -1219,6 +1219,16 @@ class TwilioChannelViewSet(viewsets.ModelViewSet):
     queryset = TwilioChannel.objects.all()
     serializer_class = TwilioChannelSerializer
 
+    def create(self, request, *args, **kwargs):
+        channel_id = request.data.get("channel")
+        instance = TwilioChannel.objects.filter(channel_id=channel_id).first()
+        if instance:
+            serializer = self.get_serializer(instance, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return super().create(request, *args, **kwargs)
+
 
 class ConversationRecordingViewSet(viewsets.ModelViewSet):
     queryset = ConversationRecording.objects.all()
@@ -1621,16 +1631,6 @@ class TwilioConfigureWebhookView(generics.GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        account_sid = request.headers.get("X-Twilio-Account-Sid", "").strip()
-        auth_token = request.headers.get("X-Twilio-Auth-Token", "").strip()
-        logger.info(f"configure-webhook: account_sid present={bool(account_sid)} auth_token present={bool(auth_token)}")
-        if not account_sid or not auth_token:
-            logger.warning("configure-webhook: missing credentials headers")
-            return Response(
-                {"error": "X-Twilio-Account-Sid and X-Twilio-Auth-Token headers are required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         try:
             channel = RealtimeChannel.objects.select_related("twilio__ngrok_config").get(
                 token=channel_token
@@ -1640,8 +1640,19 @@ class TwilioConfigureWebhookView(generics.GenericAPIView):
             return Response({"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND)
 
         twilio = getattr(channel, "twilio", None)
-        ngrok = getattr(twilio, "ngrok_config", None) if twilio else None
-        logger.info(f"configure-webhook: twilio={twilio} ngrok={ngrok}")
+        if not twilio or not twilio.account_sid or not twilio.auth_token:
+            logger.warning(f"configure-webhook: no Twilio credentials for channel {channel.id}")
+            return Response(
+                {"error": "No Twilio credentials configured for this channel"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        account_sid = twilio.account_sid
+        auth_token = twilio.auth_token
+        logger.info(f"configure-webhook: using stored credentials for account_sid={account_sid}")
+
+        ngrok = twilio.ngrok_config
+        logger.info(f"configure-webhook: ngrok={ngrok}")
         if not ngrok:
             logger.warning(f"configure-webhook: no ngrok tunnel configured for channel {channel.id}")
             return Response(

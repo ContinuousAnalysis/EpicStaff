@@ -77,22 +77,11 @@ export class RealtimeChannelService {
             .pipe(map((r) => r.results));
     }
 
-    configureWebhook(
-        phoneSid: string,
-        channelToken: string,
-        accountSid: string,
-        authToken: string
-    ): Observable<{ webhook_url: string }> {
+    configureWebhook(phoneSid: string, channelToken: string): Observable<{ webhook_url: string }> {
         return this.http.post<{ webhook_url: string }>(
             this.configService.apiUrl + 'twilio/configure-webhook/',
             { phone_sid: phoneSid, channel_token: channelToken },
-            {
-                headers: new HttpHeaders({
-                    'Content-Type': 'application/json',
-                    'X-Twilio-Account-Sid': accountSid,
-                    'X-Twilio-Auth-Token': authToken,
-                }),
-            }
+            { headers: this.headers }
         );
     }
 }
