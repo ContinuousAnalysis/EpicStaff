@@ -10,6 +10,7 @@ export interface PythonNode {
     output_variable_path: string | null;
     stream_config?: Record<string, boolean>;
     metadata: Record<string, unknown>;
+    use_storage?: boolean;
 }
 
 export interface CreatePythonNodeRequest {
@@ -20,4 +21,5 @@ export interface CreatePythonNodeRequest {
     output_variable_path: string | null;
     stream_config?: Record<string, boolean>;
     metadata?: Record<string, unknown>;
+    use_storage?: boolean;
 }

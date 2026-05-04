@@ -125,16 +125,20 @@ export function buildBulkSavePayload(
             stream_config: n.stream_config ?? {},
             metadata: toNodeMetadata(n),
         })),
-        python_node_list: nodeItems(nodeDiff.pythonNodes, (n) => ({
-            node_name: n.node_name,
-            graph: graphId,
-            python_code: n.data,
-            input_map: n.input_map || {},
-            output_variable_path: n.output_variable_path || null,
-            stream_config: n.stream_config ?? {},
-            test_input: n.test_input ?? {},
-            metadata: toNodeMetadata(n),
-        })),
+        python_node_list: nodeItems(nodeDiff.pythonNodes, (n) => {
+            const { use_storage, ...pythonCode } = n.data;
+            return {
+                node_name: n.node_name,
+                graph: graphId,
+                python_code: pythonCode,
+                input_map: n.input_map || {},
+                output_variable_path: n.output_variable_path || null,
+                stream_config: n.stream_config ?? {},
+                use_storage: use_storage ?? false,
+                test_input: n.test_input ?? {},
+                metadata: toNodeMetadata(n),
+            };
+        }),
         llm_node_list: nodeItems(nodeDiff.llmNodes, (n) => ({
             node_name: n.node_name,
             graph: graphId,
@@ -216,6 +220,7 @@ export function buildBulkSavePayload(
             output_variable_path: n.output_variable_path,
             stream_config: n.stream_config ?? {},
             output_schema: n.data?.output_schema ?? {},
+            use_storage: n.data?.use_storage ?? false,
             metadata: toNodeMetadata(n),
         })),
         edge_list: edgeList,

@@ -1,4 +1,5 @@
 import { Dialog as CdkDialog } from '@angular/cdk/dialog';
+import { Overlay } from '@angular/cdk/overlay';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -16,11 +17,28 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, defaultIfEmpty, EMPTY, finalize, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
+import {
+    catchError,
+    defaultIfEmpty,
+    EMPTY,
+    filter,
+    finalize,
+    forkJoin,
+    map,
+    Observable,
+    of,
+    switchMap,
+    tap,
+} from 'rxjs';
 
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
 import { FlowSessionsListComponent } from '../../../../features/flows/components/flow-sessions-dialog/flow-sessions-list.component';
+import {
+    SaveVersionDialogComponent,
+    SaveVersionDialogResult,
+} from '../../../../features/flows/components/save-version-dialog/save-version-dialog.component';
+import { VersionHistoryPanelComponent } from '../../../../features/flows/components/version-history-panel/version-history-panel.component';
 import { GetGraphLightRequest, GraphDto } from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
@@ -91,7 +109,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         return validated.flowModel;
     });
     public readonly currentFlowState = computed<FlowModel>(() => this.flowService.getFlowState());
-    private readonly hasUnsavedChangesSignal = computed<boolean>(() => {
+    public readonly hasUnsavedChangesSignal = computed<boolean>(() => {
         return JSON.stringify(this.currentFlowState()) !== JSON.stringify(this.savedFlowState());
     });
 
@@ -107,6 +125,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     private readonly MAX_PANEL_WIDTH_RATIO = 0.7;
     private readonly routeParamMap;
     private readonly routeQueryParamMap;
+    private isDeactivating = false;
 
     @ViewChild(FlowGraphComponent)
     private flowGraphComponent?: FlowGraphComponent;
@@ -125,6 +144,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly toastService: ToastService,
         private readonly runGraphService: RunGraphService,
         private readonly dialog: CdkDialog,
+        private readonly overlay: Overlay,
         private readonly configService: ConfigService,
         private readonly elementRef: ElementRef,
         private readonly epicChatService: EpicChatService,
@@ -171,10 +191,6 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 tap(({ graph, flows }) => {
-                    console.log(
-                        `[load][fetchGraph] graphId=${graphId} loaded edge_list=${graph.edge_list?.length ?? 0} ` +
-                            `decision_tables=${graph.decision_table_node_list?.length ?? 0} flowsLight=${flows.length}`
-                    );
                     this.applyLoadedGraphState(graph, flows, showRefreshToast);
                 }),
                 catchError(() => {
@@ -205,51 +221,6 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         const connectionDiff = getConnectionDiff(previous, flowState, idMap);
         const payload = buildBulkSavePayload(this.graph.id, nodeDiff, connectionDiff, flowState, idMap);
 
-        console.log(
-            `[save][connections][current] graphId=${this.graph.id} ` +
-                `connections=${flowState.connections.length} ` +
-                `items=${JSON.stringify(
-                    flowState.connections.map((c) => ({
-                        id: c.id,
-                        sourceNodeId: c.sourceNodeId,
-                        targetNodeId: c.targetNodeId,
-                        sourcePortId: c.sourcePortId,
-                        targetPortId: c.targetPortId,
-                        backendEdgeId: c.data?.id ?? null,
-                    }))
-                )}`
-        );
-        console.log(
-            `[save][connections][diff] graphId=${this.graph.id} ` +
-                `toCreate=${connectionDiff.toCreate.length} toDelete=${connectionDiff.toDelete.length} ` +
-                `toCreateItems=${JSON.stringify(
-                    connectionDiff.toCreate.map((c) => ({
-                        id: c.id,
-                        sourceNodeId: c.sourceNodeId,
-                        targetNodeId: c.targetNodeId,
-                        sourcePortId: c.sourcePortId,
-                        targetPortId: c.targetPortId,
-                    }))
-                )} ` +
-                `toDeleteItems=${JSON.stringify(
-                    connectionDiff.toDelete.map((c) => ({
-                        id: c.id,
-                        sourceNodeId: c.sourceNodeId,
-                        targetNodeId: c.targetNodeId,
-                        sourcePortId: c.sourcePortId,
-                        targetPortId: c.targetPortId,
-                        backendEdgeId: c.data?.id ?? null,
-                    }))
-                )}`
-        );
-        console.log(
-            `[save][payload][backend] graphId=${this.graph.id} ` +
-                `edge_list_count=${((payload['edge_list'] as unknown[]) ?? []).length} ` +
-                `deleted_edge_ids_count=${(((payload['deleted'] as { edge_ids?: unknown[] })?.edge_ids as unknown[]) ?? []).length} ` +
-                `edge_list=${JSON.stringify(payload['edge_list'] ?? [])} ` +
-                `deleted_edge_ids=${JSON.stringify((payload['deleted'] as { edge_ids?: unknown[] })?.edge_ids ?? [])}`
-        );
-
         this.isSaving.set(true);
 
         return this.flowApiService.bulkSaveGraph(this.graph.id, payload).pipe(
@@ -260,33 +231,10 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                 )
             ),
             tap(({ graph, flows }) => {
-                console.log(
-                    `[save][response][backend] graphId=${graph.id} edge_list=${graph.edge_list?.length ?? 0} ` +
-                        `edges=${JSON.stringify(
-                            (graph.edge_list ?? []).map((e) => ({
-                                id: e.id,
-                                start_node_id: e.start_node_id,
-                                end_node_id: e.end_node_id,
-                            }))
-                        )}`
-                );
                 this.graphState.set(graph);
                 this.availableFlowLights.set(flows);
                 const patchedFlow = patchFlowStateWithBackendIds(flowState, previous, nodeDiff, graph);
-                console.log(
-                    `[save][connections][patched-flow] graphId=${graph.id} ` +
-                        `connections=${patchedFlow.connections.length} ` +
-                        `items=${JSON.stringify(
-                            patchedFlow.connections.map((c) => ({
-                                id: c.id,
-                                sourceNodeId: c.sourceNodeId,
-                                targetNodeId: c.targetNodeId,
-                                sourcePortId: c.sourcePortId,
-                                targetPortId: c.targetPortId,
-                                backendEdgeId: c.data?.id ?? null,
-                            }))
-                        )}`
-                );
+
                 this.flowService.setFlow(patchedFlow);
                 this.savedFlowState.set(cloneFlowState(patchedFlow));
                 if (showSuccessToast) {
@@ -476,8 +424,10 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     }
 
     public canDeactivate(): boolean | Observable<boolean> {
+        if (this.isDeactivating) return true;
         if (!this.hasUnsavedChanges()) return true;
 
+        this.isDeactivating = true;
         return this.unsavedChangesDialog
             .confirmUnsavedChanges(() =>
                 this.saveFlowState(this.currentFlowState(), false).pipe(
@@ -486,7 +436,15 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                     catchError(() => of(false))
                 )
             )
-            .pipe(map((result) => result === 'save' || result === 'dont-save'));
+            .pipe(
+                tap((result) => {
+                    this.isDeactivating = false;
+                    if (result === 'dont-save') {
+                        this.savedFlowState.set(cloneFlowState(this.currentFlowState()));
+                    }
+                }),
+                map((result) => result === 'save' || result === 'dont-save')
+            );
     }
 
     public connectToEpicChat(): void {
@@ -645,5 +603,81 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     public onFlowEdited(updatedFlow: GraphDto): void {
         this.graphState.set(updatedFlow);
         this.cdr.markForCheck();
+    }
+
+    public onViewVersionHistory(): void {
+        if (!this.graph?.id) return;
+
+        const positionStrategy = this.overlay.position().global().right('0').top('5rem');
+
+        this.dialog.open(VersionHistoryPanelComponent, {
+            positionStrategy,
+            height: 'calc(100% - 5rem)',
+            width: '380px',
+            data: { graphId: this.graph.id },
+        });
+    }
+
+    public onSaveVersion(): void {
+        if (!this.graph.id) return;
+
+        const openVersionDialog = () => {
+            const dialogRef = this.dialog.open<SaveVersionDialogResult>(SaveVersionDialogComponent, {
+                width: '560px',
+                data: {},
+            });
+
+            dialogRef.closed
+                .pipe(
+                    takeUntilDestroyed(this.destroyRef),
+                    filter((result): result is SaveVersionDialogResult => !!result),
+                    switchMap((result) =>
+                        this.flowApiService
+                            .saveGraphVersion({
+                                graph_id: this.graph.id,
+                                name: result.name,
+                                description: result.description,
+                            })
+                            .pipe(
+                                tap(() => this.toastService.success(`Version '${result.name}' saved`)),
+                                catchError(() => {
+                                    this.toastService.error('Failed to save version');
+                                    return EMPTY;
+                                })
+                            )
+                    )
+                )
+                .subscribe();
+        };
+
+        if (!this.hasUnsavedChanges()) {
+            openVersionDialog();
+            return;
+        }
+
+        this.unsavedChangesDialog
+            .confirm({
+                title: 'Your flow has unsaved changes',
+                message:
+                    'Your flow has unsaved changes. <strong>Save</strong> the flow first to include them in the version, or <strong>continue</strong> to version the last saved state.',
+                saveText: 'Save',
+                dontSaveText: 'Continue',
+                cancelText: 'Cancel',
+                type: 'warning',
+                showDontSave: true,
+            })
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                switchMap((result) => {
+                    if (result === 'save') {
+                        return this.saveFlowState(this.currentFlowState(), false).pipe(map(() => void 0));
+                    }
+                    if (result === 'dont-save') {
+                        return of(void 0);
+                    }
+                    return EMPTY;
+                })
+            )
+            .subscribe(() => openVersionDialog());
     }
 }

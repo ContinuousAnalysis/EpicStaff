@@ -8,6 +8,7 @@ from typing import Self
 from django.apps import apps
 from django.db import connection, models
 from django.db.models import Func, Value
+from django.utils import timezone
 
 
 class AbstractDefaultFillableModel(models.Model):
@@ -126,6 +127,32 @@ class CrewSessionMessage(BaseSessionMessage):
 
     class Meta:
         abstract = True
+
+
+class SoftDeleteMixin(models.Model):
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        default=None,
+        editable=False,
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+
+    def delete(self, using=None, keep_parents=False):
+        self.is_active = False
+        self.deleted_at = timezone.now()
+        self.save(update_fields=["is_active", "deleted_at"])
+
+    def hard_delete(self):
+        super().delete()
+
+    def restore(self):
+        self.is_active = True
+        self.deleted_at = None
+        self.save(update_fields=["is_active", "deleted_at"])
 
 
 class TimestampMixin(models.Model):

@@ -20,13 +20,15 @@ import {
 } from '../../../services/python-code-run.service';
 import { SidePanelService } from '../../../services/side-panel.service';
 import { InputMapComponent } from '../../input-map/input-map.component';
+import { NodeStorageSectionComponent } from '../../node-storage-section/node-storage-section.component';
+import {
+    createInputMapFromPairs,
+    getValidInputPairs,
+    initializeInputMap,
+    parseCommaSeparatedList,
+} from '../node-panel-form.utils';
 import { PythonTerminalComponent } from './python-terminal/python-terminal.component';
 import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-log.model';
-
-interface InputMapPair {
-    key: string;
-    value: string;
-}
 
 @Component({
     standalone: true,
@@ -38,6 +40,7 @@ interface InputMapPair {
         CodeEditorComponent,
         CommonModule,
         PythonTerminalComponent,
+        NodeStorageSectionComponent,
         AppSvgIconComponent,
     ],
     animations: [expandCollapseAnimation],
@@ -110,6 +113,13 @@ interface InputMapPair {
                                     </label>
                                 </div>
                             </div>
+
+                            <app-node-storage-section
+                                [useStorage]="useStorage()"
+                                (onToggleChange)="onStorageToggle($event)"
+                                (onInsertCode)="insertStorageCode($event)"
+                                (onRemoveCode)="removeStorageCode($event)"
+                            ></app-node-storage-section>
                         </div>
 
                         <!-- Code editor area: toggle button only present in expanded mode -->
@@ -124,7 +134,7 @@ interface InputMapPair {
                                     "
                                 >
                                     <app-svg-icon
-                                        [icon]="isCodeEditorFullWidth() ? 'chevron-left' : 'chevron-right'"
+                                        [icon]="isCodeEditorFullWidth() ? 'chevron-right' : 'chevron-left'"
                                         size="1rem"
                                     ></app-svg-icon>
                                 </button>
@@ -452,6 +462,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     public override readonly isExpanded = input<boolean>(false);
     public readonly graphId = input<number | null>(null);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
+    public readonly useStorage = signal<boolean>(false);
 
     isOpenTestMode = signal(false);
     testResult = signal<PythonCodeResult | null>(null);
@@ -532,9 +543,32 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
         this.codeEditorHasError = hasError;
     }
 
+    onStorageToggle(value: boolean): void {
+        this.useStorage.set(value);
+        this.sidePanelService.triggerAutosave();
+    }
+
+    insertStorageCode(code: string): void {
+        if (!this.pythonCode.includes('epicstaff_storage')) {
+            this.pythonCode = code + '\n\n' + this.pythonCode;
+        }
+        this.sidePanelService.triggerAutosave();
+    }
+
+    removeStorageCode(code: string): void {
+        const prefix = code + '\n\n';
+        if (this.pythonCode.startsWith(prefix)) {
+            this.pythonCode = this.pythonCode.slice(prefix.length);
+            this.sidePanelService.triggerAutosave();
+        }
+    }
+
     initializeForm(): FormGroup {
         this.terminalLogs.set([]);
         const sc = this.node().stream_config;
+
+        this.useStorage.set(this.node().data.use_storage ?? false);
+
         const form = this.fb.group({
             node_name: [this.node().node_name, this.createNodeNameValidators()],
             input_map: this.fb.array([]),
@@ -561,15 +595,9 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     }
 
     createUpdatedNode(): PythonNodeModel {
-        const validInputPairs = this.getValidInputPairs();
-        const inputMapValue = this.createInputMapFromPairs(validInputPairs);
-
-        const librariesArray = this.form.value.libraries
-            ? this.form.value.libraries
-                  .split(',')
-                  .map((lib: string) => lib.trim())
-                  .filter((lib: string) => lib.length > 0)
-            : [];
+        const validInputPairs = getValidInputPairs(this.inputMapPairs);
+        const inputMapValue = createInputMapFromPairs(validInputPairs);
+        const librariesArray = parseCommaSeparatedList(this.form.value.libraries);
 
         return {
             ...this.node(),
@@ -582,6 +610,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
                 code: this.pythonCode,
                 entrypoint: 'main',
                 libraries: librariesArray,
+                use_storage: this.useStorage(),
             },
             stream_config: this.form.value.stream_config || {},
             test_input: this.getTestInputValue(),
@@ -615,42 +644,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     }
 
     private initializeInputMap(form: FormGroup): void {
-        const inputMapArray = form.get('input_map') as FormArray;
-
-        if (this.node().input_map && Object.keys(this.node().input_map).length > 0) {
-            Object.entries(this.node().input_map).forEach(([key, value]) => {
-                inputMapArray.push(
-                    this.fb.group({
-                        key: [key, Validators.required],
-                        value: [value, Validators.required],
-                    })
-                );
-            });
-        } else {
-            inputMapArray.push(
-                this.fb.group({
-                    key: [''],
-                    value: ['variables.'],
-                })
-            );
-        }
-    }
-
-    private getValidInputPairs(): AbstractControl[] {
-        return this.inputMapPairs.controls.filter((control) => {
-            const value = control.value as InputMapPair;
-            return value.key?.trim() !== '' || value.value?.trim() !== '';
-        });
-    }
-
-    private createInputMapFromPairs(pairs: AbstractControl[]): Record<string, string> {
-        return pairs.reduce((acc: Record<string, string>, curr: AbstractControl) => {
-            const pair = curr.value as InputMapPair;
-            if (pair.key?.trim()) {
-                acc[pair.key.trim()] = pair.value;
-            }
-            return acc;
-        }, {});
+        initializeInputMap(form, this.node().input_map as Record<string, unknown> | null | undefined, this.fb);
     }
 
     toggleCodeEditorFullWidth(): void {

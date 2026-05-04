@@ -1,7 +1,8 @@
 import { Dialog as CdkDialog } from '@angular/cdk/dialog';
 import { DialogModule } from '@angular/cdk/dialog';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, inject, Input, Output, signal } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 
 import { FlowRenameDialogComponent } from '../../../../../../features/flows/components/flow-rename-dialog/flow-rename-dialog.component';
@@ -10,11 +11,22 @@ import { GraphDto } from '../../../../../../features/flows/models/graph.model';
 // import { ToastService } from '../../../../../../services/notifications/toast.service';
 import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { Spinner2Component } from '../../../../../../shared/components/spinner-type2/spinner.component';
+import { CollapseOnOverflowDirective } from '../../../../../../shared/directives/collapse-on-overflow.directive';
+import { SaveDropdownComponent } from './save-dropdown/save-dropdown.component';
 
 @Component({
     selector: 'app-flow-header',
     standalone: true,
-    imports: [CommonModule, RouterModule, Spinner2Component, AppSvgIconComponent, DialogModule],
+    imports: [
+        CommonModule,
+        RouterModule,
+        Spinner2Component,
+        AppSvgIconComponent,
+        DialogModule,
+        OverlayModule,
+        CollapseOnOverflowDirective,
+        SaveDropdownComponent,
+    ],
     templateUrl: './flow-header.component.html',
     styleUrls: ['./flow-header.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,10 +46,23 @@ export class FlowHeaderComponent {
     @Output() getCurl = new EventEmitter<void>();
     @Output() connectChat = new EventEmitter<void>();
     @Output() flowEdited = new EventEmitter<GraphDto>();
+    @Output() saveVersion = new EventEmitter<void>();
+    @Output() viewVersionHistory = new EventEmitter<void>();
+
+    public isSaveDropdownOpen = signal(false);
 
     private readonly dialog = inject(CdkDialog);
 
     constructor(private router: Router) {}
+
+    toggleSaveDropdown(event: Event): void {
+        event.stopPropagation();
+        this.isSaveDropdownOpen.update((v) => !v);
+    }
+
+    closeSaveDropdown(): void {
+        this.isSaveDropdownOpen.set(false);
+    }
 
     onSave() {
         this.save.emit();
