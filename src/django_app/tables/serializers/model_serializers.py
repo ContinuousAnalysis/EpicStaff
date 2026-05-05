@@ -122,38 +122,6 @@ class PythonCodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer
         return internal_value
 
 
-class McpToolSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = McpTool
-        fields = "__all__"
-
-
-class RealtimeAgentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RealtimeAgent
-        exclude = ["agent"]
-
-
-class UserSessionMessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserSessionMessage
-
-        fields = "__all__"
-
-
-class TaskSessionMessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TaskSessionMessage
-
-        fields = "__all__"
-
-
-class AgentSessionMessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AgentSessionMessage
-        fields = "__all__"
-
-
 class CrewNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
     crew = CrewSerializer(read_only=True)
     crew_id = serializers.IntegerField(write_only=True)
@@ -345,42 +313,6 @@ class EndNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
         return "__end_node__"
 
 
-class SessionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Session
-        fields = "__all__"
-        read_only_fields = [
-            "id",
-            "status",
-            "status_updated_at",
-            "variables",
-            "created_at",
-            "finished_at",
-            "graph",
-            "graph_schema",
-            "parent_session",
-        ]
-
-
-class SessionLightSerializer(serializers.ModelSerializer):
-    has_output_files = serializers.BooleanField(read_only=True)
-    graph_name = serializers.CharField(source="graph.name", read_only=True)
-
-    class Meta:
-        model = Session
-        fields = (
-            "id",
-            "graph_id",
-            "graph_name",
-            "status",
-            "status_updated_at",
-            "created_at",
-            "finished_at",
-            "parent_session",
-            "has_output_files",
-        )
-
-
 class GraphSessionMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = GraphSessionMessage
@@ -422,18 +354,6 @@ class GraphLightSerializer(GraphLightBaseSerializer):
     def get_subflows(self, obj):
         graphs = Graph.objects.get_transitive_subflows(obj.id)
         return GraphLightBaseSerializer(graphs, many=True).data
-
-
-class RealtimeSessionItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RealtimeSessionItem
-        fields = "__all__"
-
-
-class RealtimeAgentChatSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RealtimeAgentChat
-        fields = "__all__"
 
 
 class ConditionSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
