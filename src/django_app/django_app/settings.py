@@ -66,7 +66,6 @@ LOGGING = {
 
 INSTALLED_APPS = [
     "health_check",
-    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -75,6 +74,7 @@ INSTALLED_APPS = [
     "tables",
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "django_filters",
     "corsheaders",
@@ -102,11 +102,14 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "utils.exception_handler.custom_exception_handler",
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "tables.authentication.JwtOrApiKeyAuthentication",
+        "tables.services.rbac.authentication.JwtOrApiKeyAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        "login": os.getenv("LOGIN_THROTTLE_RATE", "5/min"),
+    },
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -121,8 +124,8 @@ SIMPLE_JWT = {
         minutes=int(os.getenv("JWT_ACCESS_MINUTES", "15"))
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "7"))),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 ROOT_URLCONF = "django_app.urls"
@@ -220,6 +223,16 @@ CACHES = {
 }
 MEDIA_ROOT = os.environ.get("DJANGO_MEDIA_ROOT", os.path.join(BASE_DIR, "media"))
 MEDIA_URL = "/media/"
+
+AUTH_USER_MODEL = "tables.User"
+
+PASSWORD_RESET_TOKEN_TTL = int(os.getenv("PASSWORD_RESET_TOKEN_TTL", "3600"))
+
+SSE_TICKET_TTL_SECONDS = 30
+
+DEFAULT_ORGANIZATION_NAME = os.getenv(
+    "DEFAULT_ORGANIZATION_NAME", "Default Organization"
+)
 
 # Object storage
 STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "s3")

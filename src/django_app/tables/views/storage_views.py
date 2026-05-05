@@ -7,7 +7,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from tables.models import GraphStorageFile, Organization, OrganizationUser, StorageFile
+from tables.models import GraphStorageFile, Organization, StorageFile
 from tables.models.graph_models import Graph
 from tables.serializers.storage_serializers import (
     GraphStorageFileSerializer,
@@ -24,6 +24,10 @@ from tables.serializers.storage_serializers import (
     StorageSearchQuerySerializer,
     StorageTreeQuerySerializer,
     StorageUploadSerializer,
+)
+from tables.constants.organization_constants import (
+    DEFAULT_ORGANIZATION_NAME,
+    MOCK_USERNAME,
 )
 from tables.services.storage_service import get_storage_manager
 from tables.services.storage_service.dataclasses import FolderInfo
@@ -56,9 +60,11 @@ class StorageAPIView(ViewSet):
 
     def _resolve_context(self, request) -> tuple[str, int]:
         """Return hardcoded default user and org, auto-created on first use."""
-        org, _ = Organization.objects.get_or_create(name="default")
-        OrganizationUser.objects.get_or_create(name="default", organization=org)
-        return "default", org.id
+        # TODO: Refactor! get org_id from request
+        org = Organization.objects.get(name=DEFAULT_ORGANIZATION_NAME)
+        # TODO: link to User model
+        # OrganizationUser.objects.get_or_create(name="default", organization=org)
+        return MOCK_USERNAME, org.id
 
     @action(detail=False, methods=["get"], url_path="list")
     @swagger_auto_schema(**STORAGE_LIST_SWAGGER)
