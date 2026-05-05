@@ -118,7 +118,7 @@ export class VersionHistoryPanelComponent implements OnInit {
         const value = this.editingValue.trim();
         const originalValue = field === 'name' ? version.name : version.description || '';
 
-        if (!value || value === originalValue) {
+        if ((field === 'name' && !value) || value === originalValue) {
             this.cancelEdit();
             return;
         }
