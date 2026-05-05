@@ -1,14 +1,14 @@
 from rest_framework import serializers
 
+from django_app.tables.serializers.model_serializers.embedding_serializers import (
+    EmbeddingConfigSerializer,
+)
 from django_app.tables.serializers.model_serializers.llm_serializers import (
     LLMConfigSerializer,
     RealtimeConfigSerializer,
     RealtimeTranscriptionConfigSerializer,
 )
 from tables.models.provider import Provider
-from tables.serializers.model_serializers import (
-    EmbeddingConfigSerializer,
-)
 
 
 class QuickstartSerializer(serializers.Serializer):

@@ -27,6 +27,10 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
+from django_app.tables.serializers.model_serializers.embedding_serializers import (
+    EmbeddingConfigSerializer,
+    EmbeddingModelSerializer,
+)
 from django_app.tables.serializers.model_serializers.llm_serializers import (
     LLMConfigSerializer,
     LLMModelSerializer,
@@ -184,8 +188,6 @@ from tables.serializers.model_serializers import (
     CrewSerializer,
     DecisionTableNodeSerializer,
     EdgeSerializer,
-    EmbeddingConfigSerializer,
-    EmbeddingModelSerializer,
     EndNodeSerializer,
     FileExtractorNodeSerializer,
     GraphLightSerializer,
