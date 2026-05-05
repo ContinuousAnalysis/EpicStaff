@@ -2,6 +2,9 @@ from datetime import datetime, timezone
 from collections import defaultdict
 import uuid
 import base64
+from django_app.tables.serializers.model_serializers.crew_serializers import (
+    ToolSerializer,
+)
 from django_app.tables.serializers.model_serializers.embedding_serializers import (
     DefaultEmbeddingConfigSerializer,
 )
@@ -71,7 +74,6 @@ from tables.models import (
 from tables.serializers.model_serializers import (
     SessionSerializer,
     SessionLightSerializer,
-    ToolSerializer,
 )
 from tables.serializers.storage_serializers import SessionOutputFileSerializer
 from tables.serializers.serializers import (
