@@ -126,4 +126,6 @@ exec gunicorn django_app.asgi:application \
   --bind "0.0.0.0:$PORT" \
   $RELOAD_ARGS \
   --workers "${GUNICORN_WORKERS:-1}" \
-  --threads "${GUNICORN_THREADS:-4}"
+  --threads "${GUNICORN_THREADS:-4}" \
+  --max-requests "${GUNICORN_MAX_REQUESTS:-1000}" \
+  --max-requests-jitter "${GUNICORN_MAX_REQUESTS_JITTER:-100}"
