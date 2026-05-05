@@ -1,5 +1,5 @@
 import { animate, style, transition, trigger } from '@angular/animations';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import {
@@ -16,6 +16,7 @@ import {
     ToggleSwitchComponent,
 } from '@shared/components';
 
+import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import {
     ScheduleEndType,
     ScheduleIntervalUnit,
@@ -25,6 +26,7 @@ import {
 } from '../../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 import { ScheduleTriggerNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
+import { FlowService } from '../../../services/flow.service';
 
 const panelFadeSlide = trigger('panelFadeSlide', [
     transition(':enter', [
@@ -59,6 +61,20 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     public override readonly isExpanded = input<boolean>(false);
 
     private destroyRef = inject(DestroyRef);
+    private readonly flowsApiService = inject(FlowsApiService);
+    private readonly flowService = inject(FlowService);
+
+    constructor() {
+        super();
+        effect(() => {
+            const isActive = this.node().data.isActive ?? false;
+            const ctrl = this.form?.get('is_active');
+            if (!ctrl) return;
+            if (ctrl.value !== isActive) {
+                ctrl.patchValue(isActive, { emitEvent: false });
+            }
+        });
+    }
 
     protected submitted = signal(false);
 
@@ -300,6 +316,24 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         };
         fg.get('start_date')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(updateActiveState);
         fg.get('start_time')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(updateActiveState);
+
+        const backendId = this.node().backendId;
+        if (backendId != null) {
+            this.flowsApiService
+                .getScheduleTriggerNode(backendId)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (dto) => {
+                        if (dto.is_active !== this.node().data.isActive) {
+                            this.flowService.updateNode({
+                                ...this.node(),
+                                data: { ...this.node().data, isActive: dto.is_active },
+                            });
+                        }
+                    },
+                    error: () => {},
+                });
+        }
 
         return fg;
     }

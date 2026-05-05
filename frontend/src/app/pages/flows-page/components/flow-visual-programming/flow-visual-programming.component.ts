@@ -51,6 +51,7 @@ import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.
 import { UnsavedChangesDialogService } from '../../../../shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
 import { NodeType } from '../../../../visual-programming/core/enums/node-type';
 import { FlowModel } from '../../../../visual-programming/core/models/flow.model';
+import { ScheduleTriggerNodeModel } from '../../../../visual-programming/core/models/node.model';
 import { FlowGraphComponent } from '../../../../visual-programming/flow-graph/flow-graph.component';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
 import {
@@ -229,6 +230,17 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                 const patchedFlow = patchFlowStateWithBackendIds(flowState, previous, nodeDiff, graph);
 
                 this.flowService.setFlow(patchedFlow);
+                // Sync isActive from the save response: patchFlowStateWithBackendIds only assigns
+                // backend IDs and does not propagate other backend-authoritative fields like is_active.
+                for (const dto of graph.schedule_trigger_node_list ?? []) {
+                    const node = patchedFlow.nodes.find(
+                        (n): n is ScheduleTriggerNodeModel =>
+                            n.type === NodeType.SCHEDULE_TRIGGER && (n as ScheduleTriggerNodeModel).backendId === dto.id
+                    );
+                    if (node && node.data.isActive !== dto.is_active) {
+                        this.flowService.updateNode({ ...node, data: { ...node.data, isActive: dto.is_active } });
+                    }
+                }
                 this.savedFlowState.set(cloneFlowState(patchedFlow));
                 if (showSuccessToast) {
                     this.toastService.success('Graph saved successfully');
