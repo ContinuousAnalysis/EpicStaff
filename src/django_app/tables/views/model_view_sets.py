@@ -35,6 +35,11 @@ from django_app.tables.serializers.model_serializers.llm_serializers import (
     RealtimeTranscriptionConfigSerializer,
     RealtimeTranscriptionModelSerializer,
 )
+from django_app.tables.serializers.model_serializers.tag_serializers import (
+    AgentTagSerializer,
+    CrewTagSerializer,
+    GraphTagSerializer,
+)
 from tables.exceptions import (
     AgentSerializerError,
     BuiltInToolModificationError,
@@ -168,7 +173,6 @@ from tables.services.copy_services import (
 from tables.views.mixins import CopyActionMixin
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
-    AgentTagSerializer,
     AgentWriteSerializer,
     AudioTranscriptionNodeSerializer,
     CodeAgentNodeSerializer,
@@ -178,7 +182,6 @@ from tables.serializers.model_serializers import (
     ConditionSerializer,
     CrewNodeSerializer,
     CrewSerializer,
-    CrewTagSerializer,
     DecisionTableNodeSerializer,
     EdgeSerializer,
     EmbeddingConfigSerializer,
@@ -190,7 +193,6 @@ from tables.serializers.model_serializers import (
     GraphOrganizationUserSerializer,
     GraphSerializer,
     GraphSessionMessageSerializer,
-    GraphTagSerializer,
     LabelSerializer,
     LLMNodeSerializer,
     McpToolSerializer,

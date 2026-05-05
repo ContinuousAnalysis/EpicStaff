@@ -147,86 +147,6 @@ class ProviderSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class LLMModelTagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = LLMModelTag
-        fields = ("id", "name", "predefined")
-        read_only_fields = ("predefined",)
-
-
-class EmbeddingTagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EmbeddingModelTag
-        fields = ("id", "name", "predefined")
-        read_only_fields = ("predefined",)
-
-
-class LLMConfigTagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = LLMConfigTag
-        fields = ("id", "name", "predefined")
-        read_only_fields = ("predefined",)
-
-
-class TagHandlingMixin:
-    """
-    Mixin for handling model tags.
-    Rules:
-    1. Predefined tags MAY be present in the request.
-    2. Users CANNOT remove an existing predefined tag (validation error).
-    3. Users CANNOT manually add/assign a predefined tag that was not previously present (validation error).
-    """
-
-    tag_model = None
-
-    def _resolve_tags(self, tags_data):
-        resolved = []
-        for tag in tags_data:
-            if "id" in tag:
-                try:
-                    obj = self.tag_model.objects.get(id=tag["id"])
-                except self.tag_model.DoesNotExist:
-                    raise serializers.ValidationError(
-                        f"Tag with id {tag['id']} not found."
-                    )
-            elif "name" in tag:
-                obj, _ = self.tag_model.objects.get_or_create(
-                    name=tag["name"],
-                    defaults={"predefined": False},
-                )
-            else:
-                continue
-
-            resolved.append(obj)
-        return resolved
-
-    def _validate_predefined_tags_on_update(self, instance, resolved_tags):
-        resolved_set = set(resolved_tags)
-        existing_predefined = set(instance.tags.filter(predefined=True))
-
-        missing_tags = existing_predefined - resolved_set
-        if missing_tags:
-            names = ", ".join([t.name for t in missing_tags])
-            raise serializers.ValidationError(
-                f"You cannot remove the following predefined tags: {names}. They must be present in the request."
-            )
-
-        incoming_predefined = {t for t in resolved_set if t.predefined}
-        new_predefined = incoming_predefined - existing_predefined
-        if new_predefined:
-            names = ", ".join([t.name for t in new_predefined])
-            raise serializers.ValidationError(
-                f"You cannot manually assign predefined tags: {names}."
-            )
-
-    def _validate_predefined_tags_on_create(self, resolved_tags):
-        for tag in resolved_tags:
-            if tag.predefined:
-                raise serializers.ValidationError(
-                    f"You cannot manually assign predefined tag '{tag.name}' during creation."
-                )
-
-
 class EmbeddingModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
     tags = EmbeddingTagSerializer(many=True, required=False)
     tag_model = EmbeddingModelTag
@@ -255,13 +175,6 @@ class EmbeddingModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
             instance.tags.set(resolved_tags)
 
         return super().update(instance, validated_data)
-
-
-class EmbeddingConfigTagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EmbeddingConfigTag
-        fields = ("id", "name", "predefined")
-        read_only_fields = ("predefined",)
 
 
 class EmbeddingConfigSerializer(TagHandlingMixin, serializers.ModelSerializer):
@@ -1533,24 +1446,6 @@ class MemorySerializer(serializers.ModelSerializer):
     class Meta:
         model = MemoryDatabase
         fields = ["id", "payload"]
-
-
-class CrewTagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CrewTag
-        fields = "__all__"
-
-
-class AgentTagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AgentTag
-        fields = "__all__"
-
-
-class GraphTagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GraphTag
-        fields = "__all__"
 
 
 class GraphLightBaseSerializer(serializers.ModelSerializer):

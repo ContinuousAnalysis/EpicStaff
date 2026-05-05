@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
 from django_app.tables.models.tag_models import LLMConfigTag, LLMModelTag
+from django_app.tables.serializers.model_serializers.tag_serializers import (
+    LLMConfigTagSerializer,
+    LLMModelTagSerializer,
+)
 from tables.models.llm_models import (
     DefaultLLMConfig,
     LLMConfig,
@@ -10,6 +14,8 @@ from tables.models.llm_models import (
     RealtimeTranscriptionModel,
     RealtimeTranscriptionConfig,
 )
+
+from ..utils.mixins import TagHandlingMixin
 
 
 class DefaultLLMConfigSerializer(serializers.ModelSerializer):
