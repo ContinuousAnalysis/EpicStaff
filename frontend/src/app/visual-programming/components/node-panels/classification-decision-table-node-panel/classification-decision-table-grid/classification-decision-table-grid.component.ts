@@ -11,6 +11,7 @@ import {
     output,
     Renderer2,
     signal,
+    untracked,
     ViewChild,
 } from '@angular/core';
 import { AgGridModule } from 'ag-grid-angular';
@@ -21,6 +22,7 @@ import {
     ColGroupDef,
     ColumnMovedEvent,
     ColumnResizedEvent,
+    EditableCallbackParams,
     GridApi,
     GridOptions,
     GridReadyEvent,
@@ -37,6 +39,14 @@ import { MultiSelectComponent } from '../../../../../shared/components/multi-sel
 import { SelectItem } from '../../../../../shared/components/select/select.component';
 import { PromptConfig } from '../../../../core/models/classification-decision-table.model';
 import { ConditionGroup } from '../../../../core/models/decision-table.model';
+import {
+    composeExpression,
+    composeManipulation,
+    normalizeExpressionSpacing,
+    normalizeOpPart,
+    parseExpression,
+    parseManipulation,
+} from '../../../../utils/condition-expression.helper';
 import { IconHeaderComponent } from './icon-header/icon-header.component';
 import { MonacoCellRendererComponent } from './monaco-cell-renderer/monaco-cell-renderer.component';
 import { ParamsGroupHeaderComponent } from './params-group-header/params-group-header.component';
@@ -183,6 +193,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             this.movableColumnOrder();
             this.manipColumnOrder();
             this.rebuildColumnDefs();
+            this.syncRowsFromExpression();
+            this.syncRowsFromManipulation();
         });
     }
 
@@ -232,6 +244,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     private savedColumnWidths = new Map<string, number>();
     private saveTimeout: ReturnType<typeof setTimeout> | null = null;
     private isRebuilding = false;
+    /** Guard flag to prevent recursive cellValueChanged loops during programmatic cell writes. */
+    private isSyncing = false;
 
     private get storageKey(): string {
         const stableId = this.storageNodeId() || this.currentNodeId();
@@ -335,27 +349,35 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 variant: 'delete',
                 onIconClick: () => this.removeFieldColumn(fieldName),
             },
-            editable: false,
+            editable: (params: EditableCallbackParams<ConditionGroup>) =>
+                !this.isRowLocked(params.data as ConditionGroup),
             minWidth: Math.max(70, fieldName.length * 9 + 52),
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
             cellRendererParams: { singleLine: true },
             rowSpan: (params: RowSpanParams<ConditionGroup>) =>
                 this.getRowSpan(params, `field_${fieldName}`, (d) => d?.field_expressions?.[fieldName] || ''),
-            cellStyle: (params: RowSpanParams<ConditionGroup>) =>
-                this.getSpanCellStyle(params, `field_${fieldName}`, (d) => d?.field_expressions?.[fieldName] || '', {
-                    fontSize: '13px',
-                    fontFamily: 'monospace',
-                    color: '#d4d4d4',
-                }),
+            cellStyle: (params: RowSpanParams<ConditionGroup>) => {
+                const locked = this.isRowLocked(params.data as ConditionGroup);
+                const base = locked
+                    ? { fontSize: '13px', fontFamily: 'monospace', color: '#888888' }
+                    : { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' };
+                return this.getSpanCellStyle(
+                    params,
+                    `field_${fieldName}`,
+                    (d) => d?.field_expressions?.[fieldName] || '',
+                    base
+                );
+            },
             valueGetter: (params: ValueGetterParams<ConditionGroup>) => {
+                if (this.isRowLocked(params.data as ConditionGroup)) return '*';
                 return params.data?.field_expressions?.[fieldName] || '';
             },
             valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
                 if (!params.data.field_expressions) {
                     params.data.field_expressions = {};
                 }
-                params.data.field_expressions[fieldName] = params.newValue || '';
+                params.data.field_expressions[fieldName] = normalizeOpPart(params.newValue || '');
                 return true;
             },
         };
@@ -372,20 +394,27 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 variant: 'delete',
                 onIconClick: () => this.removeManipFieldColumn(fieldName),
             },
-            editable: false,
+            editable: (params: EditableCallbackParams<ConditionGroup>) =>
+                !this.isManipRowLocked(params.data as ConditionGroup),
             minWidth: Math.max(70, fieldName.length * 9 + 52),
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
             cellRendererParams: { singleLine: true },
-            cellStyle: { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
+            cellStyle: (params: RowSpanParams<ConditionGroup>) => {
+                const locked = this.isManipRowLocked(params.data as ConditionGroup);
+                return locked
+                    ? { fontSize: '13px', fontFamily: 'monospace', color: '#888888' }
+                    : { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' };
+            },
             valueGetter: (params: ValueGetterParams<ConditionGroup>) => {
+                if (this.isManipRowLocked(params.data as ConditionGroup)) return '*';
                 return params.data?.field_manipulations?.[fieldName] || '';
             },
             valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
                 if (!params.data.field_manipulations) {
                     params.data.field_manipulations = {};
                 }
-                params.data.field_manipulations[fieldName] = params.newValue || '';
+                params.data.field_manipulations[fieldName] = params.newValue ?? '';
                 return true;
             },
         };
@@ -401,7 +430,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             cellRenderer: MonacoCellRendererComponent,
             cellStyle: { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
             valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
-                params.data.manipulation = params.newValue || '';
+                params.data.manipulation = params.newValue ?? '';
                 return true;
             },
         };
@@ -424,7 +453,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     color: '#d4d4d4',
                 }),
             valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
-                params.data.expression = params.newValue || '';
+                const raw = params.newValue || '';
+                params.data.expression = raw ? normalizeExpressionSpacing(raw) : '';
                 return true;
             },
         };
@@ -895,6 +925,70 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         setTimeout(() => this.updateAddButtonPositions(), 50);
     }
 
+    /**
+     * Syncs param cells from parsed expressions for every row.
+     * Runs whenever activeFieldColumns() changes (i.e. a column is added, removed or
+     * reordered) so that rows whose expression was typed before a column existed get
+     * their new cell populated immediately.
+     *
+     * - ok:true  → for each active column: write parsed.parts[name] if present, '' otherwise.
+     *              Expression is treated as source of truth for parseable rows.
+     * - ok:false → leave field_expressions untouched (locked row).
+     * - Empty expression → skip the row entirely (nothing to parse).
+     */
+    private syncRowsFromExpression(): void {
+        untracked(() => {
+            const rows = this.rowData();
+            const activeNames = this.activeFieldColumns();
+            if (rows.length === 0 || activeNames.length === 0) return;
+
+            this.isSyncing = true;
+            try {
+                rows.map((row) => ({ row, expr: (row.expression ?? '').trim() }))
+                    .filter(({ expr }) => !!expr)
+                    .map(({ row, expr }) => ({ row, parsed: parseExpression(expr) }))
+                    .filter(({ parsed }) => parsed.ok)
+                    .forEach(({ row, parsed }) => {
+                        row.field_expressions ??= {};
+                        activeNames.forEach((name) => {
+                            row.field_expressions![name] = parsed.parts[name] ?? '';
+                        });
+                    });
+
+                // Rows are mutated in place — no rowData.set needed.
+                // refreshCells tells ag-grid to re-render without touching Angular signals.
+                this.gridApi?.refreshCells({ force: true });
+            } finally {
+                this.isSyncing = false;
+            }
+        });
+    }
+
+    private syncRowsFromManipulation(): void {
+        untracked(() => {
+            const rows = this.rowData();
+            const activeNames = this.activeManipFieldColumns();
+            if (rows.length === 0 || activeNames.length === 0) return;
+
+            this.isSyncing = true;
+            try {
+                rows.map((row) => ({ row, manip: (row.manipulation ?? '').trim() }))
+                    .filter(({ manip }) => !!manip)
+                    .map(({ row, manip }) => ({ row, parsed: parseManipulation(manip) }))
+                    .filter(({ parsed }) => parsed.ok)
+                    .forEach(({ row, parsed }) => {
+                        row.field_manipulations ??= {};
+                        activeNames.forEach((name) => {
+                            row.field_manipulations![name] = parsed.parts[name] ?? '';
+                        });
+                    });
+                this.gridApi?.refreshCells({ force: true });
+            } finally {
+                this.isSyncing = false;
+            }
+        });
+    }
+
     private updateAddButtonPositions(): void {
         if (this.hasFieldCols()) {
             this.exprAddPos.set(null);
@@ -1092,12 +1186,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             if (inAgPopup) return;
             // Clear focused cell so the purple border disappears
             this.gridApi?.clearFocusedCell();
-            try {
-                // clearRangeSelection is Enterprise-only; guard against its absence
-                (this.gridApi as GridApi & { clearRangeSelection?: () => void })?.clearRangeSelection?.();
-            } catch {
-                // Community edition — safe to ignore
-            }
         });
     }
 
@@ -1107,8 +1195,159 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         this.positionResizeObserver?.disconnect();
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onCellValueChanged(_event: CellValueChangedEvent): void {
+    /**
+     * Returns true iff the row has a non-empty expression that cannot be decomposed
+     * into per-variable AND clauses by parseExpression.
+     */
+    public isRowLocked(rowData: ConditionGroup): boolean {
+        const expr = rowData?.expression?.trim();
+        if (!expr) return false;
+        // Lock only when the expression is syntactically unparseable — not when it
+        // references a variable that happens to not be an active param column.
+        const result = parseExpression(expr);
+        return !result.ok;
+    }
+
+    /**
+     * Returns true iff the row has a non-empty manipulation that cannot be decomposed
+     * into per-variable assignment statements by parseManipulation.
+     */
+    public isManipRowLocked(rowData: ConditionGroup): boolean {
+        const manip = (rowData?.manipulation ?? '').trim();
+        if (!manip) return false;
+        return !parseManipulation(manip).ok;
+    }
+
+    onCellValueChanged(event: CellValueChangedEvent): void {
+        // Guard against recursive loops triggered by programmatic cell writes
+        if (this.isSyncing) return;
+
+        const colId: string = event.colDef.colId ?? '';
+        const rowData = event.data as ConditionGroup;
+        const activeNames = this.activeFieldColumns();
+        const activeManipNames = this.activeManipFieldColumns();
+
+        if (colId === 'expression') {
+            // Expression → params sync
+            const newExpr: string = (rowData.expression ?? '').trim();
+
+            this.isSyncing = true;
+            try {
+                if (!rowData.field_expressions) {
+                    rowData.field_expressions = {};
+                }
+
+                if (!newExpr) {
+                    // Empty expression → clear all active param cells
+                    for (const name of activeNames) {
+                        rowData.field_expressions[name] = '';
+                    }
+                } else {
+                    // Parse without knownVarNames — validity is purely syntactic now.
+                    const parsed = parseExpression(newExpr);
+                    if (parsed.ok) {
+                        // Write parsed parts only for active columns; clear active
+                        // names not present in the parsed result. Parts that reference
+                        // variables not in activeNames are silently ignored (the data
+                        // stays in the expression cell but no column is auto-created).
+                        for (const name of activeNames) {
+                            rowData.field_expressions[name] = parsed.parts[name] ?? '';
+                        }
+                    }
+                    // ok:false → leave field_expressions untouched (locked state)
+                }
+
+                this.gridApi?.refreshCells({ rowNodes: [event.node!], force: true });
+            } finally {
+                this.isSyncing = false;
+            }
+        } else if (colId.startsWith('field_')) {
+            // Params → expression sync
+            if (this.isRowLocked(rowData)) {
+                // Locked row — don't recompose; the param cells should not be editable anyway
+                this.isSyncing = true;
+                try {
+                    this.gridApi?.refreshCells({ rowNodes: [event.node!], force: true });
+                } finally {
+                    this.isSyncing = false;
+                }
+            } else {
+                // Recompose expression from all active field_expressions
+                const currentParts: Record<string, string> = {};
+                for (const name of activeNames) {
+                    currentParts[name] = rowData.field_expressions?.[name]?.trim() ?? '';
+                }
+
+                const newExpr = composeExpression(currentParts, activeNames);
+
+                this.isSyncing = true;
+                try {
+                    rowData.expression = newExpr || null;
+                    this.gridApi?.refreshCells({ rowNodes: [event.node!], force: true });
+                } finally {
+                    this.isSyncing = false;
+                }
+            }
+        } else if (colId === 'manipulation') {
+            // Manipulation → manip params sync
+            const newManip: string = (rowData.manipulation ?? '').trim();
+
+            this.isSyncing = true;
+            try {
+                if (!rowData.field_manipulations) {
+                    rowData.field_manipulations = {};
+                }
+
+                if (!newManip) {
+                    // Empty manipulation → clear all active manip param cells
+                    for (const name of activeManipNames) {
+                        rowData.field_manipulations[name] = '';
+                    }
+                } else {
+                    const parsed = parseManipulation(newManip);
+                    if (parsed.ok) {
+                        // Write parsed parts only for active columns; clear active
+                        // names not present in the parsed result.
+                        for (const name of activeManipNames) {
+                            rowData.field_manipulations[name] = parsed.parts[name] ?? '';
+                        }
+                    }
+                    // ok:false → leave field_manipulations untouched (locked state)
+                }
+
+                this.gridApi?.refreshCells({ rowNodes: [event.node!], force: true });
+            } finally {
+                this.isSyncing = false;
+            }
+        } else if (colId.startsWith('manip_')) {
+            // Manip params → manipulation sync
+            if (this.isManipRowLocked(rowData)) {
+                // Locked row — don't recompose; the manip param cells should not be editable anyway
+                this.isSyncing = true;
+                try {
+                    this.gridApi?.refreshCells({ rowNodes: [event.node!], force: true });
+                } finally {
+                    this.isSyncing = false;
+                }
+            } else {
+                // Recompose manipulation from all active field_manipulations
+                const currentParts: Record<string, string> = {};
+                for (const name of activeManipNames) {
+                    currentParts[name] = rowData.field_manipulations?.[name]?.trim() ?? '';
+                }
+
+                const newManip = composeManipulation(currentParts, activeManipNames);
+
+                this.isSyncing = true;
+                try {
+                    rowData.manipulation = newManip || null;
+                    this.gridApi?.refreshCells({ rowNodes: [event.node!], force: true });
+                } finally {
+                    this.isSyncing = false;
+                }
+            }
+        }
+
         this.unmergedGroup.set(null);
         const updatedRows = this.getUpdatedRows();
         this.emitChanges(updatedRows);
