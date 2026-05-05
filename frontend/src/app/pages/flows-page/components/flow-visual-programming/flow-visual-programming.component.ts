@@ -279,7 +279,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         };
         const singleNodeFlow: FlowModel = { nodes: [node], connections: [] };
         const nodeDiff = getNodeDiff(previousForDiff, singleNodeFlow);
-        const connectionDiff = { toCreate: [], toDelete: [] };
+        const connectionDiff = { toCreate: [], toUpdate: [], toDelete: [] };
         const idMap = buildUuidToBackendIdMap([node]);
         const payload = buildBulkSavePayload(this.graph.id, nodeDiff, connectionDiff, singleNodeFlow, idMap);
 
