@@ -48,7 +48,7 @@ class ScheduleTriggerStrategy(ABC):
 
     @staticmethod
     def _build_cron_trigger(ctx: ScheduleTriggerContext, crontab: str) -> CronTrigger:
-        """5-field crontab + ctx end_date / tz. second='0' matches once-per-minute semantics."""
+        """5-field crontab + ctx start_date / end_date / tz. second='0' matches once-per-minute semantics."""
         minute, hour, day, month, day_of_week = crontab.split()
         return CronTrigger(
             second="0",
@@ -58,6 +58,7 @@ class ScheduleTriggerStrategy(ABC):
             month=month,
             day_of_week=day_of_week,
             timezone=ctx.node_tz,
+            start_date=ctx.start_dt,
             end_date=ctx.end_dt,
         )
 
@@ -138,6 +139,7 @@ class WeeksTriggerStrategy(ScheduleTriggerStrategy):
             day_of_week=wd,
             week=f"*/{ctx.every}",
             timezone=ctx.node_tz,
+            start_date=ctx.start_dt,
             end_date=ctx.end_dt,
         )
 

@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-from datetime import datetime
 
 import pytz
 from apscheduler.events import EVENT_JOB_REMOVED
@@ -104,17 +103,13 @@ class ScheduleService:
             )
             return
 
-        start_dt = ensure_aware(node.start_date_time)
-        now = datetime.now(node_tz)
-
-        next_run_time = start_dt if (start_dt and start_dt > now) else None
-
         job_id = f"schedule_{node_id}"
-        # replace_existing=True triggers EVENT_JOB_REMOVED for the old Job —
-        # suppress it by marking as a manual removal.
-        if node_id in self.schedule_nodes:
-            self._manual_removals.add(job_id)
         self.schedule_nodes[node_id] = job_id
+
+        if node.run_mode == "once":
+            self._manual_removals.add(job_id)
+        else:
+            self._manual_removals.discard(job_id)
 
         try:
             self.scheduler.add_job(
@@ -123,12 +118,12 @@ class ScheduleService:
                 id=job_id,
                 args=[node],
                 replace_existing=True,
-                next_run_time=next_run_time,
                 name=f"ScheduleNode-{node_id}",
             )
             logger.info(
                 f"[ScheduleService] Job registered for node {node_id} "
-                f"(next_run={next_run_time or 'immediate'})"
+                f"(trigger={type(trigger).__name__}, run_mode={node.run_mode}, "
+                f"every={node.every}, unit={node.unit}, end_type={node.end_type})"
             )
         except Exception:
             logger.exception(
@@ -139,13 +134,17 @@ class ScheduleService:
     def _on_job_removed(self, event):
         """APScheduler EVENT_JOB_REMOVED handler.
 
-        Manual removals (remove_schedule / replace_existing) are pre-marked in
-        _manual_removals and skipped. Auto-removals (end_date reached,
-        DateTrigger fired) publish 'deactivate' so Django flips is_active.
+        Manual removals (remove_schedule, once-mode auto-remove) are pre-marked
+        in _manual_removals and skipped. Other auto-removals (end_date reached
+        on repeat triggers) publish 'deactivate' so Django flips is_active.
         """
         job_id = event.job_id
 
         if job_id in self._manual_removals:
+            logger.debug(
+                f"[ScheduleService] EVENT_JOB_REMOVED for {job_id}: pre-marked manual "
+                f"(remove_schedule or once-mode auto-remove), skipping deactivate publish"
+            )
             self._manual_removals.discard(job_id)
             return
 
@@ -159,8 +158,7 @@ class ScheduleService:
         self.schedule_nodes.pop(node_id, None)
         logger.info(
             f"[ScheduleService] Job {job_id} auto-removed by APScheduler "
-            f"(end_date reached or run_date passed). "
-            f"Publishing 'deactivate' for node {node_id}."
+            f"(end_date reached). Publishing 'deactivate' for node {node_id}."
         )
         asyncio.create_task(self._publish_deactivate(node_id))
 
@@ -188,7 +186,10 @@ class ScheduleService:
         self._manual_removals.add(job_id)
         try:
             self.scheduler.remove_job(job_id)
-            logger.info(f"[ScheduleService] Job {job_id} removed")
+            logger.info(
+                f"[ScheduleService] Job {job_id} removed "
+                f"(deactivate/delete signal from Django)"
+            )
         except JobLookupError:
             logger.debug(
                 f"[ScheduleService] Job {job_id} was already removed by APScheduler"
@@ -205,7 +206,10 @@ class ScheduleService:
         ScheduleTriggerService. For run_mode="once" also publishes 'deactivate'.
         """
         node_id = node.id
-        logger.info(f"[ScheduleService] Executing schedule for node {node_id}")
+        logger.info(
+            f"[ScheduleService] Executing schedule for node {node_id} "
+            f"(run_mode={node.run_mode}, end_type={node.end_type})"
+        )
 
         try:
             await self.redis_service.async_publish(
@@ -220,10 +224,12 @@ class ScheduleService:
                     {"action": "deactivate", "node_id": node_id},
                 )
                 logger.info(
-                    f"[ScheduleService] Node {node_id} (once): "
-                    f"published 'deactivate' (Job will be removed by listener + APScheduler)."
+                    f"[ScheduleService] Node {node_id} (once): published 'deactivate' "
+                    f"(DateTrigger will auto-remove; listener pre-marked manual, "
+                    f"will not publish duplicate)."
                 )
 
+            logger.info(f"[ScheduleService] Schedule fire complete for node {node_id}")
         except Exception:
             logger.exception(
                 f"[ScheduleService] Error executing schedule for node {node_id}"
@@ -325,6 +331,14 @@ class ScheduleService:
         action = envelope.data.action
         node = envelope.data.node
 
+        is_active = (
+            node.is_active if isinstance(node, ScheduleTriggerNodePayload) else None
+        )
+        logger.info(
+            f"[ScheduleService] Received '{action}' from Django for node {node.id} "
+            f"(is_active={is_active})"
+        )
+
         try:
             if action in ("create", "update"):
                 assert isinstance(node, ScheduleTriggerNodePayload)
@@ -332,10 +346,6 @@ class ScheduleService:
                     await self.remove_schedule(node.id)
                 else:
                     await self.add_schedule(node)
-                    logger.info(
-                        f"[ScheduleService] Job updated for node {node.id} "
-                        f"(action={action})"
-                    )
             elif action == "delete":
                 assert isinstance(node, ScheduleTriggerNodeDeletePayload)
                 await self.remove_schedule(node.id)
