@@ -37,7 +37,9 @@ from django_app.tables.serializers.base_serializer import (
 from django_app.tables.serializers.base_serializers import (
     WebhookTriggerNestedSerializer,
 )
-from django_app.tables.serializers.model_serializers import PythonCodeSerializer
+from django_app.tables.serializers.model_serializers.python_serializers import (
+    PythonCodeSerializer,
+)
 from django_app.tables.serializers.model_serializers.llm_serializers import (
     LLMConfigSerializer,
 )

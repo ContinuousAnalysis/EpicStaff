@@ -35,7 +35,9 @@ from django_app.tables.serializers.knowledge_serializers import (
     NestedSearchConfigSerializer,
     RagInputSerializer,
 )
-from django_app.tables.serializers.model_serializers import RealtimeAgentSerializer
+from django_app.tables.serializers.model_serializers.realtime_serializers import (
+    RealtimeAgentSerializer,
+)
 from django_app.tables.serializers.serializers import BaseToolSerializer
 from django_app.tables.services.rag_assignment_service import (
     RagAssignmentService,
