@@ -1,6 +1,6 @@
-from tkinter import Label
-
 from rest_framework import serializers
+
+from django_app.tables.models.label_models import Label
 
 
 class LabelSerializer(serializers.ModelSerializer):

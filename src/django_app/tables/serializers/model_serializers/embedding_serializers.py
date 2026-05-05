@@ -10,7 +10,7 @@ from tables.models.embedding_models import (
     EmbeddingModel,
 )
 
-from django_app.tables.serializers.utils.mixins import (
+from django_app.tables.serializers.model_serializers.tag_serializers import (
     EmbeddingConfigTagSerializer,
     EmbeddingTagSerializer,
 )

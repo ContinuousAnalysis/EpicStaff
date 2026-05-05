@@ -1,10 +1,10 @@
-from tkinter import Label
-
-from pydantic import WrapSerializer
 from rest_framework import serializers
 from django.db import transaction
 
 from django_app.tables.models.crew_models import Crew
+from django_app.tables.serializers.model_serializers.crew_serializers import (
+    CrewSerializer,
+)
 from django_app.tables.models.graph_models import (
     AudioTranscriptionNode,
     CodeAgentNode,
@@ -27,6 +27,7 @@ from django_app.tables.models.graph_models import (
     SubGraphNode,
     WebhookTriggerNode,
 )
+from django_app.tables.models.label_models import Label
 from django_app.tables.models.python_models import PythonCode
 from django_app.tables.models.webhook_models import WebhookTrigger
 from django_app.tables.serializers.base_serializer import (
@@ -58,7 +59,7 @@ from tables.constants.variables_constants import (
 
 
 class CrewNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
-    crew = WrapSerializer(read_only=True)
+    crew = CrewSerializer(read_only=True)
     crew_id = serializers.IntegerField(write_only=True)
 
     class Meta:
