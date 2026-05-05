@@ -606,6 +606,15 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     createUpdatedNode(): PythonNodeModel {
         const validInputPairs = getValidInputPairs(this.inputMapPairs);
         const inputMapValue = createInputMapFromPairs(validInputPairs);
+        if (this.isOpenTestMode()) {
+            const testArray = this.form.get('test_input') as FormArray;
+            for (const c of testArray.controls) {
+                const key = (c.value.key as string)?.trim();
+                if (key && !(key in inputMapValue)) {
+                    inputMapValue[key] = 'variables.';
+                }
+            }
+        }
         const librariesArray = parseCommaSeparatedList(this.form.value.libraries);
 
         return {

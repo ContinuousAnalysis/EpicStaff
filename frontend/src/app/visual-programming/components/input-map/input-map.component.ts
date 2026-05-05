@@ -496,6 +496,7 @@ export class InputMapComponent implements OnInit, OnChanges {
             });
 
             this.testPairs.clear({ emitEvent: false });
+            const pushedKeys = new Set<string>();
             this.normalModeSnapshot
                 .filter((item) => item.key?.trim() !== '')
                 .forEach((item) => {
@@ -507,7 +508,21 @@ export class InputMapComponent implements OnInit, OnChanges {
                         }),
                         { emitEvent: false }
                     );
+                    pushedKeys.add(item.key);
                 });
+
+            existingTestValues.forEach((preservedValue, key) => {
+                if (!pushedKeys.has(key)) {
+                    this.testPairs.push(
+                        this.fb.group({
+                            key: [key],
+                            value: [preservedValue],
+                        }),
+                        { emitEvent: false }
+                    );
+                    pushedKeys.add(key);
+                }
+            });
 
             this.testPairs.markAsPristine();
         } else {
