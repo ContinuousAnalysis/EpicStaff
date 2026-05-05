@@ -109,29 +109,25 @@ class GraphVersioningStrategy:
 
             if node_type == NodeType.CREW_NODE:
                 if node.get("crew") in missing_sets.crews:
-                    skipped_node_ids.add(node_id)
                     warnings.append(
                         {
-                            "type": "node_skipped",
+                            "type": "fk_nulled",
                             "node_name": node_name,
                             "node_type": node_type,
                             "reason": f"Referenced Crew #{node.get('crew')} no longer exists.",
                         }
                     )
-                    continue
 
             elif node_type == NodeType.SUBGRAPH_NODE:
                 if node.get("subgraph") in missing_sets.subgraphs:
-                    skipped_node_ids.add(node_id)
                     warnings.append(
                         {
-                            "type": "node_skipped",
+                            "type": "fk_nulled",
                             "node_name": node_name,
                             "node_type": node_type,
                             "reason": f"Referenced subgraph #{node.get('subgraph')} no longer exists.",
                         }
                     )
-                    continue
 
             elif node_type == NodeType.LLM_NODE:
                 if node.get("llm_config") in missing_sets.llm_configs:
