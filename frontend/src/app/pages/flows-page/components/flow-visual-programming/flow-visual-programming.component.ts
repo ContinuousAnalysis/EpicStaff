@@ -237,6 +237,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
                 this.flowService.setFlow(patchedFlow);
                 this.savedFlowState.set(cloneFlowState(patchedFlow));
+                this.sidePanelService.notifyGraphSaved();
                 if (showSuccessToast) {
                     this.toastService.success('Graph saved successfully');
                 }

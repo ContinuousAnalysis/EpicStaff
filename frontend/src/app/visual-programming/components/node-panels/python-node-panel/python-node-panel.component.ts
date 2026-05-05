@@ -482,7 +482,8 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
     pythonCode: string = '';
     initialPythonCode: string = '';
-    private initialFormValue: string = '';
+    private initialFormSignatureExceptTestValues: string = '';
+    private initialTestInputValuesSignature: string = '';
     codeEditorHasError: boolean = false;
     private readonly pythonCodeChange$ = new Subject<string>();
     private readonly destroyRef = inject(DestroyRef);
@@ -491,8 +492,11 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     public readonly isDirty = computed(() => {
         this.formDirtyTick();
         if (!this.form) return false;
-        const currentFormValue = JSON.stringify(this.form.getRawValue());
-        return currentFormValue !== this.initialFormValue || this.pythonCode !== this.initialPythonCode;
+        return (
+            this.buildFormSignatureExceptTestValues() !== this.initialFormSignatureExceptTestValues ||
+            this.pythonCode !== this.initialPythonCode ||
+            this.buildTestInputValuesSignature() !== this.initialTestInputValuesSignature
+        );
     });
     public readonly isSaving = computed(() => this.sidePanelService.savingNodeId() === this.node().id);
     private wasSaving = false;
@@ -518,14 +522,37 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             }
             this.wasSaving = saving;
         });
+        this.sidePanelService.graphSaved$.pipe(takeUntilDestroyed()).subscribe(() => this.resetDirtyAfterGraphSave());
     }
 
     private resetDirtyAfterSave(): void {
         if (!this.form) return;
         this.form.markAsPristine();
         this.initialPythonCode = this.pythonCode;
-        this.initialFormValue = JSON.stringify(this.form.getRawValue());
+        this.initialFormSignatureExceptTestValues = this.buildFormSignatureExceptTestValues();
+        this.initialTestInputValuesSignature = this.buildTestInputValuesSignature();
         this.formDirtyTick.update((v) => v + 1);
+    }
+
+    private resetDirtyAfterGraphSave(): void {
+        if (!this.form) return;
+        this.initialPythonCode = this.pythonCode;
+        this.initialFormSignatureExceptTestValues = this.buildFormSignatureExceptTestValues();
+        this.formDirtyTick.update((v) => v + 1);
+    }
+
+    private buildFormSignatureExceptTestValues(): string {
+        const raw = this.form.getRawValue() as Record<string, unknown>;
+        const testInput = (raw['test_input'] as { key: string; value: string }[] | undefined) ?? [];
+        const stripped = {
+            ...raw,
+            test_input: testInput.map((p) => ({ key: p.key, value: '' })),
+        };
+        return JSON.stringify(stripped);
+    }
+
+    private buildTestInputValuesSignature(): string {
+        return JSON.stringify(this.getTestInputValue());
     }
 
     get activeColor(): string {
@@ -544,7 +571,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
     onSaveClick(): void {
         if (!this.form || this.form.invalid || this.isSaving()) return;
-        const updatedNode = this.createUpdatedNode();
+        const updatedNode = this.createUpdatedNode({ manualSave: true });
         this.sidePanelService.requestSaveNode(updatedNode);
     }
 
@@ -594,7 +621,9 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
         this.pythonCode = this.node().data.code || '';
         this.initialPythonCode = this.pythonCode;
-        this.initialFormValue = JSON.stringify(form.getRawValue());
+        this.form = form;
+        this.initialFormSignatureExceptTestValues = this.buildFormSignatureExceptTestValues();
+        this.initialTestInputValuesSignature = this.buildTestInputValuesSignature();
 
         form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.formDirtyTick.update((v) => v + 1);
@@ -603,7 +632,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
         return form;
     }
 
-    createUpdatedNode(): PythonNodeModel {
+    createUpdatedNode(opts?: { manualSave?: boolean }): PythonNodeModel {
         const validInputPairs = getValidInputPairs(this.inputMapPairs);
         const inputMapValue = createInputMapFromPairs(validInputPairs);
         if (this.isOpenTestMode()) {
@@ -631,7 +660,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
                 use_storage: this.useStorage(),
             },
             stream_config: this.form.value.stream_config || {},
-            test_input: this.getTestInputValue(),
+            test_input: opts?.manualSave ? this.getTestInputValue() : this.getTestInputValuePreservingSaved(),
         };
     }
 
@@ -641,6 +670,18 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             const key = (c.value.key as string)?.trim();
             if (key) {
                 acc[key] = (c.value.value as string) ?? '';
+            }
+            return acc;
+        }, {});
+    }
+
+    private getTestInputValuePreservingSaved(): Record<string, string> {
+        const testArray = this.form.get('test_input') as FormArray;
+        const previouslySaved = (this.node().test_input ?? {}) as Record<string, string>;
+        return testArray.controls.reduce((acc: Record<string, string>, c) => {
+            const key = (c.value.key as string)?.trim();
+            if (key) {
+                acc[key] = previouslySaved[key] ?? '';
             }
             return acc;
         }, {});
