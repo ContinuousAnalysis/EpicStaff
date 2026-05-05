@@ -1,5 +1,9 @@
 @if (label()) {
-    <app-tooltip [required]="required()" [tooltipText]="tooltipText()" [label]="label()" />
+    <app-tooltip
+        [required]="required()"
+        [tooltipText]="tooltipText()"
+        [label]="label()"
+    />
 }
 
 <div class="date-picker">
@@ -14,6 +18,7 @@
     >
         <i class="ti ti-calendar date-picker__icon"></i>
         <input
+            #dateInputEl
             class="date-picker__input"
             [placeholder]="placeholder()"
             [disabled]="isDisabled()"
@@ -30,7 +35,13 @@
             viewBox="0 0 24 24"
             (click)="$event.stopPropagation(); toggleDropdown()"
         >
-            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" />
+            <path
+                d="M6 9l6 6 6-6"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+            />
         </svg>
     </div>
 </div>
@@ -40,14 +51,27 @@
 }
 
 <ng-template #dropdownTemplate>
-    <div class="date-picker__dropdown" [style.width.px]="dropdownWidth()" [style.--active-color]="activeColor()">
+    <div
+        class="date-picker__dropdown"
+        [style.width.px]="dropdownWidth()"
+        [style.--active-color]="activeColor()"
+    >
         <div class="date-picker__calendar">
             <!-- Header -->
             <div class="date-picker__header">
                 <span class="date-picker__month-year">{{ viewMonthYear() }}</span>
                 <div class="date-picker__nav">
-                    <button type="button" class="date-picker__nav-btn" (click)="prevMonth()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <button
+                        type="button"
+                        class="date-picker__nav-btn"
+                        (click)="prevMonth()"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                        >
                             <path
                                 d="M15 18l-6-6 6-6"
                                 stroke="currentColor"
@@ -57,8 +81,17 @@
                             />
                         </svg>
                     </button>
-                    <button type="button" class="date-picker__nav-btn" (click)="nextMonth()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <button
+                        type="button"
+                        class="date-picker__nav-btn"
+                        (click)="nextMonth()"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                        >
                             <path
                                 d="M9 18l6-6-6-6"
                                 stroke="currentColor"

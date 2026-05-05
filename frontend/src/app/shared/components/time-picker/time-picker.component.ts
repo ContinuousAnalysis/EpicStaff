@@ -95,6 +95,7 @@ export class TimePickerComponent implements ControlValueAccessor {
     @ViewChild('triggerEl') triggerEl!: ElementRef<HTMLDivElement>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @ViewChild('dropdownTemplate') dropdownTemplate!: any;
+    @ViewChild('timeInputEl') private timeInputEl?: ElementRef<HTMLInputElement>;
 
     private overlayRef: OverlayRef | null = null;
     private overlay = inject(Overlay);
@@ -109,10 +110,26 @@ export class TimePickerComponent implements ControlValueAccessor {
     }
 
     onTimeInput(raw: string): void {
+        const el = this.timeInputEl?.nativeElement;
+        const rawCaret = el?.selectionStart ?? null;
+
         const digits = raw.replace(/\D/g, '').slice(0, 4);
         const formatted = digits.length >= 3 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+
+        const changed = formatted !== this.timeInput();
         this.timeInput.set(formatted);
         this.onInput();
+
+        if (changed && rawCaret !== null && el) {
+            const digitsBeforeCaret = raw.slice(0, rawCaret).replace(/\D/g, '').length;
+            const newCaret =
+                formatted.length < 3
+                    ? Math.min(digitsBeforeCaret, formatted.length)
+                    : digitsBeforeCaret <= 2
+                      ? digitsBeforeCaret
+                      : Math.min(digitsBeforeCaret + 1, formatted.length);
+            setTimeout(() => el.setSelectionRange(newCaret, newCaret));
+        }
     }
 
     onInput(): void {

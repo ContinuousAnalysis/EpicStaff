@@ -137,6 +137,7 @@ export class DatePickerComponent implements ControlValueAccessor {
     @ViewChild('triggerEl') triggerEl!: ElementRef<HTMLDivElement>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @ViewChild('dropdownTemplate') dropdownTemplate!: any;
+    @ViewChild('dateInputEl') private dateInputEl?: ElementRef<HTMLInputElement>;
 
     private overlayRef: OverlayRef | null = null;
     private overlay = inject(Overlay);
@@ -147,6 +148,9 @@ export class DatePickerComponent implements ControlValueAccessor {
     private onTouched: () => void = () => {};
 
     onDateInput(raw: string): void {
+        const el = this.dateInputEl?.nativeElement;
+        const rawCaret = el?.selectionStart ?? null;
+
         const digits = raw.replace(/\D/g, '').slice(0, 8);
         let formatted: string;
         if (digits.length >= 5) {
@@ -156,8 +160,29 @@ export class DatePickerComponent implements ControlValueAccessor {
         } else {
             formatted = digits;
         }
+
+        const changed = formatted !== this.inputValue();
         this.inputValue.set(formatted);
         this.onInput();
+
+        if (changed && rawCaret !== null && el) {
+            const digitsBeforeCaret = raw.slice(0, rawCaret).replace(/\D/g, '').length;
+            const len = formatted.length;
+            let newCaret: number;
+            if (len < 3) {
+                // No dots yet — direct digit count
+                newCaret = Math.min(digitsBeforeCaret, len);
+            } else if (len < 6) {
+                // One dot at index 2
+                newCaret = digitsBeforeCaret <= 2 ? digitsBeforeCaret : Math.min(digitsBeforeCaret + 1, len);
+            } else {
+                // Two dots at indices 2 and 5
+                if (digitsBeforeCaret <= 2) newCaret = digitsBeforeCaret;
+                else if (digitsBeforeCaret <= 4) newCaret = Math.min(digitsBeforeCaret + 1, len);
+                else newCaret = Math.min(digitsBeforeCaret + 2, len);
+            }
+            setTimeout(() => el.setSelectionRange(newCaret, newCaret));
+        }
     }
 
     onInput(): void {
