@@ -271,7 +271,6 @@ export class PythonTerminalComponent implements OnDestroy {
     clearLogs = output<void>();
 
     isCollapsed = signal(false);
-    private previousLogCount = 0;
 
     @ViewChild('terminalBody') terminalBody!: ElementRef<HTMLDivElement>;
 
@@ -287,11 +286,7 @@ export class PythonTerminalComponent implements OnDestroy {
         @Inject(DOCUMENT) private document: Document
     ) {
         effect(() => {
-            const count = this.logs().length;
-            if (count > this.previousLogCount && this.isCollapsed()) {
-                this.isCollapsed.set(false);
-            }
-            this.previousLogCount = count;
+            this.logs();
             this.scrollToBottom();
         });
     }
