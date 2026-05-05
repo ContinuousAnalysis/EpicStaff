@@ -136,7 +136,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0.5rem;
-    align-items: end;
+    align-items: start;
 }
 
 .half-row {
