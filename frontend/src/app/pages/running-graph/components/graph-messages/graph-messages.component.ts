@@ -196,40 +196,40 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
     private breadcrumbScrollers!: QueryList<ElementRef<HTMLElement>>;
 
     public showScrollToTop = false;
-  public showScrollToBottom = false;
-  private autoScrollEnabled = true;
-  private readonly scrollBottomThreshold = 80;
-  public unseenMessageCount = 0;
-  private seenMessageCount = 0;
+    public showScrollToBottom = false;
+    private autoScrollEnabled = true;
+    private readonly scrollBottomThreshold = 80;
+    public unseenMessageCount = 0;
+    private seenMessageCount = 0;
 
-  constructor(
-    public sseService: RunSessionSSEService,
-    private agentsService: AgentsService,
-    private tasksService: TasksService,
-    private cdr: ChangeDetectorRef,
-    private answerToLLMService: AnswerToLLMService,
-    private runGraphPageService: RunGraphPageService,
-    private flowService: FlowsApiService,
-    private graphSessionService: GraphSessionService,
-  ) {
-    effect(() => {
-      const messages = this.sseService.messages();
-      this.messages = messages;
-      this.messagesChanged.emit(messages);
-      this.rebuildMessageState(messages);
-      this.processMessages();
-      this.checkIfFinish();
-      this.cdr.markForCheck();
+    constructor(
+        public sseService: RunSessionSSEService,
+        private agentsService: AgentsService,
+        private tasksService: TasksService,
+        private cdr: ChangeDetectorRef,
+        private answerToLLMService: AnswerToLLMService,
+        private runGraphPageService: RunGraphPageService,
+        private flowService: FlowsApiService,
+        private graphSessionService: GraphSessionService
+    ) {
+        effect(() => {
+            const messages = this.sseService.messages();
+            this.messages = messages;
+            this.messagesChanged.emit(messages);
+            this.rebuildMessageState(messages);
+            this.processMessages();
+            this.checkIfFinish();
+            this.cdr.markForCheck();
 
-      if (this.autoScrollEnabled) {
-        this.unseenMessageCount = 0;
-        if (messages.length > 0) {
-          requestAnimationFrame(() => this.scrollToBottom());
-        }
-      } else {
-        this.unseenMessageCount = Math.max(0, messages.length - this.seenMessageCount);
-      }
-    });
+            if (this.autoScrollEnabled) {
+                this.unseenMessageCount = 0;
+                if (messages.length > 0) {
+                    requestAnimationFrame(() => this.scrollToBottom());
+                }
+            } else {
+                this.unseenMessageCount = Math.max(0, messages.length - this.seenMessageCount);
+            }
+        });
 
         effect(() => {
             const status = this.sseService.status();
@@ -278,51 +278,63 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             .subscribe(() => this.scheduleBreadcrumbOverflowRefresh());
     }
 
-  public onMessagesScroll(): void {
-    const el = this.messagesContainer?.nativeElement;
-    if (!el) return;
-    this.showScrollToTop = el.scrollTop > 150;
+    public onMessagesScroll(): void {
+        const el = this.messagesContainer?.nativeElement;
+        if (!el) return;
 
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    const isAtBottom = distanceFromBottom <= this.scrollBottomThreshold;
+        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        const isAtBottom = distanceFromBottom <= this.scrollBottomThreshold;
 
-    // Re-enable auto-scroll when user scrolls back to bottom
-    if (!this.autoScrollEnabled && isAtBottom) {
-      this.autoScrollEnabled = true;
-      this.unseenMessageCount = 0;
+        if (!this.autoScrollEnabled && isAtBottom) {
+            this.autoScrollEnabled = true;
+            this.unseenMessageCount = 0;
+        }
+
+        this.updateScrollButtonsVisibility();
+
+        this.cdr.markForCheck();
     }
 
-    this.showScrollToBottom = !this.autoScrollEnabled && distanceFromBottom > this.scrollBottomThreshold;
-
-    this.cdr.markForCheck();
-  }
-
-  public onMessagesWheel(event: WheelEvent): void {
-    // Disable auto-scroll only when user scrolls up
-    if (event.deltaY < 0 && this.autoScrollEnabled) {
-      this.autoScrollEnabled = false;
-      this.seenMessageCount = this.messages.length;
-      this.cdr.markForCheck();
+    public onMessagesWheel(event: WheelEvent): void {
+        if (event.deltaY < 0 && this.autoScrollEnabled) {
+            this.autoScrollEnabled = false;
+            this.seenMessageCount = this.messages.length;
+            this.updateScrollButtonsVisibility();
+            this.cdr.markForCheck();
+        }
     }
-  }
 
-  public scrollToTop(): void {
-    const el = this.messagesContainer?.nativeElement;
-    if (!el) return;
-    el.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+    public scrollToTop(): void {
+        const el = this.messagesContainer?.nativeElement;
+        if (!el) return;
+        if (this.autoScrollEnabled) {
+            this.autoScrollEnabled = false;
+            this.seenMessageCount = this.messages.length;
+        }
+        this.updateScrollButtonsVisibility();
+        this.cdr.markForCheck();
+        el.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-  private scrollToBottom(): void {
-    const el = this.messagesContainer?.nativeElement;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }
+    private scrollToBottom(): void {
+        const el = this.messagesContainer?.nativeElement;
+        if (!el) return;
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
 
-  public scrollToBottomAndReengage(): void {
-    this.autoScrollEnabled = true;
-    this.unseenMessageCount = 0;
-    this.scrollToBottom();
-  }
+    private updateScrollButtonsVisibility(): void {
+        const el = this.messagesContainer?.nativeElement;
+        if (!el) return;
+        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        this.showScrollToTop = el.scrollTop > 150 && this.autoScrollEnabled;
+        this.showScrollToBottom = !this.autoScrollEnabled && distanceFromBottom > this.scrollBottomThreshold;
+    }
+
+    public scrollToBottomAndReengage(): void {
+        this.autoScrollEnabled = true;
+        this.unseenMessageCount = 0;
+        this.scrollToBottom();
+    }
 
     public ngOnDestroy(): void {
         this.sseService.stopStream();
@@ -843,19 +855,19 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             answer: message,
         };
 
-    this.answerToLLMService.sendAnswerToLLM(requestData).subscribe({
-      next: (response) => {
-        console.log('Answer to LLM sent successfully:', response);
-        this.sseService.resumeStream();
-        this.statusWaitForUser = false;
-        this.autoScrollEnabled = true;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error sending answer to LLM:', error);
-      },
-    });
-  }
+        this.answerToLLMService.sendAnswerToLLM(requestData).subscribe({
+            next: (response) => {
+                console.log('Answer to LLM sent successfully:', response);
+                this.sseService.resumeStream();
+                this.statusWaitForUser = false;
+                this.autoScrollEnabled = true;
+                this.cdr.markForCheck();
+            },
+            error: (error) => {
+                console.error('Error sending answer to LLM:', error);
+            },
+        });
+    }
 
     private rebuildMessageState(messages: GraphMessage[]): void {
         this.buildMessageContexts(messages);
