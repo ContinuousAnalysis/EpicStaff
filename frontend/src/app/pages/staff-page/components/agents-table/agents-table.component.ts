@@ -737,6 +737,8 @@ export class AgentsTableComponent {
                 tool_ids: toolIds,
             };
 
+            const wasAlreadyPending = this.pending.has(rowId);
+
             this.setPending(rowId, {
                 kind: 'create',
                 rowId,
@@ -745,9 +747,13 @@ export class AgentsTableComponent {
 
             this.draftTempRows.delete(rowId);
             this.emitDirty();
-            this.ensureSingleSpareEmptyRow();
-            this.gridApi.setGridOption('rowData', [...this.rowData]);
-            this.gridApi.refreshCells({ force: true, columns: ['index'] });
+
+            if (!wasAlreadyPending) {
+                this.ensureSingleSpareEmptyRow();
+                this.gridApi.setGridOption('rowData', [...this.rowData]);
+                this.gridApi.refreshCells({ force: true, columns: ['index'] });
+            }
+
             this.cdr.markForCheck();
             return;
         }
