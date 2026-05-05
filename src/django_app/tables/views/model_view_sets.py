@@ -39,6 +39,9 @@ from django_app.tables.serializers.model_serializers.llm_serializers import (
     RealtimeTranscriptionConfigSerializer,
     RealtimeTranscriptionModelSerializer,
 )
+from django_app.tables.serializers.model_serializers.provider_serializers import (
+    ProviderSerializer,
+)
 from django_app.tables.serializers.model_serializers.tag_serializers import (
     AgentTagSerializer,
     CrewTagSerializer,
@@ -202,7 +205,6 @@ from tables.serializers.model_serializers import (
     NgrokWebhookConfigModelSerializer,
     OrganizationSerializer,
     OrganizationUserSerializer,
-    ProviderSerializer,
     PythonCodeResultSerializer,
     PythonCodeSerializer,
     PythonCodeToolConfigFieldSerializer,
