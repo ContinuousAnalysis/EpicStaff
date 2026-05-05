@@ -2,6 +2,15 @@ from datetime import datetime, timezone
 from collections import defaultdict
 import uuid
 import base64
+from tables.serializers.model_serializers.crew_serializers import (
+    ToolSerializer,
+)
+from tables.serializers.model_serializers.embedding_serializers import (
+    DefaultEmbeddingConfigSerializer,
+)
+from tables.serializers.model_serializers.llm_serializers import (
+    DefaultLLMConfigSerializer,
+)
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.models.graph_models import TelegramTriggerNode
 from tables.services.telegram_trigger_service import TelegramTriggerService
@@ -65,9 +74,6 @@ from tables.models import (
 from tables.serializers.model_serializers import (
     SessionSerializer,
     SessionLightSerializer,
-    DefaultLLMConfigSerializer,
-    DefaultEmbeddingConfigSerializer,
-    ToolSerializer,
 )
 from tables.serializers.storage_serializers import SessionOutputFileSerializer
 from tables.serializers.serializers import (

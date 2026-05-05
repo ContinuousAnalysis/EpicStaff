@@ -1,3 +1,5 @@
+from rest_framework import serializers
+
 from tables.models import Agent, PythonCodeTool, ToolConfig, McpTool
 
 
@@ -66,3 +68,62 @@ class NestedCrewExportMixin:
     def get_agents(self, crew):
         agents = list(crew.agents.all().values_list("id", flat=True))
         return agents
+
+
+class TagHandlingMixin:
+    """
+    Mixin for handling model tags.
+    Rules:
+    1. Predefined tags MAY be present in the request.
+    2. Users CANNOT remove an existing predefined tag (validation error).
+    3. Users CANNOT manually add/assign a predefined tag that was not previously present (validation error).
+    """
+
+    tag_model = None
+
+    def _resolve_tags(self, tags_data):
+        resolved = []
+        for tag in tags_data:
+            if "id" in tag:
+                try:
+                    obj = self.tag_model.objects.get(id=tag["id"])
+                except self.tag_model.DoesNotExist:
+                    raise serializers.ValidationError(
+                        f"Tag with id {tag['id']} not found."
+                    )
+            elif "name" in tag:
+                obj, _ = self.tag_model.objects.get_or_create(
+                    name=tag["name"],
+                    defaults={"predefined": False},
+                )
+            else:
+                continue
+
+            resolved.append(obj)
+        return resolved
+
+    def _validate_predefined_tags_on_update(self, instance, resolved_tags):
+        resolved_set = set(resolved_tags)
+        existing_predefined = set(instance.tags.filter(predefined=True))
+
+        missing_tags = existing_predefined - resolved_set
+        if missing_tags:
+            names = ", ".join([t.name for t in missing_tags])
+            raise serializers.ValidationError(
+                f"You cannot remove the following predefined tags: {names}. They must be present in the request."
+            )
+
+        incoming_predefined = {t for t in resolved_set if t.predefined}
+        new_predefined = incoming_predefined - existing_predefined
+        if new_predefined:
+            names = ", ".join([t.name for t in new_predefined])
+            raise serializers.ValidationError(
+                f"You cannot manually assign predefined tags: {names}."
+            )
+
+    def _validate_predefined_tags_on_create(self, resolved_tags):
+        for tag in resolved_tags:
+            if tag.predefined:
+                raise serializers.ValidationError(
+                    f"You cannot manually assign predefined tag '{tag.name}' during creation."
+                )
