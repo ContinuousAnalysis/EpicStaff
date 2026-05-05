@@ -126,3 +126,38 @@ class PythonCodeResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = PythonCodeResult
         fields = "__all__"
+
+
+class PythonCodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
+    libraries = serializers.ListField(
+        child=serializers.CharField(),
+        write_only=False,
+        help_text="A list of library names.",
+    )
+
+    class Meta:
+        model = PythonCode
+        fields = "__all__"
+        read_only_fields = ["id"]
+        extra_kwargs = {
+            "code": {"allow_blank": True},
+            "entrypoint": {"allow_blank": True},
+        }
+
+    def to_representation(self, instance):
+        """Convert 'libraries' string to a list of strings for output."""
+        representation = super().to_representation(instance)
+        representation["libraries"] = (
+            list(filter(None, instance.libraries.split(" ")))
+            if instance.libraries
+            else []
+        )
+        return representation
+
+    def to_internal_value(self, data):
+        """Convert 'libraries' list of strings to a space-separated string for storage."""
+        internal_value = super().to_internal_value(data)
+        libraries = data.get("libraries") or []
+        if isinstance(libraries, list):
+            internal_value["libraries"] = " ".join(libraries)
+        return internal_value
