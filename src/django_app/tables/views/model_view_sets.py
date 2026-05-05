@@ -98,8 +98,10 @@ from tables.models.crew_models import (
     AgentMcpTools,
     AgentPythonCodeTools,
     AgentPythonCodeToolConfigs,
+    TaskConfiguredTools,
     TaskMcpTools,
     TaskPythonCodeToolConfigs,
+    TaskPythonCodeTools,
 )
 from tables.exceptions import (
     TaskSerializerError,
@@ -216,8 +218,6 @@ from tables.serializers.model_serializers import (
     RealtimeSessionItemSerializer,
     StartNodeSerializer,
     SubGraphNodeSerializer,
-    TaskConfiguredTools,
-    TaskPythonCodeTools,
     TaskReadSerializer,
     TaskWriteSerializer,
     TemplateAgentSerializer,

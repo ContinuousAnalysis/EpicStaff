@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.db import transaction
 
-from django_app.tables.models.crew_models import Crew
+from tables.models.crew_models import Crew
 from django_app.tables.serializers.model_serializers.crew_serializers import (
     CrewSerializer,
 )

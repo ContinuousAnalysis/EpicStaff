@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from django_app.tables.models.tag_models import EmbeddingConfigTag, EmbeddingModelTag
+from tables.models.tag_models import EmbeddingConfigTag, EmbeddingModelTag
 from django_app.tables.serializers.model_serializers.llm_serializers import (
     TagHandlingMixin,
 )
