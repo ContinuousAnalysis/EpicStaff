@@ -13,6 +13,7 @@ import {
     GetPythonCodeToolRequest,
 } from '../../../../features/tools/models/python-code-tool.model';
 import { CustomToolsService } from '../../../../features/tools/services/custom-tools/custom-tools.service';
+import { ToolsEventsService } from '../../../../features/tools/services/tools-events.service';
 import { ToastService } from '../../../../services/notifications';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ButtonComponent } from '../../../../shared/components/buttons/button/button.component';
@@ -100,6 +101,7 @@ export class CreateCustomToolDialogComponent {
     private readonly customToolsService = inject(CustomToolsService);
     private readonly toast = inject(ToastService);
     private readonly confirmDialog = inject(ConfirmationDialogService);
+    private readonly toolsEvents = inject(ToolsEventsService);
     private readonly dialogData = inject<CreateCustomToolDialogData | null>(DIALOG_DATA, { optional: true });
 
     public readonly selectedTool: GetPythonCodeToolRequest | null = this.dialogData?.selectedTool ?? null;
@@ -130,6 +132,7 @@ export class CreateCustomToolDialogComponent {
     public readonly isJsonValid = signal(true);
     public readonly pythonHasError = signal(false);
     public readonly isSaving = signal(false);
+    public readonly isCopying = signal(false);
     private tableImportWasInvalid = false;
 
     private monacoJsonEditor: MonacoEditor.IStandaloneCodeEditor | null = null;
@@ -281,6 +284,44 @@ export class CreateCustomToolDialogComponent {
         this.dialogRef.close();
     }
 
+    public makeCopy(): void {
+        const original = this.selectedTool;
+        if (!original || this.isCopying()) {
+            return;
+        }
+
+        const variables = Array.isArray(original.variables) ? original.variables : [];
+        const payload: CreatePythonCodeToolPayload = {
+            name: `Copy ${original.name}`,
+            description: original.description,
+            variables,
+            python_code: {
+                code: original.python_code?.code ?? '',
+                entrypoint: original.python_code?.entrypoint ?? 'main',
+                libraries: original.python_code?.libraries ?? [],
+                global_kwargs: {},
+            },
+        };
+
+        this.isCopying.set(true);
+        this.customToolsService
+            .createPythonCodeToolV2(payload)
+            .pipe(
+                tap((created) => {
+                    this.toolsEvents.emitCustomToolCreated(created);
+                    this.toast.success(`Tool copied as "${created.name}"`);
+                }),
+                catchError((err: HttpErrorResponse) => {
+                    console.error('Error copying tool:', err);
+                    this.toast.error('Failed to copy custom tool. Please try again.');
+                    return EMPTY;
+                }),
+                finalize(() => this.isCopying.set(false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
+    }
+
     private copyToClipboard(value: string, successMessage: string): void {
         navigator.clipboard
             .writeText(value)
@@ -348,12 +389,6 @@ export class CreateCustomToolDialogComponent {
             .subscribe();
     }
 
-    /**
-     * Best-effort extraction of the existing tool's variables list as a JSON
-     * string for the dialog form. Prefers the V2 `variables` field; falls back
-     * to an empty list if the backend response only carries the legacy
-     * `args_schema` (which the V2 editor doesn't model).
-     */
     private initialVariablesJsonFromTool(tool: GetPythonCodeToolRequest): string {
         const v = tool.variables;
         const list = Array.isArray(v) ? v : [];

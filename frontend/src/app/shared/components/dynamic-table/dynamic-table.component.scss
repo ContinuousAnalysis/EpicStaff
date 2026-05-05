@@ -235,7 +235,8 @@
             position: sticky;
             right: 0;
             z-index: 1;
-            background-color: transparent;
+            background-color: var(--color-modals-background);
+            border-radius: 4px;
         }
     }
 
@@ -386,7 +387,6 @@
     }
 }
 
-// CDK drag & drop global styles
 .cdk-drag-preview {
     background-color: var(--color-surface, #1e1e2e);
     border: 1px solid var(--accent-color, #685fff);
@@ -394,7 +394,15 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     opacity: 0.9;
     display: table;
-    width: 100%;
+    width: auto !important;
+    height: auto !important;
+    table-layout: fixed;
+
+    .dt__td[style*='--default-col-w'] {
+        width: var(--default-col-w) !important;
+        min-width: var(--default-col-w) !important;
+        max-width: var(--default-col-w) !important;
+    }
 }
 
 .cdk-drop-list-dragging .dt__row:not(.cdk-drag-placeholder) {

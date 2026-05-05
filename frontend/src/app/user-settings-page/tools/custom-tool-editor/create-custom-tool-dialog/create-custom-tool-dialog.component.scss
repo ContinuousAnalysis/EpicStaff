@@ -36,33 +36,46 @@
         .dialog-header-right {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
 
-        .dialog-header-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .close-btn {
-            display: flex;
+        .header-icon-btn {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             width: 40px;
             height: 40px;
-            background: transparent;
+            padding: 0;
+            border-radius: 50%;
             border: 1px solid var(--accent-color);
+            background: transparent;
             color: var(--accent-color);
             cursor: pointer;
-            border-radius: 50%;
             transition:
-                background-color 0.2s ease,
-                color 0.2s ease;
+                background-color 0.15s ease,
+                border-color 0.15s ease,
+                color 0.15s ease;
 
-            &:hover {
-                background-color: rgba(104, 95, 255, 0.12);
-                color: #fff;
+            &--confirm {
+                background-color: var(--accent-color);
+                color: var(--color-text);
+            }
+
+            &:hover:not(:disabled) {
+                border-color: var(--accent-color-hover);
+
+                &.header-icon-btn--cancel {
+                    color: var(--accent-color-hover);
+                }
+
+                &.header-icon-btn--confirm {
+                    background-color: var(--accent-color-hover);
+                }
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
             }
 
             &:focus-visible {
@@ -228,9 +241,10 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        color: #9b9ba6;
         font-size: 14px;
         line-height: 18px;
+        font-weight: 500;
+        color: #d4d4dc;
 
         app-toggle-switch {
             display: inline-flex;

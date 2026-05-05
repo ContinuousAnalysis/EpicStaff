@@ -6,30 +6,36 @@
         <header class="dialog-header">
             <h2 class="title">{{ isEditMode ? 'Edit Custom Tool' : 'Create Custom Tool' }}</h2>
             <div class="dialog-header-right">
-                <div class="dialog-header-actions">
+                @if (isEditMode) {
                     <app-button
-                        type="secondary"
+                        type="outline-primary"
                         mod="default"
-                        (click)="close()"
-                        >Cancel</app-button
+                        [disabled]="isCopying()"
+                        (click)="makeCopy()"
+                        >{{ isCopying() ? 'Copying...' : 'Make Copy' }}</app-button
                     >
-                    <app-button
-                        type="primary"
-                        mod="default"
-                        [disabled]="isSaving()"
-                        (click)="submit()"
-                        >{{ isSaving() ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Tool' }}</app-button
-                    >
-                </div>
+                }
                 <button
-                    class="close-btn"
+                    class="header-icon-btn header-icon-btn--cancel"
                     type="button"
-                    aria-label="Close dialog"
+                    [attr.aria-label]="isEditMode ? 'Discard changes' : 'Cancel'"
                     (click)="close()"
                 >
                     <app-svg-icon
                         icon="x"
-                        size="1.2rem"
+                        size="1.1rem"
+                    ></app-svg-icon>
+                </button>
+                <button
+                    class="header-icon-btn header-icon-btn--confirm"
+                    type="button"
+                    [disabled]="isSaving()"
+                    [attr.aria-label]="isEditMode ? 'Save changes' : 'Create tool'"
+                    (click)="submit()"
+                >
+                    <app-svg-icon
+                        icon="check"
+                        size="1.1rem"
                     ></app-svg-icon>
                 </button>
             </div>

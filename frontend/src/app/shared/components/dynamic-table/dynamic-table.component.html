@@ -161,6 +161,7 @@
                                     [class.dt__td--invalid]="isCellInvalid(row._id, col.key)"
                                     [style.width.px]="getColWidth(col.key)"
                                     [style.min-width.px]="getColWidth(col.key)"
+                                    [style.--default-col-w.px]="getDefaultColWidth(col)"
                                 >
                                     <div class="dt__td-inner">
                                         @switch (col.type) {

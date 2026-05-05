@@ -444,6 +444,11 @@ export class DynamicTableComponent implements OnInit {
         return this.colWidths()[colKey] ?? 120;
     }
 
+    getDefaultColWidth(col: TableColumnDef): number {
+        const parsed = col.width ? parseInt(col.width, 10) : 120;
+        return isNaN(parsed) ? 120 : parsed;
+    }
+
     onResizeStart(event: MouseEvent, colKey: string): void {
         event.preventDefault();
         event.stopPropagation();

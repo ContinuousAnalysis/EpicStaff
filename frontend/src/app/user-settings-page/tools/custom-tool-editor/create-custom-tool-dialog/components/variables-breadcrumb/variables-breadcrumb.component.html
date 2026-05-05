@@ -1,15 +1,17 @@
 <nav class="breadcrumb">
-    <button
-        type="button"
-        class="breadcrumb-scroll-left"
-        aria-label="Scroll breadcrumbs to start"
-        (click)="scrollToStart()"
-    >
-        <app-svg-icon
-            icon="chevron-left"
-            size="0.9rem"
-        ></app-svg-icon>
-    </button>
+    @if (hasOverflow()) {
+        <button
+            type="button"
+            class="breadcrumb-scroll-left"
+            aria-label="Scroll breadcrumbs to start"
+            (click)="scrollToStart()"
+        >
+            <app-svg-icon
+                icon="chevron-left"
+                size="0.9rem"
+            ></app-svg-icon>
+        </button>
+    }
 
     <div
         #track
