@@ -156,6 +156,7 @@ class GraphVersioningStrategy:
                             "node_type": node_type,
                             "field": "llm_config",
                             "missing_id": missing_id,
+                            "reason": f"Referenced LLMConfig #{missing_id} no longer exists.",
                         }
                     )
 
@@ -170,6 +171,7 @@ class GraphVersioningStrategy:
                             "node_type": node_type,
                             "field": "webhook_trigger",
                             "missing_id": missing_id,
+                            "reason": f"Referenced Webhook Trigger #{missing_id} no longer exists.",
                         }
                     )
 
@@ -184,6 +186,7 @@ class GraphVersioningStrategy:
                             "node_type": node_type,
                             "field": "webhook_trigger",
                             "missing_id": missing_id,
+                            "reason": f"Referenced Webhook Trigger #{missing_id} no longer exists.",
                         }
                     )
 
@@ -214,6 +217,7 @@ class GraphVersioningStrategy:
                             "node_name": node_name,
                             "field": field,
                             "missing_node_id": target,
+                            "reason": f"Referenced Node #{target} no longer exists.",
                         }
                     )
 
@@ -227,6 +231,7 @@ class GraphVersioningStrategy:
                             "node_name": node_name,
                             "field": f"condition_groups[{group.get('group_name')}].next_node_id",
                             "missing_node_id": target,
+                            "reason": f"Referenced Node #{target} no longer exists.",
                         }
                     )
 
