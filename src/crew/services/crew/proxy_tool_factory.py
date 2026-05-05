@@ -33,20 +33,34 @@ def _build_prop(var: dict) -> dict:
         prop["properties"] = var["properties"]
         if var.get("required_properties"):
             prop["required"] = var["required_properties"]
+        # Embed field list in description so the LLM sees the expected structure
+        fields = ", ".join(
+            f'"{k}": {v.get("type", "string")}'
+            for k, v in var["properties"].items()
+        )
+        prop["description"] = f'{prop["description"]} Expected JSON object with fields: {{{fields}}}'.strip()
     elif var_type == "array" and var.get("items"):
         prop["items"] = var["items"]
+        item_type = var["items"].get("type", "any")
+        prop["description"] = f'{prop["description"]} Expected JSON array of {item_type}'.strip()
     return prop
 
 
-def _build_args_schema(variables: list[dict]) -> dict:
+def _build_args_schema(variables: list[dict], global_kwargs: dict | None = None) -> dict:
     properties: dict = {}
     required: list[str] = []
+    resolved = global_kwargs or {}
     for var in variables:
         input_type = var.get("input_type")
-        if input_type in ("agent_input", "mixed"):
-            properties[var["name"]] = _build_prop(var)
-            if var.get("required") and input_type == "agent_input":
-                required.append(var["name"])
+        name = var["name"]
+        if input_type == "agent_input":
+            properties[name] = _build_prop(var)
+            if var.get("required"):
+                required.append(name)
+        elif input_type == "mixed" and name not in resolved:
+            # No user/default value — agent must provide it
+            properties[name] = _build_prop(var)
+            required.append(name)
     return {
         "title": "ArgumentsSchema",
         "type": "object",
@@ -74,7 +88,10 @@ class ProxyToolFactory:
         stop_event: StopEvent,
     ) -> Tool:
         args_schema = generate_model_from_schema(
-            _build_args_schema(python_code_tool_data.variables)
+            _build_args_schema(
+                python_code_tool_data.variables,
+                python_code_tool_data.python_code.global_kwargs,
+            )
         )
         name = python_code_tool_data.name
         description = python_code_tool_data.description
