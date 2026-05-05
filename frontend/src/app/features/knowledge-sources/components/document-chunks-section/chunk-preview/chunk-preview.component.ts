@@ -5,6 +5,7 @@ import {
     Component,
     computed,
     DestroyRef,
+    effect,
     ElementRef,
     inject,
     input,
@@ -53,6 +54,7 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
     private nextOffset: number = 0;
     private prevOffset: number = 0;
     loading = signal<'up' | 'down' | false>(false);
+    chunkHeights = signal<Map<number, number>>(new Map());
 
     chunks = computed<DisplayedChunk[]>(() => {
         const state = this.chunkingState();
@@ -73,6 +75,16 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
     });
 
     @ViewChild('scrollContainer') private scrollContainer!: ElementRef<HTMLDivElement>;
+    @ViewChild('textContainer') private textContainer!: ElementRef<HTMLParagraphElement>;
+
+    constructor() {
+        effect(() => {
+            this.chunks();
+            this.ngZone.onStable.pipe(take(1)).subscribe(() => {
+                this.updateChunkHeights();
+            });
+        });
+    }
 
     ngOnChanges() {
         const state: DocumentChunkingState = this.chunkingState();
@@ -93,6 +105,13 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
 
     ngAfterViewInit() {
         this.checkIfNeedsMoreChunks();
+
+        const resizeObserver = new ResizeObserver(() => {
+            this.ngZone.run(() => this.updateChunkHeights());
+        });
+        resizeObserver.observe(this.scrollContainer.nativeElement);
+
+        this.destroyRef.onDestroy(() => resizeObserver.disconnect());
     }
 
     onScroll(event: Event) {
@@ -106,7 +125,7 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
         const thresholdPx = 500;
 
         if (scrollTop + clientHeight >= scrollHeight - thresholdPx) {
-            this.loadMoreDown();
+            this.loadMoreDown(el);
         }
 
         if (scrollTop <= thresholdPx) {
@@ -114,19 +133,56 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
         }
     }
 
-    // Correct scroll position after adding new and removing old items handled in a service
-    private loadMoreDown() {
+    private updateChunkHeights(): void {
+        const textEl = this.textContainer?.nativeElement;
+        if (!textEl) return;
+
+        const chunkEls = Array.from(textEl.querySelectorAll<HTMLElement>('[data-chunk-index]'));
+        if (!chunkEls.length) return;
+
+        const heights = new Map<number, number>();
+        chunkEls.forEach((el, i) => {
+            const chunkIndex = Number(el.dataset['chunkIndex']);
+            const elTop = el.getBoundingClientRect().top - textEl.getBoundingClientRect().top;
+            const nextEl = chunkEls[i + 1];
+            const nextTop = nextEl ? nextEl.getBoundingClientRect().top - textEl.getBoundingClientRect().top : 20;
+            heights.set(chunkIndex, Math.max(nextTop - elTop, 0));
+        });
+
+        this.chunkHeights.set(heights);
+    }
+
+    private loadMoreDown(container: HTMLElement) {
         if (this.loading() || this.nextOffset >= this.totalChunks) return;
         this.loading.set('down');
+
+        // TODO need to test it in large files
+        // Capture anchor: first chunk element before any DOM change
+        const firstChunkIndex = this.chunks()[0]?.chunkIndex;
+        const anchorEl =
+            firstChunkIndex != null
+                ? (container.querySelector(`[data-chunk-index="${firstChunkIndex}"]`) as HTMLElement | null)
+                : null;
+        const containerTop = container.getBoundingClientRect().top;
+        const anchorRelativeTopBefore = anchorEl ? anchorEl.getBoundingClientRect().top - containerTop : null;
 
         this.documentStorageService
             .loadNextChunks(this.ragId(), this.docId(), this.nextOffset, this.limit, this.bufferLimit)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(() => {
-                setTimeout(() => {
+                this.ngZone.onStable.pipe(take(1)).subscribe(() => {
+                    // If the anchor element was removed (top trim), compensate scroll
+                    if (anchorEl && anchorRelativeTopBefore !== null) {
+                        const anchorRelativeTopAfter = anchorEl.isConnected
+                            ? anchorEl.getBoundingClientRect().top - containerTop
+                            : null;
+                        if (anchorRelativeTopAfter !== null) {
+                            container.scrollTop += anchorRelativeTopAfter - anchorRelativeTopBefore;
+                        }
+                    }
                     this.loading.set(false);
                     this.checkIfNeedsMoreChunks();
-                }, 500);
+                });
             });
     }
 
@@ -186,7 +242,7 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
         const hasScroll = el.scrollHeight > el.clientHeight;
 
         if (!hasScroll) {
-            this.loadMoreDown();
+            this.loadMoreDown(el);
         }
     }
 }

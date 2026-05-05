@@ -3,31 +3,54 @@
     class="chunk__items"
     (scroll)="onScroll($event)"
 >
-    <div class="chunk__id-container">
-        <!--space area for chunk IDs-->
-    </div>
-    <p class="chunk__text-container">
+    <div class="chunk__id-column">
         @if (loading() === 'up') {
-            <span
-                [style.z-index]="chunks().length"
-                class="chunk__loader chunk__id-item chunk__id-item--odd"
-            >
-                <span class="dot"></span>
-                <span class="dot"></span>
-                <span class="dot"></span>
-            </span>
-            <span class="chunk__item chunk__item--blurred chunk__id-item--odd chunk__item--first">{{
-                blurredChunk
-            }}</span>
+            <div class="chunk__id-wrapper">
+                <span
+                    [style.z-index]="chunks().length"
+                    class="chunk__id-item chunk__id-item--odd chunk__loader"
+                >
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </span>
+            </div>
         }
         @for (chunk of chunks(); track chunk.chunkIndex) {
-            <span
-                class="chunk__id-item"
-                [style.z-index]="$count - $index"
-                [ngClass]="$odd ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
+            <div
+                class="chunk__id-wrapper"
+                [style.height.px]="chunkHeights().get(chunk.chunkIndex) ?? 20"
             >
-                {{ chunk.chunkIndex }}
-            </span>
+                <span
+                    class="chunk__id-item"
+                    [style.z-index]="$count - $index"
+                    [ngClass]="$odd ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
+                    >{{ chunk.chunkIndex }}</span
+                >
+            </div>
+        }
+        @if (loading() === 'down') {
+            <div class="chunk__id-wrapper">
+                <span
+                    [style.z-index]="chunks().length"
+                    class="chunk__id-item chunk__loader"
+                    [ngClass]="chunks().length % 2 !== 0 ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
+                >
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </span>
+            </div>
+        }
+    </div>
+    <p
+        class="chunk__text-container"
+        #textContainer
+    >
+        @if (loading() === 'up') {
+            <span class="chunk__item chunk__item--blurred chunk__item--first">{{ blurredChunk }}</span>
+        }
+        @for (chunk of chunks(); track chunk.chunkIndex) {
             @if (chunk.overlap) {
                 <span
                     [style.z-index]="$count - $index"
@@ -54,17 +77,7 @@
                 >
             }
         }
-
         @if (loading() === 'down') {
-            <span
-                [style.z-index]="chunks().length"
-                class="chunk__id-item chunk__loader"
-                [ngClass]="chunks().length % 2 !== 0 ? 'chunk__id-item--odd' : 'chunk__id-item--even'"
-            >
-                <span class="dot"></span>
-                <span class="dot"></span>
-                <span class="dot"></span>
-            </span>
             <span
                 class="chunk__item chunk__item--blurred chunk__item--last"
                 [ngClass]="chunks().length % 2 !== 0 ? 'chunk__item--odd' : 'chunk__item--even'"
