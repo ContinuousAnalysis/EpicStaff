@@ -99,6 +99,8 @@
                                     <app-number-stepper
                                         formControlName="repeat_every"
                                         [min]="1"
+                                        [max]="999999"
+                                        [integer]="true"
                                     />
                                     <app-select
                                         formControlName="repeat_unit"
@@ -203,6 +205,8 @@
                                     <app-number-stepper
                                         formControlName="max_runs"
                                         [min]="1"
+                                        [max]="999999"
+                                        [integer]="true"
                                     />
                                 </div>
                             }

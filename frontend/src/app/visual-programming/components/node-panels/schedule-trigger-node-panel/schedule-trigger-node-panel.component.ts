@@ -216,7 +216,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             end_mode: [data.endType ?? 'never'],
             end_date: [this.parseIsoToDate(data.endDateTime ?? '')],
             end_time: [this.parseIsoToTime(data.endDateTime ?? '')],
-            max_runs: [data.maxRuns ?? null],
+            max_runs: [data.maxRuns ?? 1],
             is_active: [isNewNode ? false : (data.isActive ?? true)],
             timezone: [this.resolveTimezone(data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone)],
         });
