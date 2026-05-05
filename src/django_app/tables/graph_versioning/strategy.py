@@ -5,6 +5,7 @@ from tables.import_export.enums import EntityType, NodeType
 from tables.import_export.strategies.graph import GraphStrategy
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.version_conversions.base import VersionConverter
+from tables.import_export.constants import NODE_MAPPING_KEY
 
 from tables.graph_versioning.constants import (
     _EXCLUDED_GRAPH_SCALARS,
@@ -117,6 +118,7 @@ class GraphVersioningStrategy:
                             "type": "fk_nulled",
                             "node_name": node_name,
                             "node_type": node_type,
+                            "node_id": node_id,
                             "reason": f"Referenced Crew #{node.get('crew')} no longer exists.",
                         }
                     )
@@ -128,6 +130,7 @@ class GraphVersioningStrategy:
                             "type": "fk_nulled",
                             "node_name": node_name,
                             "node_type": node_type,
+                            "node_id": node_id,
                             "reason": f"Referenced subgraph #{node.get('subgraph')} no longer exists.",
                         }
                     )
@@ -140,6 +143,7 @@ class GraphVersioningStrategy:
                             "type": "node_skipped",
                             "node_name": node_name,
                             "node_type": node_type,
+                            "node_id": node_id,
                             "reason": f"Referenced LLMConfig #{node.get('llm_config')} no longer exists.",
                         }
                     )
@@ -154,6 +158,7 @@ class GraphVersioningStrategy:
                             "type": "fk_nulled",
                             "node_name": node_name,
                             "node_type": node_type,
+                            "node_id": node_id,
                             "field": "llm_config",
                             "missing_id": missing_id,
                             "reason": f"Referenced LLMConfig #{missing_id} no longer exists.",
@@ -169,6 +174,7 @@ class GraphVersioningStrategy:
                             "type": "fk_nulled",
                             "node_name": node_name,
                             "node_type": node_type,
+                            "node_id": node_id,
                             "field": "webhook_trigger",
                             "missing_id": missing_id,
                             "reason": f"Referenced Webhook Trigger #{missing_id} no longer exists.",
@@ -184,6 +190,7 @@ class GraphVersioningStrategy:
                             "type": "fk_nulled",
                             "node_name": node_name,
                             "node_type": node_type,
+                            "node_id": node_id,
                             "field": "webhook_trigger",
                             "missing_id": missing_id,
                             "reason": f"Referenced Webhook Trigger #{missing_id} no longer exists.",
@@ -323,17 +330,19 @@ class GraphVersioningStrategy:
 
     def apply_snapshot_to_graph(
         self, graph: Graph, filtered_snapshot: dict, available_deps: dict
-    ) -> None:
+    ) -> IDMapper:
         self._wipe_graph_children(graph)
         self._update_graph_scalars(graph, filtered_snapshot)
 
         id_mapper = self._build_identity_id_mapper(available_deps)
 
-        self._graph_strategy.recreate_graph_children(
+        node_mapper = self._graph_strategy.recreate_graph_children(
             graph,
             filtered_snapshot,
             id_mapper,
         )
+
+        return node_mapper
 
     def _wipe_graph_children(self, graph: Graph) -> None:
         """
@@ -404,3 +413,11 @@ class GraphVersioningStrategy:
         }
         converted = VersionConverter.convert(pseudo_bundle)
         return converted[EntityType.GRAPH][0]
+
+    def change_old_warnings_ids(
+        self, warning_msgs: list[dict], node_mapper: IDMapper
+    ) -> None:
+        for w in warning_msgs:
+            old_id = w.get("node_id")
+            if old_id:
+                w["node_id"] = node_mapper.get(NODE_MAPPING_KEY, old_id)

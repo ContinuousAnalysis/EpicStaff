@@ -1,7 +1,7 @@
 from django.db import transaction
 
 from tables.graph_versioning.strategy import GraphVersioningStrategy
-from tables.import_export.constants import IMPORT_VERSION
+from tables.import_export.constants import IMPORT_VERSION, NODE_MAPPING_KEY
 from tables.models import (
     GraphVersion,
     Graph,
@@ -51,9 +51,11 @@ class GraphVersioningService:
             auto_backup_id = backup_version.id
 
         with transaction.atomic():
-            self._strategy.apply_snapshot_to_graph(
+            node_mapper = self._strategy.apply_snapshot_to_graph(
                 graph, filtered_snapshot, deps_validation["available"]
             )
+
+        self._strategy.change_old_warnings_ids(warnings, node_mapper)
 
         return {
             "restored": True,

@@ -99,7 +99,7 @@ class GraphStrategy(EntityImportExportStrategy):
 
     def recreate_graph_children(
         self, graph: Graph, data: dict, id_mapper: IDMapper
-    ) -> None:
+    ) -> IDMapper:
         nodes_data = data.get("nodes", [])
         edges_data = data.get("edge_list", [])
         conditional_edges_data = data.get("conditional_edge_list", [])
@@ -115,6 +115,9 @@ class GraphStrategy(EntityImportExportStrategy):
         self._create_conditional_edges(conditional_edges_data, graph, node_mapper)
         self._remap_decision_table_references(graph, node_mapper)
         self._update_metadata_node_ids(graph, node_mapper)
+
+        # need only for versioning system
+        return node_mapper
 
     def _export_nodes(self, instance: Graph) -> list:
         nodes = []
