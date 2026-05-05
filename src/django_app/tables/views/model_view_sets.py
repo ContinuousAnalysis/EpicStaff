@@ -27,6 +27,14 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
+from django_app.tables.serializers.model_serializers.llm_serializers import (
+    LLMConfigSerializer,
+    LLMModelSerializer,
+    RealtimeConfigSerializer,
+    RealtimeModelSerializer,
+    RealtimeTranscriptionConfigSerializer,
+    RealtimeTranscriptionModelSerializer,
+)
 from tables.exceptions import (
     AgentSerializerError,
     BuiltInToolModificationError,
@@ -184,8 +192,6 @@ from tables.serializers.model_serializers import (
     GraphSessionMessageSerializer,
     GraphTagSerializer,
     LabelSerializer,
-    LLMConfigSerializer,
-    LLMModelSerializer,
     LLMNodeSerializer,
     McpToolSerializer,
     MemorySerializer,
@@ -201,11 +207,7 @@ from tables.serializers.model_serializers import (
     PythonNodeSerializer,
     RealtimeAgentChatSerializer,
     RealtimeAgentSerializer,
-    RealtimeConfigSerializer,
-    RealtimeModelSerializer,
     RealtimeSessionItemSerializer,
-    RealtimeTranscriptionConfigSerializer,
-    RealtimeTranscriptionModelSerializer,
     StartNodeSerializer,
     SubGraphNodeSerializer,
     TaskConfiguredTools,

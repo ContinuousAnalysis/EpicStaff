@@ -1,11 +1,13 @@
 from rest_framework import serializers
 
-from tables.models.provider import Provider
-from tables.serializers.model_serializers import (
+from django_app.tables.serializers.model_serializers.llm_serializers import (
     LLMConfigSerializer,
-    EmbeddingConfigSerializer,
     RealtimeConfigSerializer,
     RealtimeTranscriptionConfigSerializer,
+)
+from tables.models.provider import Provider
+from tables.serializers.model_serializers import (
+    EmbeddingConfigSerializer,
 )
 
 
