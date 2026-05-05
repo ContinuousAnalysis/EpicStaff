@@ -71,6 +71,9 @@ class GraphVersioningStrategy:
 
         for entity_type_value, ids in dependencies.items():
             model = _DEPENDENCY_MODELS.get(entity_type_value)
+
+            ids = [i for i in ids if i is not None]
+
             if model is None or not ids:
                 available_deps[entity_type_value] = []
                 missing_deps[entity_type_value] = []
