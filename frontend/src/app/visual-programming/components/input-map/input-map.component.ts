@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, DestroyRef, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { EventEmitter } from '@angular/core';
 import { signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
     AbstractControl,
     ControlContainer,
@@ -12,7 +13,8 @@ import {
     ReactiveFormsModule,
 } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { finalize } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
+import { distinctUntilChanged, finalize } from 'rxjs/operators';
 
 import { GraphSessionService, GraphSessionStatus } from '../../../features/flows/services/flows-sessions.service';
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
@@ -407,6 +409,11 @@ export class InputMapComponent implements OnInit, OnChanges {
     hasSuccessfulSession = signal(false);
     private normalModeSnapshot: { key: string; value: string }[] = [];
 
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly keySubs = new WeakMap<AbstractControl, Subscription>();
+    private readonly lastKnownKeys = new WeakMap<AbstractControl, string>();
+    private isSyncing = false;
+
     private readonly pythonCodeRunService = inject(PythonCodeRunService);
     private readonly graphSessionService = inject(GraphSessionService);
 
@@ -426,6 +433,7 @@ export class InputMapComponent implements OnInit, OnChanges {
                 this.pairs.updateValueAndValidity();
             });
         }
+        this.attachKeyMirroringToAllPairs();
         this.checkSuccessfulSessions();
     }
 
@@ -454,10 +462,23 @@ export class InputMapComponent implements OnInit, OnChanges {
                 value: ['variables.'],
             })
         );
+        this.mirrorPairKey(this.pairs.at(this.pairs.length - 1));
     }
 
     removePair(index: number) {
+        const removed = this.pairs.at(index);
+        const removedKey = ((removed.value.key as string) ?? '').trim();
+        this.keySubs.get(removed)?.unsubscribe();
+        this.keySubs.delete(removed);
+        this.lastKnownKeys.delete(removed);
         this.pairs.removeAt(index);
+        if (this.testPairs && removedKey) {
+            const tIdx = this.findTestPairIndexByKey(removedKey);
+            if (tIdx !== -1) {
+                this.testPairs.removeAt(tIdx, { emitEvent: false });
+                this.testPairs.markAsDirty();
+            }
+        }
         if (this.pairs.length === 0) {
             this.addPair();
         }
@@ -496,7 +517,6 @@ export class InputMapComponent implements OnInit, OnChanges {
             });
 
             this.testPairs.clear({ emitEvent: false });
-            const pushedKeys = new Set<string>();
             this.normalModeSnapshot
                 .filter((item) => item.key?.trim() !== '')
                 .forEach((item) => {
@@ -508,21 +528,7 @@ export class InputMapComponent implements OnInit, OnChanges {
                         }),
                         { emitEvent: false }
                     );
-                    pushedKeys.add(item.key);
                 });
-
-            existingTestValues.forEach((preservedValue, key) => {
-                if (!pushedKeys.has(key)) {
-                    this.testPairs.push(
-                        this.fb.group({
-                            key: [key],
-                            value: [preservedValue],
-                        }),
-                        { emitEvent: false }
-                    );
-                    pushedKeys.add(key);
-                }
-            });
 
             this.testPairs.markAsPristine();
         } else {
@@ -649,6 +655,8 @@ export class InputMapComponent implements OnInit, OnChanges {
             changed = true;
         }
 
+        this.attachKeyMirroringToAllPairs();
+
         if (this.pairs.length === 0) {
             this.addPair();
         }
@@ -658,6 +666,75 @@ export class InputMapComponent implements OnInit, OnChanges {
         }
 
         return changed;
+    }
+
+    private attachKeyMirroringToAllPairs(): void {
+        for (const ctrl of this.pairs.controls) {
+            if (!this.keySubs.has(ctrl)) {
+                this.mirrorPairKey(ctrl);
+            }
+        }
+    }
+
+    private mirrorPairKey(pairCtrl: AbstractControl): void {
+        const keyCtrl = pairCtrl.get('key');
+        if (!keyCtrl) return;
+
+        this.lastKnownKeys.set(pairCtrl, ((keyCtrl.value as string) ?? '').trim());
+
+        const sub = keyCtrl.valueChanges
+            .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+            .subscribe((raw: string) => {
+                if (this.isSyncing) return;
+                if (!this.testPairs) return;
+
+                const oldKey = this.lastKnownKeys.get(pairCtrl) ?? '';
+                const newKey = (raw ?? '').trim();
+                if (oldKey === newKey) return;
+                this.lastKnownKeys.set(pairCtrl, newKey);
+
+                this.isSyncing = true;
+                try {
+                    const oldIdx = oldKey ? this.findTestPairIndexByKey(oldKey) : -1;
+                    const dupIdx = newKey ? this.findTestPairIndexByKey(newKey) : -1;
+
+                    if (oldKey === '' && newKey !== '') {
+                        if (dupIdx === -1) {
+                            this.testPairs.push(this.fb.group({ key: [newKey], value: [''] }), { emitEvent: false });
+                            this.testPairs.markAsDirty();
+                        }
+                    } else if (oldKey !== '' && newKey === '') {
+                        if (oldIdx !== -1) {
+                            this.testPairs.removeAt(oldIdx, { emitEvent: false });
+                            this.testPairs.markAsDirty();
+                        }
+                    } else if (oldKey !== '' && newKey !== '') {
+                        if (oldIdx !== -1) {
+                            if (dupIdx === -1) {
+                                this.testPairs.at(oldIdx).get('key')?.setValue(newKey, { emitEvent: false });
+                                this.testPairs.markAsDirty();
+                            } else {
+                                this.testPairs.removeAt(oldIdx, { emitEvent: false });
+                                this.testPairs.markAsDirty();
+                            }
+                        } else if (dupIdx === -1) {
+                            this.testPairs.push(this.fb.group({ key: [newKey], value: [''] }), { emitEvent: false });
+                            this.testPairs.markAsDirty();
+                        }
+                    }
+                } finally {
+                    this.isSyncing = false;
+                }
+            });
+
+        this.keySubs.set(pairCtrl, sub);
+    }
+
+    private findTestPairIndexByKey(key: string): number {
+        if (!this.testPairs) return -1;
+        const target = key.trim();
+        if (target === '') return -1;
+        return this.testPairs.controls.findIndex((c) => ((c.value.key as string) ?? '').trim() === target);
     }
 
     private getValidInputPairs(): AbstractControl[] {

@@ -460,7 +460,6 @@ import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-lo
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
-    public override readonly isExpanded = input<boolean>(false);
     public readonly graphId = input<number | null>(null);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
     public readonly useStorage = signal<boolean>(false);
@@ -513,6 +512,11 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             if (this.isOpenTestMode()) {
                 this.sidePanelService.requestExpand();
                 this.isCodeEditorFullWidth.set(false);
+            }
+        });
+        effect(() => {
+            if (!this.isExpanded()) {
+                this.isOpenTestMode.set(false);
             }
         });
         effect(() => {
