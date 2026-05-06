@@ -34,6 +34,7 @@ from tables.serializers.base_serializer import (
     BaseGraphEntityMixin,
     ContentHashWritableMixin,
 )
+from tables.serializers.utils.mixins import NestedPythonCodeMixin
 from tables.serializers.base_serializers import (
     WebhookTriggerNestedSerializer,
 )
@@ -80,7 +81,9 @@ class CrewNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class PythonNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
+class PythonNodeSerializer(
+    ContentHashWritableMixin, NestedPythonCodeMixin, serializers.ModelSerializer
+):
     python_code = PythonCodeSerializer()
 
     class Meta:
@@ -88,27 +91,11 @@ class PythonNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer
         fields = "__all__"
 
     def create(self, validated_data):
-        python_code_data = validated_data.pop("python_code")
-        python_code = PythonCode.objects.create(**python_code_data)
-        pytohn_node = PythonNode.objects.create(
-            python_code=python_code, **validated_data
-        )
-        return pytohn_node
+        return self._create_with_python_code(self.Meta.model, validated_data)
 
     def update(self, instance, validated_data):
-        python_code_data = validated_data.pop("python_code", None)
+        self._update_python_code(instance, validated_data)
 
-        # Update nested PythonCode instance if provided
-        if python_code_data:
-            python_code = instance.python_code
-            expected_hash = python_code_data.pop("content_hash", None)
-            if expected_hash is not None:
-                python_code._expected_hash = expected_hash
-            for attr, value in python_code_data.items():
-                setattr(python_code, attr, value)
-            python_code.save()
-
-        # Update PythonNode fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -116,7 +103,6 @@ class PythonNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer
         return instance
 
     def partial_update(self, instance, validated_data):
-        # Delegate to the update method for consistency
         return self.update(instance, validated_data)
 
 
@@ -179,7 +165,9 @@ class SubGraphNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializ
         return data
 
 
-class ConditionalEdgeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):
+class ConditionalEdgeSerializer(
+    ContentHashWritableMixin, NestedPythonCodeMixin, serializers.ModelSerializer
+):
     python_code = PythonCodeSerializer()
 
     class Meta(BaseGraphEntityMixin.Meta):
@@ -187,27 +175,11 @@ class ConditionalEdgeSerializer(ContentHashWritableMixin, serializers.ModelSeria
         fields = "__all__"
 
     def create(self, validated_data):
-        python_code_data = validated_data.pop("python_code")
-        python_code = PythonCode.objects.create(**python_code_data)
-        conditional_edge = ConditionalEdge.objects.create(
-            python_code=python_code, **validated_data
-        )
-        return conditional_edge
+        return self._create_with_python_code(self.Meta.model, validated_data)
 
     def update(self, instance, validated_data):
-        python_code_data = validated_data.pop("python_code", None)
+        self._update_python_code(instance, validated_data)
 
-        # Update nested PythonCode instance if provided
-        if python_code_data:
-            python_code = instance.python_code
-            expected_hash = python_code_data.pop("content_hash", None)
-            if expected_hash is not None:
-                python_code._expected_hash = expected_hash
-            for attr, value in python_code_data.items():
-                setattr(python_code, attr, value)
-            python_code.save()
-
-        # Update PythonNode fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -215,7 +187,6 @@ class ConditionalEdgeSerializer(ContentHashWritableMixin, serializers.ModelSeria
         return instance
 
     def partial_update(self, instance, validated_data):
-        # Delegate to the update method for consistency
         return self.update(instance, validated_data)
 
 
@@ -560,19 +531,6 @@ class GraphSerializer(serializers.ModelSerializer):
             "label_ids",
             "graph_note_list",
         ]
-
-    def create(self, validated_data):
-        labels = validated_data.pop("labels", [])
-        instance = super().create(validated_data)
-        instance.labels.set(labels)
-        return instance
-
-    def update(self, instance, validated_data):
-        labels = validated_data.pop("labels", None)
-        instance = super().update(instance, validated_data)
-        if labels is not None:
-            instance.labels.set(labels)
-        return instance
 
     def create(self, validated_data):
         labels = validated_data.pop("labels", [])

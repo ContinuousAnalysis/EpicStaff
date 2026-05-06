@@ -22,27 +22,6 @@ class EmbeddingModelSerializer(TagHandlingMixin, serializers.ModelSerializer):
         model = EmbeddingModel
         fields = "__all__"
 
-    def create(self, validated_data):
-        tags_data = validated_data.pop("tags", [])
-        instance = super().create(validated_data)
-
-        if tags_data:
-            resolved_tags = self._resolve_tags(tags_data)
-            self._validate_predefined_tags_on_create(resolved_tags)
-            instance.tags.set(resolved_tags)
-
-        return instance
-
-    def update(self, instance, validated_data):
-        tags_data = validated_data.pop("tags", None)
-
-        if tags_data is not None:
-            resolved_tags = self._resolve_tags(tags_data)
-            self._validate_predefined_tags_on_update(instance, resolved_tags)
-            instance.tags.set(resolved_tags)
-
-        return super().update(instance, validated_data)
-
 
 class EmbeddingConfigSerializer(TagHandlingMixin, serializers.ModelSerializer):
     tags = EmbeddingConfigTagSerializer(many=True, required=False)
@@ -51,23 +30,6 @@ class EmbeddingConfigSerializer(TagHandlingMixin, serializers.ModelSerializer):
     class Meta:
         model = EmbeddingConfig
         fields = "__all__"
-
-    def create(self, validated_data):
-        tags_data = validated_data.pop("tags", [])
-        instance = super().create(validated_data)
-        if tags_data:
-            resolved_tags = self._resolve_tags(tags_data)
-            self._validate_predefined_tags_on_create(resolved_tags)
-            instance.tags.set(resolved_tags)
-        return instance
-
-    def update(self, instance, validated_data):
-        tags_data = validated_data.pop("tags", None)
-        if tags_data is not None:
-            resolved_tags = self._resolve_tags(tags_data)
-            self._validate_predefined_tags_on_update(instance, resolved_tags)
-            instance.tags.set(resolved_tags)
-        return super().update(instance, validated_data)
 
 
 class DefaultEmbeddingConfigSerializer(serializers.ModelSerializer):

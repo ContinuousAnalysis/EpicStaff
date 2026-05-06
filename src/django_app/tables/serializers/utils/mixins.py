@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from tables.models.python_models import PythonCode
 from tables.models import Agent, PythonCodeTool, ToolConfig, McpTool
 
 
@@ -127,3 +128,38 @@ class TagHandlingMixin:
                 raise serializers.ValidationError(
                     f"You cannot manually assign predefined tag '{tag.name}' during creation."
                 )
+
+    def create(self, validated_data):
+        tags_data = validated_data.pop("tags", [])
+        instance = super().create(validated_data)
+        if tags_data:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_create(resolved_tags)
+            instance.tags.set(resolved_tags)
+        return instance
+
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop("tags", None)
+        if tags_data is not None:
+            resolved_tags = self._resolve_tags(tags_data)
+            self._validate_predefined_tags_on_update(instance, resolved_tags)
+            instance.tags.set(resolved_tags)
+        return super().update(instance, validated_data)
+
+
+class NestedPythonCodeMixin:
+    def _create_with_python_code(self, model_class, validated_data):
+        python_code_data = validated_data.pop("python_code")
+        python_code = PythonCode.objects.create(**python_code_data)
+        return model_class.objects.create(python_code=python_code, **validated_data)
+
+    def _update_python_code(self, instance, validated_data):
+        python_code_data = validated_data.pop("python_code", None)
+        if python_code_data:
+            python_code = instance.python_code
+            expected_hash = python_code_data.pop("content_hash", None)
+            if expected_hash is not None:
+                python_code._expected_hash = expected_hash
+            for attr, value in python_code_data.items():
+                setattr(python_code, attr, value)
+            python_code.save()
