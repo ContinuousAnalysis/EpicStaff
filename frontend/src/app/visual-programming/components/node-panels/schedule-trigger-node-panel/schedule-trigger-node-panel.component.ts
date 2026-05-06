@@ -138,14 +138,16 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         if (this.scheduleDirty()) {
             this.submitted.set(true);
 
+            const tz: string = this.form.getRawValue().timezone || 'UTC';
             const startErr = this.computeStartError(
                 this.form.get('start_date')!.value,
-                this.form.get('start_time')!.value
+                this.form.get('start_time')!.value,
+                tz
             );
             this.startRowError.set(startErr);
 
             const endErr = this.showEndDateTime()
-                ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value)
+                ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value, tz)
                 : '';
             this.endRowError.set(endErr);
 
@@ -169,14 +171,16 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         if (this.scheduleDirty()) {
             this.submitted.set(true);
 
+            const tz: string = this.form.getRawValue().timezone || 'UTC';
             const startErr = this.computeStartError(
                 this.form.get('start_date')!.value,
-                this.form.get('start_time')!.value
+                this.form.get('start_time')!.value,
+                tz
             );
             this.startRowError.set(startErr);
 
             const endErr = this.showEndDateTime()
-                ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value)
+                ? this.computeEndError(this.form.get('end_date')!.value, this.form.get('end_time')!.value, tz)
                 : '';
             this.endRowError.set(endErr);
 
@@ -286,20 +290,26 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         });
 
         const validateStart = () => {
-            this.startRowError.set(this.computeStartError(fg.get('start_date')!.value, fg.get('start_time')!.value));
+            const tz: string = fg.get('timezone')!.value || 'UTC';
+            this.startRowError.set(
+                this.computeStartError(fg.get('start_date')!.value, fg.get('start_time')!.value, tz)
+            );
         };
         fg.get('start_date')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateStart);
         fg.get('start_time')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateStart);
+        fg.get('timezone')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateStart);
 
         const validateEnd = () => {
             if (this.showEndDateTime()) {
-                this.endRowError.set(this.computeEndError(fg.get('end_date')!.value, fg.get('end_time')!.value));
+                const tz: string = fg.get('timezone')!.value || 'UTC';
+                this.endRowError.set(this.computeEndError(fg.get('end_date')!.value, fg.get('end_time')!.value, tz));
             }
         };
         fg.get('end_date')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
         fg.get('end_time')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
         fg.get('start_date')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
         fg.get('start_time')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
+        fg.get('timezone')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateEnd);
 
         const updateActiveState = () => {
             const d = fg.get('start_date')!.value;
@@ -376,7 +386,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         return `${pad(h)}:${pad(min)} ${meridiem}`;
     }
 
-    private computeStartError(dateVal: string | null, timeVal: string | null): string {
+    private computeStartError(dateVal: string | null, timeVal: string | null, tz: string): string {
         const date = dateVal ?? '';
         const time = timeVal ?? '';
 
@@ -397,10 +407,16 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         }
 
         if (!this.startDateTimeDirty()) return '';
-        if (!(this.form?.getRawValue().is_active ?? true)) return '';
+        if (!(this.form?.getRawValue().is_active ?? true) && this.node().backendId != null) return '';
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const {
+            year: nowYear,
+            month: nowMonth,
+            day: nowDay,
+            hour: nowHour,
+            minute: nowMin,
+        } = this.getNowInTimezone(tz);
+        const today = new Date(nowYear, nowMonth - 1, nowDay);
 
         if (parsed.getTime() < today.getTime()) {
             return 'Start date cannot be in the past';
@@ -414,8 +430,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
                 const ampm = match[3].toUpperCase();
                 if (ampm === 'PM' && h !== 12) h += 12;
                 else if (ampm === 'AM' && h === 12) h = 0;
-                const now = new Date();
-                if (h < now.getHours() || (h === now.getHours() && min <= now.getMinutes())) {
+                if (h < nowHour || (h === nowHour && min <= nowMin)) {
                     return 'Start time cannot be in the past for today';
                 }
             }
@@ -424,7 +439,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         return '';
     }
 
-    private computeEndError(dateVal: string | null, timeVal: string | null): string {
+    private computeEndError(dateVal: string | null, timeVal: string | null, tz: string): string {
         const date = dateVal ?? '';
         const time = timeVal ?? '';
 
@@ -471,10 +486,16 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         }
 
         if (!this.endDateTimeDirty()) return '';
-        if (!(this.form?.getRawValue().is_active ?? true)) return '';
+        if (!(this.form?.getRawValue().is_active ?? true) && this.node().backendId != null) return '';
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const {
+            year: nowYear,
+            month: nowMonth,
+            day: nowDay,
+            hour: nowHour,
+            minute: nowMin,
+        } = this.getNowInTimezone(tz);
+        const today = new Date(nowYear, nowMonth - 1, nowDay);
 
         if (parsed.getTime() < today.getTime()) {
             return 'End date cannot be in the past';
@@ -488,8 +509,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
                 const ampm = match[3].toUpperCase();
                 if (ampm === 'PM' && h !== 12) h += 12;
                 else if (ampm === 'AM' && h === 12) h = 0;
-                const now = new Date();
-                if (h < now.getHours() || (h === now.getHours() && min <= now.getMinutes())) {
+                if (h < nowHour || (h === nowHour && min <= nowMin)) {
                     return 'End time cannot be in the past for today';
                 }
             }
@@ -558,6 +578,20 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         } catch {
             return null;
         }
+    }
+
+    private getNowInTimezone(tz: string): { year: number; month: number; day: number; hour: number; minute: number } {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        }).formatToParts(new Date());
+        const get = (type: string) => parseInt(parts.find((p) => p.type === type)!.value, 10);
+        return { year: get('year'), month: get('month'), day: get('day'), hour: get('hour'), minute: get('minute') };
     }
 
     private normalizeEndType(raw: string | null | undefined): ScheduleEndType {
