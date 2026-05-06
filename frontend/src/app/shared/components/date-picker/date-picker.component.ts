@@ -185,6 +185,12 @@ export class DatePickerComponent implements ControlValueAccessor {
         }
     }
 
+    onEnterKey(): void {
+        if (this.isOpen()) {
+            this.close();
+        }
+    }
+
     onInput(): void {
         const val = this.inputValue();
 

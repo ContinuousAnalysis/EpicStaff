@@ -365,25 +365,21 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     }
 
     /**
-     * Extracts "HH:MM AM/PM" from a naive or offset-bearing ISO-8601 string.
+     * Extracts "HH:MM" (24-hour) from a naive or offset-bearing ISO-8601 string.
      * Uses string splitting — no Date constructor — so the result is always
      * the wall-clock time written in the string, unaffected by browser timezone.
      * Handles both naive ("2026-05-01T09:00:00") and offset ("…+03:00") input.
      */
     private parseIsoToTime(iso: string): string {
         if (!iso) return '';
-        const timePart = iso.split('T')[1]; // "09:00:00" or "09:00:00+03:00"
+        const timePart = iso.split('T')[1];
         if (!timePart) return '';
-        const [hStr, minStr] = timePart.slice(0, 5).split(':'); // take only "HH:MM"
+        const [hStr, minStr] = timePart.slice(0, 5).split(':');
         if (!hStr || !minStr) return '';
-        let h = parseInt(hStr, 10);
+        const h = parseInt(hStr, 10);
         const min = parseInt(minStr, 10);
         if (isNaN(h) || isNaN(min)) return '';
-        const meridiem: 'AM' | 'PM' = h < 12 ? 'AM' : 'PM';
-        if (h === 0) h = 12;
-        else if (h > 12) h -= 12;
-        const pad = (n: number) => String(n).padStart(2, '0');
-        return `${pad(h)}:${pad(min)} ${meridiem}`;
+        return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
     }
 
     private computeStartError(dateVal: string | null, timeVal: string | null, tz: string): string {
@@ -423,13 +419,10 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         }
 
         if (parsed.getTime() === today.getTime() && time) {
-            const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+            const match = time.match(/^(\d{1,2}):(\d{2})$/);
             if (match) {
-                let h = parseInt(match[1], 10);
+                const h = parseInt(match[1], 10);
                 const min = parseInt(match[2], 10);
-                const ampm = match[3].toUpperCase();
-                if (ampm === 'PM' && h !== 12) h += 12;
-                else if (ampm === 'AM' && h === 12) h = 0;
                 if (h < nowHour || (h === nowHour && min <= nowMin)) {
                     return 'Start time cannot be in the past for today';
                 }
@@ -467,18 +460,14 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             const sd = parseInt(startDateStr.slice(0, 2), 10);
             const parsedStart = new Date(sy, sm, sd);
 
-            const ampmToMinutes = (t: string): number => {
-                const tm = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+            const timeToMinutes = (t: string): number => {
+                const tm = t.match(/^(\d{1,2}):(\d{2})$/);
                 if (!tm) return 0;
-                let h = parseInt(tm[1], 10);
-                const min = parseInt(tm[2], 10);
-                if (tm[3].toUpperCase() === 'PM' && h !== 12) h += 12;
-                else if (tm[3].toUpperCase() === 'AM' && h === 12) h = 0;
-                return h * 60 + min;
+                return parseInt(tm[1], 10) * 60 + parseInt(tm[2], 10);
             };
 
-            const endTs = parsed.getTime() + ampmToMinutes(time) * 60_000;
-            const startTs = parsedStart.getTime() + ampmToMinutes(startTimeStr) * 60_000;
+            const endTs = parsed.getTime() + timeToMinutes(time) * 60_000;
+            const startTs = parsedStart.getTime() + timeToMinutes(startTimeStr) * 60_000;
 
             if (endTs <= startTs) {
                 return 'End date and time must be after start date and time';
@@ -502,13 +491,10 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         }
 
         if (parsed.getTime() === today.getTime() && time) {
-            const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+            const match = time.match(/^(\d{1,2}):(\d{2})$/);
             if (match) {
-                let h = parseInt(match[1], 10);
+                const h = parseInt(match[1], 10);
                 const min = parseInt(match[2], 10);
-                const ampm = match[3].toUpperCase();
-                if (ampm === 'PM' && h !== 12) h += 12;
-                else if (ampm === 'AM' && h === 12) h = 0;
                 if (h < nowHour || (h === nowHour && min <= nowMin)) {
                     return 'End time cannot be in the past for today';
                 }
@@ -601,7 +587,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     }
 
     /**
-     * Combines "dd.mm.yyyy" date and "HH:MM AM/PM" time into a naive ISO-8601
+     * Combines "dd.mm.yyyy" date and "HH:MM" (24-hour) time into a naive ISO-8601
      * datetime string: "YYYY-MM-DDTHH:MM:00" — no UTC offset, no Z suffix.
      * Timezone is sent separately as the IANA string in schedule.timezone.
      * No Date constructor is used, so the result is always the exact wall-clock
@@ -611,18 +597,14 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         if (!date || !time) return '';
 
         const dateMatch = date.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-        const timeMatch = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        const timeMatch = time.match(/^(\d{1,2}):(\d{2})$/);
         if (!dateMatch || !timeMatch) return '';
 
         const d = parseInt(dateMatch[1], 10);
         const m = parseInt(dateMatch[2], 10);
         const y = parseInt(dateMatch[3], 10);
-        let h = parseInt(timeMatch[1], 10);
+        const h = parseInt(timeMatch[1], 10);
         const min = parseInt(timeMatch[2], 10);
-        const ampm = timeMatch[3].toUpperCase();
-
-        if (ampm === 'PM' && h !== 12) h += 12;
-        else if (ampm === 'AM' && h === 12) h = 0;
 
         if (d < 1 || d > 31 || m < 1 || m > 12 || h > 23 || min > 59) return '';
 
@@ -633,11 +615,8 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     private defaultFutureDateTime(): Date {
         const d = new Date();
         d.setSeconds(0, 0);
-        d.setMinutes(d.getMinutes() + 5);
-        const rem = d.getMinutes() % 5;
-        if (rem !== 0) {
-            d.setMinutes(d.getMinutes() + (5 - rem));
-        }
+        const rem = d.getMinutes() % 30;
+        d.setMinutes(d.getMinutes() + (rem === 0 ? 30 : 30 - rem));
         return d;
     }
 
@@ -649,12 +628,8 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     }
 
     private formatCurrentTime(d: Date): string {
-        let h = d.getHours();
+        const h = d.getHours();
         const min = d.getMinutes();
-        const meridiem: 'AM' | 'PM' = h < 12 ? 'AM' : 'PM';
-        if (h === 0) h = 12;
-        else if (h > 12) h -= 12;
-        const pad = (n: number) => String(n).padStart(2, '0');
-        return `${pad(h)}:${pad(min)} ${meridiem}`;
+        return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
     }
 }

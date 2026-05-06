@@ -27,10 +27,8 @@
                 (ngModelChange)="onTimeInput($event)"
                 (focus)="onFocus()"
                 (click)="$event.stopPropagation()"
+                (keydown.enter)="onEnterKey()"
             />
-            @if (timeInput()) {
-                <span class="time-picker__meridiem-display">{{ meridiem() }}</span>
-            }
         </div>
         <svg
             class="time-picker__chevron"
@@ -69,24 +67,6 @@
                     {{ slot }}
                 </div>
             }
-        </div>
-        <div class="time-picker__meridiem-panel">
-            <button
-                type="button"
-                class="time-picker__am-pm-btn"
-                [class.time-picker__am-pm-btn--active]="meridiem() === 'AM'"
-                (click)="setMeridiem('AM')"
-            >
-                AM
-            </button>
-            <button
-                type="button"
-                class="time-picker__am-pm-btn"
-                [class.time-picker__am-pm-btn--active]="meridiem() === 'PM'"
-                (click)="setMeridiem('PM')"
-            >
-                PM
-            </button>
         </div>
     </div>
 </ng-template>

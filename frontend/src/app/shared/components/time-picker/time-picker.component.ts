@@ -16,13 +16,12 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
 
 import { TooltipComponent } from '../tooltip/tooltip.component';
 
-/** 12-hour time slots: 12:00 → 12:05 → … → 11:55 */
+/** 24-hour time slots: 00:00 → 00:30 → … → 23:30 */
 function generateHourSlots(): string[] {
     const slots: string[] = [];
-    for (let h = 0; h < 12; h++) {
-        for (let m = 0; m < 60; m += 5) {
-            const display = h === 0 ? 12 : h;
-            slots.push(`${String(display).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    for (let h = 0; h < 24; h++) {
+        for (let m = 0; m < 60; m += 30) {
+            slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
         }
     }
     return slots;
@@ -30,22 +29,25 @@ function generateHourSlots(): string[] {
 
 const HOUR_SLOTS = generateHourSlots();
 
-/** Parse a stored value ("07:00 PM" or legacy "19:00") into parts. */
-function parseValue(value: string): { time: string; meridiem: 'AM' | 'PM' } | null {
+/** Parse a stored value ("14:30" or legacy "02:30 PM") into a 24-hour "HH:MM" string. */
+function parseValue(value: string): string | null {
     if (!value) return null;
-    const ampm = value.match(/^(\d{1,2}:\d{2})\s*(AM|PM)$/i);
-    if (ampm) {
-        return { time: ampm[1].padStart(5, '0'), meridiem: ampm[2].toUpperCase() as 'AM' | 'PM' };
-    }
-    // Legacy 24-hour format "HH:mm"
-    const h24 = value.match(/^(\d{2}):(\d{2})$/);
+    // Primary: 24-hour "HH:mm"
+    const h24 = value.match(/^(\d{1,2}):(\d{2})$/);
     if (h24) {
-        let h = parseInt(h24[1], 10);
-        const m = h24[2];
-        const meridiem: 'AM' | 'PM' = h < 12 ? 'AM' : 'PM';
-        if (h === 0) h = 12;
-        else if (h > 12) h -= 12;
-        return { time: `${String(h).padStart(2, '0')}:${m}`, meridiem };
+        const h = parseInt(h24[1], 10);
+        if (h > 23) return null;
+        return `${String(h).padStart(2, '0')}:${h24[2]}`;
+    }
+    // Legacy: AM/PM format
+    const ampm = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (ampm) {
+        let h = parseInt(ampm[1], 10);
+        const m = ampm[2];
+        const meridiem = ampm[3].toUpperCase();
+        if (meridiem === 'PM' && h !== 12) h += 12;
+        else if (meridiem === 'AM' && h === 12) h = 0;
+        return `${String(h).padStart(2, '0')}:${m}`;
     }
     return null;
 }
@@ -75,15 +77,11 @@ export class TimePickerComponent implements ControlValueAccessor {
 
     /** The hh:mm portion typed or selected (no meridiem). */
     timeInput = signal<string>('');
-    meridiem = signal<'AM' | 'PM'>('AM');
     isOpen = signal<boolean>(false);
     isDisabled = signal<boolean>(false);
 
     /** Full formatted value shown in the trigger and emitted to the form. */
-    displayValue = computed<string>(() => {
-        const t = this.timeInput();
-        return t ? `${t} ${this.meridiem()}` : '';
-    });
+    displayValue = computed<string>(() => this.timeInput());
 
     filteredSlots = computed<string[]>(() => {
         const val = this.timeInput().trim();
@@ -107,6 +105,12 @@ export class TimePickerComponent implements ControlValueAccessor {
 
     onFocus(): void {
         this.openDropdown();
+    }
+
+    onEnterKey(): void {
+        if (this.isOpen()) {
+            this.close();
+        }
     }
 
     onTimeInput(raw: string): void {
@@ -144,11 +148,6 @@ export class TimePickerComponent implements ControlValueAccessor {
         this.onChange(this.displayValue());
         this.onTouched();
         this.close();
-    }
-
-    setMeridiem(m: 'AM' | 'PM'): void {
-        this.meridiem.set(m);
-        this.onChange(this.displayValue());
     }
 
     openDropdown(): void {
@@ -200,13 +199,7 @@ export class TimePickerComponent implements ControlValueAccessor {
 
     // ControlValueAccessor
     writeValue(value: string): void {
-        const parsed = parseValue(value);
-        if (parsed) {
-            this.timeInput.set(parsed.time);
-            this.meridiem.set(parsed.meridiem);
-        } else {
-            this.timeInput.set('');
-        }
+        this.timeInput.set(parseValue(value) ?? '');
     }
 
     registerOnChange(fn: (v: string) => void): void {
