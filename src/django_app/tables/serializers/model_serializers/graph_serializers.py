@@ -90,21 +90,6 @@ class PythonNodeSerializer(
         model = PythonNode
         fields = "__all__"
 
-    def create(self, validated_data):
-        return self._create_with_python_code(self.Meta.model, validated_data)
-
-    def update(self, instance, validated_data):
-        self._update_python_code(instance, validated_data)
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        return instance
-
-    def partial_update(self, instance, validated_data):
-        return self.update(instance, validated_data)
-
 
 class FileExtractorNodeSerializer(
     ContentHashWritableMixin, serializers.ModelSerializer
@@ -173,21 +158,6 @@ class ConditionalEdgeSerializer(
     class Meta(BaseGraphEntityMixin.Meta):
         model = ConditionalEdge
         fields = "__all__"
-
-    def create(self, validated_data):
-        return self._create_with_python_code(self.Meta.model, validated_data)
-
-    def update(self, instance, validated_data):
-        self._update_python_code(instance, validated_data)
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        return instance
-
-    def partial_update(self, instance, validated_data):
-        return self.update(instance, validated_data)
 
 
 class StartNodeSerializer(ContentHashWritableMixin, serializers.ModelSerializer):

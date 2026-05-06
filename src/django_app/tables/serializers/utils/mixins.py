@@ -166,6 +166,21 @@ class NestedPythonCodeMixin:
                 setattr(python_code, attr, value)
             python_code.save()
 
+    def create(self, validated_data):
+        return self._create_with_python_code(self.Meta.model, validated_data)
+
+    def update(self, instance, validated_data):
+        self._update_python_code(instance, validated_data)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
+
+    def partial_update(self, instance, validated_data):
+        return self.update(instance, validated_data)
+
 
 class ToolsConnectionMixin:
     def _resolve_tool_ids(self, tool_ids: list[str]) -> dict[str, list[str]]:
