@@ -196,6 +196,11 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
     private breadcrumbScrollers!: QueryList<ElementRef<HTMLElement>>;
 
     public showScrollToTop = false;
+    public showScrollToBottom = false;
+    private autoScrollEnabled = true;
+    private readonly scrollBottomThreshold = 80;
+    public unseenMessageCount = 0;
+    private seenMessageCount = 0;
 
     constructor(
         public sseService: RunSessionSSEService,
@@ -215,6 +220,15 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             this.processMessages();
             this.checkIfFinish();
             this.cdr.markForCheck();
+
+            if (this.autoScrollEnabled) {
+                this.unseenMessageCount = 0;
+                if (messages.length > 0) {
+                    requestAnimationFrame(() => this.scrollToBottom());
+                }
+            } else {
+                this.unseenMessageCount = Math.max(0, messages.length - this.seenMessageCount);
+            }
         });
 
         effect(() => {
@@ -267,14 +281,59 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
     public onMessagesScroll(): void {
         const el = this.messagesContainer?.nativeElement;
         if (!el) return;
-        this.showScrollToTop = el.scrollTop > 150;
+
+        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        const isAtBottom = distanceFromBottom <= this.scrollBottomThreshold;
+
+        if (!this.autoScrollEnabled && isAtBottom) {
+            this.autoScrollEnabled = true;
+            this.unseenMessageCount = 0;
+        }
+
+        this.updateScrollButtonsVisibility();
+
         this.cdr.markForCheck();
+    }
+
+    public onMessagesWheel(event: WheelEvent): void {
+        if (event.deltaY < 0 && this.autoScrollEnabled) {
+            this.autoScrollEnabled = false;
+            this.seenMessageCount = this.messages.length;
+            this.updateScrollButtonsVisibility();
+            this.cdr.markForCheck();
+        }
     }
 
     public scrollToTop(): void {
         const el = this.messagesContainer?.nativeElement;
         if (!el) return;
+        if (this.autoScrollEnabled) {
+            this.autoScrollEnabled = false;
+            this.seenMessageCount = this.messages.length;
+        }
+        this.updateScrollButtonsVisibility();
+        this.cdr.markForCheck();
         el.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    private scrollToBottom(): void {
+        const el = this.messagesContainer?.nativeElement;
+        if (!el) return;
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+
+    private updateScrollButtonsVisibility(): void {
+        const el = this.messagesContainer?.nativeElement;
+        if (!el) return;
+        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        this.showScrollToTop = el.scrollTop > 150 && this.autoScrollEnabled;
+        this.showScrollToBottom = !this.autoScrollEnabled && distanceFromBottom > this.scrollBottomThreshold;
+    }
+
+    public scrollToBottomAndReengage(): void {
+        this.autoScrollEnabled = true;
+        this.unseenMessageCount = 0;
+        this.scrollToBottom();
     }
 
     public ngOnDestroy(): void {
@@ -307,6 +366,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             this.isFinishing = false;
             this.showUserInputWithDelay = false;
             this.warningMessages = null;
+            this.autoScrollEnabled = true;
             this.messages = [];
             this.visibleMessageEntries = [];
             this.drillPaths.clear();
@@ -796,9 +856,11 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
         };
 
         this.answerToLLMService.sendAnswerToLLM(requestData).subscribe({
-            next: () => {
+            next: (response) => {
+                console.log('Answer to LLM sent successfully:', response);
                 this.sseService.resumeStream();
                 this.statusWaitForUser = false;
+                this.autoScrollEnabled = true;
                 this.cdr.markForCheck();
             },
             error: (error) => {
