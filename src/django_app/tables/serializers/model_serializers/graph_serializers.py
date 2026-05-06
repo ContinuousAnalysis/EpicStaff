@@ -317,6 +317,14 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
             self._webhook_trigger_id = None
         return super().to_internal_value(data)
 
+    def _get_or_create_webhook_trigger(self, data):
+        path = data.get("path")
+        ngrok_conf = data.get("ngrok_webhook_config")
+
+        return WebhookTrigger.objects.get_or_create(
+            path=path, ngrok_webhook_config=ngrok_conf
+        )
+
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
         webhook_trigger_data = validated_data.pop("webhook_trigger", None)
@@ -328,11 +336,8 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
         if wt_id:
             webhook_trigger_instance = WebhookTrigger.objects.filter(id=wt_id).first()
         elif webhook_trigger_data:
-            path = webhook_trigger_data.get("path")
-            ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
-
-            webhook_trigger_instance, created = WebhookTrigger.objects.get_or_create(
-                path=path, ngrok_webhook_config=ngrok_conf
+            webhook_trigger_instance, _ = self._get_or_create_webhook_trigger(
+                webhook_trigger_data
             )
 
         node = WebhookTriggerNode.objects.create(
@@ -358,13 +363,8 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
             webhook_trigger_data = validated_data.pop("webhook_trigger")
 
             if webhook_trigger_data:
-                path = webhook_trigger_data.get("path")
-                ngrok_conf = webhook_trigger_data.get("ngrok_webhook_config")
-
-                webhook_trigger_instance, created = (
-                    WebhookTrigger.objects.get_or_create(
-                        path=path, ngrok_webhook_config=ngrok_conf
-                    )
+                webhook_trigger_instance, _ = self._get_or_create_webhook_trigger(
+                    webhook_trigger_data
                 )
                 instance.webhook_trigger = webhook_trigger_instance
             else:

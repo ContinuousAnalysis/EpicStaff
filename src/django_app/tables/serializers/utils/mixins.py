@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from django.db.models import Model
+from django.db import transaction
 
 from tables.models.python_models import PythonCode
 from tables.models import Agent, PythonCodeTool, ToolConfig, McpTool
@@ -163,3 +165,67 @@ class NestedPythonCodeMixin:
             for attr, value in python_code_data.items():
                 setattr(python_code, attr, value)
             python_code.save()
+
+
+class ToolsConnectionMixin:
+    def _resolve_tool_ids(self, tool_ids: list[str]) -> dict[str, list[str]]:
+        """
+        Resolve tool ids from 'prefix:id' format to map {prefix: [id1, id2, ...]}
+        """
+        result: dict[str, list[str]] = {}
+        for tool_id in tool_ids:
+            try:
+                prefix, pk = tool_id.split(":")
+                result.setdefault(prefix, []).append(pk)
+            except Exception as e:
+                raise serializers.ValidationError({"tool_ids": str(e)})
+        return result
+
+    def _get_tools_models_map(self) -> dict[type[Model], tuple[type[Model], str, str]]:
+        """
+        Return mapping for tool synchronization.
+
+        Key:
+            Tool model class (e.g. ToolConfig)
+
+        Value:
+            tuple:
+                - through model class (e.g. TaskConfiguredTools)
+                - tool prefix used in tool_ids (e.g. "configured-tool")
+                - FK field name in through model (e.g. "tool_id")
+        """
+        raise NotImplementedError
+
+    def _sync_tools(self, instance: Model, fk_to_instance: str, tool_ids: list[str]):
+        """
+        Synchronize tools for an instance.
+
+        Deletes existing tool relations and creates new ones
+        based on the provided tool IDs.
+
+        Args:
+            instance (Model): Instance to link tools with.
+            fk_to_instance (str): FK field name in through model pointing to instance (e.g. "task_id").
+            tool_ids (list[str]): List of tool ids in format "prefix:id".
+        """
+        tools_dict = self._resolve_tool_ids(tool_ids)
+        tools_map = self._get_tools_models_map()
+
+        with transaction.atomic():
+            for tool_model, (through_model, prefix, fk_field) in tools_map.items():
+                through_model.objects.filter(**{fk_to_instance: instance.pk}).delete()
+
+                ids = tools_dict.get(prefix)
+                if not ids:
+                    continue
+
+                db_ids = tool_model.objects.filter(id__in=ids).values_list(
+                    "id", flat=True
+                )
+
+                through_model.objects.bulk_create(
+                    [
+                        through_model(**{fk_to_instance: instance.pk, fk_field: pk})
+                        for pk in db_ids
+                    ]
+                )
