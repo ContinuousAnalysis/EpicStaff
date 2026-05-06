@@ -1,5 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -203,6 +204,17 @@ export class FlowRenameDialogComponent implements OnInit, OnDestroy {
         if (!this.isValid()) return;
 
         if (this.data.flow) {
+            const trimmedName = this.newName.trim();
+            this.newName = trimmedName;
+            const isDuplicate = this.flowsStorage
+                .flows()
+                .some((f) => f.name.toLowerCase() === trimmedName.toLowerCase() && f.id !== this.data.flow!.id);
+            if (isDuplicate) {
+                this.errorMessage = 'A flow with this name already exists. Please choose a different name.';
+                this.cdr.markForCheck();
+                return;
+            }
+
             this.isSubmitting = true;
             this.errorMessage = '';
             this.cdr.markForCheck();
@@ -225,8 +237,8 @@ export class FlowRenameDialogComponent implements OnInit, OnDestroy {
                 )
                 .subscribe({
                     next: (updatedFlow) => this.dialogRef.close(updatedFlow),
-                    error: () => {
-                        this.errorMessage = 'Failed to update flow. Please try again.';
+                    error: (err: HttpErrorResponse) => {
+                        this.errorMessage = this.parseUpdateError(err);
                         this.cdr.markForCheck();
                     },
                 });
@@ -237,5 +249,13 @@ export class FlowRenameDialogComponent implements OnInit, OnDestroy {
 
     public cancel(): void {
         this.dialogRef.close();
+    }
+
+    private parseUpdateError(err: HttpErrorResponse): string {
+        const nameError = err?.error?.name?.[0] as string | undefined;
+        if (nameError?.toLowerCase().includes('already exists')) {
+            return 'A flow with this name already exists. Please choose a different name.';
+        }
+        return 'Failed to update flow. Please try again.';
     }
 }
