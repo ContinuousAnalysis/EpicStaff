@@ -4,7 +4,13 @@ import uuid
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, inline_serializer
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiParameter,
+    inline_serializer,
+)
+from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers as drf_serializers
 from django.http import Http404
 from rest_framework.exceptions import ValidationError
@@ -34,6 +40,9 @@ from tables.serializers.naive_rag_serializers import (
     NaiveRagPreviewChunkSerializer,
     ChunkingResponseSerializer,
     ChunkPreviewResponseSerializer,
+    ChunkSearchResponseSerializer,
+    PreviewChunksByIdsRequestSerializer,
+    PreviewChunksByIdsResponseSerializer,
 )
 from tables.services.knowledge_services.naive_rag_service import NaiveRagService
 from tables.services.redis_service import RedisService
@@ -808,6 +817,170 @@ class NaiveRagChunkPreviewView(APIView):
                 "limit": limit,
                 "offset": offset,
                 "chunks": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class NaiveRagChunkSearchView(APIView):
+    """
+    Search preview chunks of a document config by text query.
+
+    URL: GET /naive-rag/{naive_rag_id}/document-configs/{document_config_id}/chunks/search/?q=...
+
+    Query params:
+    - q: search string (required, non-empty); space-separated tokens are ANDed
+    - limit: max returned ids (default 100, max 500)
+    - offset: how many ids to skip (default 0)
+
+    Returns IDs of matching preview chunks (NaiveRagPreviewChunk). Frontend
+    uses these ids to highlight or filter the rendered preview-chunk list.
+    """
+
+    DEFAULT_LIMIT = 100
+    MAX_LIMIT = 500
+
+    @extend_schema(
+        description="Search chunk IDs of a document config by text query",
+        parameters=[
+            OpenApiParameter(
+                name="q",
+                location=OpenApiParameter.QUERY,
+                description="Search query; whitespace-separated tokens (AND)",
+                type=OpenApiTypes.STR,
+                required=True,
+            ),
+            OpenApiParameter(
+                name="limit",
+                location=OpenApiParameter.QUERY,
+                description="Max number of chunk IDs to return (max 500)",
+                type=OpenApiTypes.INT,
+                required=False,
+                default=DEFAULT_LIMIT,
+            ),
+            OpenApiParameter(
+                name="offset",
+                location=OpenApiParameter.QUERY,
+                description="Number of chunk IDs to skip",
+                type=OpenApiTypes.INT,
+                required=False,
+                default=0,
+            ),
+        ],
+        responses={
+            200: ChunkSearchResponseSerializer,
+            400: OpenApiResponse(description="Invalid query parameters"),
+            404: OpenApiResponse(description="NaiveRag or DocumentConfig not found"),
+        },
+    )
+    def get(self, request, naive_rag_id: int, document_config_id: int):
+        query = request.query_params.get("q", "").strip()
+        if not query:
+            return Response(
+                {"error": "Query parameter 'q' is required and cannot be empty"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            limit = min(
+                int(request.query_params.get("limit", self.DEFAULT_LIMIT)),
+                self.MAX_LIMIT,
+            )
+            offset = int(request.query_params.get("offset", 0))
+        except ValueError:
+            return Response(
+                {"error": "limit and offset must be integers"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if limit < 0 or offset < 0:
+            return Response(
+                {"error": "limit and offset must be non-negative"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            result = NaiveRagService.search_chunks(
+                naive_rag_id=naive_rag_id,
+                document_config_id=document_config_id,
+                query=query,
+                limit=limit,
+                offset=offset,
+            )
+        except DocumentConfigNotFoundException as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.exception("Chunk search failed")
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response(
+            {
+                "naive_rag_id": naive_rag_id,
+                "document_config_id": document_config_id,
+                "query": query,
+                "total_matches": result["total_matches"],
+                "limit": limit,
+                "offset": offset,
+                "preview_chunk_ids": result["preview_chunk_ids"],
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class NaiveRagPreviewChunkBulkByIdsView(APIView):
+    """
+    Fetch preview chunks of a document config by a list of preview_chunk_ids.
+
+    URL: POST /naive-rag/{naive_rag_id}/document-configs/{document_config_id}/chunks/by-ids/
+
+    Body:
+        {"preview_chunk_ids": [1, 2, 3]}
+
+    Returns the matching NaiveRagPreviewChunk objects in the same order as the
+    deduplicated input ids. Ids that do not belong to the given document_config
+    are silently skipped.
+    """
+
+    @extend_schema(
+        description="Fetch preview chunks by a list of preview_chunk_ids",
+        request=PreviewChunksByIdsRequestSerializer,
+        responses={
+            200: PreviewChunksByIdsResponseSerializer,
+            400: OpenApiResponse(description="Invalid request body"),
+            404: OpenApiResponse(description="NaiveRag or DocumentConfig not found"),
+        },
+    )
+    def post(self, request, naive_rag_id: int, document_config_id: int):
+        serializer = PreviewChunksByIdsRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        preview_chunk_ids = serializer.validated_data["preview_chunk_ids"]
+
+        try:
+            chunks = NaiveRagService.get_preview_chunks_by_ids(
+                naive_rag_id=naive_rag_id,
+                document_config_id=document_config_id,
+                preview_chunk_ids=preview_chunk_ids,
+            )
+        except DocumentConfigNotFoundException as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.exception("Bulk fetch of preview chunks by ids failed")
+            return Response(
+                {"error": f"An unexpected error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        chunk_serializer = NaiveRagPreviewChunkSerializer(chunks, many=True)
+        return Response(
+            {
+                "naive_rag_id": naive_rag_id,
+                "document_config_id": document_config_id,
+                "total": len(chunks),
+                "chunks": chunk_serializer.data,
             },
             status=status.HTTP_200_OK,
         )

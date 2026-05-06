@@ -1,8 +1,9 @@
 from typing import List, Dict, Any, Optional
 from django.db import transaction
 from loguru import logger
-
+from django.db.models import Q
 from tables.models.knowledge_models import (
+    NaiveRagPreviewChunk,
     SourceCollection,
     BaseRagType,
     NaiveRag,
@@ -732,3 +733,112 @@ class NaiveRagService:
             "config_id": config_id,
             "document_name": document_name,
         }
+
+    @staticmethod
+    def search_chunks(
+        naive_rag_id: int,
+        document_config_id: int,
+        query: str,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> Dict[str, Any]:
+        """
+        Search preview chunks of a document config by text query.
+
+        Splits the query into whitespace-separated tokens and returns
+        preview chunks whose text contains ALL tokens (case-insensitive).
+
+        Returns:
+            {
+                "total_matches": int,
+                "preview_chunk_ids": List[int],
+            }
+
+        Raises:
+            DocumentConfigNotFoundException: if config does not exist or does
+                not belong to the given naive_rag.
+        """
+
+        config_exists = NaiveRagDocumentConfig.objects.filter(
+            naive_rag_document_id=document_config_id,
+            naive_rag_id=naive_rag_id,
+        ).exists()
+        if not config_exists:
+            raise DocumentConfigNotFoundException(
+                f"DocumentConfig {document_config_id} not found "
+                f"for NaiveRag {naive_rag_id}"
+            )
+
+        tokens = [t for t in query.strip().split() if t]
+        if not tokens:
+            return {
+                "total_matches": 0,
+                "preview_chunk_ids": [],
+            }
+
+        text_filter = Q()
+        for token in tokens:
+            text_filter &= Q(text__icontains=token)
+
+        preview_qs = (
+            NaiveRagPreviewChunk.objects.filter(
+                naive_rag_document_config_id=document_config_id
+            )
+            .filter(text_filter)
+            .order_by("chunk_index")
+            .distinct()
+        )
+
+        preview_total = preview_qs.count()
+        preview_chunk_ids = list(
+            preview_qs.values_list("preview_chunk_id", flat=True)[
+                offset : offset + limit
+            ]
+        )
+
+        return {
+            "total_matches": preview_total,
+            "preview_chunk_ids": preview_chunk_ids,
+        }
+
+    @staticmethod
+    def get_preview_chunks_by_ids(
+        naive_rag_id: int,
+        document_config_id: int,
+        preview_chunk_ids: List[int],
+    ) -> List[NaiveRagPreviewChunk]:
+        """
+        Return preview chunks of a document config by a list of preview_chunk_ids.
+
+        - Validates that the config belongs to the given naive_rag.
+        - Deduplicates the input ids while preserving first-occurrence order.
+        - Filters chunks scoped to the config (rejects ids belonging to other
+          configs / naive_rag instances).
+        - Returns chunks in the same order as the deduplicated input ids.
+          Missing or foreign ids are silently skipped.
+
+        Raises:
+            DocumentConfigNotFoundException: if config does not exist or does
+                not belong to the given naive_rag.
+        """
+        config_exists = NaiveRagDocumentConfig.objects.filter(
+            naive_rag_document_id=document_config_id,
+            naive_rag_id=naive_rag_id,
+        ).exists()
+        if not config_exists:
+            raise DocumentConfigNotFoundException(
+                f"DocumentConfig {document_config_id} not found "
+                f"for NaiveRag {naive_rag_id}"
+            )
+
+        unique_ids = list(dict.fromkeys(preview_chunk_ids))
+        if not unique_ids:
+            return []
+
+        chunks = NaiveRagPreviewChunk.objects.filter(
+            naive_rag_document_config_id=document_config_id,
+            preview_chunk_id__in=unique_ids,
+        )
+        chunks_by_id = {c.preview_chunk_id: c for c in chunks}
+
+        return [chunks_by_id[i] for i in unique_ids if i in chunks_by_id]
