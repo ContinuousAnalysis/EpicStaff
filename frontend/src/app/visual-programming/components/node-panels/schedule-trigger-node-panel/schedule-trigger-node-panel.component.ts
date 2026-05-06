@@ -397,6 +397,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         }
 
         if (!this.startDateTimeDirty()) return '';
+        if (!(this.form?.getRawValue().is_active ?? true)) return '';
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -470,6 +471,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         }
 
         if (!this.endDateTimeDirty()) return '';
+        if (!(this.form?.getRawValue().is_active ?? true)) return '';
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
