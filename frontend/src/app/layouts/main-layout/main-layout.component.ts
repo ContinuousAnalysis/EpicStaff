@@ -25,6 +25,7 @@ const TABBED_ROUTES: Record<string, string[]> = {
                 flex: 1;
                 width: 100%;
                 min-height: 0;
+                max-height: 100vh;
             }
 
             .sidebar-wrapper {

@@ -13,10 +13,10 @@ $compact-theme: mat.define-theme(
 );
 
 :root {
-    @include mat.form-field-density($compact-theme);
-
     --mdc-plain-tooltip-container-color: rgba(33, 35, 37, 1);
     --mdc-plain-tooltip-supporting-text-color: #d9d9de;
+
+    @include mat.form-field-density($compact-theme);
 }
 
 .mat-mdc-form-field-required-marker {

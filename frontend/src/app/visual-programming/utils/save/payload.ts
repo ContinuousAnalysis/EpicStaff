@@ -5,6 +5,7 @@ import {
 import { ConnectionModel } from '../../core/models/connection.model';
 import { FlowModel } from '../../core/models/flow.model';
 import { DecisionTableNodeModel, NodeModel } from '../../core/models/node.model';
+import { hasPersistedWaypoints, mergeWaypointsIntoMetadata } from './edge-waypoints.helpers';
 import { toNodeMetadata } from './metadata';
 import { ConnectionDiff, NodeDiff, NodeDiffByType } from './types';
 
@@ -84,6 +85,21 @@ export function buildBulkSavePayload(
             graph: graphId,
             ...(startNodeId != null ? { start_node_id: startNodeId } : { start_temp_id: conn.sourceNodeId }),
             ...(endNodeId != null ? { end_node_id: endNodeId } : { end_temp_id: conn.targetNodeId }),
+            ...(hasPersistedWaypoints(conn)
+                ? { metadata: mergeWaypointsIntoMetadata(conn.data?.metadata ?? {}, conn.waypoints!) }
+                : {}),
+        };
+    });
+
+    const edgeUpdateList = connectionDiff.toUpdate.map((conn: ConnectionModel) => {
+        const startNodeId = idMap.get(conn.sourceNodeId);
+        const endNodeId = idMap.get(conn.targetNodeId);
+        return {
+            id: conn.data!.id,
+            graph: graphId,
+            ...(startNodeId != null ? { start_node_id: startNodeId } : { start_temp_id: conn.sourceNodeId }),
+            ...(endNodeId != null ? { end_node_id: endNodeId } : { end_temp_id: conn.targetNodeId }),
+            metadata: mergeWaypointsIntoMetadata(conn.data?.metadata ?? {}, conn.waypoints ?? []),
         };
     });
 
@@ -125,15 +141,19 @@ export function buildBulkSavePayload(
             stream_config: n.stream_config ?? {},
             metadata: toNodeMetadata(n),
         })),
-        python_node_list: nodeItems(nodeDiff.pythonNodes, (n) => ({
-            node_name: n.node_name,
-            graph: graphId,
-            python_code: n.data,
-            input_map: n.input_map || {},
-            output_variable_path: n.output_variable_path || null,
-            stream_config: n.stream_config ?? {},
-            metadata: toNodeMetadata(n),
-        })),
+        python_node_list: nodeItems(nodeDiff.pythonNodes, (n) => {
+            const { use_storage, ...pythonCode } = n.data;
+            return {
+                node_name: n.node_name,
+                graph: graphId,
+                python_code: pythonCode,
+                input_map: n.input_map || {},
+                output_variable_path: n.output_variable_path || null,
+                stream_config: n.stream_config ?? {},
+                use_storage: use_storage ?? false,
+                metadata: toNodeMetadata(n),
+            };
+        }),
         llm_node_list: nodeItems(nodeDiff.llmNodes, (n) => ({
             node_name: n.node_name,
             graph: graphId,
@@ -215,9 +235,10 @@ export function buildBulkSavePayload(
             output_variable_path: n.output_variable_path,
             stream_config: n.stream_config ?? {},
             output_schema: n.data?.output_schema ?? {},
+            use_storage: n.data?.use_storage ?? false,
             metadata: toNodeMetadata(n),
         })),
-        edge_list: edgeList,
+        edge_list: [...edgeList, ...edgeUpdateList],
         deleted,
     };
 }

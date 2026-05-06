@@ -31,7 +31,14 @@ export interface StepConfig {
     selector: 'app-create-collection-dialog',
     templateUrl: './create-collection-dialog.component.html',
     styleUrls: ['./create-collection-dialog.component.scss'],
-    imports: [ButtonComponent, StepperComponent, StepUploadFilesComponent, StepSelectRagComponent, AppSvgIconComponent],
+    imports: [
+        ButtonComponent,
+        StepperComponent,
+        StepUploadFilesComponent,
+        StepSelectRagComponent,
+        AppSvgIconComponent,
+        NgComponentOutlet,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateCollectionDialogComponent {
