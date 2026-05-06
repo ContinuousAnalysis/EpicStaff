@@ -5,21 +5,11 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tables", "0174_merge_20260429_1147"),
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name="crewnode",
-            name="crew",
-            field=models.ForeignKey(
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                to="tables.crew",
-            ),
-        ),
         migrations.AlterField(
             model_name="subgraphnode",
             name="subgraph",
