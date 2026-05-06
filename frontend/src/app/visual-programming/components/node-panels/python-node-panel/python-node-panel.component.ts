@@ -186,6 +186,12 @@ import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-lo
         `
             @use '../../../styles/node-panel-mixins.scss' as mixins;
 
+            :host {
+                display: block;
+                height: 100%;
+                min-height: 0;
+            }
+
             .save-node-btn {
                 position: absolute;
                 right: 1rem;
@@ -222,11 +228,13 @@ import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-lo
                 flex-direction: column;
                 height: 100%;
                 min-height: 0;
+                overflow: hidden;
             }
 
             .panel-content {
                 @include mixins.panel-content;
-                height: 100%;
+                flex: 1;
+                overflow-y: auto;
                 min-height: 0;
                 display: flex;
                 flex-direction: column;
