@@ -351,7 +351,7 @@ class ToolUsage:
         tool_object = converter.to_pydantic()
         calling = ToolCalling(
             tool_name=tool_object.tool_name,
-            arguments=tool_object.arguments,
+            arguments=tool_object.arguments or {},
             log=tool_string,  # type: ignore
         )
 
