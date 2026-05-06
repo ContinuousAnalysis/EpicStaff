@@ -47,6 +47,7 @@ import {
     parseExpression,
     parseManipulation,
 } from '../../../../utils/condition-expression.helper';
+import { ColumnHeaderMenuComponent } from './column-header-menu/column-header-menu.component';
 import { IconHeaderComponent } from './icon-header/icon-header.component';
 import { MonacoCellRendererComponent } from './monaco-cell-renderer/monaco-cell-renderer.component';
 import { ParamsGroupHeaderComponent } from './params-group-header/params-group-header.component';
@@ -96,6 +97,15 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     // Manipulation field columns (manip_* and manipulation)
     private manipColumnOrder = signal<string[]>(['manipulation']);
+
+    // Frozen column IDs (pinned left)
+    public frozenColIds = signal<Set<string>>(new Set());
+
+    // User-hidden column IDs
+    public hiddenColIds = signal<Set<string>>(new Set());
+
+    // Hidden-column restore badges: position computed from DOM
+    public hiddenColumnBadges = signal<Array<{ colId: string; x: number; y: number; label: string }>>([]);
 
     // Computed: field names in their column order
     public activeFieldColumns = computed(() =>
@@ -263,6 +273,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 widths,
                 order: this.movableColumnOrder(),
                 manipOrder: this.manipColumnOrder(),
+                pinned: [...this.frozenColIds()],
+                hiddenColIds: [...this.hiddenColIds()],
             };
             try {
                 localStorage.setItem(this.storageKey, JSON.stringify(state));
@@ -283,6 +295,12 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             }
             if (state.manipOrder?.length > 0) {
                 this.manipColumnOrder.set(state.manipOrder);
+            }
+            if (Array.isArray(state.pinned) && state.pinned.length > 0) {
+                this.frozenColIds.set(new Set(state.pinned as string[]));
+            }
+            if (Array.isArray(state.hiddenColIds) && state.hiddenColIds.length > 0) {
+                this.hiddenColIds.set(new Set(state.hiddenColIds as string[]));
             }
         } catch {}
     }
@@ -338,15 +356,254 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     public columnDefs: (ColDef | ColGroupDef)[] = this.buildColumnDefs();
 
-    private buildFieldColDef(fieldName: string): ColDef {
+    // ── Freeze / Hide helpers ──
+
+    private makeMenuHeaderParams(colId: string, label: string): object {
         return {
-            colId: `field_${fieldName}`,
-            headerComponent: IconHeaderComponent,
+            label,
+            colId,
+            onFreezeToggle: (id: string) => this.toggleFreeze(id),
+            onHide: (id: string) => this.hideColumn(id),
+            isPinned: () => this.frozenColIds().has(colId),
+        };
+    }
+
+    public toggleFreeze(colId: string): void {
+        const fullOrder = this.getFullColOrder();
+        const targetIdx = fullOrder.indexOf(colId);
+        if (targetIdx === -1) return;
+
+        const wasFrozen = this.frozenColIds().has(colId);
+
+        // Determine the new frozen prefix
+        let newFrozenIds: string[];
+        if (wasFrozen) {
+            // Unfreeze: clear the entire frozen set
+            newFrozenIds = [];
+        } else {
+            // Freeze: pin every column from index 0 up to and including targetIdx
+            newFrozenIds = fullOrder.slice(0, targetIdx + 1);
+        }
+
+        const newFrozenSet = new Set(newFrozenIds);
+
+        // Build state updates: set pinned:'left' for new frozen set, null for previously frozen cols no longer in set
+        const stateUpdates: { colId: string; pinned: 'left' | null }[] = [];
+        const previouslyFrozen = this.frozenColIds();
+        for (const id of fullOrder) {
+            const shouldBeFrozen = newFrozenSet.has(id);
+            const wasPinned = previouslyFrozen.has(id);
+            if (shouldBeFrozen && !wasPinned) {
+                stateUpdates.push({ colId: id, pinned: 'left' });
+            } else if (!shouldBeFrozen && wasPinned) {
+                stateUpdates.push({ colId: id, pinned: null });
+            }
+        }
+
+        this.frozenColIds.set(newFrozenSet);
+        if (stateUpdates.length > 0) {
+            this.gridApi?.applyColumnState({ state: stateUpdates });
+        }
+        this.gridApi?.refreshHeader();
+        this.saveGridState();
+        this.cdr.markForCheck();
+    }
+
+    public hideColumn(colId: string): void {
+        const current = new Set(this.hiddenColIds());
+        current.add(colId);
+        this.hiddenColIds.set(current);
+        this.gridApi?.applyColumnState({
+            state: [{ colId, hide: true }],
+        });
+        this.saveGridState();
+        setTimeout(() => this.updateBadgePositions(), 50);
+        this.cdr.markForCheck();
+    }
+
+    public unhideColumn(colId: string): void {
+        const current = new Set(this.hiddenColIds());
+        current.delete(colId);
+        this.hiddenColIds.set(current);
+        this.gridApi?.applyColumnState({
+            state: [{ colId, hide: false }],
+        });
+        this.saveGridState();
+        setTimeout(() => this.updateBadgePositions(), 50);
+        this.cdr.markForCheck();
+    }
+
+    /** Freeze all columns from index 0 through the last colId in childColIds. */
+    public freezeThroughLastChild(childColIds: string[]): void {
+        if (childColIds.length === 0) return;
+        const fullOrder = this.getFullColOrder();
+        const lastChild = childColIds[childColIds.length - 1];
+        const targetIdx = fullOrder.indexOf(lastChild);
+        if (targetIdx === -1) return;
+
+        const newFrozenIds = fullOrder.slice(0, targetIdx + 1);
+        const newFrozenSet = new Set(newFrozenIds);
+        const previouslyFrozen = this.frozenColIds();
+
+        const stateUpdates: { colId: string; pinned: 'left' | null }[] = [];
+        for (const id of fullOrder) {
+            const shouldBeFrozen = newFrozenSet.has(id);
+            const wasPinned = previouslyFrozen.has(id);
+            if (shouldBeFrozen && !wasPinned) {
+                stateUpdates.push({ colId: id, pinned: 'left' });
+            } else if (!shouldBeFrozen && wasPinned) {
+                stateUpdates.push({ colId: id, pinned: null });
+            }
+        }
+
+        this.frozenColIds.set(newFrozenSet);
+        if (stateUpdates.length > 0) {
+            this.gridApi?.applyColumnState({ state: stateUpdates });
+        }
+        this.gridApi?.refreshHeader();
+        this.saveGridState();
+        this.cdr.markForCheck();
+    }
+
+    /** Hide all columns in the given colIds in a single batched applyColumnState call. */
+    public hideColumns(colIds: string[]): void {
+        if (colIds.length === 0) return;
+        const current = new Set(this.hiddenColIds());
+        colIds.forEach((id) => current.add(id));
+        this.hiddenColIds.set(current);
+        this.gridApi?.applyColumnState({
+            state: colIds.map((colId) => ({ colId, hide: true })),
+        });
+        this.saveGridState();
+        setTimeout(() => this.updateBadgePositions(), 50);
+        this.cdr.markForCheck();
+    }
+
+    // Compute the full ordered list of all colIds (excluding structural ones like 'actions')
+    private getFullColOrder(): string[] {
+        const order: string[] = [];
+        for (const def of this.columnDefs) {
+            if ('children' in def) {
+                // Group — add children
+                const group = def as ColGroupDef;
+                for (const child of group.children as ColDef[]) {
+                    if (child.colId) order.push(child.colId);
+                }
+            } else {
+                const col = def as ColDef;
+                const id = col.colId || col.field;
+                if (id && id !== 'actions') order.push(id);
+            }
+        }
+        return order;
+    }
+
+    private updateBadgePositions(): void {
+        const hidden = this.hiddenColIds();
+        if (hidden.size === 0) {
+            this.hiddenColumnBadges.set([]);
+            return;
+        }
+
+        const fullOrder = this.getFullColOrder();
+        const badges: Array<{ colId: string; x: number; y: number; label: string }> = [];
+        // Badge is rendered inside .grid-wrapper (position: relative), so coords must be relative to it.
+        const wrapperEl = this.elRef.nativeElement.querySelector('.grid-wrapper') as HTMLElement | null;
+        const containerRect = (wrapperEl ?? this.elRef.nativeElement).getBoundingClientRect();
+
+        // Position badge ABOVE the AG Grid header strip (outside the table, sitting on its top edge)
+        const headerEl = this.elRef.nativeElement.querySelector('.ag-header') as HTMLElement | null;
+        const headerRect = headerEl?.getBoundingClientRect();
+        const y = headerRect ? headerRect.top - containerRect.top - 24 : -24;
+
+        for (const hiddenId of hidden) {
+            const hiddenIdx = fullOrder.indexOf(hiddenId);
+            if (hiddenIdx === -1) continue;
+
+            const colLabel = this.getColLabel(hiddenId);
+
+            // Find nearest visible column to the LEFT of this hidden column
+            let prevVisibleColId: string | null = null;
+            for (let i = hiddenIdx - 1; i >= 0; i--) {
+                if (!hidden.has(fullOrder[i])) {
+                    prevVisibleColId = fullOrder[i];
+                    break;
+                }
+            }
+
+            // Find nearest visible column to the RIGHT (skip consecutive hidden cols)
+            let nextVisibleColId: string | null = null;
+            for (let i = hiddenIdx + 1; i < fullOrder.length; i++) {
+                if (!hidden.has(fullOrder[i])) {
+                    nextVisibleColId = fullOrder[i];
+                    break;
+                }
+            }
+
+            if (!prevVisibleColId && !nextVisibleColId) continue;
+
+            const prevHeader = prevVisibleColId
+                ? (this.elRef.nativeElement.querySelector(
+                      `.ag-header-cell[col-id="${prevVisibleColId}"]`
+                  ) as HTMLElement | null)
+                : null;
+            const nextHeader = nextVisibleColId
+                ? (this.elRef.nativeElement.querySelector(
+                      `.ag-header-cell[col-id="${nextVisibleColId}"]`
+                  ) as HTMLElement | null)
+                : null;
+
+            const prevRect = prevHeader?.getBoundingClientRect() ?? null;
+            const nextRect = nextHeader?.getBoundingClientRect() ?? null;
+
+            let boundaryX: number;
+            if (prevRect && nextRect) {
+                // Place badge on the boundary between the two adjacent visible columns
+                boundaryX = (prevRect.right + nextRect.left) / 2 - containerRect.left - 10;
+            } else if (nextRect) {
+                // Hidden column is the very first — anchor to left edge of next visible
+                boundaryX = nextRect.left - containerRect.left - 10;
+            } else {
+                // Hidden column is the very last — anchor to right edge of prev visible
+                boundaryX = prevRect!.right - containerRect.left - 10;
+            }
+
+            // Offset stacking: if another badge already sits at the same boundary, shift right
+            const existing = badges.filter((b) => Math.abs(b.x - boundaryX) < 5);
+            const offsetX = existing.length * 22;
+
+            badges.push({ colId: hiddenId, x: boundaryX + offsetX, y, label: colLabel });
+        }
+
+        this.hiddenColumnBadges.set(badges);
+        this.cdr.markForCheck();
+    }
+
+    private getColLabel(colId: string): string {
+        if (colId === 'expression') return 'Expression';
+        if (colId === 'manipulation') return 'Manipulation';
+        if (colId === 'prompt_id') return 'Prompt';
+        if (colId === 'route_code') return 'Route Code';
+        if (colId === 'group_name') return 'Condition Name';
+        if (colId === 'next_node') return 'Next Node';
+        if (colId.startsWith('field_')) return colId.substring(6);
+        if (colId.startsWith('manip_')) return colId.substring(6);
+        return colId;
+    }
+
+    private buildFieldColDef(fieldName: string): ColDef {
+        const colId = `field_${fieldName}`;
+        return {
+            colId,
+            headerComponent: ColumnHeaderMenuComponent,
             headerComponentParams: {
                 label: fieldName,
+                colId,
                 iconClass: 'ti ti-x',
                 tooltip: `Remove variable "${fieldName}"`,
                 variant: 'delete',
+                showFreeze: false,
+                showChevron: false,
                 onIconClick: () => this.removeFieldColumn(fieldName),
             },
             editable: (params: EditableCallbackParams<ConditionGroup>) =>
@@ -384,14 +641,18 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     private buildManipFieldColDef(fieldName: string): ColDef {
+        const colId = `manip_${fieldName}`;
         return {
-            colId: `manip_${fieldName}`,
-            headerComponent: IconHeaderComponent,
+            colId,
+            headerComponent: ColumnHeaderMenuComponent,
             headerComponentParams: {
                 label: fieldName,
+                colId,
                 iconClass: 'ti ti-x',
                 tooltip: `Remove variable "${fieldName}"`,
                 variant: 'delete',
+                showFreeze: false,
+                showChevron: false,
                 onIconClick: () => this.removeManipFieldColumn(fieldName),
             },
             editable: (params: EditableCallbackParams<ConditionGroup>) =>
@@ -424,7 +685,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         return {
             colId: 'manipulation',
             field: 'manipulation',
-            headerName: 'Manipulation',
+            headerComponent: ColumnHeaderMenuComponent,
+            headerComponentParams: this.makeMenuHeaderParams('manipulation', 'Manipulation'),
             editable: false,
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
@@ -440,7 +702,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         return {
             colId: 'expression',
             field: 'expression',
-            headerName: 'Expression',
+            headerComponent: ColumnHeaderMenuComponent,
+            headerComponentParams: this.makeMenuHeaderParams('expression', 'Expression'),
             editable: false,
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
@@ -479,7 +742,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 },
             },
             {
-                headerName: 'Condition Name',
+                colId: 'group_name',
+                headerComponent: ColumnHeaderMenuComponent,
+                headerComponentParams: this.makeMenuHeaderParams('group_name', 'Condition Name'),
                 field: 'group_name',
                 editable: true,
                 flex: 1,
@@ -509,6 +774,21 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     headerGroupComponentParams: {
                         mode: 'full',
                         onAdd: (event: MouseEvent) => this.toggleFieldPicker(event),
+                        onFreeze: () => {
+                            const ids = visibleFieldCols.map((c) => c.colId!);
+                            const allFrozen = ids.length > 0 && ids.every((id) => this.frozenColIds().has(id));
+                            if (allFrozen) {
+                                this.toggleFreeze(ids[0]);
+                            } else {
+                                this.freezeThroughLastChild(ids);
+                            }
+                        },
+                        onHide: () => this.hideColumns(visibleFieldCols.map((c) => c.colId!)),
+                        isPinned: () => {
+                            const ids = visibleFieldCols.map((c) => c.colId!);
+                            const frozen = this.frozenColIds();
+                            return ids.length > 0 && ids.every((id) => frozen.has(id));
+                        },
                     },
                     children: visibleFieldCols,
                 } as ColGroupDef,
@@ -518,7 +798,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         }
 
         const promptIdCol: ColDef = {
-            headerName: 'Prompt ID',
+            colId: 'prompt_id',
+            headerComponent: ColumnHeaderMenuComponent,
+            headerComponentParams: this.makeMenuHeaderParams('prompt_id', 'Prompt ID'),
             field: 'prompt_id',
             suppressMovable: true,
             editable: true,
@@ -575,6 +857,21 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     headerGroupComponentParams: {
                         mode: 'full',
                         onAdd: (event: MouseEvent) => this.toggleManipFieldPicker(event),
+                        onFreeze: () => {
+                            const ids = visibleManipCols.map((c) => c.colId!);
+                            const allFrozen = ids.length > 0 && ids.every((id) => this.frozenColIds().has(id));
+                            if (allFrozen) {
+                                this.toggleFreeze(ids[0]);
+                            } else {
+                                this.freezeThroughLastChild(ids);
+                            }
+                        },
+                        onHide: () => this.hideColumns(visibleManipCols.map((c) => c.colId!)),
+                        isPinned: () => {
+                            const ids = visibleManipCols.map((c) => c.colId!);
+                            const frozen = this.frozenColIds();
+                            return ids.length > 0 && ids.every((id) => frozen.has(id));
+                        },
                     },
                     children: visibleManipCols,
                 } as ColGroupDef,
@@ -584,7 +881,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         }
 
         const routeCodeCol: ColDef = {
-            headerName: 'Route Code',
+            colId: 'route_code',
+            headerComponent: ColumnHeaderMenuComponent,
+            headerComponentParams: this.makeMenuHeaderParams('route_code', 'Route Code'),
             field: 'route_code',
             editable: true,
             width: 150,
@@ -921,6 +1220,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             this.isRebuilding = true;
             this.gridApi.setGridOption('columnDefs', this.columnDefs);
             this.isRebuilding = false;
+
+            // Re-apply hidden/frozen state after rebuild
+            this.reapplyColumnState();
         }
         setTimeout(() => this.updateAddButtonPositions(), 50);
     }
@@ -989,6 +1291,21 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         });
     }
 
+    /** Re-applies the stored pinned/hidden state to the live grid after a column defs rebuild. */
+    private reapplyColumnState(): void {
+        const frozen = this.frozenColIds();
+        const hidden = this.hiddenColIds();
+        if (frozen.size === 0 && hidden.size === 0) return;
+
+        const stateUpdates: { colId: string; pinned?: 'left' | null; hide?: boolean }[] = [];
+
+        frozen.forEach((colId) => stateUpdates.push({ colId, pinned: 'left' }));
+        hidden.forEach((colId) => stateUpdates.push({ colId, hide: true }));
+
+        this.gridApi.applyColumnState({ state: stateUpdates });
+        setTimeout(() => this.updateBadgePositions(), 50);
+    }
+
     private updateAddButtonPositions(): void {
         if (this.hasFieldCols()) {
             this.exprAddPos.set(null);
@@ -1009,6 +1326,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 this.manipAddPos.set({ x: rect.right - 26, y: rect.top + rect.height / 2 - 10 });
             }
         }
+
+        // Also update badge positions whenever buttons are updated
+        this.updateBadgePositions();
     }
 
     toggleFieldPicker(event?: MouseEvent): void {
@@ -1099,6 +1419,8 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             });
             this.gridApi.applyColumnState({ state: colState });
         }
+        // Apply saved frozen/hidden state
+        this.reapplyColumnState();
         setTimeout(() => this.updateAddButtonPositions(), 100);
         this.positionResizeObserver = new ResizeObserver(() => this.updateAddButtonPositions());
         this.positionResizeObserver.observe(this.elRef.nativeElement);

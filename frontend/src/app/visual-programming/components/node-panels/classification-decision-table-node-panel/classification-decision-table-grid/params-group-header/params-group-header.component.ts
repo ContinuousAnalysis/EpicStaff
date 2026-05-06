@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, HostListener, signal } from '@angular/core';
+import { Overlay, OverlayRef } from '@angular/cdk/overlay';
+import { TemplatePortal } from '@angular/cdk/portal';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    inject,
+    OnDestroy,
+    TemplateRef,
+    ViewChild,
+    ViewContainerRef,
+} from '@angular/core';
 import { IHeaderGroupAngularComp } from 'ag-grid-angular';
 import { IHeaderGroupParams } from 'ag-grid-community';
 
@@ -21,39 +31,45 @@ import { IHeaderGroupParams } from 'ag-grid-community';
                 <span class="params-label">Params</span>
                 <div class="dropdown-wrapper">
                     <button
+                        #chevronBtn
                         class="chevron-btn"
-                        (click)="toggleDropdown($event)"
+                        (click)="toggleMenu($event)"
                         title="Column options"
                     >
                         <i class="ti ti-chevron-down"></i>
                     </button>
                 </div>
             }
-            @if (showDropdown() && dropdownPos()) {
-                <div
-                    class="params-dropdown"
-                    [style.top.px]="dropdownPos()!.top"
-                    [style.left.px]="dropdownPos()!.left"
-                    (click)="$event.stopPropagation()"
-                >
-                    <div
-                        class="params-dropdown-item"
-                        (click)="handleFreeze()"
-                    >
-                        Freeze
-                    </div>
-                    <div
-                        class="params-dropdown-item"
-                        (click)="handleHide()"
-                    >
-                        Hide
-                    </div>
-                </div>
-            }
         </div>
+
+        <ng-template #menuTemplate>
+            <div class="params-dropdown">
+                <div
+                    class="params-dropdown-item"
+                    (click)="handleFreeze()"
+                >
+                    @if (isPinned && isPinned()) {
+                        Unfreeze
+                    } @else {
+                        Freeze
+                    }
+                </div>
+                <div
+                    class="params-dropdown-item"
+                    (click)="handleHide()"
+                >
+                    Hide
+                </div>
+            </div>
+        </ng-template>
     `,
     styles: [
         `
+            :host {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
             .params-group-header {
                 display: flex;
                 align-items: center;
@@ -115,12 +131,10 @@ import { IHeaderGroupParams } from 'ag-grid-community';
             .dropdown-wrapper {
             }
             .params-dropdown {
-                position: fixed;
                 background: #2a2a2e;
                 border: 1px solid rgba(255, 255, 255, 0.15);
                 border-radius: 6px;
                 min-width: 100px;
-                z-index: 9999;
                 overflow: hidden;
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
             }
@@ -137,14 +151,20 @@ import { IHeaderGroupParams } from 'ag-grid-community';
         `,
     ],
 })
-export class ParamsGroupHeaderComponent implements IHeaderGroupAngularComp {
-    showDropdown = signal(false);
-    dropdownPos = signal<{ top: number; left: number } | null>(null);
+export class ParamsGroupHeaderComponent implements IHeaderGroupAngularComp, OnDestroy {
+    @ViewChild('menuTemplate') menuTemplate!: TemplateRef<unknown>;
+    @ViewChild('chevronBtn') chevronBtn!: HTMLButtonElement;
+
     mode: 'add-only' | 'full' = 'full';
 
     private onAdd: ((event: MouseEvent) => void) | undefined;
     private onFreeze: (() => void) | undefined;
     private onHide: (() => void) | undefined;
+    isPinned: (() => boolean) | undefined;
+
+    private overlayRef: OverlayRef | null = null;
+    private overlay = inject(Overlay);
+    private vcr = inject(ViewContainerRef);
 
     agInit(
         params: IHeaderGroupParams & {
@@ -152,12 +172,14 @@ export class ParamsGroupHeaderComponent implements IHeaderGroupAngularComp {
             onAdd?: (event: MouseEvent) => void;
             onFreeze?: () => void;
             onHide?: () => void;
+            isPinned?: () => boolean;
         }
     ): void {
         this.mode = params.mode ?? 'full';
         this.onAdd = params.onAdd;
         this.onFreeze = params.onFreeze;
         this.onHide = params.onHide;
+        this.isPinned = params.isPinned;
     }
 
     refresh(): boolean {
@@ -169,35 +191,67 @@ export class ParamsGroupHeaderComponent implements IHeaderGroupAngularComp {
         this.onAdd?.(event);
     }
 
-    toggleDropdown(event: MouseEvent): void {
+    toggleMenu(event: MouseEvent): void {
         event.stopPropagation();
-        const isOpen = this.showDropdown();
-        if (!isOpen) {
-            const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-            this.dropdownPos.set({ top: rect.bottom + 4, left: rect.left });
-        } else {
-            this.dropdownPos.set(null);
+        if (this.overlayRef?.hasAttached()) {
+            this.closeMenu();
+            return;
         }
-        this.showDropdown.set(!isOpen);
+        this.openMenu(event.currentTarget as HTMLElement);
+    }
+
+    private openMenu(anchor: HTMLElement): void {
+        const positionStrategy = this.overlay
+            .position()
+            .flexibleConnectedTo(anchor)
+            .withPositions([
+                {
+                    originX: 'end',
+                    originY: 'bottom',
+                    overlayX: 'end',
+                    overlayY: 'top',
+                    offsetY: 4,
+                },
+                {
+                    originX: 'end',
+                    originY: 'top',
+                    overlayX: 'end',
+                    overlayY: 'bottom',
+                    offsetY: -4,
+                },
+            ])
+            .withPush(false);
+
+        this.overlayRef = this.overlay.create({
+            positionStrategy,
+            hasBackdrop: true,
+            backdropClass: 'cdk-overlay-transparent-backdrop',
+            scrollStrategy: this.overlay.scrollStrategies.close(),
+        });
+
+        this.overlayRef.backdropClick().subscribe(() => this.closeMenu());
+
+        const portal = new TemplatePortal(this.menuTemplate, this.vcr);
+        this.overlayRef.attach(portal);
+    }
+
+    private closeMenu(): void {
+        this.overlayRef?.detach();
+        this.overlayRef?.dispose();
+        this.overlayRef = null;
     }
 
     handleFreeze(): void {
+        this.closeMenu();
         this.onFreeze?.();
-        this.showDropdown.set(false);
-        this.dropdownPos.set(null);
     }
 
     handleHide(): void {
+        this.closeMenu();
         this.onHide?.();
-        this.showDropdown.set(false);
-        this.dropdownPos.set(null);
     }
 
-    @HostListener('document:click')
-    onDocumentClick(): void {
-        if (this.showDropdown()) {
-            this.showDropdown.set(false);
-            this.dropdownPos.set(null);
-        }
+    ngOnDestroy(): void {
+        this.closeMenu();
     }
 }

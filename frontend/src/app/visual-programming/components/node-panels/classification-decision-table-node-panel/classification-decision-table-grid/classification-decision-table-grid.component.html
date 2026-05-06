@@ -15,18 +15,33 @@
         </div>
     </div>
 
-    <ag-grid-angular
-        class="decision-grid ag-theme-quartz-dark"
-        [class.empty-state]="isEmpty()"
-        style="width: 100%"
-        [rowData]="rowData()"
-        [columnDefs]="columnDefs"
-        [defaultColDef]="defaultColDef"
-        [gridOptions]="gridOptions"
-        (gridReady)="onGridReady($event)"
-        (cellValueChanged)="onCellValueChanged($event)"
-    >
-    </ag-grid-angular>
+    <div class="grid-wrapper">
+        <ag-grid-angular
+            class="decision-grid ag-theme-quartz-dark"
+            [class.empty-state]="isEmpty()"
+            style="width: 100%"
+            [rowData]="rowData()"
+            [columnDefs]="columnDefs"
+            [defaultColDef]="defaultColDef"
+            [gridOptions]="gridOptions"
+            (gridReady)="onGridReady($event)"
+            (cellValueChanged)="onCellValueChanged($event)"
+        >
+        </ag-grid-angular>
+
+        <!-- Hidden-column restore badges -->
+        @for (badge of hiddenColumnBadges(); track badge.colId) {
+            <button
+                class="hidden-col-badge"
+                [style.left.px]="badge.x"
+                [style.top.px]="badge.y"
+                [title]="'Restore: ' + badge.label"
+                (click)="unhideColumn(badge.colId)"
+            >
+                <i class="ti ti-arrows-horizontal"></i>
+            </button>
+        }
+    </div>
 
     @if (contextMenu()) {
         <div
