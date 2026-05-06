@@ -205,8 +205,10 @@ export class NodePanelShellComponent {
             const updatedNode = this.panelInstance.onSave();
             if (updatedNode) {
                 this.save.emit(updatedNode);
+                return;
             }
         }
+        this.sidePanelService.clearSelection();
     }
 
     private performAutosave(): void {
