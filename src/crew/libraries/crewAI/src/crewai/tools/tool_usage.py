@@ -392,13 +392,19 @@ class ToolUsage:
         self, tool_string: str
     ) -> Union[ToolCalling, InstructorToolCalling]:
         try:
+            # EpicStaff patch: when FCM is configured, use it as the PRIMARY
+            # tool-call extractor (not just a fallback for malformed ReAct output).
+            # Falls back to original ReAct parser only if FCM raises, so a transient
+            # FCM error doesn't kill an otherwise valid action.
+            if self.function_calling_llm:
+                try:
+                    return self._function_calling(tool_string)
+                except Exception:
+                    return self._original_tool_calling(tool_string)
             try:
                 return self._original_tool_calling(tool_string, raise_error=True)
             except Exception:
-                if self.function_calling_llm:
-                    return self._function_calling(tool_string)
-                else:
-                    return self._original_tool_calling(tool_string)
+                return self._original_tool_calling(tool_string)
         except Exception as e:
             self._run_attempts += 1
             if self._run_attempts > self._max_parsing_attempts:
