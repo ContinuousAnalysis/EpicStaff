@@ -228,12 +228,22 @@
         &--no-content {
             padding-top: 0;
         }
+
+        &--pdf {
+            padding-top: 0;
+        }
     }
 
     &__scroll {
         height: calc(100% - 28px);
         overflow: auto;
         padding: 0 24px 24px;
+
+        &--pdf {
+            height: 100%;
+            overflow: hidden;
+            padding: 0;
+        }
     }
 
     &__empty-state {
