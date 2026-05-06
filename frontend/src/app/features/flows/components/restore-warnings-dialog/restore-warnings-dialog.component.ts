@@ -20,7 +20,13 @@ export interface RestoreWarningsDialogData {
 })
 export class RestoreWarningsDialogComponent {
     constructor(
-        public dialogRef: DialogRef<void>,
+        public dialogRef: DialogRef<number | undefined>,
         @Inject(DIALOG_DATA) public data: RestoreWarningsDialogData
     ) {}
+
+    public selectWarning(warning: RestoreWarningsDialogData['warnings'][number]): void {
+        if (warning.node_id != null) {
+            this.dialogRef.close(warning.node_id);
+        }
+    }
 }

@@ -569,10 +569,22 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     }
 
     public onShowRestoreWarnings(): void {
-        this.dialog.open(RestoreWarningsDialogComponent, {
+        const dialogRef = this.dialog.open<number | undefined>(RestoreWarningsDialogComponent, {
             width: '560px',
             data: { warnings: this.restoreWarnings() },
         });
+
+        dialogRef.closed
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                filter((nodeId): nodeId is number => nodeId != null)
+            )
+            .subscribe((backendNodeId) => {
+                const node = this.flowService.nodes().find((n) => n.backendId === backendNodeId);
+                if (node) {
+                    this.flowGraphComponent?.openNodePanel(node.id);
+                }
+            });
     }
 
     public onSaveVersion(): void {

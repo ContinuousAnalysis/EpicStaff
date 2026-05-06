@@ -28,7 +28,11 @@
 
     <div class="warnings-list">
         @for (warning of data.warnings; track $index) {
-            <div class="warning-item">
+            <div
+                class="warning-item"
+                [class.warning-item--clickable]="warning.node_id != null"
+                (click)="selectWarning(warning)"
+            >
                 <app-svg-icon
                     icon="alert-triangle"
                     size="1.4rem"
@@ -41,6 +45,13 @@
                     }
                     {{ warning.reason }}
                 </span>
+                @if (warning.node_id != null) {
+                    <app-svg-icon
+                        icon="chevron-right"
+                        size="1rem"
+                        class="warning-item-arrow"
+                    />
+                }
             </div>
         }
     </div>
