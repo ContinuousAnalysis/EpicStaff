@@ -404,14 +404,15 @@ import { SidePanelService } from '../../services/side-panel.service';
             .test-input-dirty-warning {
                 display: grid;
                 grid-template-rows: 0fr;
-                opacity: 0;
-                transition:
-                    grid-template-rows 0.25s ease,
-                    opacity 0.25s ease;
+                transition: grid-template-rows 0.15s cubic-bezier(0.22, 1, 0.36, 1);
 
                 &.visible {
                     grid-template-rows: 1fr;
-                    opacity: 1;
+
+                    .test-input-dirty-warning__inner {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
                 }
 
                 &__inner {
@@ -425,6 +426,11 @@ import { SidePanelService } from '../../services/side-panel.service';
                     background-color: rgba(239, 214, 22, 0.08);
                     color: #efd616;
                     padding: 0.25rem 0.5rem;
+                    transform: translateY(-100%);
+                    opacity: 0;
+                    transition:
+                        transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                        opacity 0.25s ease;
                 }
 
                 .save-node-svg {
