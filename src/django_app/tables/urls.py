@@ -84,6 +84,7 @@ from tables.views.views import (
     QuickstartView,
     QuickstartApplyView,
     delete_environment_config,
+    PythonNodeLastTestInputView,
 )
 
 from tables.views.default_config import (
@@ -224,6 +225,11 @@ urlpatterns = [
         "run-python-code/",
         RunPythonCodeAPIView.as_view(),
         name="run-python-code",
+    ),
+    path(
+        "pythonnodes/<int:pk>/last-session-input/",
+        PythonNodeLastTestInputView.as_view(),
+        name="python-node-last-session-input",
     ),
     path(
         "init-realtime/",

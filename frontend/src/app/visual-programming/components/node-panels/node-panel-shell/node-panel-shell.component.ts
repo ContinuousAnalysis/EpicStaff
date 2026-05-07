@@ -109,6 +109,7 @@ export class NodePanelShellComponent {
         return {
             node,
             isExpanded: this.isExpanded(),
+            graphId: this.currentFlowId(),
             ...(node?.type === 'subgraph' ? { currentFlowId: this.currentFlowId() } : {}),
         };
     });
@@ -168,6 +169,14 @@ export class NodePanelShellComponent {
                 this.previousNodeId = null;
                 this.isUpdatingNode = false;
                 this.isAutosaving = false;
+            }
+        });
+
+        effect(() => {
+            const shouldExpand = this.sidePanelService.expandRequest();
+            if (shouldExpand) {
+                this.isExpanded.set(true);
+                this.sidePanelService.clearExpandRequest();
             }
         });
     }
