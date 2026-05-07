@@ -69,6 +69,7 @@ class VoiceCallService:
         connections: dict,
         factory: RealtimeAgentClientFactory,
         django_api_base_url: str,
+        django_api_key: str = "",
         initial_message: Optional[dict] = None,
     ):
         self.twilio_ws = twilio_ws
@@ -78,6 +79,7 @@ class VoiceCallService:
         self.connections = connections
         self.factory = factory
         self.django_api_base_url = django_api_base_url
+        self.django_api_key = django_api_key
         self.initial_message = initial_message
 
         self.stream_sid: Optional[str] = None
@@ -253,7 +255,7 @@ class VoiceCallService:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
                     url,
-                    headers={"Host": "localhost"},
+                    headers={"Host": "localhost", "X-API-Key": self.django_api_key},
                     data={
                         "connection_key": connection_key,
                         "recording_type": recording_type,
@@ -279,7 +281,7 @@ class VoiceCallService:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
                     url,
-                    headers={"Host": "localhost"},
+                    headers={"Host": "localhost", "X-API-Key": self.django_api_key},
                     json={
                         "connection_key": connection_key,
                         "duration_seconds": round(duration, 2),

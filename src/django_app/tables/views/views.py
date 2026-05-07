@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from collections import defaultdict
 import uuid
 import base64
+from tables.services.rbac.authentication import IsAuthenticatedOrApiKey
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.models.graph_models import TelegramTriggerNode
 from tables.services.telegram_trigger_service import TelegramTriggerService
@@ -739,6 +740,8 @@ class RunPythonCodeAPIView(APIView):
 
 
 class InitRealtimeAPIView(APIView):
+    permission_classes = [IsAuthenticatedOrApiKey]
+
     @extend_schema(
         request=InitRealtimeSerializer,
         responses={

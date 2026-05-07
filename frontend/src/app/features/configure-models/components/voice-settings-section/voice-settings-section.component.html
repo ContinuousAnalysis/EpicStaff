@@ -4,7 +4,11 @@
             <h3 class="tab__title">Voice Channels</h3>
             <p class="tab__subtitle">Manage realtime voice channels and their Twilio configuration.</p>
         </div>
-        <app-button type="primary" (click)="onAddChannel()">Add Channel</app-button>
+        <app-button
+            type="primary"
+            (click)="onAddChannel()"
+            >Add Channel</app-button
+        >
     </div>
 
     @if (status() === 'loading') {
@@ -40,7 +44,10 @@
                                 title="Edit"
                                 (click)="onEditChannel(channel)"
                             >
-                                <i class="ti ti-pencil" aria-hidden="true"></i>
+                                <i
+                                    class="ti ti-pencil"
+                                    aria-hidden="true"
+                                ></i>
                             </button>
                             <button
                                 type="button"
@@ -48,7 +55,10 @@
                                 title="Delete"
                                 (click)="onDeleteChannel(channel)"
                             >
-                                <i class="ti ti-x" aria-hidden="true"></i>
+                                <i
+                                    class="ti ti-x"
+                                    aria-hidden="true"
+                                ></i>
                             </button>
                         </div>
                     </div>
@@ -68,11 +78,11 @@
                                 <span class="channel-card__meta-value">{{ channel.twilio!.phone_number }}</span>
                             </div>
                         }
-                        @if (channel.twilio?.ngrok_config && ngrokMap().has(channel.twilio!.ngrok_config!)) {
+                        @if (channel.twilio?.ngrok_config && ngrokMap().has(channel.twilio!.ngrok_config!.id)) {
                             <div class="channel-card__meta-item">
                                 <span class="channel-card__meta-label">Tunnel</span>
                                 <span class="channel-card__meta-value">{{
-                                    ngrokMap().get(channel.twilio!.ngrok_config!)
+                                    ngrokMap().get(channel.twilio!.ngrok_config!.id)
                                 }}</span>
                             </div>
                         }

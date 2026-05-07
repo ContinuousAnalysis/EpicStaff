@@ -80,7 +80,7 @@ export class AddEditChannelDialogComponent implements OnInit {
             account_sid: [tw?.account_sid ?? ''],
             auth_token: [tw?.auth_token ?? ''],
             phone_number: [tw?.phone_number ?? ''],
-            ngrok_config: [tw?.ngrok_config ?? null],
+            ngrok_config: [tw?.ngrok_config?.id ?? null],
         });
 
         this.agentsService

@@ -42,9 +42,15 @@ class NgrokTunnel(AbstractTunnelProvider):
 
     async def connect(self):
         self._is_running = True
-        await self._establish_connection()
         if self._monitor_task is None or self._monitor_task.done():
             self._monitor_task = asyncio.create_task(self._monitor_connection())
+        try:
+            await self._establish_connection()
+        except Exception as e:
+            logger.warning(
+                f"Initial ngrok connection failed on port {self._port}, "
+                f"monitor will retry in {self._reconnect_timeout}s: {e}"
+            )
 
     async def _establish_connection(self):
         async with self._lock:

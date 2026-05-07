@@ -14,10 +14,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import {
-    ButtonComponent,
     ConfirmationDialogData,
     ConfirmationDialogService,
-    IconButtonComponent,
     LoadingSpinnerComponent,
     SelectComponent,
     SelectItem,
@@ -70,8 +68,6 @@ interface VoiceProvider {
         AppSvgIconComponent,
         LoadingSpinnerComponent,
         SelectComponent,
-        ButtonComponent,
-        IconButtonComponent,
     ],
     templateUrl: './llm-library-section.component.html',
     styleUrls: ['./llm-library-section.component.scss'],

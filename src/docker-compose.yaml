@@ -57,7 +57,7 @@ services:
       DEFAULT_ORGANIZATION_NAME: ${DEFAULT_ORGANIZATION_NAME:-}
       DJANGO_API_KEY: ${DJANGO_API_KEY:-}
     volumes:
-      - media_data:/app/src/django_app/media
+      - media_data:/app/media
     networks:
       backend-network:
         aliases:

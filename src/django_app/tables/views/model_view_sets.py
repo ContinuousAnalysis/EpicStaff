@@ -37,6 +37,7 @@ from tables.exceptions import (
     BulkSaveValidationError,
     TaskSerializerError,
 )
+from tables.services.rbac.authentication import IsAuthenticatedOrApiKey
 from tables.serializers.graph_bulk_save_serializers import GraphBulkSaveInputSerializer
 from tables.services.graph_bulk_save_service import GraphBulkSaveService
 from tables.graph_versioning.services import GraphVersioningService
@@ -1164,6 +1165,7 @@ class RealtimeAgentChatViewSet(ReadOnlyModelViewSet):
     serializer_class = RealtimeAgentChatSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["rt_agent"]
+    permission_classes = [IsAuthenticatedOrApiKey]
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -1213,6 +1215,7 @@ class RealtimeChannelViewSet(viewsets.ModelViewSet):
     serializer_class = RealtimeChannelSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["realtime_agent", "channel_type", "is_active", "token"]
+    permission_classes = [IsAuthenticatedOrApiKey]
 
 
 class TwilioChannelViewSet(viewsets.ModelViewSet):
@@ -1236,6 +1239,7 @@ class ConversationRecordingViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["rt_agent_chat", "recording_type"]
+    permission_classes = [IsAuthenticatedOrApiKey]
 
     def perform_create(self, serializer):
         file = self.request.FILES.get("file")

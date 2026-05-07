@@ -431,6 +431,7 @@ async def _voice_stream_handler(
         connections=connections,
         factory=factory,
         django_api_base_url=settings.DJANGO_API_BASE_URL,
+        django_api_key=settings.DJANGO_API_KEY,
         initial_message=first_msg,
     )
     await service.execute()

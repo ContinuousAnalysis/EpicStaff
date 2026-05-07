@@ -1,9 +1,15 @@
+export interface NgrokConfigRead {
+    id: number;
+    domain: string;
+    live_url: string;
+}
+
 export interface TwilioChannel {
     channel: number;
     account_sid: string;
     auth_token: string;
     phone_number: string | null;
-    ngrok_config: number | null;
+    ngrok_config: NgrokConfigRead | null;
 }
 
 export interface RealtimeChannel {
