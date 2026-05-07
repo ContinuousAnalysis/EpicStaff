@@ -52,6 +52,7 @@ import { SidePanelService } from '../../../services/side-panel.service';
                         @if (showSaveButton()) {
                             <button
                                 class="save-btn"
+                                [class.save-btn--icon-only]="!isExpanded()"
                                 type="button"
                                 matTooltip="Save local node changes"
                                 matTooltipPosition="below"
@@ -60,8 +61,9 @@ import { SidePanelService } from '../../../services/side-panel.service';
                             >
                                 <app-svg-icon
                                     icon="floppy"
-                                    size="1.5rem"
+                                    size="1.25rem"
                                 ></app-svg-icon>
+                                <span class="btn-label">Save</span>
                             </button>
                         }
                         @if (shouldShowExpandButton()) {

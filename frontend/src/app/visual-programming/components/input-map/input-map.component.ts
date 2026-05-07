@@ -165,9 +165,7 @@ import { SidePanelService } from '../../services/side-panel.service';
                     class="test-input-dirty-warning"
                     [class.visible]="testInputDirty"
                 >
-                    <div class="test-input-dirty-warning__inner">
-                        Save your test variables by clicking the Save at the top of the node
-                    </div>
+                    <div class="test-input-dirty-warning__inner">Click "Save node" to save test variables.</div>
                 </div>
                 <div class="test-mode-actions">
                     <button
