@@ -1,4 +1,5 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -9,9 +10,9 @@ import {
     ValidationErrorsComponent,
 } from '@shared/components';
 import { LLMModel, LLMProvider, ModelTypes } from '@shared/models';
+import { EmbeddingConfigStorageService } from '@shared/services';
 
 import { ToastService } from '../../../../services/notifications';
-import { EmbeddingConfigStorageService } from '../../services/llms/embedding-config-storage.service';
 import { LlmModelSelectorComponent } from '../llm-model-selector/llm-model-selector.component';
 
 @Component({
@@ -102,8 +103,19 @@ export class EmbeddingModelConfigDialogComponent {
             return;
         }
 
-        this.isSaving.set(true);
         const formValue = this.form.value;
+        const trimmedName = (formValue.custom_name as string).trim();
+        const isDuplicate = this.embeddingConfigsService
+            .configs()
+            .some((c) => c.custom_name.toLowerCase() === trimmedName.toLowerCase() && c.id !== this.data?.configId);
+        if (isDuplicate) {
+            this.toast.error(
+                'An embedding configuration with this name already exists. Please choose a different name.'
+            );
+            return;
+        }
+
+        this.isSaving.set(true);
 
         const request$ = this.isEditMode()
             ? this.embeddingConfigsService.updateConfig({ id: this.data!.configId!, ...formValue })
@@ -117,12 +129,19 @@ export class EmbeddingModelConfigDialogComponent {
                 );
                 this.dialogRef.close();
             },
-            error: (err) => {
+            error: (err: HttpErrorResponse) => {
                 this.isSaving.set(false);
-                this.toast.error(this.isEditMode() ? 'Configuration update failed.' : 'Configuration creation failed.');
-                console.error(err);
+                this.toast.error(this.parseConfigError(err));
             },
         });
+    }
+
+    private parseConfigError(err: HttpErrorResponse): string {
+        const nameError = err?.error?.custom_name?.[0] as string | undefined;
+        if (nameError?.toLowerCase().includes('already exists')) {
+            return 'An embedding configuration with this name already exists. Please choose a different name.';
+        }
+        return this.isEditMode() ? 'Configuration update failed.' : 'Configuration creation failed.';
     }
 
     protected readonly ModelTypes = ModelTypes;
