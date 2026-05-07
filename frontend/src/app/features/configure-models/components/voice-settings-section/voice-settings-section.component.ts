@@ -86,7 +86,7 @@ export class VoiceSettingsSectionComponent implements OnInit {
     getStreamUrl(channel: RealtimeChannel): string | null {
         const twilio = channel.twilio;
         if (!twilio?.ngrok_config) return null;
-        const ngrokDomain = this.ngrokMap().get(twilio.ngrok_config.id);
+        const ngrokDomain = this.ngrokMap().get(twilio.ngrok_config);
         if (!ngrokDomain) return null;
         return `wss://${ngrokDomain}/voice/${channel.token}/stream`;
     }
