@@ -48,13 +48,15 @@ import { SidePanelService } from '../../services/side-panel.service';
                     position="right"
                     text="Maps function arguments to domain variables using key-value pairs. For example, 'project_id' = 'current_project' maps the function parameter 'project_id' to the flow variable 'current_project'."
                 ></app-help-tooltip>
-                <div class="test-mode-header">
-                    <span>Test mode</span>
-                    <app-toggle-switch
-                        [checked]="testMode"
-                        (checkedChange)="onTestModeToggle($event)"
-                    />
-                </div>
+                @if (showTestMode) {
+                    <div class="test-mode-header">
+                        <span>Test mode</span>
+                        <app-toggle-switch
+                            [checked]="testMode"
+                            (checkedChange)="onTestModeToggle($event)"
+                        />
+                    </div>
+                }
             </div>
 
             @if (!testMode) {
@@ -397,6 +399,7 @@ import { SidePanelService } from '../../services/side-panel.service';
 export class InputMapComponent implements OnInit, OnChanges {
     @Input() activeColor: string = '#685fff';
     @Input() testMode: boolean = false;
+    @Input() showTestMode: boolean = false;
     @Input() pythonNodeId: number | null = null;
     @Input() graphId: number | null = null;
     @Input() nodeName: string | null = null;

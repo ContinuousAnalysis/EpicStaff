@@ -71,6 +71,7 @@ import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-lo
                             <div class="input-map">
                                 <app-input-map
                                     [activeColor]="activeColor"
+                                    [showTestMode]="true"
                                     [testMode]="isOpenTestMode()"
                                     [pythonNodeId]="node().backendId"
                                     [graphId]="graphId()"
