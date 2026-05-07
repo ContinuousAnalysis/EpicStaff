@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterModule } from '@angular/router';
 import { AppSvgIconComponent, PaginationControlsComponent } from '@shared/components';
 import { Subject, takeUntil } from 'rxjs';
+import { GraphMessagesComponent } from 'src/app/pages/running-graph/components/graph-messages/graph-messages.component';
 
 import { FlowNameFilterDropdownComponent } from '../../components/flow-sessions-dialog/flow-name-filter-dropdown.component';
 import { FlowSessionsTableComponent } from '../../components/flow-sessions-dialog/flow-sessions-table.component';
@@ -21,8 +22,9 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
         PaginationControlsComponent,
         AppSvgIconComponent,
         RouterModule,
+        GraphMessagesComponent,
     ],
-    template: ` <div class="global-sessions-wrapper">
+    template: `<div class="global-sessions-wrapper">
         <div class="global-sessions-header">
             <div class="flows-prefix">
                 <app-svg-icon
@@ -35,66 +37,99 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
             </div>
         </div>
         <div class="global-sessions-content">
-            <div class="filter-controls">
-                <app-flow-name-filter-dropdown
-                    [flows]="availableFlows()"
-                    [value]="flowFilter()"
-                    (valueChange)="onFlowFilterChange($event)"
-                ></app-flow-name-filter-dropdown>
-                <label class="error-cause-filter">
-                    <span>Show first failed</span>
-                    <div
-                        class="toggle-switch"
-                        [class.active]="isErrorCauseFilter()"
-                        (click)="onIsErrorCauseChange()"
+            <!-- LEFT PANEL: filters + table + pagination -->
+            <div class="left-panel">
+                <div class="filter-controls">
+                    <app-flow-name-filter-dropdown
+                        [flows]="availableFlows()"
+                        [value]="flowFilter()"
+                        (valueChange)="onFlowFilterChange($event)"
+                    ></app-flow-name-filter-dropdown>
+                    <label class="error-cause-filter">
+                        <span>Show first failed</span>
+                        <div
+                            class="toggle-switch"
+                            [class.active]="isErrorCauseFilter()"
+                            (click)="onIsErrorCauseChange()"
+                        >
+                            <div class="toggle-thumb"></div>
+                        </div>
+                    </label>
+                    <button
+                        class="delete-btn"
+                        [class.invisible]="selectedIds().size === 0"
+                        (click)="onBulkDelete()"
                     >
-                        <div class="toggle-thumb"></div>
+                        Delete Selected ({{ selectedIds().size }})
+                    </button>
+                    <span
+                        [class.invisible]="selectedIds().size > 0"
+                        class="results-length"
+                    >
+                        {{ totalCount() }} Results
+                    </span>
+                </div>
+                <div class="table-container">
+                    <app-flow-sessions-table
+                        [sessions]="sessions()"
+                        [showFlowName]="true"
+                        [showDuration]="true"
+                        [sortable]="true"
+                        [sortOrder]="sortOrder()"
+                        [statusFilter]="statusFilter()"
+                        [isLoading]="!isLoaded()"
+                        [showEmptyState]="isLoaded() && sessions().length === 0"
+                        [externalPreview]="true"
+                        (deleteSelected)="onDeleteSelected($event)"
+                        (viewSession)="onViewSession($event)"
+                        (stopSession)="onStopSession($event)"
+                        (sortChange)="onSortChange($event)"
+                        (statusFilterChange)="onStatusFilterChange($event)"
+                        (selectedIdsChange)="selectedIds.set($event)"
+                        (previewSession)="onPreviewSession($event)"
+                    ></app-flow-sessions-table>
+                </div>
+                @if (isLoaded() && totalCount() > pageSize()) {
+                    <div class="pagination-container">
+                        <app-pagination-controls
+                            [pageSize]="pageSize()"
+                            [totalCount]="totalCount()"
+                            [currentPage]="currentPage()"
+                            [maxPagesToShow]="5"
+                            (pageChange)="onPageChange($event)"
+                        ></app-pagination-controls>
                     </div>
-                </label>
-                <button
-                    class="delete-btn"
-                    [class.invisible]="selectedIds().size === 0"
-                    (click)="onBulkDelete()"
-                >
-                    Delete Selected ({{ selectedIds().size }})
-                </button>
-                <span
-                    [class.invisible]="selectedIds().size > 0"
-                    class="results-length"
-                >
-                    {{ totalCount() }} Results
-                </span>
-            </div>
-            <div class="table-container">
-                <app-flow-sessions-table
-                    [sessions]="sessions()"
-                    [showFlowName]="true"
-                    [showDuration]="true"
-                    [sortable]="true"
-                    [sortOrder]="sortOrder()"
-                    [statusFilter]="statusFilter()"
-                    [isLoading]="!isLoaded()"
-                    [showEmptyState]="isLoaded() && sessions().length === 0"
-                    (deleteSelected)="onDeleteSelected($event)"
-                    (viewSession)="onViewSession($event)"
-                    (stopSession)="onStopSession($event)"
-                    (sortChange)="onSortChange($event)"
-                    (statusFilterChange)="onStatusFilterChange($event)"
-                    (selectedIdsChange)="selectedIds.set($event)"
-                ></app-flow-sessions-table>
+                }
             </div>
 
-            @if (isLoaded() && totalCount() > pageSize()) {
-                <div class="pagination-container">
-                    <app-pagination-controls
-                        [pageSize]="pageSize()"
-                        [totalCount]="totalCount()"
-                        [currentPage]="currentPage()"
-                        [maxPagesToShow]="5"
-                        (pageChange)="onPageChange($event)"
-                    ></app-pagination-controls>
-                </div>
-            }
+            <!-- RIGHT PANEL: session details -->
+            <div class="right-panel">
+                @if (previewSession(); as session) {
+                    <div class="preview-header">
+                        <div class="preview-title">
+                            <span class="preview-session-id">Session #{{ session.id }}</span>
+                            <span class="preview-session-flow">{{ session.graph_name }}</span>
+                        </div>
+                        <button
+                            class="preview-open-btn"
+                            (click)="onViewSession(session.id)"
+                        >
+                            Open ↗
+                        </button>
+                    </div>
+                    <div class="preview-body">
+                        <app-graph-messages
+                            [graphId]="session.graph_id"
+                            [sessionId]="session.id.toString()"
+                            [compact]="true"
+                        ></app-graph-messages>
+                    </div>
+                } @else {
+                    <div class="preview-empty">
+                        <span>Click Preview to view sessions details</span>
+                    </div>
+                }
+            </div>
         </div>
     </div>`,
     styleUrls: ['./global-sessions-list.component.scss'],
@@ -112,6 +147,7 @@ export class GlobalSessionsListComponent {
     public selectedIds = signal<Set<number>>(new Set());
     public availableFlows = signal<GetGraphLightRequest[]>([]);
     public totalCount = signal(0);
+    public previewSession = signal<GraphSessionLight | null>(null);
     private reloadTrigger = signal(0);
     private cancelLoad$ = new Subject<void>();
     private destroyRef = inject(DestroyRef);
@@ -176,6 +212,15 @@ export class GlobalSessionsListComponent {
     public onSortChange(order: 'asc' | 'desc'): void {
         this.sortOrder.set(order);
         this.currentPage.set(1);
+    }
+
+    public onPreviewSession(sessionId: number | null): void {
+        if (sessionId === null) {
+            this.previewSession.set(null);
+            return;
+        }
+        const session = this.sessions().find((s) => s.id === sessionId) ?? null;
+        this.previewSession.set(session);
     }
 
     public onStopSession(sessionId: number): void {

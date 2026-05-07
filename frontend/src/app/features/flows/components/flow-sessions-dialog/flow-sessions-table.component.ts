@@ -176,7 +176,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                             </tr>
 
                             <tr
-                                *ngIf="expandedSessionId() === session.id"
+                                *ngIf="!externalPreview && expandedSessionId() === session.id"
                                 class="preview-row"
                             >
                                 <td
@@ -211,12 +211,15 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     @Input() sortOrder: 'asc' | 'desc' = 'desc';
     @Input() statusFilter: string[] = ['all'];
 
+    @Input() externalPreview: boolean = false;
+
     @Output() deleteSelected = new EventEmitter<number[]>();
     @Output() viewSession = new EventEmitter<number>();
     @Output() stopSession = new EventEmitter<number>();
     @Output() sortChange = new EventEmitter<'asc' | 'desc'>();
     @Output() statusFilterChange = new EventEmitter<string[]>();
     @Output() selectedIdsChange = new EventEmitter<Set<number>>();
+    @Output() previewSession = new EventEmitter<number | null>();
 
     public selectedIds = signal<Set<number>>(new Set());
     public expandedSessionId = signal<number | null>(null);
@@ -258,7 +261,11 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     }
 
     public togglePreview(sessionId: number): void {
-        this.expandedSessionId.update((current) => (current === sessionId ? null : sessionId));
+        const newId = this.expandedSessionId() === sessionId ? null : sessionId;
+        this.expandedSessionId.set(newId);
+        if (this.externalPreview) {
+            this.previewSession.emit(newId);
+        }
         this.cdr.markForCheck();
     }
 
