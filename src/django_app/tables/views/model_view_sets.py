@@ -225,14 +225,12 @@ from tables.serializers.model_serializers import (
     VoiceSettingsSerializer,
     WebhookTriggerNodeSerializer,
     WebhookTriggerSerializer,
+    TelegramTriggerNodeSerializer,
+    TelegramTriggerNodeFieldSerializer,
 )
 from tables.serializers.serializers import (
     BulkExportSerializer,
     ImportRequestSerializer,
-)
-from tables.serializers.telegram_trigger_serializers import (
-    TelegramTriggerNodeFieldSerializer,
-    TelegramTriggerNodeSerializer,
 )
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
