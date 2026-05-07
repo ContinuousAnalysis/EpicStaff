@@ -20,32 +20,46 @@ import { MATERIAL_FORMS } from '@shared/material-forms';
 import { take } from 'rxjs';
 
 import { calcLimit } from '../../../helpers/calculate-chunks-fetch-limit.util';
-import { DocumentChunkingState, NaiveRagDocumentChunk } from '../../../models/naive-rag-chunk.model';
+import { ChunkSearchState, DocumentChunkingState, NaiveRagDocumentChunk } from '../../../models/naive-rag-chunk.model';
+import { ChunkSearchService } from '../../../services/chunk-search.service';
 import { NaiveRagDocumentsStorageService } from '../../../services/naive-rag-documents-storage.service';
+import { HighlightSegmentsPipe } from './highlight-segments.pipe';
+
+interface TextSegment {
+    text: string;
+    isMatch: boolean;
+    matchIndex: number | null;
+}
 
 interface DisplayedChunk {
     chunkIndex: number;
     overlap: string;
     text: string;
+    overlapSegments: TextSegment[];
+    textSegments: TextSegment[];
 }
 
 @Component({
     selector: 'app-chunk-preview',
     templateUrl: './chunk-preview.component.html',
     styleUrls: ['./chunk-preview.component.scss'],
-    imports: [NgClass, FormsModule, MATERIAL_FORMS],
+    imports: [NgClass, FormsModule, MATERIAL_FORMS, HighlightSegmentsPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
     ragId = input.required<number>();
     docId = input.required<number>();
     chunkingState = input.required<DocumentChunkingState>();
+    searchState = input<ChunkSearchState | null>(null);
+    activeMatchIndex = input<number>(0);
+
     blurredChunk: string =
         "The policeman on the beat moved up the avenue impressively. The impressiveness was habitual and not for show, for spectators were few. The time was barely 10 o'clock at night, but chilly gusts of wind with a taste of rain in them had well nigh depeopled the streets.\n" +
         'Trying doors as he went, twirling his club with many intricate and artful movements, turning now and then to cast his watchful eye adown the pacific thoroughfare, the officer, with his stalwart form and slight swagger, made a fine picture of a guardian of the peace. ';
 
     private ngZone = inject(NgZone);
     private documentStorageService = inject(NaiveRagDocumentsStorageService);
+    private chunkSearchService = inject(ChunkSearchService);
     private destroyRef = inject(DestroyRef);
 
     private limit: number = 0;
@@ -56,22 +70,41 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
     loading = signal<'up' | 'down' | false>(false);
     chunkHeights = signal<Map<number, number>>(new Map());
 
-    chunks = computed<DisplayedChunk[]>(() => {
-        const state = this.chunkingState();
+    isSearchActive = computed(() => {
+        const search = this.searchState();
+        return !!search && search.mode !== 'none';
+    });
 
+    private isTextSearchWithMore = computed(() => {
+        const search = this.searchState();
+        return !!search && search.mode === 'text_only' && search.searchHasMore;
+    });
+
+    chunks = computed<DisplayedChunk[]>(() => {
+        const search = this.searchState();
+        const state = this.chunkingState();
+        const sourceChunks = this.getSourceChunks(search, state);
+
+        let displayed: DisplayedChunk[];
         if (state.chunkStrategy !== 'token') {
-            return this.calculateChunks(
-                state.chunks,
+            displayed = this.calculateChunks(
+                sourceChunks,
                 () => state.chunkOverlap,
                 () => state.chunkOverlap
             );
         } else {
-            return this.calculateChunks(
-                state.chunks,
+            displayed = this.calculateChunks(
+                sourceChunks,
                 (chunk) => chunk.overlap_start_index ?? 0,
                 (chunk) => chunk.overlap_end_index ?? 0
             );
         }
+
+        const query = search?.textQuery ?? '';
+        if (query) {
+            displayed = this.applyHighlighting(displayed, query);
+        }
+        return displayed;
     });
 
     @ViewChild('scrollContainer') private scrollContainer!: ElementRef<HTMLDivElement>;
@@ -83,6 +116,15 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
             this.ngZone.onStable.pipe(take(1)).subscribe(() => {
                 this.updateChunkHeights();
             });
+        });
+
+        effect(() => {
+            const matchIdx = this.activeMatchIndex();
+            if (matchIdx > 0) {
+                this.ngZone.onStable.pipe(take(1)).subscribe(() => {
+                    this.scrollToMatch(matchIdx);
+                });
+            }
         });
     }
 
@@ -117,12 +159,19 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
     onScroll(event: Event) {
         if (this.loading()) return;
         const el = event.target as HTMLElement;
-
         const scrollTop = el.scrollTop;
         const scrollHeight = el.scrollHeight;
         const clientHeight = el.clientHeight;
-
         const thresholdPx = 500;
+
+        if (this.isTextSearchWithMore()) {
+            if (scrollTop + clientHeight >= scrollHeight - thresholdPx) {
+                this.loadMoreSearchDown();
+            }
+            return;
+        }
+
+        if (this.isSearchActive()) return;
 
         if (scrollTop + clientHeight >= scrollHeight - thresholdPx) {
             this.loadMoreDown(el);
@@ -231,17 +280,115 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
                 chunkIndex: chunk.chunk_index,
                 overlap,
                 text,
+                overlapSegments: [{ text: overlap, isMatch: false, matchIndex: null }],
+                textSegments: [{ text, isMatch: false, matchIndex: null }],
             };
         });
     }
 
+    private getSourceChunks(search: ChunkSearchState | null, state: DocumentChunkingState): NaiveRagDocumentChunk[] {
+        if (!search || search.mode === 'none') return state.chunks;
+        if (search.mode === 'id_only' || search.mode === 'id_and_text') return search.searchedChunks;
+        if (search.mode === 'text_only') return search.searchedChunks.length ? search.searchedChunks : state.chunks;
+        return state.chunks;
+    }
+
+    private applyHighlighting(chunks: DisplayedChunk[], query: string): DisplayedChunk[] {
+        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escaped})`, 'gi');
+        let globalMatchIndex = 0;
+
+        return chunks.map((chunk) => ({
+            ...chunk,
+            overlapSegments: this.splitByQuery(
+                chunk.overlap,
+                regex,
+                (idx) => {
+                    globalMatchIndex = idx;
+                    return idx;
+                },
+                globalMatchIndex
+            ),
+            textSegments: this.splitByQuery(
+                chunk.text,
+                regex,
+                (idx) => {
+                    globalMatchIndex = idx;
+                    return idx;
+                },
+                globalMatchIndex
+            ),
+        }));
+    }
+
+    private splitByQuery(
+        text: string,
+        regex: RegExp,
+        trackIndex: (idx: number) => number,
+        startIndex: number
+    ): TextSegment[] {
+        if (!text) return [{ text: '', isMatch: false, matchIndex: null }];
+
+        const segments: TextSegment[] = [];
+        let lastIndex = 0;
+        let currentMatchIndex = startIndex;
+        let match: RegExpExecArray | null;
+
+        regex.lastIndex = 0;
+        while ((match = regex.exec(text)) !== null) {
+            if (match.index > lastIndex) {
+                segments.push({ text: text.slice(lastIndex, match.index), isMatch: false, matchIndex: null });
+            }
+            currentMatchIndex++;
+            segments.push({ text: match[0], isMatch: true, matchIndex: currentMatchIndex });
+            lastIndex = regex.lastIndex;
+        }
+
+        if (lastIndex < text.length) {
+            segments.push({ text: text.slice(lastIndex), isMatch: false, matchIndex: null });
+        }
+
+        trackIndex(currentMatchIndex);
+
+        if (!segments.length) {
+            segments.push({ text, isMatch: false, matchIndex: null });
+        }
+
+        return segments;
+    }
+
+    private loadMoreSearchDown(): void {
+        if (this.loading()) return;
+        this.loading.set('down');
+
+        this.chunkSearchService
+            .loadMoreSearchResults(this.ragId(), this.docId())
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => {
+                this.loading.set(false);
+            });
+    }
+
+    private scrollToMatch(matchIndex: number): void {
+        const container = this.scrollContainer?.nativeElement;
+        if (!container) return;
+
+        const matchEl = container.querySelector(`[data-match-index="${matchIndex}"]`) as HTMLElement;
+        if (matchEl) {
+            matchEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
     private checkIfNeedsMoreChunks(): void {
         const el = this.scrollContainer?.nativeElement;
-        if (!el || this.loading() || this.nextOffset >= this.totalChunks) return;
+        if (!el || this.loading()) return;
 
         const hasScroll = el.scrollHeight > el.clientHeight;
+        if (hasScroll) return;
 
-        if (!hasScroll) {
+        if (this.isTextSearchWithMore()) {
+            this.loadMoreSearchDown();
+        } else if (!this.isSearchActive() && this.nextOffset < this.totalChunks) {
             this.loadMoreDown(el);
         }
     }

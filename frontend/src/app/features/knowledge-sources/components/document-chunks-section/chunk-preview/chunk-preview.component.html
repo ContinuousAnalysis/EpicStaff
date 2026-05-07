@@ -57,8 +57,12 @@
                     class="chunk__item chunk__item--overlap"
                     [class.chunk__item--last]="$last && !loading() && !chunk.text"
                     [matTooltip]="'Overlap for chunks ' + (chunk.chunkIndex - 1) + ' and ' + chunk.chunkIndex"
-                    >{{ chunk.overlap }}</span
-                >
+                    [innerHTML]="
+                        searchState()?.textQuery
+                            ? (chunk.overlapSegments | highlightSegments: activeMatchIndex())
+                            : chunk.overlap
+                    "
+                ></span>
             }
             @if (chunk.text) {
                 <span
@@ -73,8 +77,12 @@
                         'chunk__item--last': $last && !loading(),
                         'chunk__item--single': $count === 1,
                     }"
-                    >{{ chunk.text }}</span
-                >
+                    [innerHTML]="
+                        searchState()?.textQuery
+                            ? (chunk.textSegments | highlightSegments: activeMatchIndex())
+                            : chunk.text
+                    "
+                ></span>
             }
         }
         @if (loading() === 'down') {

@@ -1,24 +1,38 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppSvgIconComponent, ButtonComponent, SpinnerComponent } from '@shared/components';
 import { EMPTY } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
+import { ChunkSearchService } from '../../services/chunk-search.service';
 import { NaiveRagDocumentsStorageService } from '../../services/naive-rag-documents-storage.service';
 import { ChunkPreviewComponent } from './chunk-preview/chunk-preview.component';
+import { ChunkSearchBarComponent, ChunkSearchParams } from './chunk-search-bar/chunk-search-bar.component';
 
 @Component({
     selector: 'app-document-chunks-section',
     templateUrl: './document-chunks-section.component.html',
     styleUrls: ['./document-chunks-section.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [AppSvgIconComponent, ButtonComponent, ChunkPreviewComponent, SpinnerComponent, NgTemplateOutlet],
+    imports: [
+        AppSvgIconComponent,
+        ButtonComponent,
+        ChunkPreviewComponent,
+        ChunkSearchBarComponent,
+        SpinnerComponent,
+        NgTemplateOutlet,
+    ],
 })
 export class DocumentChunksSectionComponent {
     private chunksStorageService = inject(NaiveRagDocumentsStorageService);
+    private chunkSearchService = inject(ChunkSearchService);
+    private destroyRef = inject(DestroyRef);
 
     naiveRagId = input.required<number>();
     selectedDocumentId = input<number | null>(null);
+
+    chunkSearchState = this.chunkSearchService.chunkSearchState;
 
     selectedDocState = computed(() => {
         const id = this.selectedDocumentId();
@@ -35,28 +49,81 @@ export class DocumentChunksSectionComponent {
                 this.chunksStorageService.fetchChunks(this.naiveRagId(), document.id).subscribe();
             }
         });
+
+        // Clear search when document changes
+        effect(() => {
+            this.selectedDocumentId();
+            this.chunkSearchService.clearSearch();
+        });
     }
 
     runChunking() {
         const documentId = this.selectedDocumentId();
         if (!documentId) return;
 
+        this.chunkSearchService.clearSearch();
+
         this.chunksStorageService
             .runChunking(this.naiveRagId(), documentId)
             .pipe(
+                takeUntilDestroyed(this.destroyRef),
                 switchMap(() => {
                     const state = this.chunksStorageService.documentStates().get(documentId);
                     if (!state) return EMPTY;
 
-                    // prevent chunks fetching if document was updated
                     if (state.status === 'chunks_outdated') return EMPTY;
-
-                    // prevent chunks fetching if user select other document
                     if (this.selectedDocumentId() !== documentId) return EMPTY;
 
                     return this.chunksStorageService.fetchChunks(this.naiveRagId(), documentId);
                 })
             )
             .subscribe();
+    }
+
+    onSearchChange(params: ChunkSearchParams): void {
+        const docId = this.selectedDocumentId();
+        const ragId = this.naiveRagId();
+        if (!docId) return;
+
+        this.chunkSearchService.updateSearchParams(params.idFilter, params.textQuery);
+        const search = this.chunkSearchService.chunkSearchState();
+
+        switch (search.mode) {
+            case 'none':
+                this.chunkSearchService.clearSearch();
+                break;
+            case 'id_only':
+                this.chunkSearchService
+                    .fetchSingleChunkById(ragId, docId, params.idFilter as number)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe();
+                break;
+            case 'id_and_text':
+                this.chunkSearchService
+                    .fetchSingleChunkById(ragId, docId, params.idFilter as number)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe();
+                break;
+            case 'text_only':
+                this.chunkSearchService
+                    .searchChunksByText(ragId, docId, params.textQuery)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe();
+                break;
+        }
+    }
+
+    onPrevMatch(): void {
+        const search = this.chunkSearchService.chunkSearchState();
+        if (search.currentMatchIndex > 1) {
+            this.chunkSearchService.setCurrentMatchIndex(search.currentMatchIndex - 1);
+        }
+    }
+
+    onNextMatch(): void {
+        const search = this.chunkSearchService.chunkSearchState();
+        if (search.currentMatchIndex < search.totalMatches) {
+            this.chunkSearchService.setCurrentMatchIndex(search.currentMatchIndex + 1);
+        }
     }
 }

@@ -44,10 +44,21 @@
                         }
                     "
                 ></ng-container>
+                <app-chunk-search-bar
+                    [totalChunks]="state.total"
+                    [totalMatches]="chunkSearchState().totalMatches"
+                    [currentMatchIndex]="chunkSearchState().currentMatchIndex"
+                    [searchLoading]="chunkSearchState().loading"
+                    (searchChange)="onSearchChange($event)"
+                    (prevMatch)="onPrevMatch()"
+                    (nextMatch)="onNextMatch()"
+                />
                 <app-chunk-preview
                     [chunkingState]="state"
                     [ragId]="naiveRagId()"
                     [docId]="selectedDocumentId()!"
+                    [searchState]="chunkSearchState()"
+                    [activeMatchIndex]="chunkSearchState().currentMatchIndex"
                 />
             }
             @case ('chunks_outdated') {
@@ -63,10 +74,21 @@
                         }
                     "
                 ></ng-container>
+                <app-chunk-search-bar
+                    [totalChunks]="state.total"
+                    [totalMatches]="chunkSearchState().totalMatches"
+                    [currentMatchIndex]="chunkSearchState().currentMatchIndex"
+                    [searchLoading]="chunkSearchState().loading"
+                    (searchChange)="onSearchChange($event)"
+                    (prevMatch)="onPrevMatch()"
+                    (nextMatch)="onNextMatch()"
+                />
                 <app-chunk-preview
                     [chunkingState]="state"
                     [ragId]="naiveRagId()"
                     [docId]="selectedDocumentId()!"
+                    [searchState]="chunkSearchState()"
+                    [activeMatchIndex]="chunkSearchState().currentMatchIndex"
                 />
             }
         }
