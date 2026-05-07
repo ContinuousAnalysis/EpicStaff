@@ -46,13 +46,18 @@ export class NaiveRagDocumentsStorageService {
         );
     }
 
-    public fetchChunks(naiveRagId: number, documentId: number): Observable<GetNaiveRagDocumentChunksResponse> {
+    public fetchChunks(
+        naiveRagId: number,
+        documentId: number,
+        startOffset: number = 0
+    ): Observable<GetNaiveRagDocumentChunksResponse> {
         this.updateDocState(documentId, (s) => ({ ...s, status: 'fetching_chunks' }));
 
         const docChunkSize = this.documentsSignal().find((d) => d.naive_rag_document_id === documentId)?.chunk_size;
         const limit = docChunkSize ? calcLimit(docChunkSize) : 50;
+        const offset = Math.max(startOffset - Math.floor(limit / 2), 0);
 
-        return this.naiveRagService.getChunkPreview(naiveRagId, documentId, 0, limit).pipe(
+        return this.naiveRagService.getChunkPreview(naiveRagId, documentId, offset, limit).pipe(
             tap(({ chunks, total_chunks }) => {
                 const state = this.documentStates().get(documentId);
                 // document was updated during fetching
@@ -86,12 +91,17 @@ export class NaiveRagDocumentsStorageService {
             map(({ chunks }) => {
                 let removedCount: number = 0;
                 // Update doc state in two steps prevents breaking scroll position
-                this.updateDocState(documentId, (s) => ({
-                    ...s,
-                    removedCount,
-                    chunkSize: this.calcAvgChunkSize([...s.chunks, ...chunks]),
-                    chunks: [...s.chunks, ...chunks],
-                }));
+                this.updateDocState(documentId, (s) => {
+                    const existingIndices = new Set(s.chunks.map((c) => c.chunk_index));
+                    const newChunks = chunks.filter((c) => !existingIndices.has(c.chunk_index));
+                    const merged = [...s.chunks, ...newChunks];
+                    return {
+                        ...s,
+                        removedCount,
+                        chunkSize: this.calcAvgChunkSize(merged),
+                        chunks: merged,
+                    };
+                });
                 setTimeout(() => {
                     this.updateDocState(documentId, (s) => {
                         const updatedChunks = s.chunks;
@@ -120,7 +130,9 @@ export class NaiveRagDocumentsStorageService {
             map(({ chunks }) => {
                 let removedCount: number = 0;
                 this.updateDocState(documentId, (s) => {
-                    let updatedChunks = [...chunks, ...s.chunks];
+                    const existingIndices = new Set(s.chunks.map((c) => c.chunk_index));
+                    const newChunks = chunks.filter((c) => !existingIndices.has(c.chunk_index));
+                    let updatedChunks = [...newChunks, ...s.chunks];
                     if (updatedChunks.length > bufferLimit) {
                         removedCount = updatedChunks.length - bufferLimit;
                         updatedChunks.splice(updatedChunks.length - removedCount, removedCount);

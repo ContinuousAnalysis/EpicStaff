@@ -21,6 +21,7 @@ import { take } from 'rxjs';
 
 import { calcLimit } from '../../../helpers/calculate-chunks-fetch-limit.util';
 import { ChunkSearchState, DocumentChunkingState, NaiveRagDocumentChunk } from '../../../models/naive-rag-chunk.model';
+import { ChunkDeepLinkService } from '../../../services/chunk-deep-link.service';
 import { ChunkSearchService } from '../../../services/chunk-search.service';
 import { NaiveRagDocumentsStorageService } from '../../../services/naive-rag-documents-storage.service';
 import { HighlightSegmentsPipe } from './highlight-segments.pipe';
@@ -49,6 +50,7 @@ interface DisplayedChunk {
 export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
     ragId = input.required<number>();
     docId = input.required<number>();
+    collectionId = input.required<number>();
     chunkingState = input.required<DocumentChunkingState>();
     searchState = input<ChunkSearchState | null>(null);
     activeMatchIndex = input<number>(0);
@@ -60,6 +62,7 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
     private ngZone = inject(NgZone);
     private documentStorageService = inject(NaiveRagDocumentsStorageService);
     private chunkSearchService = inject(ChunkSearchService);
+    private deepLinkService = inject(ChunkDeepLinkService);
     private destroyRef = inject(DestroyRef);
 
     private limit: number = 0;
@@ -126,6 +129,27 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
                 });
             }
         });
+
+        effect(() => {
+            const chunks = this.chunks();
+            if (!chunks.length) return;
+
+            const params = this.deepLinkService.pending();
+            if (!params) return;
+
+            const targetChunkId = params.chunkId;
+            const hasTarget = chunks.some((c) => c.chunkIndex === targetChunkId);
+            if (!hasTarget) return;
+
+            this.ngZone.onStable.pipe(take(1)).subscribe(() => {
+                this.scrollToChunk(targetChunkId);
+                // Clear pending state with a delay to prevent loading
+                // additional chunks during scrolling to targeted chunk
+                setTimeout(() => {
+                    this.deepLinkService.consume();
+                }, 500);
+            });
+        });
     }
 
     ngOnChanges() {
@@ -156,8 +180,14 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
         this.destroyRef.onDestroy(() => resizeObserver.disconnect());
     }
 
+    onChunkIdClick(chunkIndex: number): void {
+        const url = this.deepLinkService.buildUrl(this.collectionId(), this.ragId(), this.docId(), chunkIndex);
+        void navigator.clipboard.writeText(url);
+        this.deepLinkService.updateUrl(this.collectionId(), this.ragId(), this.docId(), chunkIndex);
+    }
+
     onScroll(event: Event) {
-        if (this.loading()) return;
+        if (this.loading() || this.deepLinkService.pending()) return;
         const el = event.target as HTMLElement;
         const scrollTop = el.scrollTop;
         const scrollHeight = el.scrollHeight;
@@ -369,14 +399,22 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
             });
     }
 
+    private scrollToChunk(chunkIndex: number): void {
+        this.scrollToElement(`[data-chunk-index="${chunkIndex}"]`);
+    }
+
     private scrollToMatch(matchIndex: number): void {
+        this.scrollToElement(`[data-match-index="${matchIndex}"]`);
+    }
+
+    private scrollToElement(selector: string): void {
         const container = this.scrollContainer?.nativeElement;
+
         if (!container) return;
 
-        const matchEl = container.querySelector(`[data-match-index="${matchIndex}"]`) as HTMLElement;
-        if (matchEl) {
-            matchEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        const element = container.querySelector<HTMLElement>(selector);
+
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     private checkIfNeedsMoreChunks(): void {

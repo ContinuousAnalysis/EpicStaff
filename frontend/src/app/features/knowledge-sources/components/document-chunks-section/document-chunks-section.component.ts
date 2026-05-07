@@ -1,10 +1,20 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    effect,
+    inject,
+    input,
+    OnDestroy,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppSvgIconComponent, ButtonComponent, SpinnerComponent } from '@shared/components';
 import { EMPTY } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
+import { ChunkDeepLinkService } from '../../services/chunk-deep-link.service';
 import { ChunkSearchService } from '../../services/chunk-search.service';
 import { NaiveRagDocumentsStorageService } from '../../services/naive-rag-documents-storage.service';
 import { ChunkPreviewComponent } from './chunk-preview/chunk-preview.component';
@@ -24,12 +34,14 @@ import { ChunkSearchBarComponent, ChunkSearchParams } from './chunk-search-bar/c
         NgTemplateOutlet,
     ],
 })
-export class DocumentChunksSectionComponent {
+export class DocumentChunksSectionComponent implements OnDestroy {
     private chunksStorageService = inject(NaiveRagDocumentsStorageService);
     private chunkSearchService = inject(ChunkSearchService);
+    private deepLinkService = inject(ChunkDeepLinkService);
     private destroyRef = inject(DestroyRef);
 
     naiveRagId = input.required<number>();
+    collectionId = input.required<number>();
     selectedDocumentId = input<number | null>(null);
 
     chunkSearchState = this.chunkSearchService.chunkSearchState;
@@ -46,7 +58,12 @@ export class DocumentChunksSectionComponent {
             if (!document) return;
 
             if (document.status === 'chunked') {
-                this.chunksStorageService.fetchChunks(this.naiveRagId(), document.id).subscribe();
+                const deepLinkChunkId = this.deepLinkService.pending()?.chunkId ?? 0;
+                this.chunksStorageService.fetchChunks(this.naiveRagId(), document.id, deepLinkChunkId).subscribe();
+            }
+
+            if (document.status === 'new' && this.deepLinkService.pending()) {
+                this.runChunking();
             }
         });
 
@@ -74,7 +91,8 @@ export class DocumentChunksSectionComponent {
                     if (state.status === 'chunks_outdated') return EMPTY;
                     if (this.selectedDocumentId() !== documentId) return EMPTY;
 
-                    return this.chunksStorageService.fetchChunks(this.naiveRagId(), documentId);
+                    const deepLinkChunkId = this.deepLinkService.pending()?.chunkId ?? 0;
+                    return this.chunksStorageService.fetchChunks(this.naiveRagId(), documentId, deepLinkChunkId);
                 })
             )
             .subscribe();
@@ -125,5 +143,9 @@ export class DocumentChunksSectionComponent {
         if (search.currentMatchIndex < search.totalMatches) {
             this.chunkSearchService.setCurrentMatchIndex(search.currentMatchIndex + 1);
         }
+    }
+
+    ngOnDestroy() {
+        this.deepLinkService.clearUrl();
     }
 }

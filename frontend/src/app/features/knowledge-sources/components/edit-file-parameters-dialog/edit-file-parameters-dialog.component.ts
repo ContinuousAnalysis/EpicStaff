@@ -23,7 +23,8 @@ export class EditFileParametersDialogComponent {
     private destroyRef = inject(DestroyRef);
     private dialogRef = inject(DialogRef);
     private documentsStorageService = inject(NaiveRagDocumentsStorageService);
-    readonly data: { ragId: number; ragDocumentId: number; allDocumentIds: number[] } = inject(DIALOG_DATA);
+    readonly data: { ragId: number; collectionId: number; ragDocumentId: number; allDocumentIds: number[] } =
+        inject(DIALOG_DATA);
 
     @ViewChild('chunksSection', { static: true }) chunksSection!: DocumentChunksSectionComponent;
     @ViewChild('formSection', { static: true }) formSection!: DocumentConfigComponent;

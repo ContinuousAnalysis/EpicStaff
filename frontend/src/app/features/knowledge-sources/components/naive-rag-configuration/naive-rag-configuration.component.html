@@ -44,6 +44,7 @@
     @if (!tuneChunkOpened()) {
         <app-document-chunks-section
             [naiveRagId]="naiveRagId()"
+            [collectionId]="collectionId()"
             [selectedDocumentId]="selectedRagDocId()"
         />
     }
