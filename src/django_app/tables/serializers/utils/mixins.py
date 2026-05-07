@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.db.models import Model
 from django.db import transaction
 
+from tables.models.webhook_models import WebhookTrigger
 from tables.models.python_models import PythonCode
 from tables.models import Agent, PythonCodeTool, ToolConfig, McpTool
 
@@ -244,3 +245,13 @@ class ToolsConnectionMixin:
                         for pk in db_ids
                     ]
                 )
+
+
+class WebhookCreationMixin:
+    def _get_or_create_webhook_trigger(self, data):
+        path = data.get("path")
+        ngrok_conf = data.get("ngrok_webhook_config")
+
+        return WebhookTrigger.objects.get_or_create(
+            path=path, ngrok_webhook_config=ngrok_conf
+        )

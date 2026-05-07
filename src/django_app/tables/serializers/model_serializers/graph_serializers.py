@@ -28,13 +28,12 @@ from tables.models.graph_models import (
     WebhookTriggerNode,
 )
 from tables.models.label_models import Label
-from tables.models.python_models import PythonCode
 from tables.models.webhook_models import WebhookTrigger
 from tables.serializers.base_serializer import (
     BaseGraphEntityMixin,
     ContentHashWritableMixin,
 )
-from tables.serializers.utils.mixins import NestedPythonCodeMixin
+from tables.serializers.utils.mixins import NestedPythonCodeMixin, WebhookCreationMixin
 from tables.serializers.base_serializers import (
     WebhookTriggerNestedSerializer,
 )
@@ -259,7 +258,12 @@ class DecisionTableNodeSerializer(
         fields = "__all__"
 
 
-class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):
+class WebhookTriggerNodeSerializer(
+    BaseGraphEntityMixin,
+    NestedPythonCodeMixin,
+    WebhookCreationMixin,
+    serializers.ModelSerializer,
+):
     python_code = PythonCodeSerializer()
 
     webhook_trigger = WebhookTriggerNestedSerializer(required=False, allow_null=True)
@@ -287,44 +291,22 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
             self._webhook_trigger_id = None
         return super().to_internal_value(data)
 
-    def _get_or_create_webhook_trigger(self, data):
-        path = data.get("path")
-        ngrok_conf = data.get("ngrok_webhook_config")
-
-        return WebhookTrigger.objects.get_or_create(
-            path=path, ngrok_webhook_config=ngrok_conf
-        )
-
     def create(self, validated_data):
-        python_code_data = validated_data.pop("python_code")
         webhook_trigger_data = validated_data.pop("webhook_trigger", None)
         wt_id = getattr(self, "_webhook_trigger_id", None)
 
-        python_code = PythonCode.objects.create(**python_code_data)
-
-        webhook_trigger_instance = None
         if wt_id:
-            webhook_trigger_instance = WebhookTrigger.objects.filter(id=wt_id).first()
+            validated_data["webhook_trigger"] = WebhookTrigger.objects.filter(
+                id=wt_id
+            ).first()
         elif webhook_trigger_data:
-            webhook_trigger_instance, _ = self._get_or_create_webhook_trigger(
+            validated_data["webhook_trigger"], _ = self._get_or_create_webhook_trigger(
                 webhook_trigger_data
             )
 
-        node = WebhookTriggerNode.objects.create(
-            python_code=python_code,
-            webhook_trigger=webhook_trigger_instance,
-            **validated_data,
-        )
-        return node
+        return self._create_with_python_code(WebhookTriggerNode, validated_data)
 
     def update(self, instance, validated_data):
-        python_code_data = validated_data.pop("python_code", None)
-        if python_code_data:
-            python_code = instance.python_code
-            for attr, value in python_code_data.items():
-                setattr(python_code, attr, value)
-            python_code.save()
-
         wt_id = getattr(self, "_webhook_trigger_id", None)
         if wt_id:
             instance.webhook_trigger = WebhookTrigger.objects.filter(id=wt_id).first()
@@ -340,11 +322,7 @@ class WebhookTriggerNodeSerializer(BaseGraphEntityMixin, serializers.ModelSerial
             else:
                 instance.webhook_trigger = None
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        instance.save()
-        return instance
+        return super().update(instance, validated_data)
 
 
 class GraphNoteSerializer(BaseGraphEntityMixin, serializers.ModelSerializer):

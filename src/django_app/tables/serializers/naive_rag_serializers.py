@@ -1,15 +1,9 @@
 from rest_framework import serializers
 from tables.models.knowledge_models import (
-    BaseRagType,
     NaiveRag,
     NaiveRagDocumentConfig,
     NaiveRagChunk,
     NaiveRagPreviewChunk,
-    DocumentMetadata,
-)
-
-from tables.models.knowledge_models.naive_rag_models import (
-    NaiveRag,
     NaiveRagSearchConfig,
 )
 from tables.serializers.knowledge_serializers import BaseRagTypeSerializer
