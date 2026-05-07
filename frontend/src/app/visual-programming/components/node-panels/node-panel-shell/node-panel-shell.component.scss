@@ -58,7 +58,8 @@ header {
         align-items: center;
         gap: 1rem;
 
-        .expand-btn {
+        .expand-btn,
+        .save-btn {
             background: none;
             border: none;
             color: #ccc;
@@ -70,10 +71,18 @@ header {
             align-items: center;
             justify-content: center;
 
-            &:hover {
-                color: #fff;
+            &:hover:not(:disabled) {
                 background-color: rgba(255, 255, 255, 0.1);
             }
+
+            &:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+        }
+
+        .save-btn {
+            color: var(--accent-color);
         }
 
         .close-action {

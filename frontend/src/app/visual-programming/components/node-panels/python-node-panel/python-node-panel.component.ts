@@ -77,6 +77,7 @@ import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-lo
                                     [graphId]="graphId()"
                                     [nodeName]="node().node_name"
                                     [testRunning]="testRunning()"
+                                    [testInputDirty]="testInputDirty()"
                                     (testModeChange)="isOpenTestMode.set($event)"
                                     (runTest)="onRunTest($event)"
                                 ></app-input-map>
@@ -164,23 +165,6 @@ import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-lo
                     </div>
                 </form>
             </div>
-
-            @if (isDirty()) {
-                <button
-                    type="button"
-                    class="save-node-btn"
-                    [disabled]="form.invalid || isSaving()"
-                    [style.border-color]="activeColor"
-                    [style.color]="activeColor"
-                    (click)="onSaveClick()"
-                >
-                    <app-svg-icon
-                        icon="floppy"
-                        size="1.25rem"
-                    />
-                    {{ isSaving() ? 'Saving…' : 'Save' }}
-                </button>
-            }
         </div>
     `,
     styles: [
@@ -191,36 +175,6 @@ import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-lo
                 display: block;
                 height: 100%;
                 min-height: 0;
-            }
-
-            .save-node-btn {
-                position: absolute;
-                right: 1rem;
-                bottom: 1rem;
-                z-index: 20;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
-                padding: 0 0.75rem;
-                height: 36px;
-                border-radius: 6px;
-                background-color: #1a1a1a;
-                border: 1px solid transparent;
-                font-size: 14px;
-                font-weight: 400;
-                cursor: pointer;
-                transition: all 0.2s ease-in-out;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-
-                &:hover:not(:disabled) {
-                    background-color: #262626;
-                }
-
-                &:disabled {
-                    cursor: not-allowed;
-                    opacity: 0.7;
-                }
             }
 
             .panel-container {
@@ -497,6 +451,12 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     private readonly destroyRef = inject(DestroyRef);
 
     private readonly formDirtyTick = signal(0);
+    public readonly testInputDirty = computed(() => {
+        this.formDirtyTick();
+        if (!this.form) return false;
+        return this.buildTestInputValuesSignature() !== this.initialTestInputValuesSignature;
+    });
+
     public readonly isDirty = computed(() => {
         this.formDirtyTick();
         if (!this.form) return false;
