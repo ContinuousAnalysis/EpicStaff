@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { map, Observable, Subject } from 'rxjs';
 
 import { ConfigService } from '../../services/config';
 import {
@@ -29,6 +29,8 @@ export class RealtimeChannelService {
     private configService = inject(ConfigService);
     private headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
+    readonly channelsChanged$ = new Subject<void>();
+
     private get channelUrl(): string {
         return this.configService.apiUrl + 'realtime-channels/';
     }
@@ -40,15 +42,19 @@ export class RealtimeChannelService {
     getChannels(): Observable<RealtimeChannel[]> {
         return this.http
             .get<ApiListResponse<RealtimeChannel>>(this.channelUrl, { headers: this.headers })
-            .pipe(map((r) => r.results));
+            .pipe(map((r) => r.results.map((c) => this.normalizeChannel(c))));
     }
 
     createChannel(data: CreateRealtimeChannelRequest): Observable<RealtimeChannel> {
-        return this.http.post<RealtimeChannel>(this.channelUrl, data, { headers: this.headers });
+        return this.http
+            .post<RealtimeChannel>(this.channelUrl, data, { headers: this.headers })
+            .pipe(map((c) => this.normalizeChannel(c)));
     }
 
     updateChannel(data: UpdateRealtimeChannelRequest): Observable<RealtimeChannel> {
-        return this.http.patch<RealtimeChannel>(`${this.channelUrl}${data.id}/`, data, { headers: this.headers });
+        return this.http
+            .patch<RealtimeChannel>(`${this.channelUrl}${data.id}/`, data, { headers: this.headers })
+            .pipe(map((c) => this.normalizeChannel(c)));
     }
 
     deleteChannel(id: number): Observable<void> {
@@ -56,13 +62,28 @@ export class RealtimeChannelService {
     }
 
     createTwilioChannel(data: CreateTwilioChannelRequest): Observable<TwilioChannel> {
-        return this.http.post<TwilioChannel>(this.twilioChannelUrl, data, { headers: this.headers });
+        return this.http
+            .post<TwilioChannel>(this.twilioChannelUrl, data, { headers: this.headers })
+            .pipe(map((t) => this.normalizeTwilio(t)));
     }
 
     updateTwilioChannel(data: UpdateTwilioChannelRequest): Observable<TwilioChannel> {
-        return this.http.patch<TwilioChannel>(`${this.twilioChannelUrl}${data.channel}/`, data, {
-            headers: this.headers,
-        });
+        return this.http
+            .patch<TwilioChannel>(`${this.twilioChannelUrl}${data.channel}/`, data, { headers: this.headers })
+            .pipe(map((t) => this.normalizeTwilio(t)));
+    }
+
+    private normalizeChannel(channel: RealtimeChannel): RealtimeChannel {
+        return channel.twilio ? { ...channel, twilio: this.normalizeTwilio(channel.twilio) } : channel;
+    }
+
+    private normalizeTwilio(twilio: TwilioChannel): TwilioChannel {
+        const raw = twilio.ngrok_config as unknown;
+        const ngrokId =
+            raw && typeof raw === 'object' && 'id' in raw
+                ? ((raw as { id: number }).id ?? null)
+                : (raw as number | null);
+        return { ...twilio, ngrok_config: ngrokId };
     }
 
     getPhoneNumbers(accountSid: string, authToken: string): Observable<TwilioPhoneNumber[]> {
