@@ -1,5 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { NgIf } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -36,6 +37,8 @@ export class AddEditChannelDialogComponent implements OnInit {
 
     isSubmitting = signal(false);
     errorMessage = signal<string | null>(null);
+
+    private savedChannel = signal<RealtimeChannel | null>(this.data.channel);
 
     private agents = signal<GetAgentRequest[]>([]);
     private ngrokConfigs = signal<GetNgrokConfigResponse[]>([]);
@@ -124,7 +127,9 @@ export class AddEditChannelDialogComponent implements OnInit {
         this.errorMessage.set(null);
 
         const v = this.form.value;
-        if (this.data.action === 'create') {
+        const saved = this.savedChannel();
+
+        if (!saved) {
             this.channelService
                 .createChannel({
                     name: v.name,
@@ -134,7 +139,9 @@ export class AddEditChannelDialogComponent implements OnInit {
                 })
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
-                    next: (channel) =>
+                    next: (channel) => {
+                        this.savedChannel.set(channel);
+                        this.channelService.channelsChanged$.next();
                         this.saveTwilioChannel(
                             channel.id,
                             channel.token,
@@ -142,36 +149,44 @@ export class AddEditChannelDialogComponent implements OnInit {
                             v.auth_token,
                             v.phone_number,
                             v.ngrok_config,
-                            null
-                        ),
-                    error: () => {
-                        this.errorMessage.set('Failed to create channel.');
+                            channel.twilio ?? null
+                        );
+                    },
+                    error: (err: HttpErrorResponse) => {
+                        this.errorMessage.set(this.formatBackendError(err) ?? 'Failed to create channel.');
                         this.isSubmitting.set(false);
                     },
                 });
         } else {
-            const ch = this.data.channel!;
             this.channelService
                 .updateChannel({
-                    id: ch.id,
+                    id: saved.id,
                     name: v.name,
                     realtime_agent: v.realtime_agent ?? null,
                     is_active: v.is_active,
                 })
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
-                    next: () =>
+                    next: () => {
+                        this.savedChannel.set({
+                            ...saved,
+                            name: v.name,
+                            realtime_agent: v.realtime_agent ?? null,
+                            is_active: v.is_active,
+                        });
+                        this.channelService.channelsChanged$.next();
                         this.saveTwilioChannel(
-                            ch.id,
-                            ch.token,
+                            saved.id,
+                            saved.token,
                             v.account_sid,
                             v.auth_token,
                             v.phone_number,
                             v.ngrok_config,
-                            ch.twilio ?? null
-                        ),
-                    error: () => {
-                        this.errorMessage.set('Failed to update channel.');
+                            saved.twilio ?? null
+                        );
+                    },
+                    error: (err: HttpErrorResponse) => {
+                        this.errorMessage.set(this.formatBackendError(err) ?? 'Failed to update channel.');
                         this.isSubmitting.set(false);
                     },
                 });
@@ -211,9 +226,16 @@ export class AddEditChannelDialogComponent implements OnInit {
               });
 
         obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: () => this.configureWebhookAndClose(channelToken, phoneNumber),
-            error: () => {
-                this.errorMessage.set('Channel saved but Twilio settings failed to save.');
+            next: (twilio) => {
+                const cur = this.savedChannel();
+                if (cur) this.savedChannel.set({ ...cur, twilio });
+                this.channelService.channelsChanged$.next();
+                this.configureWebhookAndClose(channelToken, phoneNumber);
+            },
+            error: (err: HttpErrorResponse) => {
+                this.errorMessage.set(
+                    this.formatBackendError(err) ?? 'Channel saved but Twilio settings failed to save.'
+                );
                 this.isSubmitting.set(false);
             },
         });
@@ -237,13 +259,30 @@ export class AddEditChannelDialogComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.dialogRef.close(true),
-                error: () => {
+                error: (err: HttpErrorResponse) => {
                     this.errorMessage.set(
-                        'Channel saved but webhook configuration on Twilio failed. Check your ngrok tunnel.'
+                        this.formatBackendError(err) ??
+                            'Channel saved but webhook configuration on Twilio failed. Check your ngrok tunnel.'
                     );
                     this.isSubmitting.set(false);
                 },
             });
+    }
+
+    private formatBackendError(err: HttpErrorResponse): string | null {
+        const body = err?.error;
+        if (!body) return null;
+        if (typeof body === 'string') return body;
+        if (typeof body.detail === 'string') return body.detail;
+        if (typeof body === 'object') {
+            const parts: string[] = [];
+            for (const [field, value] of Object.entries(body)) {
+                const text = Array.isArray(value) ? value.join(' ') : typeof value === 'string' ? value : null;
+                if (text) parts.push(field === 'non_field_errors' ? text : `${field}: ${text}`);
+            }
+            if (parts.length) return parts.join(' • ');
+        }
+        return null;
     }
 
     onPhoneSelectOpened(): void {

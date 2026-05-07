@@ -52,6 +52,10 @@ export class VoiceSettingsSectionComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadAll();
+
+        this.channelService.channelsChanged$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.refreshChannels());
     }
 
     private loadAll(): void {
