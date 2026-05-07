@@ -23,7 +23,7 @@ from tables.models import (
 )
 
 
-class GraphVersioningStrategy:
+class GraphVersioningManager:
     """
     Reuses GraphStrategy's serialization to produce a graph-only snapshot
     for versioning purposes. No dependency tree traversal.
