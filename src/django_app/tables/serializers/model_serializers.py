@@ -1913,14 +1913,6 @@ class GraphSerializer(serializers.ModelSerializer):
 
 
 # TODO: refactor for rbac
-class OrganizationUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OrganizationUser
-        fields = ["id", "user", "org", "role", "joined_at"]
-        read_only_fields = ["id", "joined_at"]
-
-
-# TODO: refactor for rbac
 class GraphOrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = GraphOrganization

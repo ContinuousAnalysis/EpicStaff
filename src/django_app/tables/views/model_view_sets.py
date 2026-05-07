@@ -190,7 +190,6 @@ from tables.serializers.model_serializers import (
     McpToolSerializer,
     MemorySerializer,
     NgrokWebhookConfigModelSerializer,
-    OrganizationUserSerializer,
     ProviderSerializer,
     PythonCodeResultSerializer,
     PythonCodeSerializer,
@@ -1272,12 +1271,6 @@ class McpToolViewSet(CopyActionMixin, viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
-
-
-# TODO: refactor for rbac
-class OrganizationUserViewSet(viewsets.ModelViewSet):
-    queryset = OrganizationUser.objects.all()
-    serializer_class = OrganizationUserSerializer
 
 
 # TODO: refactor for rbac

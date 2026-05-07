@@ -34,6 +34,7 @@ class OrganizationAdminViewSet(viewsets.ViewSet):
 
     authentication_classes = [JwtOrApiKeyAuthentication]
     permission_classes = [IsAuthenticated, IsSuperadmin]
+    lookup_value_regex = "[0-9]+"
 
     _service = OrganizationManagementService()
     _validator = OrganizationValidationService()
