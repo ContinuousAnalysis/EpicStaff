@@ -514,6 +514,14 @@
         }
     }
 
+    // Bug fix: when a popup cell editor is open (e.g. ExpressionBuilder), AG Grid adds
+    // .ag-cell-popup-editing to the host cell but does NOT hide the cell renderer.
+    // The MonacoCellRendererComponent renders content that bleeds through/above the popup.
+    // Hide all direct children of the popup-editing cell except the popup editor wrapper itself.
+    .ag-cell.ag-cell-popup-editing > *:not(.ag-popup-editor):not(.ag-cell-edit-wrapper) {
+        visibility: hidden !important;
+    }
+
     // Handle autoHeight layout - let AG Grid handle overflow naturally
     .ag-layout-auto-height {
         .ag-center-cols-container,

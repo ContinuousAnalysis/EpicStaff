@@ -46,8 +46,10 @@ import {
     normalizeOpPart,
     parseExpression,
     parseManipulation,
+    toDisplayExpression,
 } from '../../../../utils/condition-expression.helper';
 import { ColumnHeaderMenuComponent } from './column-header-menu/column-header-menu.component';
+import { ExpressionBuilderCellEditorComponent } from './expression-builder/expression-builder-cell-editor.component';
 import { IconHeaderComponent } from './icon-header/icon-header.component';
 import { MonacoCellRendererComponent } from './monaco-cell-renderer/monaco-cell-renderer.component';
 import { ParamsGroupHeaderComponent } from './params-group-header/params-group-header.component';
@@ -311,7 +313,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         headerHeight: 45,
         suppressRowTransform: true,
         suppressCellFocus: false,
-        singleClickEdit: true,
         stopEditingWhenCellsLoseFocus: true,
         domLayout: 'autoHeight',
         rowDragManaged: true,
@@ -628,7 +629,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             },
             valueGetter: (params: ValueGetterParams<ConditionGroup>) => {
                 if (this.isRowLocked(params.data as ConditionGroup)) return '*';
-                return params.data?.field_expressions?.[fieldName] || '';
+                return toDisplayExpression(params.data?.field_expressions?.[fieldName] || '');
             },
             valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
                 if (!params.data.field_expressions) {
@@ -669,7 +670,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             },
             valueGetter: (params: ValueGetterParams<ConditionGroup>) => {
                 if (this.isManipRowLocked(params.data as ConditionGroup)) return '*';
-                return params.data?.field_manipulations?.[fieldName] || '';
+                return toDisplayExpression(params.data?.field_manipulations?.[fieldName] || '');
             },
             valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
                 if (!params.data.field_manipulations) {
@@ -687,10 +688,19 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             field: 'manipulation',
             headerComponent: ColumnHeaderMenuComponent,
             headerComponentParams: this.makeMenuHeaderParams('manipulation', 'Manipulation'),
-            editable: false,
+            editable: true,
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
+            cellEditor: ExpressionBuilderCellEditorComponent,
+            cellEditorPopup: true,
+            cellEditorPopupPosition: 'over',
+            cellEditorParams: () => ({
+                variables: this.collectExpressionVariables(),
+                mode: 'manipulation',
+            }),
             cellStyle: { fontSize: '13px', fontFamily: 'monospace', color: '#d4d4d4' },
+            valueGetter: (params: ValueGetterParams<ConditionGroup>) =>
+                toDisplayExpression(params.data?.manipulation ?? ''),
             valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
                 params.data.manipulation = params.newValue ?? '';
                 return true;
@@ -704,9 +714,13 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             field: 'expression',
             headerComponent: ColumnHeaderMenuComponent,
             headerComponentParams: this.makeMenuHeaderParams('expression', 'Expression'),
-            editable: false,
+            editable: true,
             flex: 1,
             cellRenderer: MonacoCellRendererComponent,
+            cellEditor: ExpressionBuilderCellEditorComponent,
+            cellEditorPopup: true,
+            cellEditorPopupPosition: 'over',
+            cellEditorParams: () => ({ variables: this.collectExpressionVariables() }),
             rowSpan: (params: RowSpanParams<ConditionGroup>) =>
                 this.getRowSpan(params, 'expression', (d) => d?.expression || ''),
             cellStyle: (params: RowSpanParams<ConditionGroup>) =>
@@ -715,12 +729,36 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                     fontFamily: 'monospace',
                     color: '#d4d4d4',
                 }),
+            valueGetter: (params: ValueGetterParams<ConditionGroup>) =>
+                toDisplayExpression(params.data?.expression ?? ''),
             valueSetter: (params: ValueSetterParams<ConditionGroup>) => {
+                // The editor's getValue() already returns stored format, so write as-is.
                 const raw = params.newValue || '';
                 params.data.expression = raw ? normalizeExpressionSpacing(raw) : '';
                 return true;
             },
         };
+    }
+
+    private collectExpressionVariables(): string[] {
+        const seen = new Set<string>();
+
+        // Domain keys and preInputMapKeys (same source as exprMultiSelectItems)
+        for (const k of this.domainKeys()) {
+            seen.add(k);
+        }
+        for (const k of this.preInputMapKeys()) {
+            seen.add(k);
+        }
+
+        // Active field_* column names (strip the 'field_' prefix)
+        for (const colId of this.movableColumnOrder()) {
+            if (colId.startsWith('field_')) {
+                seen.add(colId.substring(6));
+            }
+        }
+
+        return Array.from(seen);
     }
 
     private buildColumnDefs(): (ColDef | ColGroupDef)[] {

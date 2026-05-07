@@ -196,3 +196,33 @@ export function composeManipulation(parts: Record<string, string>, orderedVarNam
 
     return statements.join('; ');
 }
+
+// ---------------------------------------------------------------------------
+// Display-format conversion helpers
+// These functions translate between the backend "stored" format
+// (`variables.IDENT`) and the UI "display" format (`@IDENT`).
+// All other helpers in this file operate exclusively on the stored format.
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert a stored expression (backend format) to display format for the UI.
+ * Every `variables.IDENT` token is replaced with `@IDENT`.
+ *
+ * Regex used: /\bvariables\.([A-Za-z_][A-Za-z0-9_]*)/g
+ */
+export function toDisplayExpression(stored: string): string {
+    if (!stored) return '';
+    return stored.replace(/\bvariables\.([A-Za-z_][A-Za-z0-9_]*)/g, (_match, ident) => '@' + ident);
+}
+
+/**
+ * Convert a display expression (UI format) back to stored format for the backend.
+ * Every `@IDENT` token (not preceded by an identifier character) is replaced
+ * with `variables.IDENT`.
+ *
+ * Regex used: /(?<![A-Za-z0-9_])@([A-Za-z_][A-Za-z0-9_]*)/g
+ */
+export function toStoredExpression(display: string): string {
+    if (!display) return '';
+    return display.replace(/(?<![A-Za-z0-9_])@([A-Za-z_][A-Za-z0-9_]*)/g, (_match, ident) => 'variables.' + ident);
+}

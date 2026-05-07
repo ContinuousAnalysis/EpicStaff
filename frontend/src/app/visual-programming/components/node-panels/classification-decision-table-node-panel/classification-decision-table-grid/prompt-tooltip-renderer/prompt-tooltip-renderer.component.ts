@@ -13,7 +13,6 @@ import { ICellRendererAngularComp } from 'ag-grid-angular';
 import { ICellRendererParams } from 'ag-grid-community';
 
 import { PromptConfig } from '../../../../../core/models/classification-decision-table.model';
-import { MonacoCellRendererComponent } from '../monaco-cell-renderer/monaco-cell-renderer.component';
 
 interface PromptTooltipParams extends ICellRendererParams {
     prompts: Record<string, PromptConfig>;
@@ -31,15 +30,28 @@ interface PromptTooltipParams extends ICellRendererParams {
             (mouseleave)="scheduleHide()"
             (mousedown)="removeTooltipNow()"
         >
-            <span *ngIf="!value" class="placeholder select-placeholder">
+            <span
+                *ngIf="!value"
+                class="placeholder select-placeholder"
+            >
                 Select prompt <i class="ti ti-chevron-down"></i>
             </span>
             <ng-container *ngIf="value">
-                <span *ngIf="!isDeleted" class="prompt-id-text">{{ value }}</span>
-                <span *ngIf="isDeleted" class="deleted-prompt-badge">
+                <span
+                    *ngIf="!isDeleted"
+                    class="prompt-id-text"
+                    >{{ value }}</span
+                >
+                <span
+                    *ngIf="isDeleted"
+                    class="deleted-prompt-badge"
+                >
                     <i class="ti ti-alert-triangle"></i> Deleted
                 </span>
-                <i *ngIf="hasPrompt" class="ti ti-eye prompt-indicator"></i>
+                <i
+                    *ngIf="hasPrompt"
+                    class="ti ti-eye prompt-indicator"
+                ></i>
             </ng-container>
         </div>
     `,
@@ -165,8 +177,6 @@ export class PromptTooltipRendererComponent implements ICellRendererAngularComp,
 
         if (!this.value || !this.hasPrompt) return;
         if (this.tooltipEl) return;
-        // Close any active Monaco editor tooltip
-        MonacoCellRendererComponent.closeActiveTooltip();
 
         this.resolvePrompt();
         if (!this.promptConfig) return;
