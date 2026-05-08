@@ -371,18 +371,6 @@ class TestListOrgMembers:
 
 @pytest.mark.django_db
 class TestAddMembership:
-    def test_link_existing(
-        self, authed_client, superadmin, org_globex, role_member, member_acme
-    ):
-        resp = authed_client(superadmin).post(
-            org_users_list_url(org_globex.pk),
-            {"user_id": member_acme.pk, "role_id": role_member.pk},
-            format="json",
-        )
-        assert resp.status_code == status.HTTP_201_CREATED
-        assert resp.data["email"] == member_acme.email
-        assert resp.data["membership"]["role"]["id"] == role_member.pk
-
     def test_create_and_link(
         self, authed_client, org_admin_acme, org_acme, role_member
     ):
@@ -517,60 +505,6 @@ class TestEmailConflict:
 
 
 @pytest.mark.django_db
-class TestMembershipConflict:
-    def test_duplicate_membership_400(
-        self, authed_client, superadmin, org_acme, member_acme, role_member
-    ):
-        # member_acme already has a membership in org_acme
-        resp = authed_client(superadmin).post(
-            org_users_list_url(org_acme.pk),
-            {"user_id": member_acme.pk, "role_id": role_member.pk},
-            format="json",
-        )
-        assert resp.status_code == status.HTTP_400_BAD_REQUEST
-        assert resp.data["code"] == "membership_already_exists"
-
-
-@pytest.mark.django_db
-class TestInvalidRoleAssignment:
-    def test_assigning_global_superadmin_role_400(
-        self,
-        authed_client,
-        superadmin,
-        org_globex,
-        member_acme,
-        role_superadmin,
-    ):
-        resp = authed_client(superadmin).post(
-            org_users_list_url(org_globex.pk),
-            {"user_id": member_acme.pk, "role_id": role_superadmin.pk},
-            format="json",
-        )
-        assert resp.status_code == status.HTTP_400_BAD_REQUEST
-        assert resp.data["code"] == "invalid_role_assignment"
-
-    def test_assigning_custom_role_from_other_org_400(
-        self,
-        authed_client,
-        superadmin,
-        org_acme,
-        org_globex,
-        member_acme,
-    ):
-        # Create a custom role belonging to org_globex
-        other_role = Role.objects.create(
-            name="Custom-Other", is_built_in=False, org=org_globex
-        )
-        resp = authed_client(superadmin).post(
-            org_users_list_url(org_acme.pk),
-            {"user_id": member_acme.pk, "role_id": other_role.pk},
-            format="json",
-        )
-        assert resp.status_code == status.HTTP_400_BAD_REQUEST
-        assert resp.data["code"] == "invalid_role_assignment"
-
-
-@pytest.mark.django_db
 class TestLastSuperadminGuard:
     def test_revoke_last_superadmin_400(self, authed_client, superadmin):
         resp = authed_client(superadmin).post(
@@ -631,23 +565,7 @@ class TestZeroOrgsSteadyState:
 
 @pytest.mark.django_db
 class TestValidation:
-    def test_mixed_user_id_and_email_400(
-        self, authed_client, superadmin, org_acme, member_acme, role_member
-    ):
-        resp = authed_client(superadmin).post(
-            org_users_list_url(org_acme.pk),
-            {
-                "user_id": member_acme.pk,
-                "email": "x@x.com",
-                "password": "StrongPass123!",
-                "role_id": role_member.pk,
-            },
-            format="json",
-        )
-        assert resp.status_code == status.HTTP_400_BAD_REQUEST
-        assert resp.data["code"] == "invalid"
-
-    def test_neither_user_id_nor_email_400(
+    def test_add_membership_missing_email_400(
         self, authed_client, superadmin, org_acme, role_member
     ):
         resp = authed_client(superadmin).post(
@@ -656,6 +574,7 @@ class TestValidation:
             format="json",
         )
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid"
 
     def test_weak_password_400(self, authed_client, superadmin):
         resp = authed_client(superadmin).post(
@@ -697,12 +616,14 @@ class TestValidation:
         )
         assert resp.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_unknown_role_id_404(
-        self, authed_client, superadmin, org_acme, member_acme
-    ):
+    def test_unknown_role_id_on_create_404(self, authed_client, superadmin, org_acme):
         resp = authed_client(superadmin).post(
             org_users_list_url(org_acme.pk),
-            {"user_id": member_acme.pk, "role_id": 99999},
+            {
+                "email": "fresh-role-404@x.com",
+                "password": "StrongPass123!",
+                "role_id": 99999,
+            },
             format="json",
         )
         assert resp.status_code == status.HTTP_404_NOT_FOUND
@@ -745,3 +666,497 @@ class TestOrganizationAdminNonNumericPkReturns404:
             format="json",
         )
         assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+
+# ============================================================================
+# Batch assign-users endpoint
+# ============================================================================
+
+
+def org_assign_users_url(org_id):
+    return f"/api/admin/organizations/{org_id}/assign-users/"
+
+
+@pytest.fixture
+def detached_user(django_user_model):
+    """A user with no membership in any org — eligible to be assigned."""
+    return django_user_model.objects.create_user(
+        email="detached@x.com", password="StrongPass123!"
+    )
+
+
+@pytest.fixture
+def detached_user_2(django_user_model):
+    return django_user_model.objects.create_user(
+        email="detached2@x.com", password="StrongPass123!"
+    )
+
+
+@pytest.mark.django_db
+class TestAssignUsersHappyPath:
+    def test_superadmin_assigns_two_new_users_200(
+        self,
+        authed_client,
+        superadmin,
+        org_globex,
+        detached_user,
+        detached_user_2,
+        role_member,
+        role_org_admin,
+    ):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {
+                "assignments": [
+                    {"user_id": detached_user.pk, "role_id": role_member.pk},
+                    {"user_id": detached_user_2.pk, "role_id": role_org_admin.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert "created" in resp.data
+        assert "updated" in resp.data
+        assert len(resp.data["created"]) == 2
+        assert resp.data["updated"] == []
+
+    def test_org_admin_assigns_two_new_users_200(
+        self,
+        authed_client,
+        org_admin_acme,
+        org_acme,
+        detached_user,
+        detached_user_2,
+        role_member,
+    ):
+        resp = authed_client(org_admin_acme).post(
+            org_assign_users_url(org_acme.pk),
+            {
+                "assignments": [
+                    {"user_id": detached_user.pk, "role_id": role_member.pk},
+                    {"user_id": detached_user_2.pk, "role_id": role_member.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert len(resp.data["created"]) == 2
+        assert resp.data["updated"] == []
+
+    def test_response_preserves_submission_order_in_created(
+        self,
+        authed_client,
+        superadmin,
+        org_globex,
+        detached_user,
+        detached_user_2,
+        role_member,
+    ):
+        # Submit user_2 first, then user_1. Both are new memberships.
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {
+                "assignments": [
+                    {"user_id": detached_user_2.pk, "role_id": role_member.pk},
+                    {"user_id": detached_user.pk, "role_id": role_member.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        ids_in_response = [m["id"] for m in resp.data["created"]]
+        assert ids_in_response == [detached_user_2.pk, detached_user.pk]
+
+
+@pytest.mark.django_db
+class TestAssignUsersUpsert:
+    """Reassignment branch: rows whose (user_id, org_id) already exists
+    update the role instead of being rejected."""
+
+    def test_existing_membership_role_updated(
+        self,
+        authed_client,
+        superadmin,
+        org_acme,
+        member_acme,
+        role_viewer,
+    ):
+        # member_acme is currently Member of org_acme. Reassign to Viewer.
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_acme.pk),
+            {
+                "assignments": [
+                    {"user_id": member_acme.pk, "role_id": role_viewer.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.data["created"] == []
+        assert len(resp.data["updated"]) == 1
+        assert resp.data["updated"][0]["membership"]["role"]["id"] == role_viewer.pk
+        # Confirm the DB row was actually updated.
+        membership = OrganizationUser.objects.get(user=member_acme, org=org_acme)
+        assert membership.role_id == role_viewer.pk
+
+    def test_no_op_same_role(
+        self,
+        authed_client,
+        superadmin,
+        org_acme,
+        member_acme,
+        role_member,
+    ):
+        # member_acme is already Member; same role re-submitted is a no-op
+        # but still returned in `updated`.
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_acme.pk),
+            {
+                "assignments": [
+                    {"user_id": member_acme.pk, "role_id": role_member.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.data["created"] == []
+        assert len(resp.data["updated"]) == 1
+
+    def test_mixed_create_and_reassign(
+        self,
+        authed_client,
+        superadmin,
+        org_acme,
+        member_acme,
+        detached_user,
+        role_viewer,
+    ):
+        # member_acme already in org_acme as Member → reassign to Viewer.
+        # detached_user not in org_acme → create as Viewer.
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_acme.pk),
+            {
+                "assignments": [
+                    {"user_id": detached_user.pk, "role_id": role_viewer.pk},
+                    {"user_id": member_acme.pk, "role_id": role_viewer.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert len(resp.data["created"]) == 1
+        assert len(resp.data["updated"]) == 1
+        assert resp.data["created"][0]["id"] == detached_user.pk
+        assert resp.data["updated"][0]["id"] == member_acme.pk
+
+
+@pytest.mark.django_db
+class TestAssignUsersNetEffectOrgAdminGuard:
+    """Net-effect last-Org-Admin check: the batch as a whole must not
+    leave the org with zero Org Admins."""
+
+    def test_demote_only_org_admin_400(
+        self,
+        authed_client,
+        superadmin,
+        org_acme,
+        org_admin_acme,
+        role_member,
+    ):
+        # org_admin_acme is the only Org Admin in org_acme. Demoting them
+        # in a batch must be refused.
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_acme.pk),
+            {
+                "assignments": [
+                    {"user_id": org_admin_acme.pk, "role_id": role_member.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "last_org_admin"
+
+    def test_demote_org_admin_when_other_promoted_in_same_batch_200(
+        self,
+        authed_client,
+        superadmin,
+        org_acme,
+        org_admin_acme,
+        member_acme,
+        role_member,
+        role_org_admin,
+    ):
+        # Demote the existing Org Admin AND promote member_acme to Org Admin
+        # in the same batch. Net effect: org still has at least one Org Admin.
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_acme.pk),
+            {
+                "assignments": [
+                    {"user_id": org_admin_acme.pk, "role_id": role_member.pk},
+                    {"user_id": member_acme.pk, "role_id": role_org_admin.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db
+class TestAssignUsersConflicts:
+    def test_unknown_user_id_404(
+        self, authed_client, superadmin, org_globex, role_member
+    ):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {"assignments": [{"user_id": 99999, "role_id": role_member.pk}]},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+        assert resp.data["code"] == "user_not_found"
+
+    def test_unknown_role_id_404(
+        self, authed_client, superadmin, org_globex, detached_user
+    ):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {"assignments": [{"user_id": detached_user.pk, "role_id": 99999}]},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+        assert resp.data["code"] == "role_not_found"
+
+    def test_assigning_global_superadmin_role_400(
+        self,
+        authed_client,
+        superadmin,
+        org_globex,
+        detached_user,
+        role_superadmin,
+    ):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {
+                "assignments": [
+                    {"user_id": detached_user.pk, "role_id": role_superadmin.pk}
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid_role_assignment"
+
+    def test_assigning_custom_role_from_other_org_400(
+        self,
+        authed_client,
+        superadmin,
+        org_acme,
+        org_globex,
+        detached_user,
+    ):
+        other_role = Role.objects.create(
+            name="Custom-Other", is_built_in=False, org=org_globex
+        )
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_acme.pk),
+            {"assignments": [{"user_id": detached_user.pk, "role_id": other_role.pk}]},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid_role_assignment"
+
+    def test_unknown_org_id_404(
+        self, authed_client, superadmin, detached_user, role_member
+    ):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(99999),
+            {"assignments": [{"user_id": detached_user.pk, "role_id": role_member.pk}]},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+        assert resp.data["code"] == "organization_not_found"
+
+
+@pytest.mark.django_db
+class TestAssignUsersValidation:
+    def test_missing_assignments_400(self, authed_client, superadmin, org_globex):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk), {}, format="json"
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid"
+
+    def test_empty_assignments_400(self, authed_client, superadmin, org_globex):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {"assignments": []},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid"
+
+    def test_too_many_assignments_400(
+        self, authed_client, superadmin, org_globex, role_member
+    ):
+        # 101 items — exceeds the cap.
+        items = [{"user_id": i, "role_id": role_member.pk} for i in range(1, 102)]
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {"assignments": items},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid"
+
+    def test_missing_role_id_per_row_400(
+        self, authed_client, superadmin, org_globex, detached_user
+    ):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {"assignments": [{"user_id": detached_user.pk}]},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid"
+
+    def test_missing_user_id_per_row_400(
+        self, authed_client, superadmin, org_globex, role_member
+    ):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {"assignments": [{"role_id": role_member.pk}]},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid"
+
+    def test_duplicate_user_id_in_batch_400(
+        self,
+        authed_client,
+        superadmin,
+        org_globex,
+        detached_user,
+        role_member,
+    ):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {
+                "assignments": [
+                    {"user_id": detached_user.pk, "role_id": role_member.pk},
+                    {"user_id": detached_user.pk, "role_id": role_member.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid"
+
+    def test_non_int_role_id_400(
+        self, authed_client, superadmin, org_globex, detached_user
+    ):
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {"assignments": [{"user_id": detached_user.pk, "role_id": "abc"}]},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "invalid"
+
+
+@pytest.mark.django_db
+class TestAssignUsersPermissions:
+    def test_anonymous_401(self, org_acme):
+        resp = APIClient().post(
+            org_assign_users_url(org_acme.pk),
+            {"assignments": []},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_member_403(
+        self, authed_client, member_acme, org_acme, detached_user, role_member
+    ):
+        resp = authed_client(member_acme).post(
+            org_assign_users_url(org_acme.pk),
+            {"assignments": [{"user_id": detached_user.pk, "role_id": role_member.pk}]},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_org_admin_other_org_403(
+        self,
+        authed_client,
+        org_admin_acme,
+        org_globex,
+        detached_user,
+        role_member,
+    ):
+        resp = authed_client(org_admin_acme).post(
+            org_assign_users_url(org_globex.pk),
+            {"assignments": [{"user_id": detached_user.pk, "role_id": role_member.pk}]},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_non_numeric_org_id_404(self, authed_client, superadmin):
+        resp = authed_client(superadmin).post(
+            "/api/admin/organizations/abc/assign-users/",
+            {"assignments": []},
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db
+class TestAssignUsersSelfAssign:
+    """Caller-relationship UX rule: non-superadmin cannot include themselves
+    in the batch. Superadmin bypasses."""
+
+    def test_org_admin_includes_self_400_cannot_self_assign(
+        self,
+        authed_client,
+        org_admin_acme,
+        org_acme,
+        detached_user,
+        role_member,
+    ):
+        resp = authed_client(org_admin_acme).post(
+            org_assign_users_url(org_acme.pk),
+            {
+                "assignments": [
+                    {"user_id": detached_user.pk, "role_id": role_member.pk},
+                    {"user_id": org_admin_acme.pk, "role_id": role_member.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert resp.data["code"] == "cannot_self_assign"
+        # All-or-nothing: detached_user must NOT have been linked.
+        assert not OrganizationUser.objects.filter(
+            user=detached_user, org=org_acme
+        ).exists()
+
+    def test_superadmin_includes_self_200_bypasses_rule(
+        self,
+        authed_client,
+        superadmin,
+        org_globex,
+        detached_user,
+        role_member,
+        role_org_admin,
+    ):
+        # superadmin is in org_acme but not in org_globex; including self
+        # in a batch on org_globex must succeed.
+        resp = authed_client(superadmin).post(
+            org_assign_users_url(org_globex.pk),
+            {
+                "assignments": [
+                    {"user_id": detached_user.pk, "role_id": role_member.pk},
+                    {"user_id": superadmin.pk, "role_id": role_org_admin.pk},
+                ]
+            },
+            format="json",
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert len(resp.data["created"]) == 2

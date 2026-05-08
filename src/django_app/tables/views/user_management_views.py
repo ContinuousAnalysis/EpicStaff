@@ -1,4 +1,4 @@
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from tables.serializers.user_management_serializers import (
+    MembershipAssignmentRequestSerializer,
+    MembershipAssignmentResponseSerializer,
     MembershipCreateRequestSerializer,
     MembershipUpdateRequestSerializer,
     OrgMemberResponseSerializer,
@@ -148,14 +150,14 @@ class OrganizationMembershipAdminViewSet(viewsets.ViewSet):
 
     # POST /api/admin/organizations/{org_id}/users/
     @extend_schema(
-        summary="Add user to organization (link existing or create + link)",
+        summary="Create user and link to organization",
         request=MembershipCreateRequestSerializer,
         responses={
             201: OrgMemberResponseSerializer,
             400: OpenApiResponse(
-                description="Validation error, duplicate email, or duplicate (user, org)"
+                description="Validation error, duplicate email, or invalid role"
             ),
-            404: OpenApiResponse(description="Organization, role, or user not found"),
+            404: OpenApiResponse(description="Organization or role not found"),
         },
     )
     def create(self, request, org_id=None):
@@ -163,14 +165,70 @@ class OrganizationMembershipAdminViewSet(viewsets.ViewSet):
         membership = self._service.add_membership(
             actor=request.user,
             org_id=int(org_id),
-            role_id=cleaned["role_id"],
-            user_id=cleaned["user_id"],
             email=cleaned["email"],
             password=cleaned["password"],
+            role_id=cleaned["role_id"],
         )
         return Response(
             OrgMemberResponseSerializer(membership).data,
             status=status.HTTP_201_CREATED,
+        )
+
+    # POST /api/admin/organizations/{org_id}/assign-users/
+    # Routed manually via tables/urls.py — no @action decorator. drf-spectacular's
+    # action discovery is router-based and misses manually-routed @action methods,
+    # which causes the class docstring to leak into the operation description and
+    # the request body / response schema to vanish from Swagger UI.
+    @extend_schema(
+        summary="Batch-assign or reassign users in an organization",
+        description=(
+            "Batch upsert of memberships. New (user_id, org_id) pairs are "
+            "created; pre-existing pairs have their role updated (or no-op "
+            "if the role is unchanged). All-or-nothing in one transaction; "
+            "max 100 items; rejects duplicate user_id within the batch, "
+            "self-inclusion by a non-superadmin caller "
+            "(cannot_self_assign), and any change that would leave the "
+            "organization with zero Org Admins (last_org_admin)."
+        ),
+        operation_id="rbac_assign_users",
+        request=MembershipAssignmentRequestSerializer,
+        examples=[
+            OpenApiExample(
+                "Two assignments",
+                value={
+                    "assignments": [
+                        {"user_id": 1, "role_id": 3},
+                        {"user_id": 2, "role_id": 2},
+                    ]
+                },
+                request_only=True,
+            ),
+        ],
+        responses={
+            200: MembershipAssignmentResponseSerializer,
+            400: OpenApiResponse(
+                description=(
+                    "Validation error, invalid role, last-Org-Admin "
+                    "violation, or self-assign attempt by a non-superadmin "
+                    "caller"
+                )
+            ),
+            404: OpenApiResponse(description="Organization, role, or user not found"),
+        },
+    )
+    def assign_users(self, request, org_id=None):
+        cleaned = self._validator.validate_assign_users(request.data)
+        created, updated = self._service.assign_users(
+            actor=request.user,
+            org_id=int(org_id),
+            assignments=cleaned,
+        )
+        return Response(
+            {
+                "created": OrgMemberResponseSerializer(created, many=True).data,
+                "updated": OrgMemberResponseSerializer(updated, many=True).data,
+            },
+            status=status.HTTP_200_OK,
         )
 
     # PATCH /api/admin/organizations/{org_id}/users/{user_id}/

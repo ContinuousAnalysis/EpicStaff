@@ -221,6 +221,11 @@ urlpatterns = [
         ),
         name="admin-org-users-detail",
     ),
+    path(
+        "admin/organizations/<int:org_id>/assign-users/",
+        OrganizationMembershipAdminViewSet.as_view({"post": "assign_users"}),
+        name="admin-org-users-assign",
+    ),
     path("admin/", include(admin_router.urls)),
     path("", include(router.urls)),
     path("run-session/", RunSession.as_view(), name="run-session"),

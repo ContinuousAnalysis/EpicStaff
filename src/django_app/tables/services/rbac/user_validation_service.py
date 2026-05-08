@@ -53,61 +53,122 @@ class UserValidationService(BaseRBACValidator):
     # ---- add_membership (POST /admin/organizations/{org_id}/users/) ----
 
     def validate_add_membership(self, data: dict) -> dict:
-        """Body has two valid modes:
-          Mode A (link existing): {user_id, role_id?}
-          Mode B (create + link): {email, password, role_id?}
-        Validator rejects mixed payloads. role_id is optional; the service
+        """Body: {email, password, role_id?}. Creates a new User and links
+        them to the org. Linking existing users moved to the batch
+        assign-users endpoint. role_id is optional; the service
         substitutes the built-in Member role if absent.
         """
-        user_id = data.get("user_id")
         email = data.get("email")
         password = data.get("password")
         role_id = data.get("role_id")
 
         errors: list[FieldError] = []
-
-        has_user_id = user_id is not None and user_id != ""
-        has_email = email is not None and email != ""
-        has_password = password is not None and password != ""
-
-        if has_user_id and (has_email or has_password):
-            errors.append(
-                FieldError(
-                    "user_id",
-                    user_id,
-                    "Provide either user_id (link existing) or "
-                    "email+password (create new), not both.",
-                )
-            )
-        elif not has_user_id and not (has_email and has_password):
-            errors.append(
-                FieldError(
-                    "user_id",
-                    user_id,
-                    "Provide user_id (link existing) or email+password "
-                    "(create new). Both are missing.",
-                )
-            )
-
-        if has_user_id:
-            errors.extend(self._validate_positive_int_field("user_id", user_id))
-        elif has_email or has_password:
-            errors.extend(self._validate_email_field(email))
-            errors.extend(
-                self._validate_password_field(password, user_hints={"email": email})
-            )
-
+        errors.extend(self._validate_email_field(email))
+        errors.extend(
+            self._validate_password_field(password, user_hints={"email": email})
+        )
         if role_id is not None:
             errors.extend(self._validate_positive_int_field("role_id", role_id))
 
         self._raise_if_any(errors)
-
         return {
-            "user_id": int(user_id) if has_user_id else None,
-            "email": email if not has_user_id else None,
-            "password": password if not has_user_id else None,
+            "email": email,
+            "password": password,
             "role_id": int(role_id) if role_id is not None else None,
         }
+
+    # ---- assign_users (POST /admin/organizations/{org_id}/assign-users/) ----
+
+    _ASSIGN_USERS_MAX_ITEMS = 100
+
+    def validate_assign_users(self, data: dict) -> list[dict]:
+        """Body: {"assignments": [{"user_id": int, "role_id": int}, ...]}.
+
+          - assignments must be a non-empty list of <= 100 items.
+          - each item requires positive-int user_id and role_id.
+          - duplicate user_id within the batch is rejected.
+
+        Returns the cleaned list of {user_id: int, role_id: int} dicts in
+        submission order. The service is responsible for existence checks
+        and (user, org) conflict detection.
+        """
+        assignments = data.get("assignments")
+
+        if assignments is None:
+            self._raise_if_any(
+                [FieldError("assignments", None, "This field is required.")]
+            )
+        if not isinstance(assignments, list):
+            self._raise_if_any(
+                [FieldError("assignments", assignments, "Must be a list.")]
+            )
+        if len(assignments) == 0:
+            self._raise_if_any(
+                [FieldError("assignments", assignments, "Must not be empty.")]
+            )
+        if len(assignments) > self._ASSIGN_USERS_MAX_ITEMS:
+            self._raise_if_any(
+                [
+                    FieldError(
+                        "assignments",
+                        len(assignments),
+                        f"Must contain at most {self._ASSIGN_USERS_MAX_ITEMS} items.",
+                    )
+                ]
+            )
+
+        errors: list[FieldError] = []
+        seen_user_ids: set[int] = set()
+        cleaned: list[dict] = []
+
+        for index, item in enumerate(assignments):
+            if not isinstance(item, dict):
+                errors.append(
+                    FieldError(
+                        f"assignments[{index}]",
+                        item,
+                        "Must be an object with user_id and role_id.",
+                    )
+                )
+                continue
+
+            user_id = item.get("user_id")
+            role_id = item.get("role_id")
+
+            row_errors: list[FieldError] = []
+            row_errors.extend(
+                self._validate_positive_int_field(
+                    f"assignments[{index}].user_id", user_id
+                )
+            )
+            row_errors.extend(
+                self._validate_positive_int_field(
+                    f"assignments[{index}].role_id", role_id
+                )
+            )
+
+            if row_errors:
+                errors.extend(row_errors)
+                continue
+
+            user_id_int = int(user_id)
+            role_id_int = int(role_id)
+
+            if user_id_int in seen_user_ids:
+                errors.append(
+                    FieldError(
+                        f"assignments[{index}].user_id",
+                        user_id,
+                        "Duplicate user_id within the batch.",
+                    )
+                )
+                continue
+
+            seen_user_ids.add(user_id_int)
+            cleaned.append({"user_id": user_id_int, "role_id": role_id_int})
+
+        self._raise_if_any(errors)
+        return cleaned
 
     # ---- change_role ----
 

@@ -22,7 +22,8 @@ Base URL in examples: `http://localhost:8000`.
 | POST | `/api/admin/users/{id}/grant-superadmin/` | superadmin | Set `is_superadmin=True` |
 | POST | `/api/admin/users/{id}/revoke-superadmin/` | superadmin | Set `is_superadmin=False` |
 | GET | `/api/admin/organizations/{org_id}/users/` | sa or oa | List members of one organization |
-| POST | `/api/admin/organizations/{org_id}/users/` | sa or oa | Add user to organization (link existing or create + link) |
+| POST | `/api/admin/organizations/{org_id}/users/` | sa or oa | Create a user and link to organization |
+| POST | `/api/admin/organizations/{org_id}/assign-users/` | sa or oa | Batch-upsert memberships in organization (create or reassign roles) |
 | PATCH | `/api/admin/organizations/{org_id}/users/{user_id}/` | sa or oa | Change a user's role within the organization |
 | DELETE | `/api/admin/organizations/{org_id}/users/{user_id}/` | sa or oa | Remove user from organization |
 
@@ -185,28 +186,75 @@ List members of one org. Optional filters: `?email=substr&role=<role_name>`.
 
 ### `POST /api/admin/organizations/{org_id}/users/`
 
-Dual-mode body:
+Create a new User and link them to the organization in one transaction.
+For linking already-existing users use the batch
+`/assign-users/` endpoint below.
 
-**Mode A — link existing User**
-```json
-{"user_id": 42, "role_id": 3}
-```
-
-**Mode B — create User and link**
+Request body:
 ```json
 {"email": "fresh@example.com", "password": "StrongPass123!", "role_id": 3}
 ```
 
-`role_id` is optional in both modes; defaults to `Member`. The validator
-rejects mixed payloads (`user_id` with `email`/`password`).
+`role_id` is optional; defaults to the built-in `Member` role.
 
 201 response: `<OrgMemberResponse>` for the newly created membership.
 
 Errors:
-- 400 `email_already_exists` (Mode B)
-- 400 `membership_already_exists` (duplicate `(user, org)`)
+- 400 `email_already_exists`
 - 400 `invalid_role_assignment`
-- 400 `invalid` (validation: mixed/missing payload, weak password, …)
+- 400 `invalid` (validation: missing fields, weak password, malformed email, …)
+- 404 `organization_not_found`, `role_not_found`
+
+### `POST /api/admin/organizations/{org_id}/assign-users/`
+
+Batch-upsert memberships in the organization. For each row:
+
+- No existing `(user_id, org_id)` membership → **create** it with the given role.
+- Existing membership, role differs → **update** the role.
+- Existing membership, role unchanged → **no-op** (still returned in `updated`).
+
+All-or-nothing in one transaction. Any error rejects the whole batch.
+
+Request body:
+```json
+{
+  "assignments": [
+    {"user_id": 1, "role_id": 3},
+    {"user_id": 2, "role_id": 2}
+  ]
+}
+```
+
+Rules:
+- `assignments` is required, non-empty, at most 100 items.
+- Each row requires positive-int `user_id` and `role_id` (no defaults).
+- Duplicate `user_id` within the batch is rejected.
+- A non-superadmin caller must NOT include their own `user_id`. Superadmin
+  bypasses this rule (see "Self-assignment in batch" in behavioral notes).
+- The batch must not leave the org with zero Org Admins. The check uses
+  the **net effect** across the whole batch — demoting an Org Admin and
+  promoting another in the same request is fine.
+
+200 response:
+```json
+{
+  "created": [<OrgMemberResponse>, ...],
+  "updated": [<OrgMemberResponse>, ...]
+}
+```
+
+`created` lists rows whose membership did not exist before this batch.
+`updated` lists pre-existing memberships that appeared in the batch
+(whether or not the role actually changed). Both arrays preserve
+submission order.
+
+Errors:
+- 400 `cannot_self_assign` (non-superadmin caller included their own id)
+- 400 `last_org_admin` (batch would leave the org with zero Org Admins)
+- 400 `invalid_role_assignment` (e.g. global Superadmin role, cross-org custom role)
+- 400 `invalid` (validation: empty / >100 / missing fields / duplicate user_id / non-int)
+- 400 `membership_already_exists` (race: a parallel writer inserted a `(user, org)`
+  row between our pre-check and the batch insert; safe to retry)
 - 404 `organization_not_found`, `role_not_found`, `user_not_found`
 
 ### `PATCH /api/admin/organizations/{org_id}/users/{user_id}/`
@@ -248,6 +296,7 @@ Errors:
 | Pagination | `/admin/users/` is paginated (default 50, max 200). `/admin/organizations/{org_id}/users/` returns an unpaginated array — sort/filter on the client if needed. |
 | Self-removal | `DELETE /admin/organizations/{org_id}/users/{user_id}/` is allowed when removing yourself, unless it would trip the last-Org-Admin guard. The FE should still show a confirmation dialog. |
 | Self-revoke superadmin | Allowed when not the last active superadmin. FE should warn. |
+| Self-assignment in batch | `POST /admin/organizations/{org_id}/assign-users/` rejects an Org Admin caller whose own `user_id` appears in `assignments` (`code: cannot_self_assign`). Superadmin bypasses the rule. For deliberate self-changes use the single-row `PATCH /admin/organizations/{org_id}/users/{user_id}/` endpoint instead. |
 | API key authentication | API keys carry exactly the owning user's permissions. A Member-bound API key cannot reach superadmin endpoints. Env-seeded keys (no `created_by`) fail every Story 5 endpoint. |
 | Org Admin assigning Org Admin role | Allowed (matches Story 5 D6). Org Admins can promote other members to Org Admin in their own org. |
 | 401 vs 403 | 401 = no/expired token (re-login). 403 = valid token but insufficient role. |

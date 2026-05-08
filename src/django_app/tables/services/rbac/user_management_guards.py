@@ -54,6 +54,40 @@ class UserManagementGuards:
             raise LastOrgAdminError()
 
     @staticmethod
+    def assert_batch_preserves_org_admin(
+        current_org_admin_user_ids: set,
+        batch: list,
+    ) -> None:
+        """Refuses if applying `batch` to the org would leave it with zero
+        Org Admins, when it currently has at least one.
+
+        `batch` is a list of (user_id, new_role_name) tuples representing
+        the post-batch role for every row in the assignment. Users not in
+        the batch keep their current role. The caller is expected to have
+        SELECT FOR UPDATE-locked the Org row and the affected
+        OrganizationUser rows before invoking this guard.
+
+        No-op when the org currently has no Org Admins — the batch is not
+        responsible for repairing a pre-existing broken state.
+        """
+        if not current_org_admin_user_ids:
+            return
+
+        batch_user_ids = {user_id for user_id, _ in batch}
+        new_org_admins_in_batch = {
+            user_id
+            for user_id, role_name in batch
+            if role_name == BuiltInRole.ORG_ADMIN
+        }
+
+        final_org_admins = (
+            current_org_admin_user_ids - batch_user_ids
+        ) | new_org_admins_in_batch
+
+        if not final_org_admins:
+            raise LastOrgAdminError()
+
+    @staticmethod
     def assert_role_is_assignable(role: Role, org_id: int) -> None:
         """Refuses to assign roles that are not valid membership targets:
 

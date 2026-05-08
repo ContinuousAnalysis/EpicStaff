@@ -202,3 +202,15 @@ class RoleNotFoundError(CustomAPIExeption):
     status_code = 404
     default_detail = "Role not found."
     default_code = "role_not_found"
+
+
+class CannotSelfAssignError(CustomAPIExeption):
+    """Raised by UserManagementService.assign_users when a non-superadmin
+    caller includes their own user_id in the batch. Superadmins bypass
+    this rule. Caller-relationship UX safety, not a system-integrity
+    invariant — the single-row PATCH endpoint exists for deliberate
+    self-modification."""
+
+    status_code = 400
+    default_detail = "You cannot include yourself in the assignment batch."
+    default_code = "cannot_self_assign"

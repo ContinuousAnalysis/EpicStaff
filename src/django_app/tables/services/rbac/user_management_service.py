@@ -6,6 +6,7 @@ from loguru import logger
 from tables.models.rbac_models import OrganizationUser, Organization, Role
 from tables.models.rbac_models.rbac_enums import BuiltInRole
 from tables.services.rbac.rbac_exceptions import (
+    CannotSelfAssignError,
     EmailAlreadyExistsError,
     MembershipAlreadyExistsError,
     OrganizationNotFoundError,
@@ -149,14 +150,13 @@ class UserManagementService:
         self,
         actor,
         org_id,
+        email,
+        password,
         role_id=None,
-        user_id=None,
-        email=None,
-        password=None,
     ):
-        """Two modes (validator enforces XOR):
-          Mode A (link existing): user_id given.
-          Mode B (create + link): email + password given.
+        """Creates a new User and links them to org_id in one transaction.
+        Linking existing users is handled by the batch assign-users
+        endpoint.
 
         role_id is optional; defaults to built-in Member if absent (D9).
 
@@ -173,20 +173,10 @@ class UserManagementService:
         role = self._resolve_role(role_id, default_org_id=org_id)
         UserManagementGuards.assert_role_is_assignable(role, org_id=org_id)
 
-        if user_id is not None:
-            try:
-                target_user = UserModel.objects.select_for_update().get(pk=user_id)
-            except UserModel.DoesNotExist as exc:
-                raise UserNotFoundError() from exc
-            mode = "link"
-        else:
-            try:
-                target_user = UserModel.objects.create_user(
-                    email=email, password=password
-                )
-            except IntegrityError as exc:
-                raise EmailAlreadyExistsError() from exc
-            mode = "create_and_link"
+        try:
+            target_user = UserModel.objects.create_user(email=email, password=password)
+        except IntegrityError as exc:
+            raise EmailAlreadyExistsError() from exc
 
         try:
             membership = OrganizationUser.objects.create(
@@ -196,10 +186,9 @@ class UserManagementService:
             raise MembershipAlreadyExistsError() from exc
 
         logger.info(
-            "UserManagementService.add_membership actor={actor} mode={mode} "
+            "UserManagementService.add_membership actor={actor} "
             "user={u} org={o} role={r}",
             actor=getattr(actor, "email", "system"),
-            mode=mode,
             u=target_user.email,
             o=org.name,
             r=role.name,
@@ -210,6 +199,132 @@ class UserManagementService:
         return OrganizationUser.objects.select_related("user", "org", "role").get(
             pk=membership.pk
         )
+
+    @transaction.atomic
+    def assign_users(self, actor, org_id, assignments):
+        """Batch-upsert memberships for org_id with explicit roles.
+
+        `assignments` is a list of {"user_id": int, "role_id": int} dicts
+        in submission order, pre-validated by UserValidationService
+        (non-empty, deduplicated, types coerced).
+
+        Behavior:
+          - All-or-nothing inside one transaction.
+          - Locks the Org row, then bulk-resolves roles and target users.
+          - For each row:
+              * No existing (user_id, org_id) row → create.
+              * Existing row, role differs → update role.
+              * Existing row, same role → no-op.
+          - Self-assignment by a non-superadmin caller is rejected with
+            CannotSelfAssignError. Superadmin bypasses this rule
+            (caller-relationship UX safety, not a system invariant).
+          - Net-effect last-Org-Admin guard: rejects the whole batch if
+            applying it would leave the org with zero Org Admins.
+          - Unknown user_id / role_id → UserNotFoundError / RoleNotFoundError.
+          - Non-assignable role → InvalidRoleAssignmentError.
+
+        Returns a tuple (created, updated) of OrganizationUser row lists,
+        each ordered by submission order. `updated` includes pre-existing
+        memberships regardless of whether the role actually changed.
+        """
+        if not getattr(actor, "is_superadmin", False):
+            actor_id = getattr(actor, "id", None)
+            if actor_id is not None and any(
+                item["user_id"] == actor_id for item in assignments
+            ):
+                raise CannotSelfAssignError()
+
+        UserModel = get_user_model()
+
+        try:
+            org = Organization.objects.select_for_update().get(pk=org_id)
+        except Organization.DoesNotExist as exc:
+            raise OrganizationNotFoundError() from exc
+
+        role_ids = {item["role_id"] for item in assignments}
+        roles_by_id = Role.objects.in_bulk(role_ids)
+        if len(roles_by_id) != len(role_ids):
+            raise RoleNotFoundError()
+        for role in roles_by_id.values():
+            UserManagementGuards.assert_role_is_assignable(role, org_id=org_id)
+
+        user_ids = [item["user_id"] for item in assignments]
+        users_by_id = UserModel.objects.select_for_update().in_bulk(user_ids)
+        if len(users_by_id) != len(set(user_ids)):
+            raise UserNotFoundError()
+
+        existing_by_user_id = {
+            m.user_id: m
+            for m in (
+                OrganizationUser.objects.select_for_update()
+                .filter(org_id=org_id, user_id__in=user_ids)
+                .select_related("role")
+            )
+        }
+
+        current_org_admin_user_ids = set(
+            OrganizationUser.objects.filter(
+                org_id=org_id, role__name=BuiltInRole.ORG_ADMIN
+            ).values_list("user_id", flat=True)
+        )
+        UserManagementGuards.assert_batch_preserves_org_admin(
+            current_org_admin_user_ids=current_org_admin_user_ids,
+            batch=[
+                (item["user_id"], roles_by_id[item["role_id"]].name)
+                for item in assignments
+            ],
+        )
+
+        created_user_ids: list = []
+        updated_user_ids: list = []
+        new_rows: list = []
+
+        for item in assignments:
+            user_id = item["user_id"]
+            new_role = roles_by_id[item["role_id"]]
+            existing = existing_by_user_id.get(user_id)
+            if existing is None:
+                new_rows.append(
+                    OrganizationUser(user=users_by_id[user_id], org=org, role=new_role)
+                )
+                created_user_ids.append(user_id)
+            else:
+                if existing.role_id != new_role.pk:
+                    existing.role = new_role
+                    existing.save(update_fields=["role"])
+                updated_user_ids.append(user_id)
+
+        if new_rows:
+            try:
+                OrganizationUser.objects.bulk_create(new_rows)
+            except IntegrityError as exc:
+                # Race: a parallel writer inserted a (user, org) row between
+                # our SELECT FOR UPDATE pre-check and this bulk_create.
+                raise MembershipAlreadyExistsError() from exc
+
+        logger.info(
+            "UserManagementService.assign_users actor={a} org={o} "
+            "created={c} updated={u}",
+            a=getattr(actor, "email", "system"),
+            o=org.name,
+            c=len(created_user_ids),
+            u=len(updated_user_ids),
+        )
+
+        # Re-fetch with select_related so the view serializer is N+1-free.
+        # `user_id` is unique only in combination with `org_id` (composite
+        # UniqueConstraint on OrganizationUser), so in_bulk(field_name='user_id')
+        # is rejected by Django. Build the lookup dict manually — within the
+        # org_id filter, user_id is unique by construction.
+        memberships_by_user_id = {
+            m.user_id: m
+            for m in OrganizationUser.objects.filter(
+                org_id=org_id, user_id__in=user_ids
+            ).select_related("user", "org", "role")
+        }
+        created = [memberships_by_user_id[uid] for uid in created_user_ids]
+        updated = [memberships_by_user_id[uid] for uid in updated_user_ids]
+        return created, updated
 
     # ---- update ----
 

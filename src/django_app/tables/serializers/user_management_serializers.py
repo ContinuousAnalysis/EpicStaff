@@ -86,11 +86,12 @@ class UserCreateRequestSerializer(serializers.Serializer):
 
 
 class MembershipCreateRequestSerializer(serializers.Serializer):
-    """`POST /api/admin/organizations/{org_id}/users/` — dual-mode."""
+    """`POST /api/admin/organizations/{org_id}/users/` — create a new
+    User and link to the org. Linking existing users is handled by the
+    batch assign-users endpoint."""
 
-    user_id = serializers.IntegerField(required=False)
-    email = serializers.EmailField(required=False)
-    password = serializers.CharField(required=False, write_only=True)
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
     role_id = serializers.IntegerField(required=False)
 
 
@@ -98,3 +99,28 @@ class MembershipUpdateRequestSerializer(serializers.Serializer):
     """`PATCH /api/admin/organizations/{org_id}/users/{user_id}/`."""
 
     role_id = serializers.IntegerField()
+
+
+class MembershipAssignmentItemSerializer(serializers.Serializer):
+    """Single row in the assign-users batch."""
+
+    user_id = serializers.IntegerField()
+    role_id = serializers.IntegerField()
+
+
+class MembershipAssignmentRequestSerializer(serializers.Serializer):
+    """`POST /api/admin/organizations/{org_id}/assign-users/` request body."""
+
+    assignments = MembershipAssignmentItemSerializer(many=True)
+
+
+class MembershipAssignmentResponseSerializer(serializers.Serializer):
+    """`POST /api/admin/organizations/{org_id}/assign-users/` response body.
+
+    `created` lists rows that did not exist before this batch.
+    `updated` lists pre-existing memberships that appeared in the batch
+    (whether or not the role actually changed). Both arrays preserve
+    submission order."""
+
+    created = OrgMemberResponseSerializer(many=True)
+    updated = OrgMemberResponseSerializer(many=True)
