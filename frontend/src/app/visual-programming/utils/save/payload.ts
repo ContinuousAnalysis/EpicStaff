@@ -184,6 +184,7 @@ export function buildBulkSavePayload(
                 output_variable_path: n.output_variable_path || null,
                 stream_config: n.stream_config ?? {},
                 use_storage: use_storage ?? false,
+                test_input: n.test_input ?? {},
                 metadata: toNodeMetadata(n),
             };
         }),

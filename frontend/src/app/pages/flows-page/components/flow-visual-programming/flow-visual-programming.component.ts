@@ -52,8 +52,10 @@ import { UnsavedChangesDialogService } from '../../../../shared/components/unsav
 import { NodeType } from '../../../../visual-programming/core/enums/node-type';
 import { FlowModel } from '../../../../visual-programming/core/models/flow.model';
 import { ScheduleTriggerNodeModel } from '../../../../visual-programming/core/models/node.model';
+import { NodeModel } from '../../../../visual-programming/core/models/node.model';
 import { FlowGraphComponent } from '../../../../visual-programming/flow-graph/flow-graph.component';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
+import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
 import {
     createStartNode,
     hasStartNode,
@@ -148,7 +150,8 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly elementRef: ElementRef,
         private readonly epicChatService: EpicChatService,
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
-        private readonly unsavedChangesDialog: UnsavedChangesDialogService
+        private readonly unsavedChangesDialog: UnsavedChangesDialogService,
+        private readonly sidePanelService: SidePanelService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
         this.routeParamMap = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
@@ -165,6 +168,10 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
             if (!isFinite(graphId)) return;
             this.fetchGraph(graphId);
         });
+
+        this.sidePanelService.saveNodeRequest$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((node) => this.handleNodeSaveRequest(node));
     }
 
     public ngOnInit(): void {
@@ -242,6 +249,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                     }
                 }
                 this.savedFlowState.set(cloneFlowState(patchedFlow));
+                this.sidePanelService.notifyGraphSaved();
                 if (showSuccessToast) {
                     this.toastService.success('Graph saved successfully');
                 }
@@ -254,6 +262,66 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
             finalize(() => {
                 this.isSaving.set(false);
                 this.cdr.markForCheck();
+            })
+        );
+    }
+
+    private handleNodeSaveRequest(node: NodeModel): void {
+        if (!this.graph?.id) return;
+        if (this.sidePanelService.savingNodeId() === node.id) return;
+
+        this.sidePanelService.markNodeSaving(node.id);
+        this.saveNodeToBackend(node)
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => this.sidePanelService.clearNodeSaving())
+            )
+            .subscribe();
+    }
+
+    private saveNodeToBackend(node: NodeModel): Observable<void> {
+        if (!this.graph?.id) return EMPTY;
+
+        this.flowService.updateNode(node);
+
+        const previous = this.loadedFlowState();
+        const previousForDiff: FlowModel = {
+            nodes: node.backendId != null ? previous.nodes.filter((n) => n.backendId === node.backendId) : [],
+            connections: [],
+        };
+        const singleNodeFlow: FlowModel = { nodes: [node], connections: [] };
+        const nodeDiff = getNodeDiff(previousForDiff, singleNodeFlow);
+        const connectionDiff = { toCreate: [], toUpdate: [], toDelete: [] };
+        const idMap = buildUuidToBackendIdMap([node]);
+        const payload = buildBulkSavePayload(this.graph.id, nodeDiff, connectionDiff, singleNodeFlow, idMap);
+
+        return this.flowApiService.bulkSaveGraph(this.graph.id, payload).pipe(
+            tap((responseGraph) => {
+                this.graphState.set(responseGraph);
+                const patchedFlow = patchFlowStateWithBackendIds(
+                    this.currentFlowState(),
+                    previous,
+                    nodeDiff,
+                    responseGraph
+                );
+                this.flowService.setFlow(patchedFlow);
+
+                const savedNode = patchedFlow.nodes.find((n) => n.id === node.id);
+                if (savedNode) {
+                    const prev = this.savedFlowState();
+                    const exists = prev.nodes.some((n) => n.id === node.id);
+                    const nextNodes = exists
+                        ? prev.nodes.map((n) => (n.id === node.id ? savedNode : n))
+                        : [...prev.nodes, savedNode];
+                    this.savedFlowState.set(cloneFlowState({ nodes: nextNodes, connections: prev.connections }));
+                }
+
+                this.toastService.success('Node saved');
+            }),
+            map(() => void 0),
+            catchError((err) => {
+                this.toastService.error(`Failed to save node: ${err?.error?.error || 'Unknown error'}`);
+                return EMPTY;
             })
         );
     }
