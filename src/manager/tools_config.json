@@ -265,9 +265,6 @@
         },
         "custom_folder_tool":{
           "class_name": "FolderTool"
-        },
-        "custom_cli": {
-          "class_name": "CLITool"
         }
     },
     "dependencies": [
