@@ -19,32 +19,41 @@
     }
     .f-connection {
         z-index: 2;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
         .f-connection-drag-handle {
             fill: transparent;
         }
 
         .f-connection-selection {
             fill: none;
-            stroke: #1d1d1d;
+            stroke: transparent;
             stroke-width: 5;
             cursor: pointer;
         }
 
         .f-connection-path {
             fill: none;
-            stroke-width: 2;
+            stroke-width: 2.7;
+        }
+
+        .f-connection-waypoints {
+            visibility: hidden;
+        }
+
+        svg.f-marker circle {
+            fill: var(--marker-start-color, #555);
+        }
+        svg.f-marker path {
+            fill: var(--marker-end-color, #555);
         }
 
         &.f-selected {
             .f-connection-selection {
-                stroke: var(--db-primary-1);
-                opacity: 0.35;
-                stroke-width: 8;
+                stroke: transparent;
             }
 
             .f-connection-path {
                 stroke: var(--db-primary-1) !important;
+                stroke-dasharray: 6 4;
             }
 
             .f-marker {
@@ -57,23 +66,27 @@
             .connection-center {
                 display: flex;
             }
+
+            .f-connection-waypoints {
+                visibility: visible;
+            }
         }
 
-        &:hover {
-            .f-connection-selection {
-                stroke: var(--db-primary-1);
-                opacity: 0.1;
+        &:hover:not(.f-selected) {
+            .f-connection-path {
+                stroke: var(--db-primary-1) !important;
             }
 
-            .connection-center {
-                display: flex;
+            .start-marker circle,
+            .end-marker path {
+                fill: var(--db-primary-1) !important;
             }
         }
 
         &.f-snap-connection {
             .f-connection-path {
                 stroke: var(--db-snap-connection);
-                stroke-width: 2px;
+                stroke-width: 3px;
                 stroke-dasharray: 6 3;
                 animation: dashOffset 0.5s linear infinite;
             }
@@ -94,7 +107,7 @@
         &.f-connection-for-create {
             .f-connection-path {
                 stroke: var(--db-primary-1);
-                stroke-width: 2px;
+                stroke-width: 2.5px;
             }
             .f-marker {
                 path,
@@ -114,11 +127,18 @@
             }
         }
 
+        &.is-backward {
+            .f-connection-path {
+                stroke-dasharray: 6 4;
+            }
+        }
+
         .connection-center {
             display: none;
             align-items: center;
             justify-content: center;
             pointer-events: all;
+            transform: translate(-30px, -8px);
 
             .icon-button {
                 width: 24px;
@@ -177,6 +197,31 @@
                     cursor: not-allowed;
                     pointer-events: none;
                 }
+            }
+        }
+
+        .f-connection-waypoints {
+            .f-candidate,
+            .f-waypoint {
+                vector-effect: non-scaling-stroke;
+                transform-box: fill-box;
+                transform-origin: center;
+                stroke-width: 1.5;
+
+                &:hover {
+                    transform: scale(1.1);
+                }
+            }
+
+            .f-candidate {
+                fill: #d9d9de99;
+                stroke: #d9d9de99;
+                cursor: move;
+            }
+
+            .f-waypoint {
+                fill: transparent;
+                stroke: #d9d9de99;
             }
         }
     }
@@ -270,6 +315,17 @@
         justify-content: center;
         gap: 0.5rem;
     }
+}
+
+.connection-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.custom-connection-path {
+    fill: none;
+    stroke: #8b8b8b;
+    stroke-width: 2;
 }
 
 .top-left-actions {
@@ -372,6 +428,7 @@
         border 0.15s;
     outline: none;
     height: 36px;
+    white-space: nowrap;
 }
 .show-inputs-btn:hover,
 .show-inputs-btn:focus {
@@ -384,4 +441,25 @@
     color: #fff;
     font-weight: 600;
     box-shadow: 0 0 0 2px #222 inset;
+}
+
+.top-right-controls {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    z-index: 10;
+}
+
+.routing-toggle-block {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    background: var(--color-surface-card, #232323);
+    border: 1.5px solid var(--color-divider-subtle, #444);
+    border-radius: 4px;
 }

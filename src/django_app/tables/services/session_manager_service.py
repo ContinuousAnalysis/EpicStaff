@@ -145,7 +145,11 @@ class SessionManagerService(metaclass=SingletonMeta):
         variables_for_db = {k: v for k, v in variables.items() if k != "shared"}
 
         time_to_live = Graph.objects.get(pk=graph_id).time_to_live
-        graph_user = GraphOrganizationUser.objects.filter(user__name=username).first()
+        # TODO: replace with
+        # request.user + org context instead of email lookup.
+        graph_user = GraphOrganizationUser.objects.filter(
+            organization_user__user__email=username, graph_id=graph_id
+        ).first()
         session = Session.objects.create(
             graph_id=graph_id,
             status=Session.SessionStatus.PENDING,
@@ -336,8 +340,10 @@ class SessionManagerService(metaclass=SingletonMeta):
             unique_subgraphs: Dictionary to collect unique subgraphs (only used at top level)
         """
         crew_node_list = CrewNode.objects.filter(graph=graph.pk).select_related("crew")
-        python_node_list = PythonNode.objects.filter(graph=graph.pk).select_related(
-            "python_code"
+        python_node_list = (
+            PythonNode.objects.filter(graph=graph.pk)
+            .defer("test_input")
+            .select_related("python_code")
         )
         file_extractor_node_list = FileExtractorNode.objects.filter(graph=graph.pk)
         audio_transcription_node_list = AudioTranscriptionNode.objects.filter(

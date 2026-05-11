@@ -16,18 +16,6 @@
             <div class="graph-name-row">
                 <div class="graph-name project-link">
                     {{ graphName ?? 'Loading...' }}
-                    @if (hasUnsavedChanges) {
-                        <span
-                            class="unsaved-indicator"
-                            title="Unsaved changes"
-                        >
-                            <app-svg-icon
-                                icon="circle"
-                                size="10px"
-                            />
-                            <span class="unsaved-text">Unsaved changes</span>
-                        </span>
-                    }
                 </div>
                 <button
                     class="edit-name-btn"
@@ -39,6 +27,22 @@
                         size="16px"
                     />
                 </button>
+                @if (hasUnsavedChanges) {
+                    <span
+                        class="unsaved-indicator"
+                        title="Unsaved changes"
+                        [appCollapseOnOverflow]="true"
+                        collapseOnOverflowTarget=".unsaved-text"
+                        collapseOnOverflowClass="unsaved-indicator--icon-only"
+                        collapseOnOverflowRequireSelector="app-svg-icon"
+                    >
+                        <app-svg-icon
+                            icon="circle"
+                            size="10px"
+                        />
+                        <span class="unsaved-text">Unsaved changes</span>
+                    </span>
+                }
             </div>
         </h2>
     </div>
@@ -80,8 +84,14 @@
             </button>
         }
         <div
+            #saveSplitOrigin="cdkOverlayOrigin"
+            cdkOverlayOrigin
             class="save-split-btn"
             [class.disabled]="isSaving || isRunning"
+            [appCollapseOnOverflow]="true"
+            collapseOnOverflowTarget=".btn-label"
+            collapseOnOverflowClass="save-split-btn--icon-only"
+            collapseOnOverflowRequireSelector="app-svg-icon"
         >
             <button
                 class="save-split-btn__main"
@@ -96,7 +106,7 @@
                         size="1.25rem"
                     />
                 }
-                Save
+                <span class="btn-label">Save</span>
             </button>
             <button
                 class="save-split-btn__chevron"
@@ -108,36 +118,29 @@
                     size="1rem"
                 />
             </button>
-            @if (isSaveDropdownOpen()) {
-                <div
-                    class="save-dropdown"
-                    (click)="$event.stopPropagation()"
-                >
-                    <button
-                        class="save-dropdown__item"
-                        (click)="onSave(); isSaveDropdownOpen.set(false)"
-                    >
-                        Save
-                    </button>
-                    <button
-                        class="save-dropdown__item"
-                        (click)="saveVersion.emit(); isSaveDropdownOpen.set(false)"
-                    >
-                        Save Version
-                    </button>
-                    <button
-                        class="save-dropdown__item"
-                        (click)="viewVersionHistory.emit(); isSaveDropdownOpen.set(false)"
-                    >
-                        Version History
-                        <app-svg-icon
-                            icon="arrow-up-right"
-                            size="1rem"
-                        />
-                    </button>
-                </div>
-            }
         </div>
+        <ng-template
+            cdkConnectedOverlay
+            [cdkConnectedOverlayOrigin]="saveSplitOrigin"
+            [cdkConnectedOverlayOpen]="isSaveDropdownOpen()"
+            [cdkConnectedOverlayPositions]="[
+                {
+                    originX: 'end',
+                    originY: 'bottom',
+                    overlayX: 'end',
+                    overlayY: 'top',
+                    offsetY: 6,
+                },
+            ]"
+            (overlayOutsideClick)="closeSaveDropdown()"
+            (detach)="closeSaveDropdown()"
+        >
+            <app-save-dropdown
+                (save)="onSave(); closeSaveDropdown()"
+                (saveVersion)="saveVersion.emit(); closeSaveDropdown()"
+                (viewVersionHistory)="viewVersionHistory.emit(); closeSaveDropdown()"
+            />
+        </ng-template>
         <button
             class="run-button"
             [appCollapseOnOverflow]="true"

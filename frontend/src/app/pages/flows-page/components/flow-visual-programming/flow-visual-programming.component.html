@@ -6,7 +6,7 @@
         [graph]="graph"
         [isSaving]="isSaving()"
         [isRunning]="isRunning()"
-        [hasUnsavedChanges]="hasUnsavedChanges()"
+        [hasUnsavedChanges]="hasUnsavedChangesSignal()"
         (save)="onHeaderSave()"
         (saveVersion)="onSaveVersion()"
         (viewVersionHistory)="onViewVersionHistory()"

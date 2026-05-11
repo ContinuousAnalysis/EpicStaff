@@ -13,9 +13,9 @@ import {
     ValidationErrorsComponent,
 } from '@shared/components';
 import { LLMModel, LLMProvider, ModelTypes } from '@shared/models';
+import { LlmConfigStorageService } from '@shared/services';
 
 import { ToastService } from '../../../../services/notifications';
-import { LlmConfigStorageService } from '../../services/llms/llm-config-storage.service';
 import { LlmModelSelectorComponent } from '../llm-model-selector/llm-model-selector.component';
 
 interface DialogData {
@@ -51,6 +51,7 @@ export class LlmModelConfigDialogComponent implements OnInit {
 
     isSaving = signal<boolean>(false);
     isLoading = signal<boolean>(false);
+    errorMessage = signal<string | null>(null);
 
     isEditMode = computed(() => !!this.data?.configId);
     title = computed(() => (this.isEditMode() ? 'Edit LLM Configuration' : 'Add LLM Configuration'));
@@ -128,6 +129,7 @@ export class LlmModelConfigDialogComponent implements OnInit {
         }
 
         this.isSaving.set(true);
+        this.errorMessage.set(null);
         const formValue = this.form.value;
 
         const request$ = this.isEditMode()
@@ -144,10 +146,41 @@ export class LlmModelConfigDialogComponent implements OnInit {
             },
             error: (err) => {
                 this.isSaving.set(false);
-                this.toast.error(this.isEditMode() ? 'Configuration update failed.' : 'Configuration creation failed.');
+                const fallback = this.isEditMode() ? 'Configuration update failed.' : 'Configuration creation failed.';
+                const message = this.extractErrorMessage(err, fallback);
+                this.errorMessage.set(message);
                 console.error(err);
             },
         });
+    }
+
+    private extractErrorMessage(err: unknown, fallback: string): string {
+        const error = (err as { error?: { message?: unknown } } | null)?.error;
+        const raw = error?.message;
+
+        if (typeof raw === 'string') {
+            const matches = [...raw.matchAll(/string=(['"])(.*?)\1/g)].map((m) => m[2]);
+            if (matches.length) {
+                return matches.join(' ');
+            }
+            return raw;
+        }
+
+        if (raw && typeof raw === 'object') {
+            const parts: string[] = [];
+            for (const value of Object.values(raw as Record<string, unknown>)) {
+                if (Array.isArray(value)) {
+                    parts.push(...value.map(String));
+                } else if (value != null) {
+                    parts.push(String(value));
+                }
+            }
+            if (parts.length) {
+                return parts.join(' ');
+            }
+        }
+
+        return fallback;
     }
 
     protected readonly ModelTypes = ModelTypes;

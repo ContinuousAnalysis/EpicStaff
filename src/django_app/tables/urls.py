@@ -85,6 +85,7 @@ from tables.views.views import (
     QuickstartView,
     QuickstartApplyView,
     delete_environment_config,
+    PythonNodeLastTestInputView,
 )
 
 from tables.views.default_config import (
@@ -164,7 +165,7 @@ router.register(r"crew-tags", CrewTagViewSet)
 router.register(r"agent-tags", AgentTagViewSet)
 router.register(r"graph-tags", GraphTagViewSet)
 router.register(r"graph-light", GraphLightViewSet, basename="graphs-light")
-router.register(r"graph-versions", GraphVersionViewSet)
+router.register(r"graph-versions", GraphVersionViewSet, basename="graph-versions")
 router.register(r"realtime-models", RealtimeModelViewSet)
 router.register(r"realtime-model-configs", RealtimeConfigModelViewSet)
 router.register(r"realtime-transcription-models", RealtimeTranscriptionModelViewSet)
@@ -228,6 +229,11 @@ urlpatterns = [
         "run-python-code/",
         RunPythonCodeAPIView.as_view(),
         name="run-python-code",
+    ),
+    path(
+        "pythonnodes/<int:pk>/last-session-input/",
+        PythonNodeLastTestInputView.as_view(),
+        name="python-node-last-session-input",
     ),
     path(
         "init-realtime/",
