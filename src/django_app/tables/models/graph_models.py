@@ -602,11 +602,9 @@ class ScheduleTriggerNode(BaseGraphEntity, BaseGlobalNode):
     end_date_time = models.DateTimeField(null=True, blank=True)
     max_runs = models.IntegerField(null=True, blank=True)
     current_runs = models.IntegerField(default=0)
+    next_run_date_time = models.DateTimeField(null=True, blank=True)
 
     def generate_hash(self):
-        # current_runs is a runtime counter bumped by ScheduleTriggerService on
-        # every fire; including it here would invalidate every client's cached
-        # hash after each run and break optimistic concurrency via 412.
         excluded_fields = [
             "id",
             "created_at",
@@ -614,6 +612,7 @@ class ScheduleTriggerNode(BaseGraphEntity, BaseGlobalNode):
             "content_hash",
             "metadata",
             "current_runs",
+            "next_run_date_time",
         ]
         data = {
             f.name: str(getattr(self, f.attname))

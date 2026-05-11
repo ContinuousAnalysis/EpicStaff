@@ -1,6 +1,7 @@
 import zoneinfo
 from datetime import datetime, timezone as _datetime_timezone
 
+from loguru import logger
 from rest_framework import serializers
 
 from tables.exceptions import ScheduleTriggerValidationError
@@ -108,11 +109,28 @@ class ScheduleTriggerInputParser:
                 "weekdays": instance.weekdays or [],
             }
         )
+
+        next_run = instance.next_run_date_time
+        if (
+            instance.is_active
+            and next_run is not None
+            and next_run < datetime.now(_datetime_timezone.utc)
+        ):
+            logger.warning(
+                f"[ScheduleTriggerNode {instance.pk}] stored next_run_date_time "
+                f"{next_run.isoformat()} is in the past while node is active; "
+                f"returning None. Possible Manager outage or lost 'deactivate' signal."
+            )
+            next_run = None
+
         return {
             "run_mode": instance.run_mode,
             "timezone": tz_name,
             "start_date_time": ScheduleTriggerValidator.format_utc_to_local_naive_iso(
                 instance.start_date_time, tz_name
+            ),
+            "next_run_date_time": ScheduleTriggerValidator.format_utc_to_local_naive_iso(
+                next_run, tz_name
             ),
             "interval": interval,
             "end": {

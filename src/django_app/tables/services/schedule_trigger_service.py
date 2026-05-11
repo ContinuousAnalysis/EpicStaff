@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from django.db import transaction
@@ -6,6 +7,7 @@ from django.utils import timezone
 from loguru import logger
 
 from tables.models.graph_models import ScheduleTriggerNode
+from tables.services.next_run_calculator import compute_next_run_date_time
 from tables.services.schedule_condition_strategies import get_end_condition_strategy
 from tables.validators.schedule_trigger_validator import ScheduleTriggerValidator
 from utils.singleton_meta import SingletonMeta
@@ -27,7 +29,14 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
         self.validator = validator or ScheduleTriggerValidator()
 
     def create_node(self, validated_data: dict) -> ScheduleTriggerNode:
-        return ScheduleTriggerNode.objects.create(**validated_data)
+        node = ScheduleTriggerNode.objects.create(**validated_data)
+        next_run = compute_next_run_date_time(node)
+        if next_run is not None:
+            ScheduleTriggerNode.objects.filter(pk=node.pk).update(
+                next_run_date_time=next_run
+            )
+            node.next_run_date_time = next_run
+        return node
 
     def deactivate_node(self, node_id: int) -> None:
         """Flip is_active=False via .save() so post_save publishes node_update
@@ -44,7 +53,8 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
             logger.info(f"[ScheduleTriggerService] Node {node_id} already inactive")
             return
         node.is_active = False
-        node.save(update_fields=["is_active", "updated_at"])
+        node.next_run_date_time = None
+        node.save(update_fields=["is_active", "next_run_date_time", "updated_at"])
         logger.info(f"[ScheduleTriggerService] Node {node_id} deactivated")
 
     def update_node(
@@ -63,6 +73,8 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
+        instance.next_run_date_time = compute_next_run_date_time(instance)
         instance.save()
         return instance
 
@@ -74,11 +86,16 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
         fired node; only one wins, others exit silently. current_runs is bumped
         via F() so concurrent increments never clobber each other.
 
+        After a successful fire we recompute next_run_date_time and persist it
+        via QuerySet.update() — this bypasses post_save on purpose, since
+        Manager just fired this node and does not need its APScheduler job
+        rebuilt for a derived-field change.
+
         Terminal conditions (end_date reached, max_runs reached) flip
-        is_active=False via .save() — the post_save signal publishes a
-        node_update echo that Manager consumes to drop its APScheduler job. We
-        intentionally do not publish 'deactivate' here to keep the channel's
-        direction rule intact (Manager → Django only).
+        is_active=False AND next_run_date_time=None via .save() — the post_save
+        signal publishes a node_update echo that Manager consumes to drop its
+        APScheduler job. We intentionally do not publish 'deactivate' here to
+        keep the channel's direction rule intact (Manager → Django only).
         """
         try:
             now = timezone.now()
@@ -107,6 +124,15 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
                     node,
                     f"max runs reached ({node.current_runs}/{node.max_runs})",
                 )
+                return
+
+            next_run = compute_next_run_date_time(
+                node, after=now + timedelta(microseconds=1)
+            )
+            ScheduleTriggerNode.objects.filter(pk=node.pk).update(
+                next_run_date_time=next_run,
+                updated_at=timezone.now(),
+            )
 
         except Exception as exc:
             logger.error(
@@ -146,5 +172,6 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
 
     def _deactivate(self, node: ScheduleTriggerNode, reason: str) -> None:
         node.is_active = False
-        node.save(update_fields=["is_active", "updated_at"])
+        node.next_run_date_time = None
+        node.save(update_fields=["is_active", "next_run_date_time", "updated_at"])
         logger.info(f"[ScheduleTriggerService] Node {node.id}: {reason}, deactivated.")

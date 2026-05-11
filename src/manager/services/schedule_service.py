@@ -13,17 +13,12 @@ from pydantic import ValidationError
 from helpers.logger import logger
 from repositories.schedule_trigger_repository import ScheduleTriggerNodeRepository
 from services.redis_service import RedisService
-from services.schedule_trigger_strategies import (
-    ONCE_STRATEGY,
-    UNIT_STRATEGIES,
-    ScheduleTriggerContext,
-)
-from utils.timezone_utils import ensure_aware
 from src.shared.models import (
     ScheduleTriggerNodeDeletePayload,
     ScheduleTriggerNodePayload,
     ScheduleTriggerNodeUpdateMessage,
 )
+from src.shared.schedule.trigger_builder import build_trigger
 
 SCHEDULE_CHANNEL = "schedule_channel"
 TIMEZONE = os.getenv("TIMEZONE", "UTC")
@@ -95,7 +90,7 @@ class ScheduleService:
         """Register (or replace) an APScheduler job for a schedule node."""
         node_id = node.id
         node_tz = self._resolve_tz(node.timezone)
-        trigger = self._build_trigger(node, node_tz)
+        trigger = build_trigger(node, node_tz)
 
         if trigger is None:
             logger.warning(
@@ -246,56 +241,6 @@ class ScheduleService:
                 f"[ScheduleService] Unknown tz {name!r}, falling back to server tz"
             )
             return self.tz
-
-    def _build_trigger(self, node: ScheduleTriggerNodePayload, node_tz=None):
-        """Resolve an APScheduler trigger via the Strategy registry.
-
-        Two semantics, picked per (unit, weekdays, every):
-
-        * Pure interval (delta from start_date_time): seconds / minutes / hours
-          regardless of `every`, and days/weeks with every>1 and no weekdays.
-          Implemented via IntervalTrigger anchored at start_date_time, so e.g.
-          "every 2 minutes from 19:01" fires at 19:01, 19:03, 19:05, ...
-
-        * Calendar-aligned (wall-clock H:M of start_date_time): days every=1,
-          days with weekdays, weeks (every value), months. Implemented via
-          CronTrigger, so e.g. "Mon at 9am" or "every day at 9am" fire at
-          exactly that wall-clock time in the node's tz.
-
-        run_mode="once" → DateTrigger. Returns None on missing/invalid config.
-        """
-        if node_tz is None:
-            node_tz = self._resolve_tz(node.timezone)
-
-        end_dt = (
-            ensure_aware(node.end_date_time) if node.end_type == "on_date" else None
-        )
-        start_dt = ensure_aware(node.start_date_time)
-
-        ctx = ScheduleTriggerContext(
-            node=node,
-            node_tz=node_tz,
-            start_dt=start_dt,
-            end_dt=end_dt,
-            every=node.every or 0,
-            weekdays=node.weekdays or [],
-        )
-
-        if node.run_mode == "once":
-            return ONCE_STRATEGY.build(ctx)
-
-        if not node.every or not node.unit:
-            logger.error(
-                f"[ScheduleService] Missing every/unit for repeat node {node.id}"
-            )
-            return None
-
-        strategy = UNIT_STRATEGIES.get(node.unit)
-        if strategy is None:
-            logger.error(f"[ScheduleService] Unknown unit: {node.unit}")
-            return None
-
-        return strategy.build(ctx)
 
     async def _start_redis_listener(self):
         """Subscribe to schedule_channel and apply live node updates from Django."""
