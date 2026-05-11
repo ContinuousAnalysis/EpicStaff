@@ -93,6 +93,13 @@ def manager():
 
 
 @pytest.fixture
+def service():
+    from tables.graph_versioning.services import GraphVersioningService
+
+    return GraphVersioningService()
+
+
+@pytest.fixture
 def start_node_dict():
     from tables.import_export.enums import NodeType
 
