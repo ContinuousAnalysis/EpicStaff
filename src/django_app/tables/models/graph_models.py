@@ -88,11 +88,7 @@ class CrewNode(BaseNode):
     graph = models.ForeignKey(
         "Graph", on_delete=models.CASCADE, related_name="crew_node_list"
     )
-    crew = models.ForeignKey(
-        "Crew",
-        on_delete=models.SET_NULL,
-        null=True,
-    )
+    crew = models.ForeignKey("Crew", on_delete=models.CASCADE)
     stream_config = models.JSONField(default=dict, blank=True)
 
 
@@ -189,7 +185,6 @@ class SubGraphNode(BaseNode):
         related_name="as_subgraph",
         null=True,
     )
-    # TODO: maybe SET_NULL on delete?
 
 
 class CodeAgentNode(BaseNode):

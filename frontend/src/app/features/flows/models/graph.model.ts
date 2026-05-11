@@ -109,6 +109,8 @@ export interface RestoreWarning {
     type: 'node_skipped' | 'edge_dropped' | string;
     node_name?: string;
     node_type?: string;
+    node_id?: number;
+    missing_node_id?: number;
     reason: string;
 }
 

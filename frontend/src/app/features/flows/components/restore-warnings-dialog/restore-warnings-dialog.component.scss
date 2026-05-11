@@ -42,7 +42,7 @@
         border-radius: 4px;
 
         &:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--color-secondary-btn-background-hover);
             color: var(--color-text-primary);
         }
     }
@@ -85,6 +85,27 @@
         color: var(--color-warning, #f5a623);
         flex-shrink: 0;
         margin-top: 1px;
+    }
+
+    .warning-item-arrow {
+        color: var(--color-text-secondary);
+        flex-shrink: 0;
+        margin-top: 1px;
+        margin-left: auto;
+        transition: color 0.15s ease;
+    }
+
+    &--clickable {
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+
+        &:hover {
+            background: var(--color-input-background-hover, rgba(255, 255, 255, 0.06));
+
+            .warning-item-arrow {
+                color: var(--color-text-primary);
+            }
+        }
     }
 }
 

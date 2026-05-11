@@ -1,5 +1,4 @@
 from copy import deepcopy
-from dataclasses import dataclass
 
 from tables.import_export.enums import EntityType, NodeType
 from tables.import_export.strategies.graph import GraphStrategy
@@ -13,6 +12,7 @@ from tables.graph_versioning.constants import (
     _DEPENDENCY_MODELS,
     _GRAPH_RELATION_NAMES,
 )
+from tables.graph_versioning.handlers import HANDLER_REGISTRY, _MissingSets
 from tables.models import (
     Graph,
     ConditionalEdge,
@@ -23,17 +23,7 @@ from tables.models import (
 )
 
 
-@dataclass
-class _MissingSets:
-    """Dataclass that holds all missing deps"""
-
-    crews: set
-    subgraphs: set
-    llm_configs: set
-    webhooks: set
-
-
-class GraphVersioningStrategy:
+class GraphVersioningManager:
     """
     Reuses GraphStrategy's serialization to produce a graph-only snapshot
     for versioning purposes. No dependency tree traversal.
@@ -107,96 +97,15 @@ class GraphVersioningStrategy:
         warnings: list[dict] = []
 
         for node in nodes:
-            node_type = node.get("node_type")
-            node_id = node.get("id")
-            node_name = node.get("node_name") or node_type
-
-            if node_type == NodeType.CREW_NODE:
-                if node.get("crew") in missing_sets.crews:
-                    warnings.append(
-                        {
-                            "type": "fk_nulled",
-                            "node_name": node_name,
-                            "node_type": node_type,
-                            "node_id": node_id,
-                            "reason": f"Referenced Crew #{node.get('crew')} no longer exists.",
-                        }
-                    )
-
-            elif node_type == NodeType.SUBGRAPH_NODE:
-                if node.get("subgraph") in missing_sets.subgraphs:
-                    warnings.append(
-                        {
-                            "type": "fk_nulled",
-                            "node_name": node_name,
-                            "node_type": node_type,
-                            "node_id": node_id,
-                            "reason": f"Referenced subgraph #{node.get('subgraph')} no longer exists.",
-                        }
-                    )
-
-            elif node_type == NodeType.LLM_NODE:
-                if node.get("llm_config") in missing_sets.llm_configs:
-                    skipped_node_ids.add(node_id)
-                    warnings.append(
-                        {
-                            "type": "node_skipped",
-                            "node_name": node_name,
-                            "node_type": node_type,
-                            "node_id": node_id,
-                            "reason": f"Referenced LLMConfig #{node.get('llm_config')} no longer exists.",
-                        }
-                    )
-                    continue
-
-            elif node_type == NodeType.CODE_AGENT_NODE:
-                missing_id = node.get("llm_config")
-                if missing_id in missing_sets.llm_configs:
-                    node["llm_config"] = None
-                    warnings.append(
-                        {
-                            "type": "fk_nulled",
-                            "node_name": node_name,
-                            "node_type": node_type,
-                            "node_id": node_id,
-                            "field": "llm_config",
-                            "missing_id": missing_id,
-                            "reason": f"Referenced LLMConfig #{missing_id} no longer exists.",
-                        }
-                    )
-
-            elif node_type == NodeType.WEBHOOK_TRIGGER_NODE:
-                missing_id = node.get("webhook_trigger")
-                if missing_id in missing_sets.webhooks:
-                    node["webhook_trigger"] = None
-                    warnings.append(
-                        {
-                            "type": "fk_nulled",
-                            "node_name": node_name,
-                            "node_type": node_type,
-                            "node_id": node_id,
-                            "field": "webhook_trigger",
-                            "missing_id": missing_id,
-                            "reason": f"Referenced Webhook Trigger #{missing_id} no longer exists.",
-                        }
-                    )
-
-            elif node_type == NodeType.TELEGRAM_TRIGGER_NODE:
-                missing_id = node.get("webhook_trigger")
-                if missing_id in missing_sets.webhooks:
-                    node["webhook_trigger"] = None
-                    warnings.append(
-                        {
-                            "type": "fk_nulled",
-                            "node_name": node_name,
-                            "node_type": node_type,
-                            "node_id": node_id,
-                            "field": "webhook_trigger",
-                            "missing_id": missing_id,
-                            "reason": f"Referenced Webhook Trigger #{missing_id} no longer exists.",
-                        }
-                    )
-
+            handler = HANDLER_REGISTRY.get(node.get("node_type"))
+            if handler is not None:
+                missing_id = handler.find_missing_id(node, missing_sets)
+                if missing_id is not None:
+                    should_skip, warning = handler.handle(node, missing_id)
+                    warnings.append(warning)
+                    if should_skip:
+                        skipped_node_ids.add(node.get("id"))
+                        continue
             kept_nodes.append(node)
 
         return kept_nodes, skipped_node_ids, warnings

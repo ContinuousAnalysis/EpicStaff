@@ -78,7 +78,7 @@
     }
 
     &--selected {
-        border-color: #685fff;
+        border-color: var(--accent-color);
         background-color: rgba(104, 95, 255, 0.08);
     }
 }
