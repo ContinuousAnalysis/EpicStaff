@@ -673,6 +673,7 @@ class ClassificationConditionGroup(BaseGraphEntity, models.Model):
     field_expressions = models.JSONField(default=dict, blank=True)
     field_manipulations = models.JSONField(default=dict, blank=True)
     route_code = models.CharField(max_length=128, null=True, default=None, blank=True)
+    section = models.CharField(max_length=128, null=True, default=None, blank=True)
 
     class Meta:
         ordering = ["order"]
