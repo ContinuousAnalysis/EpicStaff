@@ -18,6 +18,7 @@ import { GetMeResponse, GetOrganizationResponse } from '@shared/models';
 import { finalize, forkJoin } from 'rxjs';
 
 import { AuthService } from '../../../../../services/auth/auth.service';
+import { ToastService } from '../../../../../services/notifications';
 import { CreateOrganizationDialogComponent } from '../../../components/create-organization-dialog/create-organization-dialog.component';
 import { OrgAvatarComponent } from '../../../components/org-avatar/org-avatar.component';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
@@ -53,18 +54,19 @@ export class OrganizationsTabComponent implements OnInit {
     private confirmation = inject(ConfirmationDialogService);
     private organizationStorage = inject(OrganizationsStorageService);
     private authService = inject(AuthService);
+    private toast = inject(ToastService);
 
     readonly searchTerm = signal('');
     readonly isLoading = signal(true);
     readonly currentUser = signal<GetMeResponse | null>(null);
 
     readonly columns: AppTableColumnDef[] = [
-        { key: 'organization', label: 'Organization', width: '1fr' },
-        { key: 'admin', label: 'Admin', width: '1fr' },
-        { key: 'members', label: 'Members', width: '120px' },
-        { key: 'created', label: 'Created', width: '160px' },
-        { key: 'status', label: 'Status', width: '160px', filterItems: STATUS_ITEMS },
-        { key: 'actions', label: 'Actions', width: '120px', align: 'center' },
+        { key: 'organization', label: 'Organization', width: '2fr' },
+        { key: 'admin', label: 'Admin', width: '2fr' },
+        { key: 'members', label: 'Members', width: '1fr' },
+        { key: 'created', label: 'Created', width: '1.5fr' },
+        { key: 'status', label: 'Status', width: '1.5fr', filterItems: STATUS_ITEMS },
+        { key: 'actions', label: 'Actions', width: '1fr', align: 'center' },
     ];
 
     readonly organizations = this.organizationStorage.organizations;
@@ -97,6 +99,17 @@ export class OrganizationsTabComponent implements OnInit {
         });
     }
 
+    onEditOrganization(row: TableRow): void {
+        const org = this.organizations().find((o) => o.id === row['id']);
+        if (!org) return;
+        this.dialog.open(CreateOrganizationDialogComponent, {
+            width: 'calc(100vw - 2rem)',
+            height: 'calc(100vh - 2rem)',
+            disableClose: true,
+            data: org,
+        });
+    }
+
     onDeactivateOrganization(row: TableRow): void {
         const id = row['id'] as number;
         this.confirmation
@@ -114,7 +127,10 @@ export class OrganizationsTabComponent implements OnInit {
                 this.organizationStorage
                     .deactivateOrganization(id)
                     .pipe(takeUntilDestroyed(this.destroyRef))
-                    .subscribe();
+                    .subscribe({
+                        next: () => this.toast.success('Organization deactivated successfully'),
+                        error: (e) => this.toast.error(e.error?.message),
+                    });
             });
     }
 

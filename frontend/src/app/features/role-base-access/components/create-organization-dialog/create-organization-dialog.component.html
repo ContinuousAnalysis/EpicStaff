@@ -1,6 +1,6 @@
 <div class="dialog">
     <div class="header">
-        <span class="title"> Create New Organization </span>
+        <span class="title">{{ isEditMode ? 'Edit Organization' : 'Create New Organization' }}</span>
 
         <div class="actions">
             <app-button
@@ -12,10 +12,10 @@
 
             <app-button
                 type="primary"
-                (click)="onCreate()"
-                [disabled]="isCreatingOrganization()"
+                (click)="onSubmit()"
+                [disabled]="isSubmitting()"
             >
-                Create
+                {{ isEditMode ? 'Save' : 'Create' }}
             </app-button>
         </div>
     </div>

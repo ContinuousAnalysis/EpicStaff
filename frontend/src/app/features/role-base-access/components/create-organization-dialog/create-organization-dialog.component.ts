@@ -1,9 +1,9 @@
-import { DialogRef } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, DestroyRef, Inject, inject, Optional, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonComponent, CustomInputComponent, TableRow, ValidationErrorsComponent } from '@shared/components';
-import { CreateOrganizationRequest } from '@shared/models';
+import { CreateOrganizationRequest, GetOrganizationResponse } from '@shared/models';
 import { finalize } from 'rxjs';
 
 import { ToastService } from '../../../../services/notifications';
@@ -22,13 +22,24 @@ export class CreateOrganizationDialogComponent {
     private dialogRef = inject(DialogRef);
     private organizationStorage = inject(OrganizationsStorageService);
 
+    readonly isEditMode: boolean;
+    private readonly organizationId: number | null;
+
     orgNameControl = new FormControl('', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]);
 
     // usersTableData = signal<TableRow[]>([]);
     searchTerm = signal('');
     // isUsersLoading = signal(true);
-    isCreatingOrganization = signal(false);
+    isSubmitting = signal(false);
     readonly selectedUsers = signal<TableRow[]>([]);
+
+    constructor(@Optional() @Inject(DIALOG_DATA) data?: GetOrganizationResponse) {
+        this.isEditMode = !!data;
+        this.organizationId = data?.id ?? null;
+        if (data) {
+            this.orgNameControl.setValue(data.name);
+        }
+    }
 
     // filteredUsers = computed(() => {
     //     const term = this.searchTerm().toLowerCase().trim();
@@ -48,27 +59,32 @@ export class CreateOrganizationDialogComponent {
         this.dialogRef.close();
     }
 
-    onCreate(): void {
+    onSubmit(): void {
         if (this.orgNameControl.invalid) {
             this.orgNameControl.markAsTouched();
             return;
         }
 
-        this.isCreatingOrganization.set(true);
+        this.isSubmitting.set(true);
 
         const request: CreateOrganizationRequest = {
             name: this.orgNameControl.value!,
         };
 
-        this.organizationStorage
-            .createOrganization(request)
+        const action$ = this.isEditMode
+            ? this.organizationStorage.updateOrganization(this.organizationId!, request)
+            : this.organizationStorage.createOrganization(request);
+
+        action$
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
-                finalize(() => this.isCreatingOrganization.set(false))
+                finalize(() => this.isSubmitting.set(false))
             )
             .subscribe({
                 next: () => {
-                    this.toast.success('Organization created successfully.');
+                    this.toast.success(
+                        this.isEditMode ? 'Organization updated successfully.' : 'Organization created successfully.'
+                    );
                     this.dialogRef.close(true);
                 },
                 error: (err) => {
