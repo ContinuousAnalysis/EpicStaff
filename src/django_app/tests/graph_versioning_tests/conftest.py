@@ -83,3 +83,38 @@ def full_missing_sets():
         llm_configs={_LLM_CONFIG_ID},
         webhooks={_WEBHOOK_TRIGGER_ID},
     )
+
+
+@pytest.fixture
+def manager():
+    from tables.graph_versioning.manager import GraphVersioningManager
+
+    return GraphVersioningManager()
+
+
+@pytest.fixture
+def start_node_dict():
+    from tables.import_export.enums import NodeType
+
+    return {
+        "id": 100,
+        "node_type": NodeType.START_NODE,
+        "node_name": "start",
+    }
+
+
+@pytest.fixture
+def make_decision_table_node():
+    from tables.import_export.enums import NodeType
+
+    def _make(node_id=200, default_next=None, next_error=None, condition_groups=None):
+        return {
+            "id": node_id,
+            "node_type": NodeType.DECISION_TABLE_NODE,
+            "node_name": "DT Node",
+            "default_next_node_id": default_next,
+            "next_error_node_id": next_error,
+            "condition_groups": condition_groups or [],
+        }
+
+    return _make
