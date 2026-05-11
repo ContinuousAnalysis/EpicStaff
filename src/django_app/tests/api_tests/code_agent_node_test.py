@@ -105,12 +105,12 @@ class TestCodeAgentNodeModel:
 
 @pytest.mark.django_db
 class TestCodeAgentNodeAPI:
-    def test_list_empty(self, api_client):
+    def test_list_empty(self, auth_client):
         url = reverse("codeagentnode-list")
-        response = api_client.get(url)
+        response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
 
-    def test_create(self, api_client, graph, llm_config_for_code_agent):
+    def test_create(self, auth_client, graph, llm_config_for_code_agent):
         url = reverse("codeagentnode-list")
         data = {
             "graph": graph.id,
@@ -124,22 +124,22 @@ class TestCodeAgentNodeAPI:
             "input_map": {"prompt": "vars.msg"},
             "output_variable_path": "result",
         }
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
         assert response.status_code == status.HTTP_201_CREATED, response.content
         assert response.data["node_name"] == "api_create_test"
         assert response.data["agent_mode"] == "plan"
         assert response.data["libraries"] == ["httpx"]
 
-    def test_retrieve(self, api_client, code_agent_node):
+    def test_retrieve(self, auth_client, code_agent_node):
         url = reverse("codeagentnode-detail", args=[code_agent_node.pk])
-        response = api_client.get(url)
+        response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert response.data["node_name"] == "test_code_agent"
         assert response.data["system_prompt"] == "You are a helpful coding assistant."
 
-    def test_update(self, api_client, code_agent_node):
+    def test_update(self, auth_client, code_agent_node):
         url = reverse("codeagentnode-detail", args=[code_agent_node.pk])
-        response = api_client.patch(
+        response = auth_client.patch(
             url,
             {"agent_mode": "plan", "max_wait_s": 900},
             format="json",
@@ -149,15 +149,15 @@ class TestCodeAgentNodeAPI:
         assert code_agent_node.agent_mode == "plan"
         assert code_agent_node.max_wait_s == 900
 
-    def test_delete(self, api_client, code_agent_node):
+    def test_delete(self, auth_client, code_agent_node):
         url = reverse("codeagentnode-detail", args=[code_agent_node.pk])
-        response = api_client.delete(url)
+        response = auth_client.delete(url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert CodeAgentNode.objects.filter(pk=code_agent_node.pk).count() == 0
 
-    def test_in_graph_serializer(self, api_client, code_agent_node):
+    def test_in_graph_serializer(self, auth_client, code_agent_node):
         url = reverse("graphs-detail", args=[code_agent_node.graph.id])
-        response = api_client.get(url)
+        response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         ca_list = response.data.get("code_agent_node_list", [])
         assert len(ca_list) == 1
