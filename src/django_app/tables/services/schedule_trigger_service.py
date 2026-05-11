@@ -1,4 +1,5 @@
-from datetime import timedelta
+import zoneinfo
+from datetime import datetime, timedelta, timezone as _tz
 from typing import TYPE_CHECKING
 
 from django.db import transaction
@@ -6,8 +7,9 @@ from django.db.models import F
 from django.utils import timezone
 from loguru import logger
 
+from src.shared.models import ScheduleTriggerNodePayload
+from src.shared.schedule.trigger_builder import build_trigger
 from tables.models.graph_models import ScheduleTriggerNode
-from tables.services.next_run_calculator import compute_next_run_date_time
 from tables.services.schedule_condition_strategies import get_end_condition_strategy
 from tables.validators.schedule_trigger_validator import ScheduleTriggerValidator
 from utils.singleton_meta import SingletonMeta
@@ -30,7 +32,7 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
 
     def create_node(self, validated_data: dict) -> ScheduleTriggerNode:
         node = ScheduleTriggerNode.objects.create(**validated_data)
-        next_run = compute_next_run_date_time(node)
+        next_run = self._compute_next_run_date_time(node)
         if next_run is not None:
             ScheduleTriggerNode.objects.filter(pk=node.pk).update(
                 next_run_date_time=next_run
@@ -74,7 +76,7 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        instance.next_run_date_time = compute_next_run_date_time(instance)
+        instance.next_run_date_time = self._compute_next_run_date_time(instance)
         instance.save()
         return instance
 
@@ -126,7 +128,7 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
                 )
                 return
 
-            next_run = compute_next_run_date_time(
+            next_run = self._compute_next_run_date_time(
                 node, after=now + timedelta(microseconds=1)
             )
             ScheduleTriggerNode.objects.filter(pk=node.pk).update(
@@ -175,3 +177,39 @@ class ScheduleTriggerService(metaclass=SingletonMeta):
         node.next_run_date_time = None
         node.save(update_fields=["is_active", "next_run_date_time", "updated_at"])
         logger.info(f"[ScheduleTriggerService] Node {node.id}: {reason}, deactivated.")
+
+    @staticmethod
+    def _compute_next_run_date_time(
+        node: ScheduleTriggerNode,
+        after: datetime | None = None,
+    ) -> datetime | None:
+        """Return the next fire time as a UTC tz-aware datetime, or None.
+
+        Single source of truth for `next_run_date_time`. Reads the node's
+        *current in-memory state*, so callers must apply pending changes
+        BEFORE calling this.
+
+        Returns None when:
+          - the node is not active, or schedule is not configured;
+          - run quota is exhausted (current_runs >= max_runs);
+          - APScheduler reports no future fire (end_date passed, once-mode in past).
+        """
+        if not node.is_active or not node.run_mode or not node.start_date_time:
+            return None
+
+        if node.max_runs is not None and node.current_runs >= node.max_runs:
+            return None
+
+        try:
+            tz = zoneinfo.ZoneInfo(node.timezone or "UTC")
+        except zoneinfo.ZoneInfoNotFoundError:
+            tz = zoneinfo.ZoneInfo("UTC")
+
+        payload = ScheduleTriggerNodePayload.model_validate(node)
+        trigger = build_trigger(payload, tz)
+        if trigger is None:
+            return None
+
+        after_utc = (after or datetime.now(_tz.utc)).astimezone(_tz.utc)
+        nxt = trigger.get_next_fire_time(None, after_utc)
+        return nxt.astimezone(_tz.utc) if nxt else None

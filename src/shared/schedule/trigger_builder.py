@@ -2,7 +2,7 @@
 
 Used by:
   - manager.services.schedule_service - to register APScheduler jobs.
-  - django_app.tables.services.next_run_calculator - to compute next_run_date_time.
+  - django_app.tables.services.schedule_trigger_service - to compute next_run_date_time.
 
 Both sides build the same trigger from the same config, so the time Django
 records as "next_run" matches the time Manager will actually fire.
