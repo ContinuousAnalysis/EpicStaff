@@ -271,7 +271,7 @@
         }
     },
     "dependencies": [
-      "crewai==0.86.0", "langchain", "open-interpreter"
+      "crewai==0.86.0", "langchain"
     ]
   }
 ]
