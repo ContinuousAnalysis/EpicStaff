@@ -3515,7 +3515,7 @@
                     stroke="#685FFF"
                 />
                 <path
-                    d="M10.5 13.7989C10 13.3355 9 11.8758 9 9.7442C9 7.6126 9.90909 6.07567 10.3636 5.57367C10.9545 4.76273 12.7636 2.97866 15.2727 2.32991C17.7818 1.68116 
+                    d="M10.5 13.7989C10 13.3355 9 11.8758 9 9.7442C9 7.6126 9.90909 6.07567 10.3636 5.57367C10.9545 4.76273 12.7636 2.97866 15.2727 2.32991C17.7818 1.68116
 20.1364 2.13683 21 2.44576C23 2.98638 27 5.17977 27 9.62834C27 10.4779 26.7273 12.5014 25.6364 13.7989V15.4208L23.1818 16V13.7989C23.8636 13.181 25.2 11.4819 25.0909 9.62834C25.1364 8.31539 24.3818 5.38829 21 4.18347C20.5455 3.99039 19.3636 3.60423 18.2727 3.60423C17.5909 3.60423 16.0364 3.69691 15.2727 4.06762C14.5 4.33793 12.7636 5.17977 12 6.38459C11.5909 6.92522 10.8 8.35404 10.9091 9.7442C10.8636 10.4393 11.1818 12.2234 12.8182 13.7989V16L10.5 15.4208V13.7989Z"
                     fill="#685FFF"
                 />
@@ -3854,7 +3854,14 @@
         </svg>
 
         <app-root></app-root>
-        <!-- EpicChat Widget (CDN) -->
-        <script src="https://epicstaffchat.pages.dev/embed.js"></script>
+        <!-- EpicChat Widget (CDN).
+             Choose ONE of the two <script> tags below by commenting out the other:
+               - prod (pinned): predictable, won't break on widget releases.
+                 To upgrade, bump v2-0-2 → v2-0-3 after checking the new version.
+                 Versions: https://gitlab.hysdev.com/sheetsui/epicstaffchat/-/tags
+               - dev (rolling): always the latest widget master build. Use for dev
+                 to catch regressions early. -->
+        <script src="https://v2-0-3.epicstaffchat.pages.dev/embed.js"></script>
+        <!-- <script src="https://epicstaffchat.pages.dev/embed.js"></script> -->
     </body>
 </html>
