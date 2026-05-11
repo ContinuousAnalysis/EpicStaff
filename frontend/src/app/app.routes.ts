@@ -5,6 +5,7 @@ import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { onboardingGuard } from './core/guards/onboarding.guard';
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
+import { currentUserResolver } from './core/resolvers/current-user.resolver';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { RoutedAuthShellComponent } from './layouts/routed-auth-shell/routed-auth-shell.component';
 import { LastVisitedTabService } from './services/last-visited-tab.service';
@@ -54,6 +55,7 @@ export const routes: Routes = [
             {
                 path: '',
                 component: MainLayoutComponent,
+                resolve: { currentUser: currentUserResolver },
                 children: [
                     {
                         path: '',
@@ -258,6 +260,13 @@ export const routes: Routes = [
                                 loadComponent: () =>
                                     import('./features/role-base-access/pages/overview-page/organizations-tab/organizations-tab.component').then(
                                         (m) => m.OrganizationsTabComponent
+                                    ),
+                            },
+                            {
+                                path: 'users',
+                                loadComponent: () =>
+                                    import('./features/role-base-access/pages/overview-page/users-tab/users-tab.component').then(
+                                        (m) => m.UsersTabComponent
                                     ),
                             },
                         ],

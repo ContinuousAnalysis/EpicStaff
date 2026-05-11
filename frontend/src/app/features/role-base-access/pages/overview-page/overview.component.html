@@ -31,6 +31,20 @@
                 />
                 Organizations
             </a>
+            @if (canManageUsers()) {
+                <span class="tab-divider">/</span>
+                <a
+                    routerLink="users"
+                    routerLinkActive="active"
+                    class="overview-tab"
+                >
+                    <app-svg-icon
+                        size="18px"
+                        icon="profile"
+                    />
+                    Users
+                </a>
+            }
         </nav>
     </div>
     <div class="overview-content">

@@ -1,0 +1,141 @@
+<div class="toolbar">
+    <app-search
+        placeholder="Search by ID..."
+        [width]="'200px'"
+        [(searchTerm)]="searchTerm"
+    />
+    <span class="count-label">{{ filteredUsers().length }} of {{ usersData().length }} users</span>
+    <div class="toolbar-actions">
+        <app-button
+            type="primary"
+            leftIcon="plus"
+            (click)="onCreateUser()"
+            >Create User</app-button
+        >
+        <button
+            class="settings-btn"
+            type="button"
+        >
+            <app-svg-icon
+                icon="settings"
+                size="18px"
+            />
+        </button>
+    </div>
+</div>
+
+@if (isLoading()) {
+    <app-loading-spinner size="sm" />
+} @else {
+    <app-table
+        [columns]="columns"
+        [data]="filteredUsers()"
+        [selectable]="true"
+        rowId="id"
+    >
+        <!-- USER -->
+        <ng-template
+            appTableCell="user"
+            let-row
+        >
+            <div class="user-cell">
+                <app-user-avatar [name]="row['display_name'] || row['email']" />
+                <div class="user-info">
+                    <span class="user-name">{{ row['display_name'] }}</span>
+                    <span class="user-email">{{ row['email'] }}</span>
+                </div>
+            </div>
+        </ng-template>
+
+        <!-- ROLE -->
+        <ng-template
+            appTableCell="roles"
+            let-row
+        >
+            <span class="role-text">{{ row['roles'] }}</span>
+        </ng-template>
+
+        <!-- ORGANIZATION -->
+        <ng-template
+            appTableCell="organization"
+            let-row
+        >
+            <div class="org-badges">
+                @for (org of row['organization']; track org.id) {
+                    <app-org-avatar
+                        [name]="org.name"
+                        [title]="org.name"
+                    />
+                }
+                @if (!row['organization'].length) {
+                    <span class="empty-value">-</span>
+                }
+            </div>
+        </ng-template>
+
+        <!-- ACTIVE -->
+        <ng-template
+            appTableCell="lastActive"
+            let-row
+        >
+            @if (row['lastActive']) {
+                <div class="last-active">
+                    <span class="date">{{ formatDate(row['lastActive']) }}</span>
+                    <span class="relative">{{ getRelativeTime(row['lastActive']) }}</span>
+                </div>
+            } @else {
+                <span class="empty-value">-</span>
+            }
+        </ng-template>
+
+        <!-- STATUS -->
+        <ng-template
+            appTableCell="status"
+            let-row
+        >
+            <app-status-badge
+                [modifier]="$any(row['status'])"
+                [label]="statusLabel($any(row['status']))"
+            />
+        </ng-template>
+
+        <!-- ACTIONS -->
+        <ng-template
+            appTableCell="actions"
+            let-row
+        >
+            <div class="actions-cell">
+                <button
+                    class="action-btn"
+                    type="button"
+                    title="View"
+                >
+                    <app-svg-icon
+                        icon="eye"
+                        size="16px"
+                    />
+                </button>
+                <button
+                    class="action-btn"
+                    type="button"
+                    title="Edit"
+                >
+                    <app-svg-icon
+                        icon="edit"
+                        size="16px"
+                    />
+                </button>
+                <button
+                    class="action-btn action-btn--danger"
+                    type="button"
+                    title="Delete"
+                >
+                    <app-svg-icon
+                        icon="trash"
+                        size="16px"
+                    />
+                </button>
+            </div>
+        </ng-template>
+    </app-table>
+}

@@ -1,0 +1,75 @@
+<form
+    [formGroup]="form"
+    class="form"
+>
+    <div class="primary">
+        <div class="control">
+            <label class="label">
+                Full Name <span class="required">*</span>
+                <app-help-tooltip
+                    [text]="''"
+                    position="right"
+                ></app-help-tooltip>
+            </label>
+
+            <app-custom-input
+                placeholder="Enter user name..."
+                formControlName="full_name"
+            />
+        </div>
+        <app-validation-errors [control]="form.get('full_name')!" />
+        <div class="control">
+            <label class="label">
+                Email <span class="required">*</span>
+                <app-help-tooltip
+                    [text]="''"
+                    position="right"
+                ></app-help-tooltip>
+            </label>
+
+            <app-custom-input
+                placeholder="Enter user email..."
+                formControlName="email"
+            />
+        </div>
+        <app-validation-errors [control]="form.get('email')!" />
+        <div class="control">
+            <label class="label">
+                Password <span class="required">*</span>
+                <app-help-tooltip
+                    [text]="''"
+                    position="right"
+                ></app-help-tooltip>
+            </label>
+
+            <app-custom-input
+                type="password"
+                placeholder="Enter user password..."
+                formControlName="password"
+            />
+        </div>
+        <app-validation-errors [control]="form.get('password')!" />
+        <app-password-strength [password]="password" />
+        <div class="control top">
+            <label class="label">
+                Picture
+                <app-help-tooltip
+                    [text]="''"
+                    position="right"
+                ></app-help-tooltip>
+            </label>
+            <app-avatar-upload (imageChange)="form.patchValue({ picture: $event })" />
+        </div>
+    </div>
+    <div class="secondary">
+        <label class="label">
+            Make Superadmin
+            <app-help-tooltip
+                [text]="''"
+                position="right"
+            ></app-help-tooltip>
+        </label>
+
+        <app-toggle-switch formControlName="superadmin" />
+    </div>
+</form>

@@ -1,0 +1,46 @@
+<div class="dialog">
+    <div class="header">
+        <span class="title"> Create New User </span>
+
+        <div class="stepper">
+            <app-stepper
+                [steps]="stepLabels()"
+                [currentStep]="currentStepIndex()"
+            />
+        </div>
+
+        <div class="actions">
+            <app-button
+                type="outline-primary"
+                [leftIcon]="'arrow-left'"
+                [disabled]="!this.currentStepIndex()"
+                (click)="prevStep()"
+            >
+                Back
+            </app-button>
+            <app-button
+                type="primary"
+                [rightIcon]="currentStepIndex() < 1 ? 'arrow-right' : ''"
+                [disabled]="nextDisabled()"
+                (click)="nextStep()"
+            >
+                {{ nextText() }}
+            </app-button>
+            <app-svg-icon
+                icon="x"
+                class="close"
+                size="1.5rem"
+                (click)="onClose()"
+            />
+        </div>
+    </div>
+
+    @switch (currentStep().id) {
+        @case (CreateUserStep.USER_DETAILS) {
+            <app-step-user-details />
+        }
+        @case (CreateUserStep.ASSIGN_TO_ORG) {
+            <app-step-assign-to-org [userId]="createdUserId()!" />
+        }
+    }
+</div>

@@ -6,10 +6,13 @@
         (dragleave)="onDragLeave($event)"
         (drop)="onDrop($event)"
     >
-        <h3 class="file-uploader__label">Drag and drop files here or click to upload</h3>
+        <p class="file-uploader__label">{{ label() }}</p>
+        @if (hint()) {
+            <p class="file-uploader__hint">{{ hint() }}</p>
+        }
         <label
-            (click)="fileInput.click()"
             class="file-uploader__button"
+            (click)="fileInput.click()"
         >
             <app-svg-icon
                 icon="upload"
@@ -19,7 +22,8 @@
         <input
             #fileInput
             type="file"
-            multiple
+            [accept]="accept()"
+            [multiple]="multiple()"
             style="display: none"
             (change)="onFileSelect($event)"
         />

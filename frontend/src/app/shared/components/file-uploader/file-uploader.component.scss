@@ -13,7 +13,6 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        margin: 0 2.5rem;
         padding: 0 2.5rem 2.5rem;
         border-radius: 15px;
         border: 1px dashed var(--color-input-border);
@@ -21,6 +20,12 @@
         &--active {
             background-color: var(--color-drag-drop-active);
         }
+    }
+
+    &__hint {
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--text-secondary-60);
     }
 
     &__button {
@@ -37,6 +42,21 @@
 
         &:hover {
             background-color: var(--color-drag-drop-active);
+        }
+    }
+}
+
+:host(.mod-sm) {
+    .file-uploader {
+        &__label {
+            margin-top: 16px;
+            font-size: 14px;
+            padding: 16px 0;
+        }
+
+        &__button {
+            height: 80px;
+            width: 80px;
         }
     }
 }

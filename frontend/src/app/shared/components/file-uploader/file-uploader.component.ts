@@ -1,17 +1,26 @@
-import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, input, output, signal } from '@angular/core';
 
-import { AppSvgIconComponent } from '../../../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 
 @Component({
     selector: 'app-file-uploader',
     templateUrl: './file-uploader.component.html',
     styleUrls: ['./file-uploader.component.scss'],
     imports: [AppSvgIconComponent],
-
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileUploaderComponent {
-    isDragging = signal<boolean>(false);
+    accept = input('*');
+    multiple = input(true);
+    label = input('Drag and drop files here or click to upload');
+    hint = input('');
+    mod = input<'mb' | 'sm'>('mb');
+
+    @HostBinding('class') get hostClass() {
+        return `mod-${this.mod()}`;
+    }
+
+    isDragging = signal(false);
 
     filesUploaded = output<FileList>();
 

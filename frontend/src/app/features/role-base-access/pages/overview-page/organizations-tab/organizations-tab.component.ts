@@ -14,10 +14,11 @@ import {
     SelectItem,
     TableRow,
 } from '@shared/components';
-import { GetMeResponse, GetOrganizationResponse } from '@shared/models';
-import { finalize, forkJoin } from 'rxjs';
+import { GetOrganizationResponse } from '@shared/models';
+import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../../services/auth/auth.service';
+import { CurrentUserService } from '../../../../../services/auth/current-user.service';
 import { ToastService } from '../../../../../services/notifications';
 import { CreateOrganizationDialogComponent } from '../../../components/create-organization-dialog/create-organization-dialog.component';
 import { OrgAvatarComponent } from '../../../components/org-avatar/org-avatar.component';
@@ -54,11 +55,11 @@ export class OrganizationsTabComponent implements OnInit {
     private confirmation = inject(ConfirmationDialogService);
     private organizationStorage = inject(OrganizationsStorageService);
     private authService = inject(AuthService);
+    private currentUserService = inject(CurrentUserService);
     private toast = inject(ToastService);
 
     readonly searchTerm = signal('');
     readonly isLoading = signal(true);
-    readonly currentUser = signal<GetMeResponse | null>(null);
 
     readonly columns: AppTableColumnDef[] = [
         { key: 'organization', label: 'Organization', width: '2fr' },
@@ -70,6 +71,7 @@ export class OrganizationsTabComponent implements OnInit {
     ];
 
     readonly organizations = this.organizationStorage.organizations;
+    readonly currentUser = this.currentUserService.currentUserSignal;
 
     readonly tableData = computed<TableRow[]>(() => this.organizations().map((org) => this.orgToRow(org)));
 
@@ -81,14 +83,13 @@ export class OrganizationsTabComponent implements OnInit {
     });
 
     ngOnInit(): void {
-        forkJoin([this.organizationStorage.getOrganizations(), this.authService.getCurrentUser()])
+        this.organizationStorage
+            .getOrganizations()
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 finalize(() => this.isLoading.set(false))
             )
-            .subscribe({
-                next: ([, user]) => this.currentUser.set(user),
-            });
+            .subscribe();
     }
 
     onCreateOrganization(): void {

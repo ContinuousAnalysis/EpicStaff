@@ -1,0 +1,29 @@
+@if (selectedFile(); as file) {
+    <div class="filled">
+        <img
+            class="preview"
+            [src]="previewUrl()"
+            alt="Avatar preview"
+        />
+        <span class="name">{{ file.name }}</span>
+        <span class="size">{{ fileSizeLabel() }}</span>
+        <button
+            class="clear"
+            type="button"
+            (click)="onClear()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="14px"
+            />
+        </button>
+    </div>
+} @else {
+    <app-file-uploader
+        accept="image/jpeg,image/png"
+        [multiple]="false"
+        hint="JPG, PNG · Max file size 2 MB"
+        mod="sm"
+        (filesUploaded)="onFilesUploaded($event)"
+    />
+}

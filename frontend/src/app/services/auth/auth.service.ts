@@ -14,6 +14,7 @@ import {
 import { catchError, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { ConfigService } from '../config';
+import { CurrentUserService } from './current-user.service';
 
 interface TokenPair {
     access: string;
@@ -33,6 +34,7 @@ export class AuthService {
     private readonly http = inject(HttpClient);
     private readonly configService = inject(ConfigService);
     private readonly router = inject(Router);
+    private readonly currentUserService = inject(CurrentUserService);
 
     private readonly accessKey = 'auth.access';
     private readonly refreshKey = 'auth.refresh';
@@ -74,6 +76,7 @@ export class AuthService {
 
     logout(): Observable<void> {
         const refreshToken = this.getRefreshToken();
+        this.currentUserService.clearCurrentUser();
 
         if (!refreshToken) {
             this.removeTokensAndNavToLogin();
@@ -128,7 +131,9 @@ export class AuthService {
     }
 
     getCurrentUser(): Observable<GetMeResponse> {
-        return this.http.get<GetMeResponse>(`${this.baseUrl}me/`);
+        return this.http
+            .get<GetMeResponse>(`${this.baseUrl}me/`)
+            .pipe(tap((user) => this.currentUserService.setUser(user)));
     }
 
     removeTokensAndNavToLogin(): void {
