@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { EventEmitter } from '@angular/core';
 import { signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
     AbstractControl,
     ControlContainer,
@@ -13,10 +13,11 @@ import {
     ReactiveFormsModule,
 } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subscription } from 'rxjs';
+import { filter, Subscription } from 'rxjs';
 import { distinctUntilChanged, finalize } from 'rxjs/operators';
 
 import { GraphSessionService, GraphSessionStatus } from '../../../features/flows/services/flows-sessions.service';
+import { RunSessionSSEService } from '../../../pages/running-graph/services/graph-session-sse.service';
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToggleSwitchComponent } from '../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
@@ -416,12 +417,20 @@ export class InputMapComponent implements OnInit, OnChanges {
 
     private readonly pythonCodeRunService = inject(PythonCodeRunService);
     private readonly graphSessionService = inject(GraphSessionService);
+    private readonly runSessionSSEService = inject(RunSessionSSEService);
 
     constructor(
         private controlContainer: ControlContainer,
         private fb: FormBuilder,
         private sidePanelService: SidePanelService
-    ) {}
+    ) {
+        toObservable(this.runSessionSSEService.status)
+            .pipe(
+                filter((status) => status === GraphSessionStatus.ENDED),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe(() => this.hasSuccessfulSession.set(true));
+    }
 
     ngOnInit() {
         if (this.pairs.length === 0) {
