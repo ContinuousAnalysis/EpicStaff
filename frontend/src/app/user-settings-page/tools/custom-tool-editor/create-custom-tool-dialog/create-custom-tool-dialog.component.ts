@@ -26,7 +26,10 @@ import { JsonEditorComponent } from '../../../../shared/components/json-editor/j
 import { TextareaComponent } from '../../../../shared/components/textarea/textarea.component';
 import { CodeEditorComponent } from '../code-editor/code-editor.component';
 import { parseToolVariablesJson, serializeVariables, ToolVariable } from './components/parameters-table.config';
-import { ParametersTableViewComponent } from './components/parameters-table-view/parameters-table-view.component';
+import {
+    DrillStep,
+    ParametersTableViewComponent,
+} from './components/parameters-table-view/parameters-table-view.component';
 import { toCreatePayload } from './models/create-custom-tool-form.model';
 
 enum ActiveEditor {
@@ -124,6 +127,7 @@ export class CreateCustomToolDialogComponent {
     private readonly parametersTableView = viewChild(ParametersTableViewComponent);
 
     public readonly tableVariables = signal<ToolVariable[]>([]);
+    public readonly tableDrillStack = signal<DrillStep[]>([]);
 
     public readonly activeEditor = signal<ActiveEditor>(ActiveEditor.Python);
     public readonly pythonSectionExpanded = signal(false);
@@ -151,6 +155,16 @@ export class CreateCustomToolDialogComponent {
 
         const parsedDefault = parseToolVariablesJson(this.form.controls.variablesJson.value);
         this.tableVariables.set(parsedDefault.valid ? parsedDefault.variables : []);
+
+        // Route backdrop click and Escape through the dirty-check guard.
+        this.dialogRef.disableClose = true;
+        this.dialogRef.backdropClick.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.requestClose());
+        this.dialogRef.keydownEvents.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                this.requestClose();
+            }
+        });
     }
 
     public toggleEditor(target: ActiveEditor.Python | ActiveEditor.Json): void {
@@ -198,7 +212,6 @@ export class CreateCustomToolDialogComponent {
                     .confirm({
                         title: 'Invalid Code Detected',
                         message: 'The code contains errors and cannot be validated.',
-                        cautionTitle: 'Attention',
                         caution:
                             'If you switch to table mode now, your <strong>progress will be lost</strong> and the <strong>table will be empty</strong>.',
                         confirmText: 'Stay and Fix',
@@ -274,6 +287,13 @@ export class CreateCustomToolDialogComponent {
 
     public onVariablesChange(vars: ToolVariable[]): void {
         this.tableVariables.set(vars);
+        // Table-mode edits don't touch the JSON form control until save/toggle, so
+        // mark the form dirty here to make the unsaved-changes guard fire.
+        this.form.controls.variablesJson.markAsDirty();
+    }
+
+    public onDrillStackChange(stack: DrillStep[]): void {
+        this.tableDrillStack.set(stack);
     }
 
     public closeEditorPane(): void {
@@ -281,7 +301,37 @@ export class CreateCustomToolDialogComponent {
     }
 
     public close(): void {
-        this.dialogRef.close();
+        this.requestClose();
+    }
+
+    private requestClose(): void {
+        if (this.isSaving()) {
+            return;
+        }
+        if (!this.form.dirty) {
+            this.dialogRef.close();
+            return;
+        }
+
+        this.confirmDialog
+            .confirm({
+                title: 'Leave without saving?',
+                message: 'You have unsaved changes in this tool.',
+                cautionTitle: 'Attention',
+                caution: 'If you leave now, your <strong>changes will be lost</strong>.',
+                confirmText: 'Leave',
+                cancelText: 'Cancel',
+                type: 'warning',
+            })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((result) => {
+                // result === true   → "Leave" (confirm button) → close
+                // result === false  → "Cancel" (cancel button) → stay
+                // result === 'close' → user dismissed → stay
+                if (result === true) {
+                    this.dialogRef.close();
+                }
+            });
     }
 
     public makeCopy(): void {

@@ -41,11 +41,9 @@
 
     @if (data.caution) {
         <div class="caution-block">
-<<<<<<< HEAD
-            <span class="caution-title">{{ data.cautionTitle || 'Caution' }}</span>
-=======
-            <span class="caution-title">Caution</span>
->>>>>>> origin/main
+            @if (data.cautionTitle) {
+                <span class="caution-title">{{ data.cautionTitle }}</span>
+            }
             <p
                 class="caution-message"
                 [innerHTML]="data.caution"

@@ -160,7 +160,9 @@
                     @if (parametersTableMode()) {
                         <app-parameters-table-view
                             [variables]="tableVariables()"
+                            [initialDrillStack]="tableDrillStack()"
                             (variablesChange)="onVariablesChange($event)"
+                            (drillStackChange)="onDrillStackChange($event)"
                         />
                     } @else if (activeEditor() !== ActiveEditor.Json) {
                         <div

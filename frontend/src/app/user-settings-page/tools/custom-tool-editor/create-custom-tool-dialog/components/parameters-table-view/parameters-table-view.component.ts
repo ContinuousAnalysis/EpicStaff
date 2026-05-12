@@ -3,10 +3,12 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
+    effect,
     input,
     OnInit,
     output,
     signal,
+    untracked,
     viewChildren,
 } from '@angular/core';
 
@@ -22,7 +24,7 @@ import {
 import { VariableSectionComponent } from '../variable-section/variable-section.component';
 import { BreadcrumbItem, VariablesBreadcrumbComponent } from '../variables-breadcrumb/variables-breadcrumb.component';
 
-interface DrillStep {
+export interface DrillStep {
     sectionType: VariableInputType;
     rowIndex: number;
     label: string;
@@ -37,7 +39,9 @@ interface DrillStep {
 })
 export class ParametersTableViewComponent implements OnInit {
     variables = input.required<ToolVariable[]>();
+    initialDrillStack = input<DrillStep[]>([]);
     variablesChange = output<ToolVariable[]>();
+    drillStackChange = output<DrillStep[]>();
 
     readonly VARIABLE_SECTIONS = VARIABLE_SECTIONS;
 
@@ -124,7 +128,14 @@ export class ParametersTableViewComponent implements OnInit {
         this.userVariables.set(source.filter((v) => v.input_type === 'user_input'));
         this.agentVariables.set(source.filter((v) => v.input_type === 'agent_input'));
         this.mixedVariables.set(source.filter((v) => v.input_type === 'mixed'));
-        this.drillStack.set([]);
+        this.drillStack.set(this.coerceDrillStack(this.initialDrillStack()));
+    }
+
+    constructor() {
+        effect(() => {
+            const stack = this.drillStack();
+            untracked(() => this.drillStackChange.emit(stack));
+        });
     }
 
     getSectionInitialRows(type: VariableInputType): Record<string, unknown>[] {
@@ -179,6 +190,7 @@ export class ParametersTableViewComponent implements OnInit {
 
     onNavigate(event: { row: TableRow; rowIndex: number; sectionType: VariableInputType }): void {
         const label = String(event.row.data['name'] ?? 'Object');
+        const wasDrilling = this.isDrilling();
         this.drillStack.update((stack) => [
             ...stack,
             {
@@ -187,6 +199,11 @@ export class ParametersTableViewComponent implements OnInit {
                 label,
             },
         ]);
+        // Same <app-variable-section> instance is reused across drill levels; force the
+        // inner dynamic-table to resync from the new initialRows.
+        if (wasDrilling) {
+            this.parameterRowSyncRevision.update((n) => n + 1);
+        }
     }
 
     onCrumbClick(index: number): void {
@@ -196,6 +213,7 @@ export class ParametersTableViewComponent implements OnInit {
         }
 
         this.drillStack.update((stack) => stack.slice(0, index));
+        this.parameterRowSyncRevision.update((n) => n + 1);
     }
 
     onDrillRowsChange(rows: Record<string, unknown>[]): void {
@@ -240,6 +258,34 @@ export class ParametersTableViewComponent implements OnInit {
 
     private getSectionConfig(type: VariableInputType) {
         return VARIABLE_SECTIONS.find((section) => section.inputType === type) ?? null;
+    }
+
+    private coerceDrillStack(stack: DrillStep[]): DrillStep[] {
+        if (!stack || stack.length === 0) {
+            return [];
+        }
+
+        const sectionType = stack[0].sectionType;
+        let cursor: ToolVariable[] = this.getSectionVariables(sectionType);
+        const valid: DrillStep[] = [];
+
+        for (const step of stack) {
+            if (step.sectionType !== sectionType) {
+                break;
+            }
+            const target = cursor[step.rowIndex];
+            if (!target || target.type !== 'object') {
+                break;
+            }
+            valid.push({
+                sectionType,
+                rowIndex: step.rowIndex,
+                label: String(target.name ?? step.label ?? 'Object'),
+            });
+            cursor = Array.isArray(target.children) ? target.children : [];
+        }
+
+        return valid;
     }
 
     private getVariablesAtPath(sectionType: VariableInputType | null, path: number[]): ToolVariable[] {
