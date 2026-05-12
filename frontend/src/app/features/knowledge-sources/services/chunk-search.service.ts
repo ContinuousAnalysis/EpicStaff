@@ -114,10 +114,12 @@ export class ChunkSearchService {
                 // fetch chunks by matched ids
                 return this.naiveRagService.getChunksByIds(naiveRagId, documentId, preview_chunk_ids).pipe(
                     tap(({ chunks }) => {
+                        const occurrences = chunks.reduce((sum, c) => sum + this.countTextMatches(c.text, query), 0);
                         this.chunkSearchStateSignal.update((s) => ({
                             ...s,
                             loading: false,
                             searchedChunks: chunks,
+                            totalMatches: occurrences,
                         }));
                     }),
                     map(() => undefined)
@@ -161,10 +163,15 @@ export class ChunkSearchService {
 
                 return this.naiveRagService.getChunksByIds(naiveRagId, documentId, preview_chunk_ids).pipe(
                     tap(({ chunks }) => {
+                        const newOccurrences = chunks.reduce(
+                            (sum, c) => sum + this.countTextMatches(c.text, state.textQuery),
+                            0
+                        );
                         this.chunkSearchStateSignal.update((s) => ({
                             ...s,
                             loading: false,
                             searchedChunks: [...s.searchedChunks, ...chunks],
+                            totalMatches: s.totalMatches + newOccurrences,
                         }));
                     }),
                     map(() => undefined)
