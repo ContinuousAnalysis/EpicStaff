@@ -73,7 +73,7 @@ export class ChunkSearchBarComponent implements OnInit, OnChanges {
     }
 
     ngOnChanges(): void {
-        this.loadVisibleIds(this.getIdFilterText());
+        this.loadVisibleIds('');
     }
 
     onTextInput(value: string): void {
@@ -86,10 +86,8 @@ export class ChunkSearchBarComponent implements OnInit, OnChanges {
     }
 
     onIdInputBlur(): void {
-        // setTimeout(() => {
         this.dropdownOpen.set(false);
         this.idInputValue.set(this.selectedId() === 'all' ? 'All' : `ID ${this.selectedId()}`);
-        // }, 0);
     }
 
     onIdInputChange(value: string): void {
@@ -177,9 +175,5 @@ export class ChunkSearchBarComponent implements OnInit, OnChanges {
         if (moreIds.length) {
             this.visibleIds.update((ids) => [...ids, ...moreIds]);
         }
-    }
-
-    private getIdFilterText(): string {
-        return this.selectedId() === 'all' ? '' : String(this.selectedId());
     }
 }

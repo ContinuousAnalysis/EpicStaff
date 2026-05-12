@@ -19,6 +19,7 @@ import { FormsModule } from '@angular/forms';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 import { take } from 'rxjs';
 
+import { ToastService } from '../../../../../services/notifications';
 import { calcLimit } from '../../../helpers/calculate-chunks-fetch-limit.util';
 import { ChunkSearchState, DocumentChunkingState, NaiveRagDocumentChunk } from '../../../models/naive-rag-chunk.model';
 import { ChunkDeepLinkService } from '../../../services/chunk-deep-link.service';
@@ -63,6 +64,7 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
     private documentStorageService = inject(NaiveRagDocumentsStorageService);
     private chunkSearchService = inject(ChunkSearchService);
     private deepLinkService = inject(ChunkDeepLinkService);
+    private toastService = inject(ToastService);
     private destroyRef = inject(DestroyRef);
 
     private limit: number = 0;
@@ -132,14 +134,20 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
 
         effect(() => {
             const chunks = this.chunks();
-            if (!chunks.length) return;
-
             const params = this.deepLinkService.pending();
             if (!params) return;
 
             const targetChunkId = params.chunkId;
             const hasTarget = chunks.some((c) => c.chunkIndex === targetChunkId);
-            if (!hasTarget) return;
+
+            if (!hasTarget) {
+                if (this.chunkingState().status === 'chunks_ready') {
+                    this.toastService.error(`Deep link: chunk ${targetChunkId} not found`);
+                    this.deepLinkService.consume();
+                    this.deepLinkService.clearUrl();
+                }
+                return;
+            }
 
             this.ngZone.onStable.pipe(take(1)).subscribe(() => {
                 this.scrollToChunk(targetChunkId);
@@ -319,7 +327,7 @@ export class ChunkPreviewComponent implements OnChanges, AfterViewInit {
     private getSourceChunks(search: ChunkSearchState | null, state: DocumentChunkingState): NaiveRagDocumentChunk[] {
         if (!search || search.mode === 'none') return state.chunks;
         if (search.mode === 'id_only' || search.mode === 'id_and_text') return search.searchedChunks;
-        if (search.mode === 'text_only') return search.searchedChunks.length ? search.searchedChunks : state.chunks;
+        if (search.mode === 'text_only') return search.searchedChunks;
         return state.chunks;
     }
 
