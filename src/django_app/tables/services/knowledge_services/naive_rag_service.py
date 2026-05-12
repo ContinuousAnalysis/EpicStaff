@@ -1,7 +1,6 @@
 from typing import List, Dict, Any, Optional
 from django.db import transaction
 from loguru import logger
-from django.db.models import Q
 from tables.models.knowledge_models import (
     NaiveRagPreviewChunk,
     SourceCollection,
@@ -745,8 +744,8 @@ class NaiveRagService:
         """
         Search preview chunks of a document config by text query.
 
-        Splits the query into whitespace-separated tokens and returns
-        preview chunks whose text contains ALL tokens (case-insensitive).
+        Returns preview chunks whose text contains the query as a
+        case-insensitive substring (internal whitespace preserved).
 
         Returns:
             {
@@ -769,24 +768,19 @@ class NaiveRagService:
                 f"for NaiveRag {naive_rag_id}"
             )
 
-        tokens = [t for t in query.strip().split() if t]
-        if not tokens:
+        query = query.strip()
+        if not query:
             return {
                 "total_matches": 0,
                 "preview_chunk_ids": [],
             }
 
-        text_filter = Q()
-        for token in tokens:
-            text_filter &= Q(text__icontains=token)
-
         preview_qs = (
             NaiveRagPreviewChunk.objects.filter(
                 naive_rag_document_config_id=document_config_id
             )
-            .filter(text_filter)
+            .filter(text__icontains=query)
             .order_by("chunk_index")
-            .distinct()
         )
 
         preview_total = preview_qs.count()

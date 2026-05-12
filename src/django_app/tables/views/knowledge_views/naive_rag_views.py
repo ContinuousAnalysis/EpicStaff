@@ -41,6 +41,9 @@ from tables.serializers.naive_rag_serializers import (
     ChunkingResponseSerializer,
     ChunkPreviewResponseSerializer,
     ChunkSearchResponseSerializer,
+    ChunkSearchRequestSerializer,
+    CHUNK_SEARCH_DEFAULT_LIMIT,
+    CHUNK_SEARCH_MAX_LIMIT,
     PreviewChunksByIdsRequestSerializer,
     PreviewChunksByIdsResponseSerializer,
 )
@@ -829,7 +832,8 @@ class NaiveRagChunkSearchView(APIView):
     URL: GET /naive-rag/{naive_rag_id}/document-configs/{document_config_id}/chunks/search/?q=...
 
     Query params:
-    - q: search string (required, non-empty); space-separated tokens are ANDed
+    - q: search string (required, non-empty); matched as a case-insensitive
+         substring of chunk text (internal whitespace preserved)
     - limit: max returned ids (default 100, max 500)
     - offset: how many ids to skip (default 0)
 
@@ -837,8 +841,8 @@ class NaiveRagChunkSearchView(APIView):
     uses these ids to highlight or filter the rendered preview-chunk list.
     """
 
-    DEFAULT_LIMIT = 100
-    MAX_LIMIT = 500
+    DEFAULT_LIMIT = CHUNK_SEARCH_DEFAULT_LIMIT
+    MAX_LIMIT = CHUNK_SEARCH_MAX_LIMIT
 
     @extend_schema(
         description="Search chunk IDs of a document config by text query",
@@ -846,7 +850,7 @@ class NaiveRagChunkSearchView(APIView):
             OpenApiParameter(
                 name="q",
                 location=OpenApiParameter.QUERY,
-                description="Search query; whitespace-separated tokens (AND)",
+                description="Search query (case-insensitive substring; spaces preserved)",
                 type=OpenApiTypes.STR,
                 required=True,
             ),
@@ -874,30 +878,12 @@ class NaiveRagChunkSearchView(APIView):
         },
     )
     def get(self, request, naive_rag_id: int, document_config_id: int):
-        query = request.query_params.get("q", "").strip()
-        if not query:
-            return Response(
-                {"error": "Query parameter 'q' is required and cannot be empty"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = ChunkSearchRequestSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
 
-        try:
-            limit = min(
-                int(request.query_params.get("limit", self.DEFAULT_LIMIT)),
-                self.MAX_LIMIT,
-            )
-            offset = int(request.query_params.get("offset", 0))
-        except ValueError:
-            return Response(
-                {"error": "limit and offset must be integers"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if limit < 0 or offset < 0:
-            return Response(
-                {"error": "limit and offset must be non-negative"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        query = serializer.validated_data["q"]
+        limit = serializer.validated_data["limit"]
+        offset = serializer.validated_data["offset"]
 
         try:
             result = NaiveRagService.search_chunks(

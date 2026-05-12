@@ -1,15 +1,10 @@
 """
 Unit tests for NaiveRagChunkSearchView.
 
-These tests exercise the view in isolation:
-- No URL routing (APIRequestFactory, view called via .as_view()).
-- No database (NaiveRagService.search_chunks is patched).
-- No DRF middleware/auth pipeline beyond what APIView itself runs.
-
 They verify only the view's own responsibilities: query-param parsing,
 validation, mapping service results / exceptions to HTTP responses, and
-the shape of the response payload. Search semantics (AND-of-tokens,
-case-insensitivity, ordering) belong to service-level tests.
+the shape of the response payload. Search semantics (case-insensitive
+substring match, ordering) belong to service-level tests.
 """
 
 from types import SimpleNamespace
