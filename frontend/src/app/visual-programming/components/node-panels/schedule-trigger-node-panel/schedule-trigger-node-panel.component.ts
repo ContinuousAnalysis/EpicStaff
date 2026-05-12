@@ -2,9 +2,12 @@ import { animate, style, transition, trigger } from '@angular/animations';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { Subject, timer } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import {
+    GetScheduleTriggerNodeRequest,
     ScheduleEndType,
     ScheduleIntervalUnit,
     ScheduleRunMode,
@@ -56,8 +59,13 @@ const panelFadeSlide = trigger('panelFadeSlide', [
 })
 export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTriggerNodeModel> {
     public override readonly isExpanded = input<boolean>(false);
+    public readonly graphId = input<number | null>(null);
 
     private initialNodeName = '';
+    private readonly refreshedNextRun = signal<string | null | undefined>(undefined);
+    private readonly refreshedIsActive = signal<boolean | undefined>(undefined);
+    private readonly refreshedCurrentRuns = signal<number | undefined>(undefined);
+    private readonly stopPolling$ = new Subject<void>();
 
     private destroyRef = inject(DestroyRef);
     private readonly flowsApiService = inject(FlowsApiService);
@@ -66,13 +74,16 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     constructor() {
         super();
         effect(() => {
-            const isActive = this.node().data.isActive ?? false;
+            const refreshed = this.refreshedIsActive();
+            const isActive = refreshed !== undefined ? refreshed : (this.node().data.isActive ?? false);
             const ctrl = this.form?.get('is_active');
             if (!ctrl) return;
             if (ctrl.value !== isActive) {
                 ctrl.patchValue(isActive, { emitEvent: false });
             }
         });
+        this.destroyRef.onDestroy(() => this.stopPolling$.next());
+        this.schedulePoll(30_000);
     }
 
     protected submitted = signal(false);
@@ -88,6 +99,23 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     showWeekdays = computed(() => this.runMode() === 'repeat' && this.repeatUnit() === 'weeks');
     showEndDateTime = computed(() => this.endMode() === 'on_date');
     showMaxRuns = computed(() => this.endMode() === 'after_n_runs');
+
+    readonly formattedNextRun = computed<string>(() => {
+        const refreshed = this.refreshedNextRun();
+        const iso = refreshed !== undefined ? refreshed : this.node().data.nextRunDateTime;
+        if (!iso) return '—';
+        const date = this.parseIsoToDate(iso);
+        const time = this.parseIsoToTime(iso);
+        return date && time ? `${date} at ${time}` : date || time || '—';
+    });
+
+    readonly runsLeft = computed<string>(() => {
+        const refreshedCurrent = this.refreshedCurrentRuns();
+        const currentRuns = refreshedCurrent !== undefined ? refreshedCurrent : (this.node().data.currentRuns ?? null);
+        const maxRuns = this.node().data.maxRuns;
+        if (currentRuns == null || maxRuns == null) return '—';
+        return String(Math.max(0, maxRuns - currentRuns));
+    });
 
     readonly runModeOptions = [
         { label: 'Once', value: 'once' },
@@ -138,8 +166,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             const tz: string = this.form.getRawValue().timezone || 'UTC';
             const startErr = this.computeStartError(
                 this.form.get('start_date')!.value,
-                this.form.get('start_time')!.value,
-                tz
+                this.form.get('start_time')!.value
             );
             this.startRowError.set(startErr);
 
@@ -171,8 +198,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             const tz: string = this.form.getRawValue().timezone || 'UTC';
             const startErr = this.computeStartError(
                 this.form.get('start_date')!.value,
-                this.form.get('start_time')!.value,
-                tz
+                this.form.get('start_time')!.value
             );
             this.startRowError.set(startErr);
 
@@ -198,6 +224,9 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     }
 
     initializeForm(): FormGroup {
+        this.refreshedNextRun.set(undefined);
+        this.refreshedIsActive.set(undefined);
+        this.refreshedCurrentRuns.set(undefined);
         this.initialNodeName = this.node().node_name;
         this.submitted.set(false);
         this.startRowError.set('');
@@ -288,10 +317,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         });
 
         const validateStart = () => {
-            const tz: string = fg.get('timezone')!.value || 'UTC';
-            this.startRowError.set(
-                this.computeStartError(fg.get('start_date')!.value, fg.get('start_time')!.value, tz)
-            );
+            this.startRowError.set(this.computeStartError(fg.get('start_date')!.value, fg.get('start_time')!.value));
         };
         fg.get('start_date')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateStart);
         fg.get('start_time')!.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(validateStart);
@@ -332,12 +358,9 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: (dto) => {
-                        if (dto.is_active !== this.node().data.isActive) {
-                            this.flowService.updateNode({
-                                ...this.node(),
-                                data: { ...this.node().data, isActive: dto.is_active },
-                            });
-                        }
+                        this.refreshedNextRun.set(dto.schedule?.next_run_date_time ?? null);
+                        this.refreshedIsActive.set(dto.is_active);
+                        this.refreshedCurrentRuns.set(dto.current_runs);
                     },
                     error: () => {},
                 });
@@ -380,7 +403,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
     }
 
-    private computeStartError(dateVal: string | null, timeVal: string | null, tz: string): string {
+    private computeStartError(dateVal: string | null, timeVal: string | null): string {
         const date = dateVal ?? '';
         const time = timeVal ?? '';
 
@@ -398,33 +421,6 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         const parsed = new Date(y, m, d);
         if (parsed.getFullYear() !== y || parsed.getMonth() !== m || parsed.getDate() !== d) {
             return 'Invalid start date';
-        }
-
-        if (!this.startDateTimeDirty()) return '';
-        if (!(this.form?.getRawValue().is_active ?? true) && this.node().backendId != null) return '';
-
-        const {
-            year: nowYear,
-            month: nowMonth,
-            day: nowDay,
-            hour: nowHour,
-            minute: nowMin,
-        } = this.getNowInTimezone(tz);
-        const today = new Date(nowYear, nowMonth - 1, nowDay);
-
-        if (parsed.getTime() < today.getTime()) {
-            return 'Start date cannot be in the past';
-        }
-
-        if (parsed.getTime() === today.getTime() && time) {
-            const match = time.match(/^(\d{1,2}):(\d{2})$/);
-            if (match) {
-                const h = parseInt(match[1], 10);
-                const min = parseInt(match[2], 10);
-                if (h < nowHour || (h === nowHour && min <= nowMin)) {
-                    return 'Start time cannot be in the past for today';
-                }
-            }
         }
 
         return '';
@@ -625,6 +621,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             maxRuns,
             currentRuns: this.node().data.currentRuns ?? 0,
             timezone: (f.timezone as string | null) ?? '',
+            nextRunDateTime: this.node().data.nextRunDateTime ?? null,
         };
 
         const formName = f.node_name ?? this.node().node_name;
@@ -723,5 +720,41 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         const h = d.getHours();
         const min = d.getMinutes();
         return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    }
+
+    private schedulePoll(delayMs: number): void {
+        timer(delayMs)
+            .pipe(takeUntil(this.stopPolling$))
+            .subscribe(() => {
+                const backendId = this.node().backendId;
+                if (backendId == null) {
+                    this.schedulePoll(60_000);
+                    return;
+                }
+                this.flowsApiService
+                    .getScheduleTriggerNode(backendId)
+                    .pipe(takeUntil(this.stopPolling$))
+                    .subscribe({
+                        next: (dto) => {
+                            this.refreshedNextRun.set(dto.schedule?.next_run_date_time ?? null);
+                            this.refreshedIsActive.set(dto.is_active);
+                            this.refreshedCurrentRuns.set(dto.current_runs);
+                            this.schedulePoll(this.computeNextPollDelay(dto));
+                        },
+                        error: () => {
+                            this.schedulePoll(30_000);
+                        },
+                    });
+            });
+    }
+
+    private computeNextPollDelay(dto: GetScheduleTriggerNodeRequest): number {
+        if (!dto.is_active) return 60_000;
+        const next = dto.schedule?.next_run_date_time;
+        if (!next) return 60_000;
+        const msUntilRun = new Date(next).getTime() - Date.now();
+        if (msUntilRun <= 2 * 60_000) return 5_000;
+        if (msUntilRun <= 10 * 60_000) return 15_000;
+        return 30_000;
     }
 }

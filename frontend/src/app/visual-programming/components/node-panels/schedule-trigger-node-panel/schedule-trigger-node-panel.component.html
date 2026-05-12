@@ -47,12 +47,19 @@
                                 <app-date-picker
                                     formControlName="start_date"
                                     placeholder="Select start date"
+                                    [allowPastDates]="true"
                                 />
                             </div>
                         </div>
                         @if (startRowError()) {
                             <div class="row-error">{{ startRowError() }}</div>
                         }
+
+                        <!-- Next run (read-only, backend-calculated) -->
+                        <div class="next-run-row">
+                            <span class="next-run-label">Next run:</span>
+                            <span class="next-run-value">{{ formattedNextRun() }}</span>
+                        </div>
 
                         <!-- Timezone -->
                         <div class="field-col-full">
@@ -208,6 +215,10 @@
                                         [max]="999999"
                                         [integer]="true"
                                     />
+                                    <div class="next-run-row">
+                                        <span class="next-run-label">Runs left:</span>
+                                        <span class="next-run-value">{{ runsLeft() }}</span>
+                                    </div>
                                 </div>
                             }
                         </div>

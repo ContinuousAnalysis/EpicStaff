@@ -46,6 +46,7 @@ export function mapScheduleTriggerNodeToModel(dto: GetScheduleTriggerNodeRequest
         maxRuns,
         currentRuns: dto.current_runs ?? 0,
         timezone: normalizeTimezone(schedule?.timezone),
+        nextRunDateTime: schedule?.next_run_date_time ?? null,
     };
 
     return {

@@ -176,3 +176,24 @@
     line-height: 1.4;
     margin-top: 0.25rem;
 }
+
+.next-run-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.375rem;
+    margin-top: 0.25rem;
+}
+
+.next-run-label {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: rgba(217, 217, 222, 0.6);
+    line-height: 130%;
+}
+
+.next-run-value {
+    font-size: 0.8125rem;
+    color: var(--color-text-primary);
+    line-height: 130%;
+}

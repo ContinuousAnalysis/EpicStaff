@@ -83,6 +83,7 @@ export class DatePickerComponent implements ControlValueAccessor {
     activeColor = input<string>('');
     errorMessage = input<string>('');
     required = input<boolean>(false);
+    allowPastDates = input<boolean>(false);
 
     selectedDate = signal<Date | null>(null);
     viewDate = signal<Date>(new Date());
@@ -124,7 +125,7 @@ export class DatePickerComponent implements ControlValueAccessor {
         for (let d = 1; d <= daysInMonth; d++) {
             const date = new Date(year, month, d);
             const isToday = date.getTime() === todayMidnight.getTime();
-            const isPast = date.getTime() < todayMidnight.getTime();
+            const isPast = !this.allowPastDates() && date.getTime() < todayMidnight.getTime();
             const isSelected = selected
                 ? selected.getFullYear() === year && selected.getMonth() === month && selected.getDate() === d
                 : false;
@@ -216,13 +217,15 @@ export class DatePickerComponent implements ControlValueAccessor {
             return;
         }
 
-        const todayMidnight = new Date();
-        todayMidnight.setHours(0, 0, 0, 0);
-        if (parsed.getTime() < todayMidnight.getTime()) {
-            this.inputError.set('Date must be today or later');
-            this.selectedDate.set(null);
-            this.onChange(val);
-            return;
+        if (!this.allowPastDates()) {
+            const todayMidnight = new Date();
+            todayMidnight.setHours(0, 0, 0, 0);
+            if (parsed.getTime() < todayMidnight.getTime()) {
+                this.inputError.set('Date must be today or later');
+                this.selectedDate.set(null);
+                this.onChange(val);
+                return;
+            }
         }
 
         this.inputError.set('');
@@ -232,7 +235,7 @@ export class DatePickerComponent implements ControlValueAccessor {
     }
 
     selectDay(cell: DayCell): void {
-        if (!cell.date || cell.isPast) return;
+        if (!cell.date || (!this.allowPastDates() && cell.isPast)) return;
         this.selectedDate.set(cell.date);
         this.inputError.set('');
         const formatted = formatDate(cell.date);

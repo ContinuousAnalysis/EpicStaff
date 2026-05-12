@@ -138,6 +138,10 @@ export class NodePanelShellComponent {
         effect(() => {
             const node = this.node();
             if (node) {
+                if (this.previousNodeId !== node.id) {
+                    this.isExpanded.set(false);
+                }
+
                 // Auto-expand for decision table nodes
                 if (node.type === 'table') {
                     this.isExpanded.set(true);
@@ -206,6 +210,7 @@ export class NodePanelShellComponent {
     }
 
     public expandPanel(): void {
+        if (!this.shouldShowExpandButton()) return;
         this.isExpanded.set(true);
     }
 

@@ -53,6 +53,7 @@ export interface GetScheduleBlock {
     run_mode: ScheduleRunMode | null;
     timezone: string;
     start_date_time: string | null;
+    next_run_date_time: string | null;
     interval: GetScheduleIntervalBlock | null;
     end: GetScheduleEndBlock;
 }
@@ -103,4 +104,5 @@ export interface ScheduleTriggerNodeData {
     maxRuns: number | null;
     currentRuns?: number;
     timezone: string;
+    nextRunDateTime?: string | null;
 }
