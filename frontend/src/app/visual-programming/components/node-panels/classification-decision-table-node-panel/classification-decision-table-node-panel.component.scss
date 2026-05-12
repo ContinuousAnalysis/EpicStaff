@@ -278,6 +278,19 @@
     }
 }
 
+// Hide test-mode controls inside CDT pre/post computation tabs.
+// InputMapComponent's test-mode toggle (.test-mode-header) and action buttons
+// (.test-mode-actions) are irrelevant for CDT — only the input list is used.
+.cdt-input-map-wrapper {
+    ::ng-deep .test-mode-header {
+        display: none !important;
+    }
+
+    ::ng-deep .test-mode-actions {
+        display: none !important;
+    }
+}
+
 .section-label {
     font-size: 2rem;
     font-weight: 500;

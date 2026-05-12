@@ -56,6 +56,7 @@ type TabType = 'table' | 'precomputation' | 'postcomputation' | 'prompts';
 })
 export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel<ClassificationDecisionTableNodeModel> {
     public override readonly isExpanded = input<boolean>(true);
+    public readonly graphId = input<number | null>(null);
 
     private flowService = inject(FlowService);
 
@@ -91,6 +92,10 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
     public postCode: string = '';
     private readonly codeChange$ = new Subject<void>();
     private sidePanelService = inject(SidePanelService);
+
+    // Sub-FormGroups for InputMapComponent in pre/post tabs.
+    public preInputForm!: FormGroup;
+    public postInputForm!: FormGroup;
 
     public promptEntries = computed(() => {
         const p = this.prompts();
@@ -244,16 +249,37 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         this.initializeInputMapArray(form, 'pre_input_map', preComp.input_map || {});
         this.initializeInputMapArray(form, 'post_input_map', postComp.input_map || {});
 
-        (form.get('pre_input_map') as FormArray).valueChanges
+        // Build sub-forms for InputMapComponent.
+        // InputMapComponent uses ControlContainer to find its parent FormGroup and then
+        // looks up 'input_map' and 'test_input' arrays by name. By providing these sub-forms
+        // via [formGroup] in the template, InputMapComponent finds the correct arrays.
+        // 'test_input' is never persisted — it only exists to satisfy InputMapComponent.
+        this.preInputForm = this.fb.group({
+            input_map: this.fb.array([] as FormGroup[]),
+            test_input: this.fb.array([] as FormGroup[]),
+        });
+        this.postInputForm = this.fb.group({
+            input_map: this.fb.array([] as FormGroup[]),
+            test_input: this.fb.array([] as FormGroup[]),
+        });
+
+        // Seed sub-form input_map arrays from the canonical arrays on the main form.
+        this.seedSubFormInputMap(this.preInputForm, form.get('pre_input_map') as FormArray);
+        this.seedSubFormInputMap(this.postInputForm, form.get('post_input_map') as FormArray);
+
+        // Sync sub-form input_map → canonical array on main form whenever user edits.
+        (this.preInputForm.get('input_map') as FormArray).valueChanges
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(() => {
+            .subscribe((pairs: { key: string; value: string }[]) => {
+                this.syncSubFormToMainArray(form, 'pre_input_map', pairs);
                 this.preInputMapVersion.update((v) => v + 1);
                 this.codeChange$.next();
             });
 
-        (form.get('post_input_map') as FormArray).valueChanges
+        (this.postInputForm.get('input_map') as FormArray).valueChanges
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(() => {
+            .subscribe((pairs: { key: string; value: string }[]) => {
+                this.syncSubFormToMainArray(form, 'post_input_map', pairs);
                 this.codeChange$.next();
             });
 
@@ -513,6 +539,43 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
                 { emitEvent: false }
             );
         }
+    }
+
+    /**
+     * Copies entries from a canonical main-form FormArray into a sub-form's input_map array.
+     * Called once during initializeForm to seed the sub-forms.
+     */
+    private seedSubFormInputMap(subForm: FormGroup, sourceArray: FormArray): void {
+        const dest = subForm.get('input_map') as FormArray;
+        dest.clear({ emitEvent: false });
+        sourceArray.controls.forEach((ctrl) => {
+            dest.push(
+                this.fb.group({
+                    key: [ctrl.value.key ?? ''],
+                    value: [ctrl.value.value ?? ''],
+                }),
+                { emitEvent: false }
+            );
+        });
+    }
+
+    /**
+     * Mirrors the sub-form's input_map value back into the canonical FormArray on the main form.
+     * Called inside sub-form valueChanges subscriptions so serialization always reads up-to-date data.
+     */
+    private syncSubFormToMainArray(form: FormGroup, arrayName: string, pairs: { key: string; value: string }[]): void {
+        const canonical = form.get(arrayName) as FormArray;
+        canonical.clear({ emitEvent: false });
+        pairs.forEach((pair) => {
+            canonical.push(
+                this.fb.group({
+                    key: [pair.key ?? ''],
+                    value: [pair.value ?? ''],
+                }),
+                { emitEvent: false }
+            );
+        });
+        canonical.markAsDirty();
     }
 
     private serializeInputMap(arrayName: string): Record<string, string> {

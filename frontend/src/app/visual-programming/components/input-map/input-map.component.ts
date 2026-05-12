@@ -29,10 +29,10 @@ import { SidePanelService } from '../../services/side-panel.service';
     imports: [
         ReactiveFormsModule,
         CommonModule,
-        MatTooltipModule,
+        HelpTooltipComponent,
         ToggleSwitchComponent,
         AppSvgIconComponent,
-        HelpTooltipComponent,
+        MatTooltipModule,
     ],
     viewProviders: [
         {
@@ -304,18 +304,6 @@ import { SidePanelService } from '../../services/side-panel.service';
                 &:hover {
                     color: red;
                     background-color: rgba(255, 0, 0, 0.1);
-                }
-            }
-
-            .help-icon {
-                width: 18px;
-                height: 18px;
-                color: var(--accent-color);
-                cursor: help;
-                transition: color 0.2s ease;
-
-                &:hover {
-                    opacity: 0.7;
                 }
             }
 
