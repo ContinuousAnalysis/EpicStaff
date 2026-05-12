@@ -33,64 +33,56 @@
         <app-validation-errors [control]="orgNameControl" />
     </div>
 
-    <!--    <div class="content">-->
-    <!--        <div class="engage-bar">-->
-    <!--            <span class="label">-->
-    <!--                Engage users to the Organization:-->
-    <!--                <span class="count">({{ selectedUsers().length }})</span>-->
-    <!--            </span>-->
-    <!--            <app-search placeholder="Search by name, username..." [(searchTerm)]="searchTerm" />-->
-    <!--        </div>-->
+    <div class="content">
+        <div class="engage-bar">
+            <span class="label">
+                Assign users to the Organization:
+                <span class="count">({{ selectedUsers().length }})</span>
+            </span>
+            <app-search
+                placeholder="Search by name, email..."
+                [(searchTerm)]="searchTerm"
+            />
+        </div>
 
-    <!--        @if (isUsersLoading()) {-->
-    <!--            <app-loading-spinner size="md" message="Loading Users..." />-->
-    <!--        } @else {-->
-    <!--            <app-table-->
-    <!--                [columns]="columns"-->
-    <!--                [data]="filteredUsers()"-->
-    <!--                [selectable]="true"-->
-    <!--                rowId="id"-->
-    <!--                (selectionChange)="onSelection($event)"-->
-    <!--            >-->
-    <!--                <ng-template appTableCell="user" let-row>-->
-    <!--                    <div class="user-cell">-->
-    <!--                        <app-user-avatar [name]="$any(row['name'])" />-->
-    <!--                        <div class="user-info">-->
-    <!--                            <span class="user-name">{{ row['name'] }}</span>-->
-    <!--                            <span class="user-email">{{ row['email'] }}</span>-->
-    <!--                        </div>-->
-    <!--                    </div>-->
-    <!--                </ng-template>-->
+        @if (isUsersLoading()) {
+            <app-loading-spinner
+                size="md"
+                message="Loading Users..."
+            />
+        } @else {
+            <app-table
+                [columns]="columns"
+                [data]="filteredUsers()"
+                [selectable]="true"
+                [initialSelectedIds]="initialSelectedUserIds()"
+                rowId="id"
+                (selectionChange)="onSelection($event)"
+            >
+                <ng-template
+                    appTableCell="user"
+                    let-row
+                >
+                    <div class="user-cell">
+                        <app-user-avatar [name]="row['name'] || row['email']" />
+                        <div class="user-info">
+                            <span class="user-name">{{ row['name'] }}</span>
+                            <span class="user-email">{{ row['email'] }}</span>
+                        </div>
+                    </div>
+                </ng-template>
 
-    <!--                <ng-template appTableCell="roles" let-row>-->
-    <!--                    <app-multi-select #ms class="role-select" [items]="USER_ROLES" [(selectedValues)]="row['roles']">-->
-    <!--                        <button-->
-    <!--                            appMultiSelectTrigger-->
-    <!--                            class="role-select-trigger"-->
-    <!--                            [class.placeholder]="!ms.selectedLabels()"-->
-    <!--                            [class.open]="ms.isOpen()"-->
-    <!--                            type="button"-->
-    <!--                        >-->
-    <!--                            <span class="text">{{ ms.selectedLabels() ?? 'Select roles' }}</span>-->
-    <!--                            <svg-->
-    <!--                                class="chevron"-->
-    <!--                                [class.open]="ms.isOpen()"-->
-    <!--                                width="16"-->
-    <!--                                height="16"-->
-    <!--                                viewBox="0 0 24 24"-->
-    <!--                            >-->
-    <!--                                <path-->
-    <!--                                    d="M6 9l6 6 6-6"-->
-    <!--                                    stroke="currentColor"-->
-    <!--                                    stroke-width="2"-->
-    <!--                                    fill="none"-->
-    <!--                                    stroke-linecap="round"-->
-    <!--                                />-->
-    <!--                            </svg>-->
-    <!--                        </button>-->
-    <!--                    </app-multi-select>-->
-    <!--                </ng-template>-->
-    <!--            </app-table>-->
-    <!--        }-->
-    <!--    </div>-->
+                <ng-template
+                    appTableCell="role"
+                    let-row
+                >
+                    <app-select
+                        [items]="USER_ROLES"
+                        [(selectedValue)]="row['role']"
+                        placeholder="Select role"
+                    />
+                </ng-template>
+            </app-table>
+        }
+    </div>
 </div>

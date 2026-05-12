@@ -8,31 +8,33 @@
             >
         </h1>
         <nav class="overview-tabs">
-            <a
-                routerLink="main"
-                routerLinkActive="active"
-                class="overview-tab"
-            >
-                <app-svg-icon
-                    size="18px"
-                    icon="home"
-                />
-                Main
-            </a>
-            <span class="tab-divider">/</span>
-            <a
-                routerLink="organizations"
-                routerLinkActive="active"
-                class="overview-tab"
-            >
-                <app-svg-icon
-                    size="18px"
-                    icon="buildings"
-                />
-                Organizations
-            </a>
-            @if (canManageUsers()) {
+            @if (currentUserService.canManageOrgs()) {
+                <a
+                    routerLink="main"
+                    routerLinkActive="active"
+                    class="overview-tab"
+                >
+                    <app-svg-icon
+                        size="18px"
+                        icon="home"
+                    />
+                    Main
+                </a>
                 <span class="tab-divider">/</span>
+                <a
+                    routerLink="organizations"
+                    routerLinkActive="active"
+                    class="overview-tab"
+                >
+                    <app-svg-icon
+                        size="18px"
+                        icon="buildings"
+                    />
+                    Organizations
+                </a>
+                <span class="tab-divider">/</span>
+            }
+            @if (currentUserService.canManageUsers()) {
                 <a
                     routerLink="users"
                     routerLinkActive="active"

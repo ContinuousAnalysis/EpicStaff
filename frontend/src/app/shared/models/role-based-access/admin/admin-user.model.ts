@@ -1,10 +1,10 @@
-import { Membership } from '../membership.model';
+import { FullMembership } from '../membership.model';
 
 export interface AdminCreateUserRequest {
     email: string;
     password: string;
-    organization_id: number;
-    role_id: number;
+    organization_id?: number;
+    role_id?: number;
 }
 
 export interface AdminCreateUserResponse {
@@ -13,7 +13,7 @@ export interface AdminCreateUserResponse {
     display_name: string;
     is_superadmin: boolean;
     is_active: boolean;
-    memberships: Membership[];
+    memberships: FullMembership[];
     created_at: string;
     updated_at: string;
 }

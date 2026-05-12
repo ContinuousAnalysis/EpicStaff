@@ -12,15 +12,15 @@
             (click)="onCreateUser()"
             >Create User</app-button
         >
-        <button
-            class="settings-btn"
-            type="button"
-        >
-            <app-svg-icon
-                icon="settings"
-                size="18px"
-            />
-        </button>
+        <!--        <button-->
+        <!--            class="settings-btn"-->
+        <!--            type="button"-->
+        <!--        >-->
+        <!--            <app-svg-icon-->
+        <!--                icon="settings"-->
+        <!--                size="18px"-->
+        <!--            />-->
+        <!--        </button>-->
     </div>
 </div>
 
@@ -28,9 +28,9 @@
     <app-loading-spinner size="sm" />
 } @else {
     <app-table
-        [columns]="columns"
+        [columns]="columns()"
         [data]="filteredUsers()"
-        [selectable]="true"
+        [selectable]="false"
         rowId="id"
     >
         <!-- USER -->
@@ -61,13 +61,13 @@
             let-row
         >
             <div class="org-badges">
-                @for (org of row['organization']; track org.id) {
+                @for (org of row['organizationDetails']; track org.id) {
                     <app-org-avatar
                         [name]="org.name"
                         [title]="org.name"
                     />
                 }
-                @if (!row['organization'].length) {
+                @if (!row['organizationDetails']?.length) {
                     <span class="empty-value">-</span>
                 }
             </div>
@@ -93,10 +93,14 @@
             appTableCell="status"
             let-row
         >
-            <app-status-badge
-                [modifier]="$any(row['status'])"
-                [label]="statusLabel($any(row['status']))"
-            />
+            @if (row['status']) {
+                <app-status-badge
+                    [modifier]="row['status']"
+                    [label]="statusLabel(row['status'])"
+                />
+            } @else {
+                <span class="empty-value">-</span>
+            }
         </ng-template>
 
         <!-- ACTIONS -->
@@ -105,36 +109,37 @@
             let-row
         >
             <div class="actions-cell">
-                <button
-                    class="action-btn"
-                    type="button"
-                    title="View"
-                >
-                    <app-svg-icon
-                        icon="eye"
-                        size="16px"
-                    />
-                </button>
+                <!--                <button-->
+                <!--                    class="action-btn"-->
+                <!--                    type="button"-->
+                <!--                    title="View"-->
+                <!--                >-->
+                <!--                    <app-svg-icon-->
+                <!--                        icon="eye"-->
+                <!--                        size="16px"-->
+                <!--                    />-->
+                <!--                </button>-->
                 <button
                     class="action-btn"
                     type="button"
                     title="Edit"
+                    (click)="onEditUser(row['id'])"
                 >
                     <app-svg-icon
                         icon="edit"
                         size="16px"
                     />
                 </button>
-                <button
-                    class="action-btn action-btn--danger"
-                    type="button"
-                    title="Delete"
-                >
-                    <app-svg-icon
-                        icon="trash"
-                        size="16px"
-                    />
-                </button>
+                <!--                <button-->
+                <!--                    class="action-btn action-btn&#45;&#45;danger"-->
+                <!--                    type="button"-->
+                <!--                    title="Delete"-->
+                <!--                >-->
+                <!--                    <app-svg-icon-->
+                <!--                        icon="trash"-->
+                <!--                        size="16px"-->
+                <!--                    />-->
+                <!--                </button>-->
             </div>
         </ng-template>
     </app-table>

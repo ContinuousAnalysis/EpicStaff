@@ -5,7 +5,7 @@
             <span class="count">({{ selectedOrganizations().length }})</span>
         </span>
         <app-search
-            placeholder="Search by name, username..."
+            placeholder="Search by name..."
             [(searchTerm)]="searchTerm"
         />
     </div>
@@ -13,13 +13,14 @@
     @if (isOrgsLoading()) {
         <app-loading-spinner
             size="md"
-            message="Loading Users..."
+            message="Loading Organizations..."
         />
     } @else {
         <app-table
             [columns]="columns"
             [data]="filteredOrganizations()"
             [selectable]="true"
+            [initialSelectedIds]="preselectedOrgIds()"
             rowId="id"
             (selectionChange)="onSelection($event)"
         >
@@ -34,40 +35,14 @@
             </ng-template>
 
             <ng-template
-                appTableCell="roles"
+                appTableCell="role"
                 let-row
             >
-                <app-multi-select
-                    #ms
-                    class="role-select"
+                <app-select
                     [items]="USER_ROLES"
-                    [(selectedValues)]="row['roles']"
-                >
-                    <button
-                        appMultiSelectTrigger
-                        class="role-select-trigger"
-                        [class.placeholder]="!ms.selectedLabels()"
-                        [class.open]="ms.isOpen()"
-                        type="button"
-                    >
-                        <span class="text">{{ ms.selectedLabels() ?? 'Select roles' }}</span>
-                        <svg
-                            class="chevron"
-                            [class.open]="ms.isOpen()"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                d="M6 9l6 6 6-6"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                fill="none"
-                                stroke-linecap="round"
-                            />
-                        </svg>
-                    </button>
-                </app-multi-select>
+                    [(selectedValue)]="row['role']"
+                    placeholder="Select role"
+                />
             </ng-template>
         </app-table>
     }

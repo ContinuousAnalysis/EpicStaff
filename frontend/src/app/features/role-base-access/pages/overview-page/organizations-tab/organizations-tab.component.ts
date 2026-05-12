@@ -1,4 +1,4 @@
-import { Dialog } from '@angular/cdk/dialog';
+import { Dialog, DialogRef } from '@angular/cdk/dialog';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -93,21 +93,31 @@ export class OrganizationsTabComponent implements OnInit {
     }
 
     onCreateOrganization(): void {
-        this.dialog.open(CreateOrganizationDialogComponent, {
+        const ref = this.dialog.open(CreateOrganizationDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
             disableClose: true,
         });
+        this.refreshOnClose(ref);
     }
 
     onEditOrganization(row: TableRow): void {
         const org = this.organizations().find((o) => o.id === row['id']);
         if (!org) return;
-        this.dialog.open(CreateOrganizationDialogComponent, {
+        const ref = this.dialog.open(CreateOrganizationDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
             disableClose: true,
             data: org,
+        });
+        this.refreshOnClose(ref);
+    }
+
+    private refreshOnClose(ref: DialogRef<unknown, CreateOrganizationDialogComponent>): void {
+        ref.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+            if (result) {
+                this.organizationStorage.getOrganizations(true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+            }
         });
     }
 

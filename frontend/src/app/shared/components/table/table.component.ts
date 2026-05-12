@@ -1,5 +1,15 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, contentChildren, input, output, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    contentChildren,
+    effect,
+    input,
+    output,
+    signal,
+    untracked,
+} from '@angular/core';
 
 import { CheckboxComponent } from '../checkbox/checkbox.component';
 import { MultiSelectComponent } from '../multi-select/multi-select.component';
@@ -20,6 +30,8 @@ export class AppTableComponent {
     rowId = input<string>('id');
     /** Show checkbox column for multi-selection */
     selectable = input<boolean>(false);
+    /** Row IDs to pre-select on init */
+    initialSelectedIds = input<unknown[]>([]);
 
     selectionChange = output<TableRow[]>();
     filterChange = output<{ key: string; values: string[] }>();
@@ -29,6 +41,15 @@ export class AppTableComponent {
 
     private readonly selectedIds = signal<Set<unknown>>(new Set());
     private readonly activeFilters = signal<Record<string, unknown[]>>({});
+
+    constructor() {
+        effect(() => {
+            const ids = this.initialSelectedIds();
+            if (!ids.length) return;
+            this.selectedIds.set(new Set(ids));
+            untracked(() => this.selectionChange.emit(this.selectedItems()));
+        });
+    }
 
     readonly filteredData = computed<TableRow[]>(() => {
         const filters = this.activeFilters();

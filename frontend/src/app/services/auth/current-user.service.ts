@@ -1,5 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { GetMeResponse } from '@shared/models';
+import { GetMeResponse, UserRole } from '@shared/models';
 
 @Injectable({
     providedIn: 'root',
@@ -17,4 +17,19 @@ export class CurrentUserService {
     public clearCurrentUser(): void {
         this.currentUser.set(null);
     }
+
+    // TODO will be replaced with directive with migration to permission-verify logic
+    canManageOrgs = computed(() => {
+        const currentUser = this.currentUserSignal();
+        if (!currentUser) return false;
+
+        return currentUser.is_superadmin;
+    });
+
+    canManageUsers = computed(() => {
+        const currentUser = this.currentUserSignal();
+        if (!currentUser) return false;
+
+        return currentUser.is_superadmin || currentUser.memberships.some(({ role }) => role.id === UserRole.ORG_ADMIN);
+    });
 }

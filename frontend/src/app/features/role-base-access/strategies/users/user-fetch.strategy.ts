@@ -1,4 +1,4 @@
-import { Membership } from '@shared/models';
+import { FullMembership } from '@shared/models';
 import { Observable } from 'rxjs';
 
 export interface NormalizedUser {
@@ -7,7 +7,7 @@ export interface NormalizedUser {
     displayName: string;
     isSuperadmin: boolean;
     isActive: boolean;
-    memberships: Membership[];
+    memberships: FullMembership[];
 }
 
 export interface UserFetchStrategy {

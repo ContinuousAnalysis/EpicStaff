@@ -3,10 +3,6 @@ import { UserRole } from '@shared/models';
 
 export const USER_ROLES: SelectItem[] = [
     {
-        name: 'Super Admin',
-        value: UserRole.SUPER_ADMIN,
-    },
-    {
         name: 'Organization Admin',
         value: UserRole.ORG_ADMIN,
     },

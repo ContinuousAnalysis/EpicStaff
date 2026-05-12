@@ -21,7 +21,9 @@ export class AdminUserService {
     }
 
     createUser(dto: AdminCreateUserRequest): Observable<AdminCreateUserResponse> {
-        return this.http.post<AdminCreateUserResponse>(this.apiUrl, dto);
+        return this.http.post<AdminCreateUserResponse>(this.apiUrl, dto, {
+            headers: this.httpHeaders,
+        });
     }
 
     getUsers(): Observable<AdminGetUsersResponse> {
@@ -29,10 +31,22 @@ export class AdminUserService {
     }
 
     grantSuperadmin(userId: number): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}${userId}grant-superadmin/`, {});
+        return this.http.post<void>(
+            `${this.apiUrl}${userId}/grant-superadmin/`,
+            {},
+            {
+                headers: this.httpHeaders,
+            }
+        );
     }
 
     revokeSuperadmin(userId: number): Observable<void> {
-        return this.http.post<void>(`${this.apiUrl}${userId}revoke-superadmin/`, {});
+        return this.http.post<void>(
+            `${this.apiUrl}${userId}/revoke-superadmin/`,
+            {},
+            {
+                headers: this.httpHeaders,
+            }
+        );
     }
 }

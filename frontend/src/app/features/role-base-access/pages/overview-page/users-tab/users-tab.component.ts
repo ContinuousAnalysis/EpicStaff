@@ -12,9 +12,13 @@ import {
     SelectItem,
     TableRow,
 } from '@shared/components';
+import { finalize } from 'rxjs/operators';
 
 import { CurrentUserService } from '../../../../../services/auth/current-user.service';
-import { CreateUserDialogComponent } from '../../../components/create-user-dialog/create-user-dialog.component';
+import {
+    CreateUserDialogComponent,
+    UserDialogData,
+} from '../../../components/create-user-dialog/create-user-dialog.component';
 import { OrgAvatarComponent } from '../../../components/org-avatar/org-avatar.component';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { UserAvatarComponent } from '../../../components/user-avatar/user-avatar.component';
@@ -27,12 +31,6 @@ const STATUS_ITEMS: SelectItem[] = [
     { name: 'Online', value: 'online' },
     { name: 'Invited', value: 'invited' },
     { name: 'Offline', value: 'offline' },
-];
-
-const ORG_ITEMS: SelectItem[] = [
-    { name: 'EpicStaff', value: 1 },
-    { name: 'EpicFlow', value: 2 },
-    { name: 'MYM', value: 3 },
 ];
 
 @Component({
@@ -59,9 +57,13 @@ export class UsersTabComponent implements OnInit {
     private adminUserService = inject(AdminUserService);
     private currentUserService = inject(CurrentUserService);
 
+    private normalizedUsers = signal<NormalizedUser[]>([]);
+
     usersData = signal<TableRow[]>([]);
     searchTerm = signal('');
     isLoading = signal(true);
+
+    private orgFilterItems = signal<SelectItem[]>([]);
 
     filteredUsers = computed(() => {
         const term = this.searchTerm().toLowerCase().trim();
@@ -69,28 +71,17 @@ export class UsersTabComponent implements OnInit {
         return this.usersData().filter((row) => (row['name'] as string)?.toLowerCase().includes(term));
     });
 
-    columns: AppTableColumnDef[] = [
-        { key: 'user', label: 'USER', width: '1fr' },
-        { key: 'roles', label: 'SYSTEM ROLE', width: '1fr' },
-        { key: 'organization', label: 'ORGANIZATION', width: '1fr', filterItems: ORG_ITEMS },
-        { key: 'lastActive', label: 'LAST ACTIVE', width: '160px' },
-        { key: 'status', label: 'STATUS', width: '160px', filterItems: STATUS_ITEMS },
-        { key: 'actions', label: 'ACTIONS', width: '120px', align: 'center' },
-    ];
+    columns = computed<AppTableColumnDef[]>(() => [
+        { key: 'user', label: 'USER', width: '2fr' },
+        { key: 'roles', label: 'ROLE', width: '1.5fr' },
+        { key: 'organization', label: 'ORGANIZATION', width: '1.5fr', filterItems: this.orgFilterItems() },
+        { key: 'lastActive', label: 'LAST ACTIVE', width: '1.5fr' },
+        { key: 'status', label: 'STATUS', width: '1.5fr', filterItems: STATUS_ITEMS },
+        { key: 'actions', label: 'ACTIONS', width: '1fr', align: 'center' },
+    ]);
 
     ngOnInit(): void {
-        const strategy = createUserFetchStrategy(this.currentUserService, this.adminUserService, this.userService);
-
-        strategy
-            .fetchUsers()
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (users) => {
-                    this.usersData.set(users.map((u) => this.mapToRow(u)));
-                    this.isLoading.set(false);
-                },
-                error: () => this.isLoading.set(false),
-            });
+        this.loadUsers();
     }
 
     formatDate(date: unknown): string {
@@ -116,11 +107,61 @@ export class UsersTabComponent implements OnInit {
     }
 
     onCreateUser(): void {
-        this.dialog.open(CreateUserDialogComponent, {
+        this.openUserDialog();
+    }
+
+    onEditUser(userId: number): void {
+        const user = this.normalizedUsers().find((u) => u.id === userId);
+        if (user) {
+            this.openUserDialog(user);
+        }
+    }
+
+    private openUserDialog(user?: NormalizedUser): void {
+        const data: UserDialogData = { user };
+        const ref = this.dialog.open(CreateUserDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
             disableClose: true,
+            data,
         });
+
+        ref.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+            if (result) {
+                this.loadUsers();
+            }
+        });
+    }
+
+    private loadUsers(): void {
+        this.isLoading.set(true);
+        const strategy = createUserFetchStrategy(this.currentUserService, this.adminUserService, this.userService);
+
+        strategy
+            .fetchUsers()
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => this.isLoading.set(false))
+            )
+            .subscribe({
+                next: (users) => {
+                    const currentUserId = this.currentUserService.currentUserSignal()?.id;
+                    const filtered = users.filter((u) => u.id !== currentUserId);
+                    this.normalizedUsers.set(filtered);
+                    this.usersData.set(filtered.map((u) => this.mapToRow(u)));
+                    this.orgFilterItems.set(this.extractOrgFilterItems(filtered));
+                },
+            });
+    }
+
+    private extractOrgFilterItems(users: NormalizedUser[]): SelectItem[] {
+        const orgMap = new Map<number, string>();
+        for (const user of users) {
+            for (const m of user.memberships) {
+                orgMap.set(m.organization.id, m.organization.name);
+            }
+        }
+        return Array.from(orgMap, ([value, name]) => ({ name, value }));
     }
 
     private mapToRow(user: NormalizedUser): TableRow {
@@ -132,7 +173,8 @@ export class UsersTabComponent implements OnInit {
             name: user.displayName,
             email: user.email,
             roles: roles.join(', '),
-            organization: orgs,
+            organization: orgs?.map((o) => o.id),
+            organizationDetails: orgs,
             lastActive: null,
             status: user.isActive ? 'online' : 'offline',
         };

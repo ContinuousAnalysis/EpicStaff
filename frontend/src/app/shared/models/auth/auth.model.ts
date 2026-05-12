@@ -1,4 +1,4 @@
-import { Membership } from '../role-based-access';
+import { FullMembership } from '../role-based-access';
 
 export interface FirstSetupStatus {
     needs_setup: boolean;
@@ -36,5 +36,5 @@ export interface GetMeResponse {
     display_name: string;
     avatar_url: string;
     is_superadmin: boolean;
-    memberships: Membership[];
+    memberships: FullMembership[];
 }
