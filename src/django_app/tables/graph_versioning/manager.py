@@ -5,6 +5,7 @@ from tables.import_export.strategies.graph import GraphStrategy
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.version_conversions.base import VersionConverter
 from tables.import_export.constants import NODE_MAPPING_KEY
+from tables.import_export.utils import ensure_unique_identifier
 
 from tables.graph_versioning.constants import (
     _EXCLUDED_GRAPH_SCALARS,
@@ -16,11 +17,14 @@ from tables.graph_versioning.handlers import HANDLER_REGISTRY, _MissingSets
 from tables.models import (
     Graph,
     ConditionalEdge,
+    Organization,
+    GraphOrganization,
     PythonCode,
     PythonCodeTool,
     PythonNode,
     WebhookTriggerNode,
 )
+from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
 
 
 class GraphVersioningManager:
@@ -322,6 +326,54 @@ class GraphVersioningManager:
         }
         converted = VersionConverter.convert(pseudo_bundle)
         return converted[EntityType.GRAPH][0]
+
+    def create_graph_from_snapshot(
+        self,
+        filtered_snapshot: dict,
+        available_deps: dict,
+        *,
+        version_name: str,
+    ) -> tuple[Graph, IDMapper]:
+        """
+        Create a brand-new Graph from a filtered snapshot.
+        The new graph is independent — no GraphVersion rows, own id/uuid.
+        """
+        snapshot_copy = deepcopy(filtered_snapshot)
+        snapshot_copy["name"] = ensure_unique_identifier(
+            base_name=version_name,
+            existing_names=list(Graph.objects.values_list("name", flat=True)),
+        )
+        snapshot_copy.pop("id", None)
+        snapshot_copy.pop("uuid", None)
+
+        id_mapper = self._build_identity_id_mapper(available_deps)
+
+        snapshot_copy["metadata"] = self._graph_strategy.update_metadata(
+            snapshot_copy.get("metadata") or {}, id_mapper
+        )
+
+        nodes_data = snapshot_copy.pop("nodes", [])
+        edges_data = snapshot_copy.pop("edge_list", [])
+        cond_edges_data = snapshot_copy.pop("conditional_edge_list", [])
+
+        serializer = self._graph_strategy.serializer_class(data=snapshot_copy)
+        serializer.is_valid(raise_exception=True)
+        graph = serializer.save()
+
+        organization = Organization.objects.get(name=DEFAULT_ORGANIZATION_NAME)
+        GraphOrganization.objects.get_or_create(graph=graph, organization=organization)
+
+        node_mapper = self._graph_strategy.recreate_graph_children(
+            graph,
+            {
+                "nodes": nodes_data,
+                "edge_list": edges_data,
+                "conditional_edge_list": cond_edges_data,
+            },
+            id_mapper,
+        )
+
+        return graph, node_mapper
 
     def change_old_warnings_ids(
         self, warning_msgs: list[dict], node_mapper: IDMapper

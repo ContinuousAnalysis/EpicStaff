@@ -917,6 +917,12 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
         result = GraphVersioningService().restore_version(version, backup=backup)
         return Response(result, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"], url_path="create-graph")
+    def create_graph(self, request, *args, **kwargs):
+        version = self.get_object()
+        result = GraphVersioningService().create_graph_from_version(version)
+        return Response(result, status=status.HTTP_201_CREATED)
+
 
 class IdempotentNodeCreateMixin:
     # TODO: change fields from (graph, node_name) to id (all nodes id's are consistent)
