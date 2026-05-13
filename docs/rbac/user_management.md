@@ -309,7 +309,7 @@ Errors:
 - **Story 6** — bitmask permission enforcement on resources. `IsSuperadminOrOrgAdmin`
   becomes a thin wrapper over a `PermissionResolver` service backed by Redis cache.
   URL surface unchanged.
-- **Story 7** — active-org switching via `X-Organization-Id` header. `/api/auth/me/`
+- **Story 7** — active-org switching via `X-Organization-Id` header. `/api/profile/`
   adds active-org resolution.
 - **Story 9** — custom roles. `assert_role_is_assignable` already gates cross-org
   custom roles correctly; the same membership endpoint accepts a custom `role_id`.

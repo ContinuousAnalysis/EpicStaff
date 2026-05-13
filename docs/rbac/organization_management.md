@@ -180,7 +180,7 @@ Inverse of deactivate. No guards — always succeeds for an existing org.
 | Behavior | Note |
 |---|---|
 | Default org name | The org named `DEFAULT_ORGANIZATION_NAME` is **not** treated specially. It can be renamed, deactivated (subject to last-active guard), and reactivated like any other org. The env var only controls bootstrap. |
-| Inactive orgs in the org switcher | Until Story 7 lands, `/api/auth/me/` still includes inactive-org memberships in `memberships[]`. The FE should grey out orgs with `is_active=false` and prevent selecting them as the active org. |
+| Inactive orgs in the org switcher | `/api/profile/` filters inactive-org memberships out of `memberships[]` server-side. The user never sees deactivated orgs in their own profile. Admin endpoints still show every membership unchanged. |
 | Renaming behavior | Surrounding whitespace is trimmed. Empty / whitespace-only is rejected. Case-insensitive uniqueness — `"Acme"` and `"acme"` collide. |
 | 401 vs 403 | 401 = no/expired token (re-login). 403 = valid JWT but `is_superadmin: false` (redirect away from admin panel). |
 
@@ -191,7 +191,7 @@ Inverse of deactivate. No guards — always succeeds for an existing org.
 After Story 4, a successful `POST /api/auth/reset-user/` always leaves
 exactly one `OrganizationUser` row for the new superadmin in the
 `DEFAULT_ORGANIZATION_NAME`-named org with role `Superadmin`. If no such org
-exists at the time of reset, one is created. `GET /api/auth/me/` returns
+exists at the time of reset, one is created. `GET /api/profile/` returns
 `memberships[]` with that one entry.
 
 This restores the Bug 1 reproduction's expected end state.

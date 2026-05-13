@@ -1,11 +1,16 @@
 # Password Recovery
 
-Four endpoints plus a CLI fallback, all sharing a single orchestrator
+Three endpoints plus a CLI fallback, all sharing a single orchestrator
 (`PasswordRecoveryService`) that composes small single-purpose
 collaborators. Views are thin — they call the validator for shape
 checks, hand the cleaned payload to the service, and wrap the return in
 a DRF `Response`. All business rules and security invariants live in
 the service layer.
+
+> **Authenticated self-service password change** lives at
+> `/api/profile/password-change/{request,confirm}/` and is owned by
+> `UserProfileService`. See [user_profile.md](user_profile.md) §
+> "Two-step password change".
 
 ## Layering
 
@@ -71,16 +76,16 @@ Body: `{ "token": "<uuid>", "new_password": "<pw>" }`.
   lived access tokens still in circulation continue to work until they
   expire (bounded by `JWT_ACCESS_MINUTES`, default 15).
 
-### `POST /api/auth/password-change/` — authenticated self-service
+### Self-service password change — moved
 
-Body: `{ "current_password": "<pw>", "new_password": "<pw>" }`.
+The single-step `POST /api/auth/password-change/` endpoint was replaced
+by a two-step flow under `/api/profile/`. See
+[user_profile.md](user_profile.md) for details:
 
-* Verifies `current_password`. Wrong password → 400
-  (`invalid_current_password`).
-* Validates `new_password` strength.
-* On success: writes new password, blacklists the user's refresh
-  tokens, mints a fresh `{access, refresh}` pair so the calling device
-  stays logged in without a second round-trip.
+* `POST /api/profile/password-change/request/` — verify current
+  password, receive a single-use ticket.
+* `POST /api/profile/password-change/confirm/` — consume ticket, set
+  new password, receive a fresh JWT pair.
 
 ### `POST /api/auth/admin/password-reset/` — superadmin only
 
@@ -151,10 +156,10 @@ we tell the user an email is coming?" — inspect it, not `EMAIL_BACKEND`.
   bulk-invalidated every time a new reset is requested.
 * **Time-bound.** `PASSWORD_RESET_TOKEN_TTL` (default 15 min).
 * **Throttled.** `5/hour` per `ip|email`.
-* **Session kill on every password change.** Reset, self-service
-  change, admin reset, and CLI reset all blacklist every outstanding
-  refresh token for the user. Access tokens expire on their own
-  (≤ `JWT_ACCESS_MINUTES`).
+* **Session kill on every password change.** Reset, admin reset, CLI
+  reset (all here) and self-service change (via `UserProfileService`)
+  all blacklist every outstanding refresh token for the user. Access
+  tokens expire on their own (≤ `JWT_ACCESS_MINUTES`).
 * **Strength enforced uniformly.** Every entry point runs Django's
   `AUTH_PASSWORD_VALIDATORS`, via the same
   `AuthValidationService._validate_password_field`.
