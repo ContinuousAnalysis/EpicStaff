@@ -10,6 +10,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from tables.services.rbac.authentication import JwtOrApiKeyAuthentication
 from tables.models.rbac_models import ApiKey
 from tables.serializers.rbac_serializers import (
+    AdminPasswordResetSerializer,
     ApiKeyValidateResponseSerializer,
     AuthMeResponseSerializer,
     LoginSerializer,
@@ -18,6 +19,12 @@ from tables.serializers.rbac_serializers import (
     FirstSetupRequestSerializer,
     FirstSetupResponseSerializer,
     FirstSetupStatusSerializer,
+    PasswordChangeResponseSerializer,
+    PasswordChangeSerializer,
+    PasswordResetConfirmResponseSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestResponseSerializer,
+    PasswordResetRequestSerializer,
     ResetUserRequestSerializer,
     ResetUserResponseSerializer,
     SseTicketResponseSerializer,
@@ -29,10 +36,11 @@ from tables.serializers.rbac_serializers import (
 from tables.services.rbac.auth_service import AuthService, TokenPair
 from tables.services.rbac.auth_validation_service import AuthValidationService
 from tables.services.rbac.first_setup_service import FirstSetupService
+from tables.services.rbac.password_recovery_service import PasswordRecoveryService
 from tables.services.rbac.rbac_exceptions import InvalidRefreshTokenError
 from tables.services.rbac.reset_user_service import ResetUserService
 from tables.services.rbac.sse_ticket_service import SseTicketService
-from tables.throttles import LoginThrottle
+from tables.throttles import LoginThrottle, PasswordResetRequestThrottle
 
 
 class LoginView(TokenObtainPairView):
@@ -331,6 +339,143 @@ class SwaggerTokenView(APIView):
                 "token_type": "bearer",
             }
         )
+
+
+class PasswordResetRequestView(APIView):
+    """Anonymous password-reset initiation.
+
+    Uniform 200 response by design — does not reveal whether the email
+    exists. The response also flags whether SMTP is configured so the
+    frontend can guide the user to the CLI fallback when it is not.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [PasswordResetRequestThrottle]
+
+    _validator = AuthValidationService()
+    _service = PasswordRecoveryService()
+
+    @extend_schema(
+        summary="Request a password reset",
+        request=PasswordResetRequestSerializer,
+        responses={200: PasswordResetRequestResponseSerializer},
+    )
+    def post(self, request):
+        cleaned = self._validator.validate_password_reset_request(request.data)
+        result = self._service.request_reset(cleaned["email"])
+        return Response(
+            {
+                "detail": "If the email is registered, a reset link has been sent.",
+                "smtp_configured": result["smtp_configured"],
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetConfirmView(APIView):
+    """Consume a reset token and set a new password. Single-use, TTL-bound."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    _validator = AuthValidationService()
+    _service = PasswordRecoveryService()
+
+    @extend_schema(
+        summary="Confirm a password reset",
+        request=PasswordResetConfirmSerializer,
+        responses={
+            200: PasswordResetConfirmResponseSerializer,
+            400: OpenApiResponse(
+                description="Token invalid/expired/used or weak password"
+            ),
+        },
+    )
+    def post(self, request):
+        cleaned = self._validator.validate_password_reset_confirm(request.data)
+        self._service.confirm_reset(cleaned["token"], cleaned["new_password"])
+        return Response(
+            {"detail": "Password has been reset."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordChangeView(APIView):
+    """Authenticated self-service password change.
+
+    Verifies `current_password`, writes the new one, blacklists every
+    outstanding refresh token for the caller, and returns a fresh pair
+    so the calling device stays logged in without a round-trip.
+    """
+
+    authentication_classes = [JwtOrApiKeyAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    _validator = AuthValidationService()
+    _service = PasswordRecoveryService()
+
+    @extend_schema(
+        summary="Change your own password",
+        request=PasswordChangeSerializer,
+        responses={
+            200: PasswordChangeResponseSerializer,
+            400: OpenApiResponse(
+                description="Wrong current password or weak new password"
+            ),
+        },
+    )
+    def post(self, request):
+        if not getattr(request.user, "is_authenticated", False) or not hasattr(
+            request.user, "email"
+        ):
+            return Response(
+                {"detail": "This endpoint requires a user context."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        cleaned = self._validator.validate_password_change(request.data)
+        tokens = self._service.change_password(
+            request.user,
+            cleaned["current_password"],
+            cleaned["new_password"],
+        )
+        return Response(
+            {"access": tokens.access, "refresh": tokens.refresh},
+            status=status.HTTP_200_OK,
+        )
+
+
+class AdminPasswordResetView(APIView):
+    """Superadmin-only: set any user's password to a value the admin supplies.
+
+    Superadmin gate is enforced inside the service so CLI and API share
+    the same authorization path.
+    """
+
+    authentication_classes = [JwtOrApiKeyAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    _validator = AuthValidationService()
+    _service = PasswordRecoveryService()
+
+    @extend_schema(
+        summary="Reset another user's password (superadmin)",
+        request=AdminPasswordResetSerializer,
+        responses={
+            204: OpenApiResponse(description="Password reset"),
+            400: OpenApiResponse(description="Weak password"),
+            403: OpenApiResponse(description="Superadmin required"),
+            404: OpenApiResponse(description="User not found"),
+        },
+    )
+    def post(self, request):
+        cleaned = self._validator.validate_admin_password_reset(request.data)
+        self._service.admin_reset(
+            request.user,
+            cleaned["user_id"],
+            cleaned["new_password"],
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ResetUserView(APIView):
