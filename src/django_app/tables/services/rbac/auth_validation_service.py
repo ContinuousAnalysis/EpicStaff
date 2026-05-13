@@ -78,24 +78,6 @@ class AuthValidationService(BaseRBACValidator):
         self._raise_if_any(errors)
         return {"user_id": int(user_id), "new_password": new_password}
 
-    def validate_password_change(self, data: dict) -> dict:
-        current_password = data.get("current_password")
-        new_password = data.get("new_password")
-
-        errors: list[FieldError] = []
-        errors.extend(
-            self._require_nonblank_string("current_password", current_password)
-        )
-        errors.extend(
-            self._validate_password_field(new_password, field_name="new_password")
-        )
-
-        self._raise_if_any(errors)
-        return {
-            "current_password": current_password,
-            "new_password": new_password,
-        }
-
     def validate_login(self, data: dict) -> dict:
         email = data.get("email")
         password = data.get("password")
