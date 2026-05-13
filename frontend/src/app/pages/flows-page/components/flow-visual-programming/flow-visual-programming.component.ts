@@ -63,6 +63,7 @@ import {
     mapGraphDtoToFlowModel,
     normalizeFlowPorts,
 } from '../../../../visual-programming/utils/load';
+import { rewriteLegacyOnceScheduleName } from '../../../../visual-programming/utils/load/nodes/schedule-trigger-node.mapper';
 import {
     buildBulkSavePayload,
     buildUuidToBackendIdMap,
@@ -575,7 +576,23 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         this.availableFlowLights.set(flows);
         const normalizedFlow = normalizeFlowPorts(this.loadedFlowState());
         this.flowService.setFlow(normalizedFlow);
+        // savedFlowState captures the as-persisted snapshot used for dirty-tracking.
+        // It is set BEFORE the legacy-name rewrite so that flows with legacy names are
+        // immediately marked dirty — the user accepted this behaviour (EST-2826).
         this.savedFlowState.set(cloneFlowState(normalizedFlow));
+
+        // Eagerly rewrite legacy "at HH:MM" once-schedule names to "at HH-MM" in the
+        // live canvas state. Because savedFlowState already holds the old names, the
+        // flow will be marked dirty until the user saves, which is the intended UX.
+        const rewrittenFlow: FlowModel = {
+            ...normalizedFlow,
+            nodes: normalizedFlow.nodes.map((node) => {
+                if (node.type !== NodeType.SCHEDULE_TRIGGER) return node;
+                const rewrittenName = rewriteLegacyOnceScheduleName(node.node_name);
+                return rewrittenName !== node.node_name ? { ...node, node_name: rewrittenName } : node;
+            }),
+        };
+        this.flowService.setFlow(rewrittenFlow);
 
         this.isLoaded.set(true);
 

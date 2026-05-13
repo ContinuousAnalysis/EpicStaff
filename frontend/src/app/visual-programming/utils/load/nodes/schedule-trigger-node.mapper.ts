@@ -17,6 +17,19 @@ function normalizeTimezone(iana: string | null | undefined): string {
     return raw === 'Europe/Kiev' ? 'Europe/Kyiv' : raw;
 }
 
+/**
+ * Rewrites legacy "Once on DD MMM YYYY at HH:MM" names to the new
+ * "Once on DD MMM YYYY at HH-MM" format (colon → hyphen in the time part).
+ * Returns the input unchanged if it does not match the legacy pattern.
+ * Names that already use a hyphen or carry a " #N" suffix are left untouched.
+ */
+export function rewriteLegacyOnceScheduleName(name: string): string {
+    return name.replace(
+        /^(Once on \d{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} at )(\d{2}):(\d{2})((?:\s#\d+)?)$/,
+        '$1$2-$3$4'
+    );
+}
+
 export function mapScheduleTriggerNodeToModel(dto: GetScheduleTriggerNodeRequest): ScheduleTriggerNodeModel {
     const ui = mapNodeDtoMetadataToFlowNodeMetadata(dto.metadata, NodeType.SCHEDULE_TRIGGER);
 
