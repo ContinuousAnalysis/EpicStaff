@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from collections import defaultdict
 from drf_yasg.utils import swagger_auto_schema
@@ -61,7 +62,6 @@ from tables.enums import SessionWarningType
 
 from tables.models import (
     Session,
-    SourceCollection,
     # DocumentMetadata,
     GraphOrganization,
     GraphOrganizationUser,
@@ -80,9 +80,9 @@ from tables.serializers.model_serializers import (
 from tables.serializers.storage_serializers import SessionOutputFileSerializer
 from tables.serializers.serializers import (
     AnswerToLLMSerializer,
+    BulkExportSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
-    ProcessCollectionEmbeddingSerializer,
     ProcessRagIndexingSerializer,
     RunSessionSerializer,
     RegisterTelegramTriggerSerializer,
@@ -95,8 +95,14 @@ from tables.serializers.quickstart_serializers import (
     QuickstartStatusSerializer,
 )
 from tables.serializers.default_config_serializers import DefaultModelsSerializer
-from tables.models.default_models import DefaultModels
 from tables.filters import SessionFilter  # CollectionFilter,
+from tables.services.import_export_service import ViewSetImportExportService
+from tables.import_export.enums import EntityType
+from tables.import_export.export_format_strategies import (
+    JsonExportFormatStrategy,
+    CsvExportFormatStrategy,
+)
+from tables.import_export.strategies.session import SessionStrategy
 
 from .default_config import *
 
@@ -128,6 +134,22 @@ class SessionViewSet(
 
     serializer_class = SessionSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.import_export_service = ViewSetImportExportService(
+            entity_type=EntityType.SESSION,
+            export_prefix="session",
+            filename_attr="id",
+            format_strategies={
+                "json": JsonExportFormatStrategy(),
+                "csv": CsvExportFormatStrategy(
+                    fields=SessionStrategy.CSV_FIELDS,
+                    row_mapper=SessionStrategy.csv_row_mapper,
+                ),
+            },
+        )
+
     filterset_class = SessionFilter
     ordering_fields = [
         "created_at",
@@ -171,6 +193,98 @@ class SessionViewSet(
             )
 
         return qs
+
+    _FORMAT_QUERY_PARAM = OpenApiParameter(
+        name="export_format",
+        location=OpenApiParameter.QUERY,
+        description="Export format: 'json' (default) returns a structured JSON file; 'csv' returns a flat CSV of session messages.",
+        required=False,
+        type=str,
+        enum=["json", "csv"],
+        default="json",
+    )
+
+    @extend_schema(
+        description="Export a single session's messages as a downloadable file. "
+        "Includes messages from all nested sub-sessions.",
+        parameters=[_FORMAT_QUERY_PARAM],
+        responses={
+            200: OpenApiResponse(
+                description="File download (application/json or text/csv)."
+            ),
+        },
+    )
+    @action(detail=True, methods=["get"])
+    def export(self, request, pk: int):
+        fmt = request.query_params.get("export_format", "json")
+        return self.import_export_service.export_entity(self.get_object(), fmt=fmt)
+
+    @extend_schema(
+        description="Export messages from multiple sessions as a single downloadable file. "
+        "Includes messages from all nested sub-sessions for each requested session.",
+        request=BulkExportSerializer,
+        parameters=[_FORMAT_QUERY_PARAM],
+        responses={
+            200: OpenApiResponse(
+                description="File download (application/json or text/csv)."
+            ),
+            400: OpenApiResponse(
+                description="Invalid request body or one or more session IDs do not exist."
+            ),
+        },
+    )
+    @action(detail=False, methods=["post"], url_path="bulk-export")
+    def bulk_export(self, request):
+        serializer = BulkExportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        entity_ids = serializer.validated_data["ids"]
+
+        existing_ids = Session.objects.filter(id__in=entity_ids).values_list(
+            "id", flat=True
+        )
+        if len(existing_ids) != len(entity_ids):
+            return Response(
+                {"message": "Some entity IDs do not exist"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        fmt = request.query_params.get("export_format", "json")
+        return self.import_export_service.bulk_export(entity_ids, fmt=fmt)
+
+    @extend_schema(
+        description="Export messages from all top-level sessions belonging to a graph as a single downloadable file. "
+        "Includes messages from all nested sub-sessions.",
+        parameters=[_FORMAT_QUERY_PARAM],
+        responses={
+            200: OpenApiResponse(
+                description="File download (application/json or text/csv)."
+            ),
+            404: OpenApiResponse(
+                description="Graph not found or no sessions exist for this graph."
+            ),
+        },
+    )
+    @action(
+        detail=False, methods=["get"], url_path=r"export-by-graph/(?P<graph_id>[0-9]+)"
+    )
+    def export_by_graph(self, request, graph_id: int):
+        if not Graph.objects.filter(id=graph_id).exists():
+            raise NotFound(f"Graph {graph_id} not found")
+
+        session_ids = list(
+            Session.objects.filter(
+                graph_id=graph_id, parent_session_id=None
+            ).values_list("id", flat=True)
+        )
+
+        if not session_ids:
+            return Response(
+                {"message": "No sessions found for this graph"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        fmt = request.query_params.get("export_format", "json")
+        return self.import_export_service.bulk_export(session_ids, fmt=fmt)
 
     @extend_schema(
         description="Get counts of each status grouped by graph ID",
