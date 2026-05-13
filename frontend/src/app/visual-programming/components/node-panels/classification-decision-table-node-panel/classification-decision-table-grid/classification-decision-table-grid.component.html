@@ -15,7 +15,32 @@
         </div>
     </div>
 
-    <div class="grid-wrapper">
+    <div
+        class="grid-wrapper"
+        [class.has-above-btns]="hasAboveAddButtons()"
+    >
+        <!-- Above-grid "+" buttons: shown only when the corresponding params group is empty -->
+        @if (!hasFieldCols() && exprAddPos()) {
+            <button
+                class="col-above-add-btn"
+                [style.left.px]="exprAddPos()!.x"
+                (click)="toggleFieldPicker($event)"
+                title="Add expression variable"
+            >
+                <i class="ti ti-plus"></i>
+            </button>
+        }
+        @if (!hasManipCols() && manipAddPos()) {
+            <button
+                class="col-above-add-btn"
+                [style.left.px]="manipAddPos()!.x"
+                (click)="toggleManipFieldPicker($event)"
+                title="Add manipulation variable"
+            >
+                <i class="ti ti-plus"></i>
+            </button>
+        }
+
         <ag-grid-angular
             class="decision-grid ag-theme-quartz-dark"
             [class.empty-state]="isEmpty()"
@@ -62,29 +87,6 @@
                 <i class="ti ti-row-insert-bottom"></i> Add Row Below
             </div>
         </div>
-    }
-
-    @if (!hasFieldCols() && exprAddPos()) {
-        <button
-            class="col-overlay-add-btn"
-            [style.left.px]="exprAddPos()!.x"
-            [style.top.px]="exprAddPos()!.y"
-            (click)="toggleFieldPicker($event)"
-            title="Add expression variable"
-        >
-            <i class="ti ti-plus"></i>
-        </button>
-    }
-    @if (!hasManipCols() && manipAddPos()) {
-        <button
-            class="col-overlay-add-btn"
-            [style.left.px]="manipAddPos()!.x"
-            [style.top.px]="manipAddPos()!.y"
-            (click)="toggleManipFieldPicker($event)"
-            title="Add manipulation variable"
-        >
-            <i class="ti ti-plus"></i>
-        </button>
     }
 
     <app-multi-select

@@ -130,6 +130,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
 
     public hasManipCols = computed(() => this.manipColumnOrder().some((id) => id.startsWith('manip_')));
 
+    /** True when at least one above-grid "+" button is visible (i.e. at least one params group is absent). */
+    public hasAboveAddButtons = computed(() => !this.hasFieldCols() || !this.hasManipCols());
+
     // ── Multi-select items for the field pickers ──
 
     /** Items for the expression-side field picker, grouped by Domain then Input Map.
@@ -189,25 +192,38 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         effect(() => {
             const groups = this.conditionGroups();
             if (groups && groups.length > 0) {
-                this.rowData.set([...groups]);
-                if (!this.fieldColumnsInitialized) {
-                    this.initFieldColumnsFromData(groups);
-                    this.fieldColumnsInitialized = true;
-                }
+                untracked(() => {
+                    this.rowData.set([...groups]);
+                    if (!this.fieldColumnsInitialized) {
+                        this.initFieldColumnsFromData(groups);
+                        this.fieldColumnsInitialized = true;
+                    }
+                });
             }
         });
         effect(() => {
             this.prompts();
-            if (this.gridApi) {
-                this.gridApi.refreshCells({ columns: ['prompt_id'], force: true });
-            }
+            untracked(() => {
+                if (this.gridApi) {
+                    this.gridApi.refreshCells({ columns: ['prompt_id'], force: true });
+                }
+            });
         });
         effect(() => {
             this.movableColumnOrder();
             this.manipColumnOrder();
-            this.rebuildColumnDefs();
-            this.syncRowsFromExpression();
-            this.syncRowsFromManipulation();
+            untracked(() => {
+                this.rebuildColumnDefs();
+                this.syncRowsFromExpression();
+                this.syncRowsFromManipulation();
+            });
+        });
+        effect(() => {
+            this.hasFieldCols();
+            this.hasManipCols();
+            untracked(() => {
+                setTimeout(() => this.updateAddButtonPositions(), 0);
+            });
         });
     }
 
@@ -332,6 +348,9 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             });
             this.cdr.markForCheck();
         },
+        onFirstDataRendered: () => {
+            setTimeout(() => this.updateAddButtonPositions(), 0);
+        },
         onColumnMoved: (event: ColumnMovedEvent) => {
             if (this.isRebuilding) return;
             if (!event.finished) return;
@@ -347,12 +366,16 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             const manipResult = allVisible.filter((id) => id?.startsWith('manip_') || id === 'manipulation');
             this.manipColumnOrder.set(manipResult);
             this.saveGridState();
+            setTimeout(() => this.updateAddButtonPositions(), 0);
         },
         onColumnResized: (event: ColumnResizedEvent) => {
             if (event.finished) {
                 this.saveGridState();
                 setTimeout(() => this.updateAddButtonPositions(), 0);
             }
+        },
+        onColumnVisible: () => {
+            setTimeout(() => this.updateAddButtonPositions(), 0);
         },
     };
 
@@ -1347,23 +1370,39 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
     }
 
     private updateAddButtonPositions(): void {
+        const wrapperEl = this.elRef.nativeElement.querySelector('.grid-wrapper') as HTMLElement | null;
+        const containerEl = wrapperEl ?? this.elRef.nativeElement;
+        const containerRect = containerEl.getBoundingClientRect();
+
+        const findLeafCell = (colId: string): HTMLElement | null => {
+            const cells = Array.from(
+                this.elRef.nativeElement.querySelectorAll(`.ag-header-cell[col-id="${colId}"]`)
+            ) as HTMLElement[];
+            // Exclude group-header cells (those have .ag-header-group-cell)
+            return cells.find((c) => !c.classList.contains('ag-header-group-cell')) ?? null;
+        };
+
         if (this.hasFieldCols()) {
             this.exprAddPos.set(null);
         } else {
-            const exprCell = this.elRef.nativeElement.querySelector('.ag-header-cell[col-id="expression"]');
-            if (exprCell) {
-                const rect = (exprCell as HTMLElement).getBoundingClientRect();
-                this.exprAddPos.set({ x: rect.right - 26, y: rect.top + rect.height / 2 - 10 });
+            const cell = findLeafCell('expression');
+            if (cell) {
+                const r = cell.getBoundingClientRect();
+                this.exprAddPos.set({ x: r.right - containerRect.left, y: 0 });
+            } else {
+                this.exprAddPos.set(null);
             }
         }
 
         if (this.hasManipCols()) {
             this.manipAddPos.set(null);
         } else {
-            const manipCell = this.elRef.nativeElement.querySelector('.ag-header-cell[col-id="manipulation"]');
-            if (manipCell) {
-                const rect = (manipCell as HTMLElement).getBoundingClientRect();
-                this.manipAddPos.set({ x: rect.right - 26, y: rect.top + rect.height / 2 - 10 });
+            const cell = findLeafCell('manipulation');
+            if (cell) {
+                const r = cell.getBoundingClientRect();
+                this.manipAddPos.set({ x: r.right - containerRect.left, y: 0 });
+            } else {
+                this.manipAddPos.set(null);
             }
         }
 
@@ -1713,7 +1752,6 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         this.unmergedGroup.set(null);
         const updatedRows = this.getUpdatedRows();
         this.emitChanges(updatedRows);
-        this.rebuildColumnDefs();
     }
 
     private createNewRow(index: number): ConditionGroup {

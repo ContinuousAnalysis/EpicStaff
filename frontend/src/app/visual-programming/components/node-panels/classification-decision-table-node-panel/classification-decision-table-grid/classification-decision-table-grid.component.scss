@@ -205,6 +205,13 @@
 .grid-wrapper {
     position: relative;
     width: 100%;
+    overflow: visible;
+
+    // When at least one params group is absent, reserve space above the ag-grid
+    // for the floating "+" button row.
+    &.has-above-btns {
+        padding-top: 36px;
+    }
 }
 
 .hidden-col-badge {
@@ -241,34 +248,39 @@
     }
 }
 
-.col-overlay-add-btn {
-    position: fixed;
+// Above-grid "+" button: shown centered above Expression/Manipulation column
+// when the corresponding params group is empty (no field variables added yet).
+.col-above-add-btn {
+    position: absolute;
+    top: 16px;
     width: 16px;
     height: 16px;
     border-radius: 4px;
-    background: #27272b;
-    border: 1px solid rgba(104, 95, 255, 0.5);
-    color: #a89fff;
+    background: transparent;
+    border: 1px solid #685fff;
+    color: #685fff;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     z-index: 20;
     padding: 0;
     box-sizing: border-box;
+    transform: translateX(-50%);
     transition:
         background 0.15s ease,
-        color 0.15s ease;
+        color 0.15s ease,
+        border-color 0.15s ease;
 
     &:hover {
-        background: rgba(104, 95, 255, 0.5);
-        color: #fff;
-        border-color: var(--accent-color);
+        background: rgba(104, 95, 255, 0.15);
+        color: #a89fff;
+        border-color: #a89fff;
     }
 
     i {
-        font-size: 0.75rem;
+        font-size: 0.85rem;
         line-height: 1;
     }
 }
