@@ -214,3 +214,35 @@ class CannotSelfAssignError(CustomAPIExeption):
     status_code = 400
     default_detail = "You cannot include yourself in the assignment batch."
     default_code = "cannot_self_assign"
+
+
+class InvalidPasswordChangeTicketError(CustomAPIExeption):
+    """Raised by UserProfileService.password_change_confirm when the
+    submitted ticket is unknown, already used, expired, or does not belong
+    to the calling user. Generic message — does not distinguish the cases
+    so a third party cannot probe whether a ticket exists."""
+
+    status_code = 400
+    default_detail = "Password-change ticket is invalid, expired, or already used."
+    default_code = "invalid_password_change_ticket"
+
+
+class InvalidAvatarError(CustomAPIExeption):
+    """Raised by UserAvatarStorageService when Pillow verification fails
+    or the decoded image format is outside settings.AVATAR_ALLOWED_FORMATS.
+    Generic message — does not expose Pillow's internal reason."""
+
+    status_code = 400
+    default_detail = "Uploaded file is not a valid JPEG or PNG image."
+    default_code = "invalid_avatar"
+
+
+class AvatarTooLargeError(CustomAPIExeption):
+    """Raised by UserAvatarStorageService when an avatar upload exceeds
+    settings.AVATAR_MAX_BYTES. The default_detail is overridden at
+    raise-site with the actual maximum so the FE can render it without
+    hardcoding the number."""
+
+    status_code = 400
+    default_detail = "Avatar file exceeds the maximum allowed size."
+    default_code = "avatar_too_large"
