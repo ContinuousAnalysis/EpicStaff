@@ -24,6 +24,10 @@ Base URL in examples: `http://localhost:8000`.
 | GET | `/api/auth/api-key/validate/` | ApiKey | Metadata about the calling key |
 | POST | `/api/auth/swagger-token/` | public (throttled) | OAuth2 password flow for Swagger |
 | POST | `/api/auth/reset-user/` | Bearer JWT or ApiKey | Destructive: wipe users+keys, recreate superadmin |
+| POST | `/api/auth/password-reset/request/` | public (throttled) | Start password-recovery flow — see [password_recovery.md](password_recovery.md) |
+| POST | `/api/auth/password-reset/confirm/` | public | Consume reset token + set new password |
+| POST | `/api/auth/password-change/` | Bearer JWT | Authenticated self-service password change |
+| POST | `/api/auth/admin/password-reset/` | Bearer JWT (superadmin) | Superadmin resets another user's password |
 
 **Login/Swagger-token throttle:** `LOGIN_THROTTLE_RATE` env (default `5/min`), bucketed per `<ip>|<email>`. 6th attempt inside the window returns `429` with `Retry-After`.
 
