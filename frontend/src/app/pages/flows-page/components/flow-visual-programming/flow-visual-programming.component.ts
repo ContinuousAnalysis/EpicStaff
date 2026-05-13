@@ -44,6 +44,7 @@ import { FlowsApiService } from '../../../../features/flows/services/flows-api.s
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { RunGraphService } from '../../../../features/flows/services/run-graph-session.service';
 import { FlowMessagesPanelComponent } from '../../../../pages/running-graph/components/flow-messages-panel/flow-messages-panel.component';
+import { RunSessionSSEService } from '../../../../pages/running-graph/services/graph-session-sse.service';
 import { ConfigService } from '../../../../services/config/config.service';
 import { ToastService } from '../../../../services/notifications/toast.service';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
@@ -151,6 +152,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly epicChatService: EpicChatService,
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
         private readonly unsavedChangesDialog: UnsavedChangesDialogService,
+        private readonly runSessionSSEService: RunSessionSSEService,
         private readonly sidePanelService: SidePanelService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
@@ -346,6 +348,9 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                 takeUntilDestroyed(this.destroyRef),
                 tap((response: { session_id?: number }) => {
                     this.currentSessionId = response.session_id?.toString() ?? null;
+                    if (this.currentSessionId) {
+                        this.runSessionSSEService.startStream(this.currentSessionId);
+                    }
                     this.isPanelOpen.set(true);
                     this.isPanelCollapsed.set(false);
                     this.cdr.markForCheck();
@@ -536,6 +541,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
     public ngOnDestroy(): void {
         this.flowUnsavedStateService.unregister();
+        this.runSessionSSEService.stopStream();
     }
 
     private addStartNodeIfNeeded(flowModel: FlowModel): FlowModel {

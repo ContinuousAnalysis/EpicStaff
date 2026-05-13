@@ -49,6 +49,49 @@ class InvalidSseTicketError(CustomAPIExeption):
     default_code = "invalid_sse_ticket"
 
 
+class InvalidOrExpiredTokenError(CustomAPIExeption):
+    """Raised by PasswordRecoveryService.confirm_reset when the submitted
+    token is unknown, already used, or past its TTL. The message is
+    intentionally generic so the caller cannot distinguish between those
+    cases and cannot probe token validity.
+    """
+
+    status_code = 400
+    default_detail = "Reset token is invalid, expired, or already used."
+    default_code = "invalid_or_expired_reset_token"
+
+
+class InvalidCurrentPasswordError(CustomAPIExeption):
+    """Raised by PasswordRecoveryService.change_password when the caller
+    submits a wrong `current_password`. Flat 400 (not per-field) to avoid
+    leaking whether the password was well-formed but wrong vs. malformed.
+    """
+
+    status_code = 400
+    default_detail = "Current password is incorrect."
+    default_code = "invalid_current_password"
+
+
+class SuperadminRequiredError(CustomAPIExeption):
+    """Raised when a non-superadmin attempts a superadmin-only action
+    (admin password reset)."""
+
+    status_code = 403
+    default_detail = "Superadmin privileges are required for this action."
+    default_code = "superadmin_required"
+
+
+class UserNotFoundError(CustomAPIExeption):
+    """Raised by admin-only flows (admin password reset, CLI reset) when
+    the target user does not exist. Never used on anonymous/self-service
+    flows — those always succeed silently to avoid enumeration.
+    """
+
+    status_code = 404
+    default_detail = "User not found."
+    default_code = "user_not_found"
+
+
 class DefaultOrganizationConflictError(CustomAPIExeption):
     """
     Raised when creating the default Organization during first-setup hits a
