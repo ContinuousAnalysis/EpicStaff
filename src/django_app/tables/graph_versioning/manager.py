@@ -19,6 +19,7 @@ from tables.models import (
     PythonCode,
     PythonCodeTool,
     PythonNode,
+    WebhookTrigger,
     WebhookTriggerNode,
 )
 
@@ -73,6 +74,16 @@ class GraphVersioningManager:
             existing_ids = set(
                 model.objects.filter(id__in=ids).values_list("id", flat=True)
             )
+
+            # set as missing webhook triggers without ngrok config
+            if entity_type_value == EntityType.WEBHOOK_TRIGGER.value:
+                unconfigured_ids = set(
+                    WebhookTrigger.objects.filter(
+                        id__in=existing_ids, ngrok_webhook_config__isnull=True
+                    ).values_list("id", flat=True)
+                )
+                existing_ids -= unconfigured_ids
+
             available_deps[entity_type_value] = [i for i in ids if i in existing_ids]
             missing_deps[entity_type_value] = [i for i in ids if i not in existing_ids]
 

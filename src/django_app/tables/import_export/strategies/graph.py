@@ -38,9 +38,14 @@ class GraphStrategy(EntityImportExportStrategy):
             instance.crew_node_list.values_list("crew_id", flat=True)
         )
         deps[EntityType.WEBHOOK_TRIGGER] = list(
-            instance.webhook_trigger_node_list.values_list(
-                "webhook_trigger_id", flat=True
-            )
+            {
+                *instance.webhook_trigger_node_list.values_list(
+                    "webhook_trigger_id", flat=True
+                ),
+                *instance.telegram_trigger_node_list.values_list(
+                    "webhook_trigger_id", flat=True
+                ),
+            }
         )
         deps[EntityType.GRAPH] = set(
             instance.subgraph_node_list.values_list("subgraph_id", flat=True)
