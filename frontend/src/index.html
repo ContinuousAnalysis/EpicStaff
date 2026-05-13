@@ -3890,14 +3890,18 @@
         </svg>
 
         <app-root></app-root>
-        <!-- EpicChat Widget (CDN).
-             Choose ONE of the two <script> tags below by commenting out the other:
-               - prod (pinned): predictable, won't break on widget releases.
-                 To upgrade, bump v2-0-2 → v2-0-3 after checking the new version.
+        <!-- EpicChat Widget. Choose ONE <script> tag below; comment the others out:
+               - prod (CDN, pinned): predictable, won't break on widget releases.
+                 To upgrade, bump v2-0-3 → v2-0-N after checking the new version.
                  Versions: https://gitlab.hysdev.com/sheetsui/epicstaffchat/-/tags
-               - dev (rolling): always the latest widget master build. Use for dev
-                 to catch regressions early. -->
-        <script src="https://v2-0-3.epicstaffchat.pages.dev/embed.js"></script>
+               - dev (CDN, rolling): always the latest widget master build.
+                 Use to catch regressions on dev/staging hosts.
+               - local widget dev: loads the widget from public/epicchat-widget/.
+                 Use ONLY while running `npm run dev:epicstaff` in the widget repo
+                 (the rebuild watcher copies fresh builds into that folder).
+                 The folder is gitignored, so it only exists on machines doing widget dev. -->
+        <!-- <script src="https://v2-0-3.epicstaffchat.pages.dev/embed.js"></script> -->
         <!-- <script src="https://epicstaffchat.pages.dev/embed.js"></script> -->
+        <script src="/epicchat-widget/embed.js"></script>
     </body>
 </html>
