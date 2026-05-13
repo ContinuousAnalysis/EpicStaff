@@ -1,5 +1,7 @@
 from typing import Any
 
+from django.core.files.uploadedfile import UploadedFile
+
 from tables.services.rbac.base_rbac_validator import BaseRBACValidator, FieldError
 
 
@@ -15,7 +17,9 @@ class UserValidationService(BaseRBACValidator):
     echoed as-is so the FE can highlight the offending input.
     """
 
-    _redacted_fields = frozenset({"password"})
+    _redacted_fields = frozenset(
+        {"password", "new_password", "current_password", "ticket"}
+    )
 
     # ---- create_user ----
 
@@ -233,3 +237,92 @@ class UserValidationService(BaseRBACValidator):
             "email": email if email else None,
             "role_name": role_name if role_name else None,
         }
+
+    # ---- Story 6: profile ----
+
+    def validate_profile_patch(self, data: dict) -> dict:
+        """`PATCH /api/profile/`.
+
+        Returns a cleaned dict containing only the keys that were in
+        `data` and that passed validation. Unknown keys are silently
+        ignored — they cannot reach the service.
+
+        Now: display_name is the only mutable field. Future fields
+        land here as additional branches.
+        """
+        cleaned: dict = {}
+        errors: list[FieldError] = []
+
+        if "display_name" in data:
+            value = data["display_name"]
+            if value is None:
+                cleaned["display_name"] = None
+            elif not isinstance(value, str):
+                errors.append(
+                    FieldError(
+                        "display_name",
+                        self._echo("display_name", value),
+                        "Must be a string or null.",
+                    )
+                )
+            else:
+                trimmed = value.strip()
+                if len(trimmed) == 0:
+                    errors.append(
+                        FieldError(
+                            "display_name",
+                            self._echo("display_name", value),
+                            "Must not be blank. Use null to clear.",
+                        )
+                    )
+                elif len(trimmed) > 255:
+                    errors.append(
+                        FieldError(
+                            "display_name",
+                            self._echo("display_name", value),
+                            "Must be 255 characters or fewer.",
+                        )
+                    )
+                else:
+                    cleaned["display_name"] = trimmed
+
+        self._raise_if_any(errors)
+        return cleaned
+
+    def validate_avatar_upload(self, data) -> UploadedFile:
+        """`POST /api/profile/avatar/`.
+
+        Shape only: `avatar` key present and is an UploadedFile. Size and
+        content validation live in UserAvatarStorageService and raise
+        their own typed exceptions.
+        """
+        file = data.get("avatar") if hasattr(data, "get") else None
+        errors: list[FieldError] = []
+        if file is None:
+            errors.append(FieldError("avatar", None, "This field is required."))
+        elif not isinstance(file, UploadedFile):
+            errors.append(FieldError("avatar", "<non-file>", "Must be a file upload."))
+        self._raise_if_any(errors)
+        return file
+
+    def validate_password_change_request(self, data: dict) -> dict:
+        """`POST /api/profile/password-change/request/`. Body: current_password."""
+        current_password = data.get("current_password")
+        errors: list[FieldError] = []
+        errors.extend(
+            self._require_nonblank_string("current_password", current_password)
+        )
+        self._raise_if_any(errors)
+        return {"current_password": current_password}
+
+    def validate_password_change_confirm(self, data: dict) -> dict:
+        """`POST /api/profile/password-change/confirm/`. Body: ticket, new_password."""
+        ticket = data.get("ticket")
+        new_password = data.get("new_password")
+        errors: list[FieldError] = []
+        errors.extend(self._require_nonblank_string("ticket", ticket))
+        errors.extend(
+            self._validate_password_field(new_password, field_name="new_password")
+        )
+        self._raise_if_any(errors)
+        return {"ticket": ticket, "new_password": new_password}
