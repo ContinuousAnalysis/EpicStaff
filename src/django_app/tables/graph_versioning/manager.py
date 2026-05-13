@@ -133,6 +133,7 @@ class GraphVersioningManager:
                             "node_name": node_name,
                             "field": field,
                             "missing_node_id": target,
+                            "node_id": node.get("id"),
                             "reason": f"Referenced Node #{target} no longer exists.",
                         }
                     )
@@ -147,6 +148,7 @@ class GraphVersioningManager:
                             "node_name": node_name,
                             "field": f"condition_groups[{group.get('group_name')}].next_node_id",
                             "missing_node_id": target,
+                            "node_id": node.get("id"),
                             "reason": f"Referenced Node #{target} no longer exists.",
                         }
                     )
