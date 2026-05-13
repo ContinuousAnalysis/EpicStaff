@@ -98,6 +98,8 @@ from tables.serializers.default_config_serializers import DefaultModelsSerialize
 from tables.models.default_models import DefaultModels
 from tables.filters import SessionFilter  # CollectionFilter,
 
+from tables.swagger_schemas.answer_to_llm_schema import ANSWER_TO_LLM
+
 from .default_config import *
 
 
@@ -514,15 +516,7 @@ def delete_environment_config(request, *args, **kwargs):
 
 
 class AnswerToLLM(APIView):
-    @extend_schema(
-        request=AnswerToLLMSerializer,
-        responses={
-            202: OpenApiResponse(description="User input sent"),
-            400: OpenApiResponse(description="Invalid data provided"),
-            404: OpenApiResponse(description="Session not found"),
-            418: OpenApiResponse(description="Session status is not wait_for_input"),
-        },
-    )
+    @extend_schema(**ANSWER_TO_LLM)
     def post(self, request, *args, **kwargs):
         serializer = AnswerToLLMSerializer(data=request.data)
         if not serializer.is_valid():
