@@ -1,5 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    DestroyRef,
+    effect,
+    ElementRef,
+    HostListener,
+    inject,
+    signal,
+    ViewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterModule } from '@angular/router';
 import { AppSvgIconComponent, PaginationControlsComponent } from '@shared/components';
@@ -36,7 +46,10 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                 <span class="slash">/All sessions</span>
             </div>
         </div>
-        <div class="global-sessions-content">
+        <div
+            class="global-sessions-content"
+            #contentRef
+        >
             <!-- LEFT PANEL: filters + table + pagination -->
             <div class="left-panel">
                 <div class="filter-controls">
@@ -102,20 +115,54 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                 }
             </div>
 
+            <div
+                class="panel-divider"
+                [class.panel-divider--open]="isPanelOpen()"
+                (mousedown)="isPanelOpen() && startResize($event)"
+            >
+                <button
+                    class="panel-toggle-btn"
+                    (click)="togglePanel(); $event.stopPropagation()"
+                    [title]="isPanelOpen() ? 'Close panel' : 'Open panel'"
+                >
+                    <app-svg-icon
+                        [icon]="isPanelOpen() ? 'arrow-right' : 'arrow-left'"
+                        size="12px"
+                    >
+                    </app-svg-icon>
+                </button>
+            </div>
+
             <!-- RIGHT PANEL: session details -->
-            <div class="right-panel">
+            <div
+                class="right-panel"
+                [class.right-panel--open]="isPanelOpen()"
+                [style.width]="isPanelOpen() ? rightPanelWidth() + '%' : '0'"
+            >
                 @if (previewSession(); as session) {
                     <div class="preview-header">
-                        <div class="preview-title">
-                            <span class="preview-session-id">Session #{{ session.id }}</span>
-                            <span class="preview-session-flow">{{ session.graph_name }}</span>
+                        <div class="preview-header-left">
+                            <div class="preview-header-icon">
+                                <app-svg-icon
+                                    icon="heartbeat"
+                                    size="18px"
+                                />
+                            </div>
+                            <span class="preview-header-title">Session execution</span>
                         </div>
-                        <button
-                            class="preview-open-btn"
-                            (click)="onViewSession(session.id)"
-                        >
-                            Open ↗
-                        </button>
+                        <div class="preview-header-right">
+                            <span class="preview-session-id-badge">#{{ session.id }}</span>
+                            <button
+                                class="preview-open-btn"
+                                (click)="onViewSession(session.id)"
+                                title="Open session"
+                            >
+                                <app-svg-icon
+                                    icon="arrow-up-right"
+                                    size="16px"
+                                />
+                            </button>
+                        </div>
                     </div>
                     <div class="preview-body">
                         <app-graph-messages
@@ -126,7 +173,7 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                     </div>
                 } @else {
                     <div class="preview-empty">
-                        <span>Click Preview to view sessions details</span>
+                        <span>Click Preview to view session details</span>
                     </div>
                 }
             </div>
@@ -136,6 +183,8 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GlobalSessionsListComponent {
+    @ViewChild('contentRef') contentRef!: ElementRef<HTMLElement>;
+
     public sessions = signal<GraphSessionLight[]>([]);
     public isLoaded = signal<boolean>(false);
     public currentPage = signal(1);
@@ -147,6 +196,11 @@ export class GlobalSessionsListComponent {
     public selectedIds = signal<Set<number>>(new Set());
     public availableFlows = signal<GetGraphLightRequest[]>([]);
     public totalCount = signal(0);
+    public isPanelOpen = signal(false);
+    public rightPanelWidth = signal(35);
+    private isResizing = false;
+    private resizeStartX = 0;
+    private resizeStartWidth = 0;
     public previewSession = signal<GraphSessionLight | null>(null);
     private reloadTrigger = signal(0);
     private cancelLoad$ = new Subject<void>();
@@ -176,6 +230,33 @@ export class GlobalSessionsListComponent {
                     this.availableFlows.set(flows);
                 },
             });
+    }
+
+    public togglePanel(): void {
+        this.isPanelOpen.update((v) => !v);
+    }
+
+    public startResize(event: MouseEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.isResizing = true;
+        this.resizeStartX = event.clientX;
+        this.resizeStartWidth = this.rightPanelWidth();
+    }
+
+    @HostListener('document:mousemove', ['$event'])
+    public onMouseMove(event: MouseEvent): void {
+        if (!this.isResizing) return;
+        const containerWidth = this.contentRef.nativeElement.getBoundingClientRect().width;
+        const dx = this.resizeStartX - event.clientX;
+        const dxPercent = (dx / containerWidth) * 100;
+        const newWidth = Math.min(60, Math.max(15, this.resizeStartWidth + dxPercent));
+        this.rightPanelWidth.set(newWidth);
+    }
+
+    @HostListener('document:mouseup')
+    public onMouseUp(): void {
+        this.isResizing = false;
     }
 
     public onPageChange(page: number): void {
@@ -221,6 +302,9 @@ export class GlobalSessionsListComponent {
         }
         const session = this.sessions().find((s) => s.id === sessionId) ?? null;
         this.previewSession.set(session);
+        if (session) {
+            this.isPanelOpen.set(true);
+        }
     }
 
     public onStopSession(sessionId: number): void {

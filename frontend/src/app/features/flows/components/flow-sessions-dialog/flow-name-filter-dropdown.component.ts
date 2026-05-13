@@ -79,7 +79,6 @@ interface FlowOption {
                             (click)="select(null, $event)"
                             [class.selected]="value === null"
                         >
-                            <i class="ti ti-list"></i>
                             <span>All Flows</span>
                             @if (value === null) {
                                 <span class="checkmark">&#10003;</span>

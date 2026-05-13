@@ -35,7 +35,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 5%">
+                        <th>
                             <app-checkbox
                                 [checked]="areAllSelected()"
                                 [disabled]="isLoading || sessions.length === 0"
@@ -43,35 +43,28 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                                 id="select-all-checkbox"
                             ></app-checkbox>
                         </th>
-                        <th style="width: 5%">ID</th>
-                        <th style="width: 10%">
+                        <th>ID</th>
+                        <th>
                             <app-flow-session-status-filter-dropdown
                                 [value]="statusFilter"
                                 (valueChange)="statusFilterChange.emit($event)"
                             >
                             </app-flow-session-status-filter-dropdown>
                         </th>
-                        <th
-                            *ngIf="showFlowName"
-                            style="width: 40%"
-                        >
-                            Flow Name
-                        </th>
+                        <th *ngIf="showFlowName">Flow Name</th>
                         <th
                             [class.sortable]="sortable"
                             (click)="sortable && toggleSort()"
-                            [style.width]="showFlowName ? '15%' : '35%'"
                         >
                             Created At
                             @if (sortable) {
                                 <span class="sort-icon">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                             }
                         </th>
-                        <th [style.width]="showFlowName ? '10%' : '20%'">
+                        <th>
                             {{ showDuration ? 'Duration' : 'Finished At' }}
                         </th>
                         <th
-                            [style.width]="showFlowName ? '15%' : '25%'"
                             style="text-align: center"
                             class="actions"
                         >
@@ -106,7 +99,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                         </tr>
                     } @else {
                         <ng-container *ngFor="let session of sessions; trackBy: trackById">
-                            <tr [class.row-expanded]="expandedSessionId() === session.id">
+                            <tr [class.row-expanded]="!externalPreview && expandedSessionId() === session.id">
                                 <td>
                                     <app-checkbox
                                         [checked]="isSelected(session.id)"

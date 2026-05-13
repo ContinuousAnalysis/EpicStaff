@@ -1,16 +1,15 @@
 .status-badge {
-    display: inline-block;
-    padding: 4px 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
     border-radius: 5px;
     font-size: 0.85em;
     font-weight: 400;
     color: #fff;
-    text-align: center;
     white-space: nowrap;
-    margin: 0 2px;
     letter-spacing: 0.01em;
     transition: background 0.18s;
-    min-width: 100px;
 }
 .status-running {
     background: rgba(94, 158, 255, 0.18);
