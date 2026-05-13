@@ -552,8 +552,8 @@ class TestZeroOrgsSteadyState:
         authed_client(superadmin).delete(
             org_user_detail_url(org_acme.pk, member_acme.pk)
         )
-        # /api/auth/me/ should still return the user, with empty memberships[]
-        resp = authed_client(member_acme).get("/api/auth/me/")
+        # /api/profile/ should still return the user, with empty memberships[]
+        resp = authed_client(member_acme).get("/api/profile/")
         assert resp.status_code == status.HTTP_200_OK
         assert resp.data["memberships"] == []
 
