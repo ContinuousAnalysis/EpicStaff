@@ -441,9 +441,10 @@ class PythonCodeToolSerializer(serializers.ModelSerializer):
             "python_code",
             "favorite",
             "built_in",
+            "use_storage",
             "tool_fields",
         ]
-        read_only_fields = ["id", "built_in", "tool_fields"]
+        read_only_fields = ["id", "built_in", "use_storage", "tool_fields"]
 
     def create(self, validated_data):
         python_code_data = validated_data.pop("python_code")
