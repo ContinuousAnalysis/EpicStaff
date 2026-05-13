@@ -83,6 +83,7 @@ from tables.views.views import (
     QuickstartView,
     QuickstartApplyView,
     delete_environment_config,
+    PythonNodeLastTestInputView,
 )
 
 from tables.views.default_config import (
@@ -106,6 +107,8 @@ from tables.views.knowledge_views.naive_rag_views import (
     ProcessNaiveRagDocumentChunkingView,
     NaiveRagChunkViewSet,
     NaiveRagChunkPreviewView,
+    NaiveRagChunkSearchView,
+    NaiveRagPreviewChunkBulkByIdsView,
 )
 from tables.views.knowledge_views.graph_rag_views import (
     GraphRagViewSet,
@@ -232,6 +235,11 @@ urlpatterns = [
         name="run-python-code",
     ),
     path(
+        "pythonnodes/<int:pk>/last-session-input/",
+        PythonNodeLastTestInputView.as_view(),
+        name="python-node-last-session-input",
+    ),
+    path(
         "init-realtime/",
         InitRealtimeAPIView.as_view(),
         name="init-realtime",
@@ -295,6 +303,16 @@ urlpatterns = [
         "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/process-chunking/",
         ProcessNaiveRagDocumentChunkingView.as_view(),
         name="process-document-chunking",
+    ),
+    path(
+        "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/chunks/search/",
+        NaiveRagChunkSearchView.as_view(),
+        name="naive-rag-chunks-search",
+    ),
+    path(
+        "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/chunks/by-ids/",
+        NaiveRagPreviewChunkBulkByIdsView.as_view(),
+        name="naive-rag-chunks-by-ids",
     ),
     path(
         "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/chunks/",
