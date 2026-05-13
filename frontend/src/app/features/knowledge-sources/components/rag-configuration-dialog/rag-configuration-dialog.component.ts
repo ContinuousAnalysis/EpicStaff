@@ -7,7 +7,7 @@ import { ToastService } from '../../../../services/notifications';
     template: '',
 })
 export abstract class RagConfigurationDialogComponent {
-    protected data: { ragId: number } = inject(DIALOG_DATA);
+    protected data: { ragId: number; collectionId: number } = inject(DIALOG_DATA);
     protected destroyRef = inject(DestroyRef);
     protected dialogRef = inject(DialogRef);
     protected toast = inject(ToastService);

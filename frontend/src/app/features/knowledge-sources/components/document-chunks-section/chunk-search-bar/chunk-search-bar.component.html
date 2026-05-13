@@ -1,0 +1,89 @@
+<div class="search-bar">
+    <div class="search-bar__id-selector">
+        <input
+            #idInput
+            class="search-bar__id-input"
+            type="text"
+            [value]="idInputValue()"
+            (focus)="onIdInputFocus()"
+            (blur)="onIdInputBlur()"
+            (input)="onIdInputChange(idInput.value)"
+            (keydown)="onIdInputKeydown($event)"
+        />
+        <span
+            class="search-bar__id-caret"
+            [class.search-bar__id-caret--open]="dropdownOpen()"
+        >
+            <app-svg-icon
+                icon="chevron-down"
+                size="10px"
+            />
+        </span>
+
+        @if (dropdownOpen()) {
+            <div
+                class="search-bar__dropdown"
+                (scroll)="onDropdownScroll($event)"
+            >
+                <div
+                    class="search-bar__dropdown-item"
+                    [class.search-bar__dropdown-item--active]="selectedId() === 'all'"
+                    (mousedown)="selectId('all')"
+                >
+                    All
+                </div>
+                @for (id of visibleIds(); track id) {
+                    <div
+                        class="search-bar__dropdown-item"
+                        [class.search-bar__dropdown-item--active]="selectedId() === id"
+                        (mousedown)="selectId(id)"
+                    >
+                        ID {{ id }}
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="search-bar__text-section">
+        <div class="search-bar__text-wrapper">
+            <app-svg-icon
+                icon="search"
+                size="12px"
+            />
+            <input
+                class="search-bar__text-input"
+                type="text"
+                placeholder="Search..."
+                [ngModel]="textQuery()"
+                (ngModelChange)="onTextInput($event)"
+            />
+        </div>
+
+        <div class="search-bar__nav">
+            <button
+                class="search-bar__nav-btn"
+                [class.search-bar__nav-btn--disabled]="isPrevDisabled()"
+                [disabled]="isPrevDisabled()"
+                (click)="onPrev()"
+            >
+                <app-svg-icon
+                    icon="chevron-left"
+                    size="12px"
+                />
+            </button>
+            <span class="search-bar__match-count">{{ matchDisplay() }}</span>
+            <button
+                class="search-bar__nav-btn"
+                [class.search-bar__nav-btn--disabled]="isNextDisabled()"
+                [disabled]="isNextDisabled()"
+                (click)="onNext()"
+            >
+                <app-svg-icon
+                    icon="chevron-right"
+                    size="12px"
+                />
+            </button>
+        </div>
+    </div>
+</div>
