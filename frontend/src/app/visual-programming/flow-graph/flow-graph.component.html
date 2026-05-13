@@ -98,6 +98,7 @@
                     ></path>
                 </svg>
             </f-connection-for-create>
+
             @for (node of flowService.nodes(); track node.id) {
                 <app-flow-base-node
                     [node]="node"
@@ -116,20 +117,45 @@
                 >
                 </app-flow-base-node>
             }
-            @for (connection of flowService.visibleConnections(); track connection.id) {
+
+            @for (
+                connection of sortedConnections();
+                track connection.id +
+                    '-' +
+                    (connectionRenderVersions()[connection.id] ?? 0) +
+                    '-' +
+                    (backwardConnectionIds().has(connection.id) ? 'b' : 'f')
+            ) {
                 <f-connection
                     [fBehavior]="connection.behavior || 'fixed'"
-                    [fType]="connection.type || 'segment'"
-                    [fOffset]="30"
+                    [fType]="backwardConnectionIds().has(connection.id) ? 'backward-arc' : connection.type || 'segment'"
+                    [fOffset]="connection.userAdjustedWaypoints ? 0 : 30"
                     [fOutputId]="connection.sourcePortId"
                     [fInputId]="connection.targetPortId"
                     [fConnectionId]="connection.id"
                     [class.dashed-connection]="connection.category === 'virtual'"
+                    [class.is-backward]="backwardConnectionIds().has(connection.id)"
+                    [style.z-index]="backwardConnectionIds().has(connection.id) ? 0 : 1"
+                    [style.--marker-start-color]="
+                        smartRoutingEnabled()
+                            ? nodeColorMap().get(connection.sourceNodeId) || '#555'
+                            : connection.startColor || '#555'
+                    "
+                    [style.--marker-end-color]="
+                        smartRoutingEnabled()
+                            ? nodeColorMap().get(connection.targetNodeId) || '#555'
+                            : connection.endColor || '#555'
+                    "
                 >
                     <f-connection-gradient
-                        [fStartColor]="connection.startColor || '#555'"
-                        [fEndColor]="connection.endColor || '#555'"
+                        [fStartColor]="
+                            smartRoutingEnabled() ? nodeColorMap().get(connection.sourceNodeId) || '#555' : '#555'
+                        "
+                        [fEndColor]="
+                            smartRoutingEnabled() ? nodeColorMap().get(connection.targetNodeId) || '#555' : '#555'
+                        "
                     ></f-connection-gradient>
+
                     <svg
                         viewBox="0 0 10 10"
                         fMarker
@@ -144,9 +170,14 @@
                             cy="5"
                             r="2"
                             stroke="none"
-                            [attr.fill]="connection.startColor || '#555'"
+                            [attr.fill]="
+                                smartRoutingEnabled()
+                                    ? nodeColorMap().get(connection.sourceNodeId) || '#555'
+                                    : connection.startColor || '#555'
+                            "
                         ></circle>
                     </svg>
+
                     <svg
                         viewBox="0 0 6 6"
                         fMarker
@@ -159,9 +190,14 @@
                         <path
                             d="M0,0 L6,3 0,6Z"
                             stroke="none"
-                            [attr.fill]="connection.endColor || '#555'"
+                            [attr.fill]="
+                                smartRoutingEnabled()
+                                    ? nodeColorMap().get(connection.targetNodeId) || '#555'
+                                    : connection.endColor || '#555'
+                            "
                         ></path>
                     </svg>
+
                     <svg
                         viewBox="0 0 10 10"
                         fMarker
@@ -178,6 +214,7 @@
                             stroke="none"
                         ></circle>
                     </svg>
+
                     <svg
                         viewBox="0 0 6 6"
                         fMarker
@@ -195,7 +232,7 @@
                     <div
                         fConnectionContent
                         class="connection-center"
-                        [position]="0.5"
+                        [position]="CONNECTION_DELETE_BUTTON_POSITION"
                     >
                         <button
                             type="button"
@@ -207,12 +244,22 @@
                             <i class="ti ti-trash"></i>
                         </button>
                     </div>
+
+                    <f-connection-waypoints
+                        appWaypointTooltip
+                        [waypoints]="connection.waypoints ?? []"
+                        (waypointsChange)="onWaypointsChanged(connection.id, $event)"
+                        [radius]="5"
+                        [visibility]="true"
+                    ></f-connection-waypoints>
                 </f-connection>
             }
         </f-canvas>
+
         <f-selection-area></f-selection-area>
         <f-minimap [fMinSize]="1000"></f-minimap>
     </f-flow>
+
     <div class="top-left-actions">
         <div class="top-left-actions__column">
             <button
@@ -239,23 +286,36 @@
         ></app-nodes-search>
     </div>
 
-    <div class="top-right-actions">
-        @if (currentFlowId) {
-            <app-flow-files-button
-                [flowId]="currentFlowId"
-                [flowName]="flowName"
-            ></app-flow-files-button>
-        }
-        <button
-            class="show-inputs-btn"
-            [class.active]="showVariables()"
-            (click)="toggleShowVariables()"
-        >
-            {{ showVariables() ? 'Hide Inputs/Output' : 'Show Inputs/Output' }}
-        </button>
+    <div class="top-right-controls">
+        <div class="top-right-actions">
+            @if (currentFlowId) {
+                <app-flow-files-button
+                    [flowId]="currentFlowId"
+                    [flowName]="flowName"
+                ></app-flow-files-button>
+            }
+            <button
+                class="show-inputs-btn"
+                [class.active]="showVariables()"
+                (click)="toggleShowVariables()"
+            >
+                {{ showVariables() ? 'Hide Inputs/Output' : 'Show Inputs/Output' }}
+            </button>
+
+            <div class="routing-toggle-block">
+                <app-svg-icon
+                    icon="routing-arrow"
+                    size="22px"
+                ></app-svg-icon>
+                <app-toggle-switch
+                    [checked]="smartRoutingEnabled()"
+                    (checkedChange)="onSmartRoutingToggle($event)"
+                ></app-toggle-switch>
+            </div>
+        </div>
     </div>
     <app-flow-action-panel></app-flow-action-panel>
-    <!-- <app-flow-zoom-controls></app-flow-zoom-controls> -->
+
     @if (showContextMenu()) {
         <app-flow-graph-context-menu
             [position]="contextMenuPosition()"
@@ -264,6 +324,7 @@
         >
         </app-flow-graph-context-menu>
     }
+
     <app-node-panel-shell
         [node]="sidePanelService.selectedNode()"
         [currentFlowId]="currentFlowId"

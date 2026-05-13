@@ -20,6 +20,24 @@
         }
     }
 
+    .error-message {
+        background-color: rgba(255, 77, 79, 0.1);
+        color: var(--color-error, #ff4d4f);
+        padding: 0.75rem 1rem;
+        margin: 1rem 1.5rem 0;
+        border-radius: 4px;
+
+        p {
+            margin: 0;
+            font-size: 0.875rem;
+            text-transform: lowercase;
+
+            &::first-letter {
+                text-transform: uppercase;
+            }
+        }
+    }
+
     .form {
         flex: 1;
         overflow-y: auto;

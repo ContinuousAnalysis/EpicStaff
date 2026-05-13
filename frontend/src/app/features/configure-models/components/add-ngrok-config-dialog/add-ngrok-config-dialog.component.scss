@@ -21,6 +21,11 @@
         p {
             margin: 0;
             font-size: 0.875rem;
+            text-transform: lowercase;
+
+            &::first-letter {
+                text-transform: uppercase;
+            }
         }
     }
 
