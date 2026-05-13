@@ -900,6 +900,18 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ],
     ),
+    create_graph=extend_schema(
+        request=None,
+        responses={
+            201: inline_serializer(
+                name="CreateFromVersionResponse",
+                fields={
+                    "graph_id": serializers.IntegerField(),
+                    "warnings": serializers.ListField(child=serializers.DictField()),
+                },
+            )
+        },
+    ),
 )
 class GraphVersionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
