@@ -234,6 +234,34 @@ export const routes: Routes = [
                                 (m) => m.GlobalSessionsListComponent
                             ),
                     },
+                    {
+                        path: 'workspace',
+                        loadComponent: () =>
+                            import('./features/role-base-access/pages/overview-page/overview.component').then(
+                                (m) => m.OverviewComponent
+                            ),
+                        children: [
+                            {
+                                path: '',
+                                redirectTo: 'main',
+                                pathMatch: 'full',
+                            },
+                            {
+                                path: 'main',
+                                loadComponent: () =>
+                                    import('./features/role-base-access/pages/overview-page/main-tab/main-tab.component').then(
+                                        (m) => m.MainTabComponent
+                                    ),
+                            },
+                            {
+                                path: 'organizations',
+                                loadComponent: () =>
+                                    import('./features/role-base-access/pages/overview-page/organizations-tab/organizations-tab.component').then(
+                                        (m) => m.OrganizationsTabComponent
+                                    ),
+                            },
+                        ],
+                    },
                 ],
             },
             {

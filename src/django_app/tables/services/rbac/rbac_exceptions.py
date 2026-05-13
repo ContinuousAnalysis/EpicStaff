@@ -106,3 +106,34 @@ class DefaultOrganizationConflictError(CustomAPIExeption):
         "Remove it manually or change DEFAULT_ORGANIZATION_NAME before retrying."
     )
     default_code = "default_organization_conflict"
+
+
+class OrganizationNameConflictError(CustomAPIExeption):
+    """Raised when creating or renaming an organization to a name that
+    already exists (case-insensitive)."""
+
+    status_code = 400
+    default_detail = "An organization with this name already exists."
+    default_code = "organization_name_conflict"
+
+
+class LastActiveOrganizationError(CustomAPIExeption):
+    """Raised when deactivating an organization would leave zero active
+    organizations in the system. The system requires at least one active
+    organization."""
+
+    status_code = 400
+    default_detail = (
+        "Cannot deactivate the last active organization. At least one "
+        "organization must remain active."
+    )
+    default_code = "last_active_organization"
+
+
+class OrganizationNotFoundError(CustomAPIExeption):
+    """Raised by OrganizationManagementService when an org id does not match
+    any existing row. Surfaces as 404 with the project-standard envelope."""
+
+    status_code = 404
+    default_detail = "Organization not found."
+    default_code = "organization_not_found"
