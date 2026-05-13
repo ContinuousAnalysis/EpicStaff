@@ -404,22 +404,18 @@ class NaiveSearchConfigInputSerializer(serializers.Serializer):
     )
 
 
-CHUNK_SEARCH_DEFAULT_LIMIT = 100
-CHUNK_SEARCH_MAX_LIMIT = 500
-
-
 class ChunkSearchRequestSerializer(serializers.Serializer):
     """Query params for NaiveRagChunkSearchView."""
 
     q = serializers.CharField(
         required=True,
+        trim_whitespace=False,
         help_text="Search query (case-insensitive substring match, spaces preserved)",
     )
     limit = serializers.IntegerField(
         required=False,
         min_value=0,
-        default=CHUNK_SEARCH_DEFAULT_LIMIT,
-        help_text=f"Max number of chunk IDs to return (max {CHUNK_SEARCH_MAX_LIMIT})",
+        help_text="Max number of chunk IDs to return",
     )
     offset = serializers.IntegerField(
         required=False,
@@ -428,8 +424,17 @@ class ChunkSearchRequestSerializer(serializers.Serializer):
         help_text="Number of chunk IDs to skip",
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        default_limit = self.context.get("default_limit")
+        if default_limit is not None:
+            self.fields["limit"].default = default_limit
+
     def validate_limit(self, value):
-        return min(value, CHUNK_SEARCH_MAX_LIMIT)
+        max_limit = self.context.get("max_limit")
+        if max_limit is not None:
+            return min(value, max_limit)
+        return value
 
 
 class ChunkSearchResponseSerializer(serializers.Serializer):

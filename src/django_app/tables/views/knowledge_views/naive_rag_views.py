@@ -42,8 +42,6 @@ from tables.serializers.naive_rag_serializers import (
     ChunkPreviewResponseSerializer,
     ChunkSearchResponseSerializer,
     ChunkSearchRequestSerializer,
-    CHUNK_SEARCH_DEFAULT_LIMIT,
-    CHUNK_SEARCH_MAX_LIMIT,
     PreviewChunksByIdsRequestSerializer,
     PreviewChunksByIdsResponseSerializer,
 )
@@ -841,8 +839,8 @@ class NaiveRagChunkSearchView(APIView):
     uses these ids to highlight or filter the rendered preview-chunk list.
     """
 
-    DEFAULT_LIMIT = CHUNK_SEARCH_DEFAULT_LIMIT
-    MAX_LIMIT = CHUNK_SEARCH_MAX_LIMIT
+    DEFAULT_LIMIT = 100
+    MAX_LIMIT = 500
 
     @extend_schema(
         description="Search chunk IDs of a document config by text query",
@@ -878,7 +876,13 @@ class NaiveRagChunkSearchView(APIView):
         },
     )
     def get(self, request, naive_rag_id: int, document_config_id: int):
-        serializer = ChunkSearchRequestSerializer(data=request.query_params)
+        serializer = ChunkSearchRequestSerializer(
+            data=request.query_params,
+            context={
+                "default_limit": self.DEFAULT_LIMIT,
+                "max_limit": self.MAX_LIMIT,
+            },
+        )
         serializer.is_valid(raise_exception=True)
 
         query = serializer.validated_data["q"]

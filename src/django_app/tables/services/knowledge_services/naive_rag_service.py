@@ -768,7 +768,6 @@ class NaiveRagService:
                 f"for NaiveRag {naive_rag_id}"
             )
 
-        query = query.strip()
         if not query:
             return {
                 "total_matches": 0,

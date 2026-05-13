@@ -75,11 +75,11 @@ class TestChunkSearchViewSuccess:
             offset=0,
         )
 
-    def test_strips_whitespace_around_query(self):
+    def test_preserves_whitespace_around_query(self):
         with patch(SERVICE_PATH, return_value=_empty_result()) as mock_search:
             _get({"q": "  banana  "})
 
-        assert mock_search.call_args.kwargs["query"] == "banana"
+        assert mock_search.call_args.kwargs["query"] == "  banana  "
 
     def test_passes_custom_limit_and_offset_to_service(self):
         with patch(SERVICE_PATH, return_value=_empty_result()) as mock_search:
@@ -116,11 +116,11 @@ class TestChunkSearchViewValidation:
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
         mock_search.assert_not_called()
 
-    def test_blank_q_returns_400(self):
-        with patch(SERVICE_PATH) as mock_search:
+    def test_whitespace_only_q_is_allowed(self):
+        with patch(SERVICE_PATH, return_value=_empty_result()) as mock_search:
             resp = _get({"q": "   "})
-        assert resp.status_code == status.HTTP_400_BAD_REQUEST
-        mock_search.assert_not_called()
+        assert resp.status_code == status.HTTP_200_OK
+        assert mock_search.call_args.kwargs["query"] == "   "
 
     def test_non_integer_limit_returns_400(self):
         with patch(SERVICE_PATH) as mock_search:
