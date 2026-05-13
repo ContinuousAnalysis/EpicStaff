@@ -202,3 +202,12 @@ class ScheduleTriggerNodeImportSerializer(BaseNodeImportSerializer):
     class Meta(BaseNodeImportSerializer.Meta):
         model = ScheduleTriggerNode
         exclude = ["created_at", "updated_at"]
+
+    def create(self, validated_data):
+        # Schedule config is preserved verbatim; activation state is reset so
+        # an imported flow never starts firing on its own — user must enable
+        # it explicitly after reviewing the imported schedule.
+        validated_data["is_active"] = False
+        validated_data["current_runs"] = 0
+        validated_data["next_run_date_time"] = None
+        return super().create(validated_data)
