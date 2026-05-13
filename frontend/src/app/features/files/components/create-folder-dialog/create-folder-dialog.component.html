@@ -255,6 +255,117 @@
         </div>
     </div>
     <div class="create-folder-dialog__footer">
-        Archives are extracted after saving, structure is preserved; unsupported ones are not extracted.
+        <div class="create-folder-dialog__footer-left">
+            <span class="create-folder-dialog__footer-label">Allowed file types:</span>
+            <span class="create-folder-dialog__footer-formats">PDF, CSV, DOCX, TXT, JSON, HTML, ZIP</span>
+            <span class="create-folder-dialog__footer-divider"></span>
+            <button
+                #viewAllTrigger
+                type="button"
+                class="create-folder-dialog__footer-view-all"
+                cdkOverlayOrigin
+                (click)="toggleViewAll()"
+            >
+                View All
+                <app-svg-icon
+                    [icon]="viewAllOpen() ? 'chevron-up' : 'chevron-down'"
+                    size="0.75rem"
+                ></app-svg-icon>
+            </button>
+        </div>
+        <div class="create-folder-dialog__footer-right">
+            Archives are extracted after saving, structure is preserved; unsupported ones are not extracted.
+        </div>
+
+        <ng-template
+            cdkConnectedOverlay
+            [cdkConnectedOverlayOrigin]="viewAllTrigger"
+            [cdkConnectedOverlayOpen]="viewAllOpen()"
+            [cdkConnectedOverlayHasBackdrop]="true"
+            cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+            cdkConnectedOverlayPanelClass="create-folder-dialog__formats-pane"
+            [cdkConnectedOverlayPositions]="[
+                {
+                    originX: 'start',
+                    originY: 'top',
+                    overlayX: 'start',
+                    overlayY: 'bottom',
+                    offsetY: -8,
+                },
+            ]"
+            (backdropClick)="closeViewAll()"
+            (detach)="closeViewAll()"
+        >
+            <div
+                class="create-folder-dialog__formats-popover"
+                (click)="$event.stopPropagation()"
+            >
+                <div class="create-folder-dialog__formats-header">
+                    <h3 class="create-folder-dialog__formats-title">All supported file formats</h3>
+                    <button
+                        type="button"
+                        class="create-folder-dialog__formats-close"
+                        aria-label="Close"
+                        (click)="closeViewAll()"
+                    >
+                        <app-svg-icon
+                            icon="x-fill"
+                            size="14px"
+                        ></app-svg-icon>
+                    </button>
+                </div>
+
+                <div class="create-folder-dialog__formats-body">
+                    <div class="create-folder-dialog__formats-section">
+                        <div class="create-folder-dialog__formats-section-title">ALLOWED</div>
+                        <dl class="create-folder-dialog__formats-grid">
+                            <dt>Documents</dt>
+                            <dd>PDF, DOCX, TXT</dd>
+                            <dt>Data</dt>
+                            <dd>CSV, JSON</dd>
+                            <dt>Web</dt>
+                            <dd>HTML</dd>
+                            <dt>Archives</dt>
+                            <dd>ZIP, TAR, TAR.GZ, TAR.BZ2, TAR.XZ</dd>
+                            <dt>Windows execution</dt>
+                            <dd>EXE, MSI, COM, SCR, PIF</dd>
+                            <dt>Windows scripting</dt>
+                            <dd>BAT, CMD, VBS, VBE, WSH, WSF, PS1, PSM1, PSD1</dd>
+                            <dt>Unix / macOS executables</dt>
+                            <dd>SH, BASH, CSH, KSH, KSH, ZSH, APP, COMMAND, ELF</dd>
+                            <dt>Java archives</dt>
+                            <dd>JAR, WAR, EAR</dd>
+                            <dt>Shared libraries</dt>
+                            <dd>DLL, SO, DYLIB</dd>
+                        </dl>
+                    </div>
+
+                    <div class="create-folder-dialog__formats-divider"></div>
+
+                    <div class="create-folder-dialog__formats-section">
+                        <div class="create-folder-dialog__formats-section-title">ARCHIVE RULES</div>
+                        <ul class="create-folder-dialog__formats-rules">
+                            <li>Archives are extracted after saving; folder structure is preserved.</li>
+                            <li>
+                                Password-protected archives are <strong>not extracted</strong> and will be rejected.
+                            </li>
+                            <li>Archives containing password-protected files inside are rejected.</li>
+                            <li>Archives containing disallowed files (e.g. .exe, .dll) are rejected entirely.</li>
+                            <li>Unsupported archive formats (.rar, .7z) are not extracted.</li>
+                        </ul>
+                    </div>
+
+                    <div class="create-folder-dialog__formats-divider"></div>
+
+                    <div class="create-folder-dialog__formats-section">
+                        <div class="create-folder-dialog__formats-section-title">NOT ALLOWED</div>
+                        <dl class="create-folder-dialog__formats-grid">
+                            <dt>Archives</dt>
+                            <dd>RAR, 7Z</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </ng-template>
     </div>
 </div>
