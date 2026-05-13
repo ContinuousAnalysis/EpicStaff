@@ -371,6 +371,16 @@ export class ClassificationDecisionTableNodePanelComponent extends BaseSidePanel
         localStorage.setItem(this.tabStorageKey, tab);
     }
 
+    public onOpenPromptLibrary(event: { action: 'create' } | { action: 'edit'; promptId: string }): void {
+        this.setActiveTab('prompts');
+        if (event.action === 'create') {
+            this.addPrompt();
+        } else {
+            this.editingPromptId.set(event.promptId);
+            this.pendingPromptName.set(event.promptId);
+        }
+    }
+
     public onConditionGroupsChange(groups: ConditionGroup[]): void {
         this.conditionGroups.set(this.cloneConditionGroups(groups));
         this.cdr.markForCheck();

@@ -83,6 +83,7 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
         value: PromptConfig[keyof PromptConfig];
     }>();
     public promptAdd = output<{ id: string; config: PromptConfig }>();
+    public openPromptLibrary = output<{ action: 'create' } | { action: 'edit'; promptId: string }>();
 
     private cdr = inject(ChangeDetectorRef);
     private elRef = inject(ElementRef);
@@ -842,16 +843,21 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
             field: 'prompt_id',
             suppressMovable: true,
             editable: true,
+            singleClickEdit: true,
             width: 150,
             cellRenderer: PromptTooltipRendererComponent,
             cellRendererParams: () => ({
                 prompts: this.prompts(),
+                llmConfigs: this.llmConfigs(),
                 onPromptChange: (
                     promptId: string,
                     field: keyof PromptConfig,
                     value: PromptConfig[keyof PromptConfig]
                 ) => {
                     this.promptChange.emit({ promptId, field, value });
+                },
+                onOpenInPromptLibrary: (promptId: string) => {
+                    this.openPromptLibrary.emit({ action: 'edit', promptId });
                 },
             }),
             cellEditor: PromptIdCellEditorComponent,
@@ -859,15 +865,11 @@ export class ClassificationDecisionTableGridComponent implements OnDestroy {
                 prompts: this.prompts(),
                 defaultLlmId: this.defaultLlmId(),
                 llmConfigs: this.llmConfigs(),
-                onAddPrompt: (id: string, config: PromptConfig) => {
-                    this.promptAdd.emit({ id, config });
+                onNavigateToPrompts: () => {
+                    this.openPromptLibrary.emit({ action: 'create' });
                 },
-                onPromptChange: (
-                    promptId: string,
-                    field: keyof PromptConfig,
-                    value: PromptConfig[keyof PromptConfig]
-                ) => {
-                    this.promptChange.emit({ promptId, field, value });
+                onOpenPromptForEdit: (promptId: string) => {
+                    this.openPromptLibrary.emit({ action: 'edit', promptId });
                 },
             }),
             cellEditorPopup: false,
