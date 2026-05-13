@@ -10,6 +10,7 @@ import {
     OnInit,
     output,
     signal,
+    SimpleChanges,
     ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -34,6 +35,7 @@ export class ChunkSearchBarComponent implements OnInit, OnChanges {
     totalMatches = input<number>(0);
     currentMatchIndex = input<number>(0);
     searchLoading = input<boolean>(false);
+    resetKey = input<number | null>(null);
 
     searchChange = output<ChunkSearchParams>();
     prevMatch = output<void>();
@@ -72,8 +74,15 @@ export class ChunkSearchBarComponent implements OnInit, OnChanges {
         this.loadVisibleIds('');
     }
 
-    ngOnChanges(): void {
+    ngOnChanges(changes: SimpleChanges): void {
         this.loadVisibleIds('');
+
+        if (changes['resetKey'] && !changes['resetKey'].firstChange) {
+            this.selectedId.set('all');
+            this.idInputValue.set('All');
+            this.textQuery.set('');
+            this.textInput$.next('');
+        }
     }
 
     onTextInput(value: string): void {
