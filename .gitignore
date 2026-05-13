@@ -201,6 +201,7 @@ make_scripts/backups
 # Savefiles
 **/savefiles
 
+**/public/epicchat-widget/
 
 # Compiled output
 frontend/dist
@@ -274,6 +275,3 @@ CLAUDE.local.md
 /personal_files
 /docs/superpowers/
 pyrightconfig.json
-
-# Self — local gitignore tweaks should not be tracked
-.gitignore
