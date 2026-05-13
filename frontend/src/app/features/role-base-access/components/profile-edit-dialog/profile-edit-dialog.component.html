@@ -1,0 +1,75 @@
+<div class="dialog">
+    <div class="header">
+        <span class="title">Edit Profile</span>
+        <button
+            class="close"
+            type="button"
+            (click)="onCancel()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="18px"
+            />
+        </button>
+    </div>
+
+    <form
+        class="body"
+        [formGroup]="form"
+    >
+        <div class="control">
+            <label class="label">
+                Full Name<span class="required">*</span>
+                <app-help-tooltip
+                    [text]="''"
+                    position="right"
+                />
+            </label>
+            <app-custom-input
+                placeholder="Enter full name..."
+                formControlName="full_name"
+            />
+            <app-validation-errors [control]="form.get('full_name')!" />
+        </div>
+
+        <div class="control">
+            <label class="label">
+                Email<span class="required">*</span>
+                <app-help-tooltip
+                    [text]="''"
+                    position="right"
+                />
+            </label>
+            <app-custom-input
+                placeholder="Enter email..."
+                formControlName="email"
+            />
+            <app-validation-errors [control]="form.get('email')!" />
+        </div>
+
+        <div class="control top">
+            <label class="label">
+                Picture
+                <app-help-tooltip
+                    [text]="''"
+                    position="right"
+                />
+            </label>
+            <app-avatar-upload (imageChange)="form.patchValue({ picture: $event })" />
+        </div>
+    </form>
+
+    <div class="footer">
+        <app-button
+            type="outline-primary"
+            (click)="onCancel()"
+            >Cancel</app-button
+        >
+        <app-button
+            type="primary"
+            [disabled]="loading()"
+            (click)="onSave()"
+            >Save Changes</app-button
+        >
+    </div>
+</div>

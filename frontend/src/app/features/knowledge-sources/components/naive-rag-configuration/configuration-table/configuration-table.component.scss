@@ -44,10 +44,10 @@
         display: grid;
         grid-template-columns: 1rem // checkbox
             1fr // file name
-            140px // chunk strategy
+            145px // chunk strategy
             110px // chunk size
             110px // overlap
-            80px; // tune chunks
+            90px; // tune chunks
         gap: 0.5rem;
         padding: 0.5rem 0.625rem;
         align-items: center;

@@ -23,7 +23,6 @@
     <app-table
         [columns]="columns"
         [data]="filteredOrgs()"
-        [selectable]="true"
         rowId="id"
     >
         <!-- ORGANIZATION -->
@@ -84,6 +83,17 @@
             let-row
         >
             <div class="actions-cell">
+                <button
+                    class="action-btn"
+                    type="button"
+                    title="Edit"
+                    (click)="onEditOrganization(row)"
+                >
+                    <app-svg-icon
+                        icon="edit"
+                        size="16px"
+                    />
+                </button>
                 @if (row['status'] === 'active') {
                     <button
                         class="action-btn danger"

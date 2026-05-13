@@ -1,0 +1,49 @@
+<div class="content">
+    <div class="engage-bar">
+        <span class="label">
+            Assign User to Organization:
+            <span class="count">({{ selectedOrganizations().length }})</span>
+        </span>
+        <app-search
+            placeholder="Search by name..."
+            [(searchTerm)]="searchTerm"
+        />
+    </div>
+
+    @if (isOrgsLoading()) {
+        <app-loading-spinner
+            size="md"
+            message="Loading Organizations..."
+        />
+    } @else {
+        <app-table
+            [columns]="columns"
+            [data]="filteredOrganizations()"
+            [selectable]="true"
+            [initialSelectedIds]="preselectedOrgIds()"
+            rowId="id"
+            (selectionChange)="onSelection($event)"
+        >
+            <ng-template
+                appTableCell="organization"
+                let-row
+            >
+                <div class="org-cell">
+                    <app-org-avatar [name]="$any(row['name'])" />
+                    <span class="org-name">{{ row['name'] }}</span>
+                </div>
+            </ng-template>
+
+            <ng-template
+                appTableCell="role"
+                let-row
+            >
+                <app-select
+                    [items]="USER_ROLES"
+                    [(selectedValue)]="row['role']"
+                    placeholder="Select role"
+                />
+            </ng-template>
+        </app-table>
+    }
+</div>

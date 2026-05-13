@@ -54,3 +54,37 @@ export interface NaiveRagDocumentChunk {
     metadata: Object;
     created_at: string;
 }
+
+// --- Chunk Search ---
+
+export interface ChunkSearchResponse {
+    naive_rag_id: number;
+    document_config_id: number;
+    query: string;
+    total_matches: number;
+    limit: number;
+    offset: number;
+    preview_chunk_ids: number[];
+}
+
+export interface GetChunksByIdsResponse {
+    naive_rag_id: number;
+    document_config_id: number;
+    total: number;
+    chunks: NaiveRagDocumentChunk[];
+}
+
+export type ChunkSearchMode = 'none' | 'id_only' | 'id_and_text' | 'text_only';
+
+export interface ChunkSearchState {
+    mode: ChunkSearchMode;
+    idFilter: number | 'all';
+    textQuery: string;
+    matchedChunkIds: number[];
+    totalMatches: number;
+    currentMatchIndex: number;
+    loading: boolean;
+    searchedChunks: NaiveRagDocumentChunk[];
+    searchOffset: number;
+    searchHasMore: boolean;
+}

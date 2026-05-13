@@ -52,8 +52,12 @@
         overflow: hidden;
     }
 
+    &__file-uploader {
+        padding: 0 2.5rem;
+    }
+
     &__content-title {
-        padding: 1.25rem 2.5rem;
+        padding: 1.25rem 0;
         font-size: 0.875rem;
         font-weight: 130;
 

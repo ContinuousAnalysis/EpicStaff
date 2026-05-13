@@ -1,0 +1,59 @@
+@use '../tab-shared' as shared;
+
+@include shared.tab-base;
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.user-info {
+    min-width: 0;
+}
+
+.user-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-email {
+    font-size: 10px;
+    color: var(--text-secondary-60);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.role-text {
+    font-size: 14px;
+    color: var(--text);
+}
+
+.org-badges {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.last-active {
+    display: flex;
+    flex-direction: column;
+    line-height: 100%;
+
+    .date {
+        font-size: 14px;
+    }
+
+    .relative {
+        font-size: 10px;
+        color: var(--text-secondary-60);
+    }
+}
+
+.empty-value {
+    color: var(--text-secondary-60);
+}

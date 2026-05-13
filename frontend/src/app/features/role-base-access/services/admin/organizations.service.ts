@@ -25,7 +25,7 @@ export class AdminOrganizationsService {
     }
 
     updateOrganization(id: number, data: UpdateOrganizationRequest): Observable<GetOrganizationResponse> {
-        return this.http.patch<GetOrganizationResponse>(`${this.apiUrl}organizations/${id}/`, data);
+        return this.http.patch<GetOrganizationResponse>(`${this.apiUrl}${id}/`, data);
     }
 
     deactivateOrganization(id: number): Observable<void> {

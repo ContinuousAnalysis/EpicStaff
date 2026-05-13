@@ -1,0 +1,182 @@
+import { Dialog } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+    AppSvgIconComponent,
+    AppTableCellDirective,
+    AppTableColumnDef,
+    AppTableComponent,
+    ButtonComponent,
+    LoadingSpinnerComponent,
+    SearchComponent,
+    SelectItem,
+    TableRow,
+} from '@shared/components';
+import { finalize } from 'rxjs/operators';
+
+import { CurrentUserService } from '../../../../../services/auth/current-user.service';
+import {
+    CreateUserDialogComponent,
+    UserDialogData,
+} from '../../../components/create-user-dialog/create-user-dialog.component';
+import { OrgAvatarComponent } from '../../../components/org-avatar/org-avatar.component';
+import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
+import { UserAvatarComponent } from '../../../components/user-avatar/user-avatar.component';
+import { AdminUserService } from '../../../services/admin/admin-user.service';
+import { UserService } from '../../../services/users/user.service';
+import { NormalizedUser } from '../../../strategies/users/user-fetch.strategy';
+import { createUserFetchStrategy } from '../../../strategies/users/user-fetch-strategy.factory';
+
+const STATUS_ITEMS: SelectItem[] = [
+    { name: 'Online', value: 'online' },
+    { name: 'Invited', value: 'invited' },
+    { name: 'Offline', value: 'offline' },
+];
+
+@Component({
+    selector: 'app-users-tab',
+    templateUrl: './users-tab.component.html',
+    styleUrls: ['./users-tab.component.scss'],
+    imports: [
+        AppTableComponent,
+        AppTableCellDirective,
+        AppSvgIconComponent,
+        ButtonComponent,
+        SearchComponent,
+        LoadingSpinnerComponent,
+        StatusBadgeComponent,
+        UserAvatarComponent,
+        OrgAvatarComponent,
+    ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class UsersTabComponent implements OnInit {
+    private dialog = inject(Dialog);
+    private destroyRef = inject(DestroyRef);
+    private userService = inject(UserService);
+    private adminUserService = inject(AdminUserService);
+    private currentUserService = inject(CurrentUserService);
+
+    private normalizedUsers = signal<NormalizedUser[]>([]);
+
+    usersData = signal<TableRow[]>([]);
+    searchTerm = signal('');
+    isLoading = signal(true);
+
+    private orgFilterItems = signal<SelectItem[]>([]);
+
+    filteredUsers = computed(() => {
+        const term = this.searchTerm().toLowerCase().trim();
+        if (!term) return this.usersData();
+        return this.usersData().filter((row) => (row['name'] as string)?.toLowerCase().includes(term));
+    });
+
+    columns = computed<AppTableColumnDef[]>(() => [
+        { key: 'user', label: 'USER', width: '2fr' },
+        { key: 'roles', label: 'ROLE', width: '1.5fr' },
+        { key: 'organization', label: 'ORGANIZATION', width: '1.5fr', filterItems: this.orgFilterItems() },
+        { key: 'lastActive', label: 'LAST ACTIVE', width: '1.5fr' },
+        { key: 'status', label: 'STATUS', width: '1.5fr', filterItems: STATUS_ITEMS },
+        { key: 'actions', label: 'ACTIONS', width: '1fr', align: 'center' },
+    ]);
+
+    ngOnInit(): void {
+        this.loadUsers();
+    }
+
+    formatDate(date: unknown): string {
+        if (!(date instanceof Date)) return '';
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    getRelativeTime(date: unknown): string {
+        if (!(date instanceof Date)) return '';
+        const diffMs = Date.now() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        if (diffMins < 60) return `${diffMins} m ago`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours} h ago`;
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays < 30) return `${diffDays} d ago`;
+        return `${Math.floor(diffDays / 30)} m ago`;
+    }
+
+    statusLabel(status: string): string {
+        const labels: Record<string, string> = { online: 'Online', invited: 'Invited', offline: 'Offline' };
+        return labels[status] ?? status;
+    }
+
+    onCreateUser(): void {
+        this.openUserDialog();
+    }
+
+    onEditUser(userId: number): void {
+        const user = this.normalizedUsers().find((u) => u.id === userId);
+        if (user) {
+            this.openUserDialog(user);
+        }
+    }
+
+    private openUserDialog(user?: NormalizedUser): void {
+        const data: UserDialogData = { user };
+        const ref = this.dialog.open(CreateUserDialogComponent, {
+            width: 'calc(100vw - 2rem)',
+            height: 'calc(100vh - 2rem)',
+            disableClose: true,
+            data,
+        });
+
+        ref.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+            if (result) {
+                this.loadUsers();
+            }
+        });
+    }
+
+    private loadUsers(): void {
+        this.isLoading.set(true);
+        const strategy = createUserFetchStrategy(this.currentUserService, this.adminUserService, this.userService);
+
+        strategy
+            .fetchUsers()
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => this.isLoading.set(false))
+            )
+            .subscribe({
+                next: (users) => {
+                    const currentUserId = this.currentUserService.currentUserSignal()?.id;
+                    const filtered = users.filter((u) => u.id !== currentUserId);
+                    this.normalizedUsers.set(filtered);
+                    this.usersData.set(filtered.map((u) => this.mapToRow(u)));
+                    this.orgFilterItems.set(this.extractOrgFilterItems(filtered));
+                },
+            });
+    }
+
+    private extractOrgFilterItems(users: NormalizedUser[]): SelectItem[] {
+        const orgMap = new Map<number, string>();
+        for (const user of users) {
+            for (const m of user.memberships) {
+                orgMap.set(m.organization.id, m.organization.name);
+            }
+        }
+        return Array.from(orgMap, ([value, name]) => ({ name, value }));
+    }
+
+    private mapToRow(user: NormalizedUser): TableRow {
+        const orgs = user.memberships.map((m) => m.organization);
+        const roles = user.memberships.map((m) => m.role.name);
+
+        return {
+            id: user.id,
+            name: user.displayName,
+            email: user.email,
+            roles: roles.join(', '),
+            organization: orgs?.map((o) => o.id),
+            organizationDetails: orgs,
+            lastActive: null,
+            status: user.isActive ? 'online' : 'offline',
+        };
+    }
+}
