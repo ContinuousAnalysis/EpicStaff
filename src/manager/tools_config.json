@@ -265,13 +265,10 @@
         },
         "custom_folder_tool":{
           "class_name": "FolderTool"
-        },
-        "custom_cli": {
-          "class_name": "CLITool"
         }
     },
     "dependencies": [
-      "crewai==0.86.0", "langchain", "open-interpreter"
+      "crewai==0.86.0", "langchain"
     ]
   }
 ]
