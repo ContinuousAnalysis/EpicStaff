@@ -33,13 +33,22 @@
                 </div>
             </label>
 
-            <button
-                class="delete-btn"
-                [class.delete-btn--hidden]="selectedIds().size === 0"
-                (click)="onBulkDelete()"
-            >
-                Delete Selected
-            </button>
+            <div class="action-buttons">
+                <button
+                    class="delete-btn"
+                    [class.delete-btn--hidden]="selectedIds().size === 0"
+                    (click)="onBulkDelete()"
+                >
+                    Delete Selected
+                </button>
+                <app-action-dropdown-button
+                    [label]="'Export (' + (selectedIds().size === 0 ? totalCount : selectedIds().size) + ')'"
+                    [items]="exportItems"
+                    [disabled]="isExporting()"
+                    (mainClick)="onExport('json')"
+                    (itemClick)="onExportItemSelected($event)"
+                />
+            </div>
         </div>
         <div class="table-container">
             <app-flow-sessions-table
@@ -47,6 +56,7 @@
                 [flow]="flow"
                 [isLoading]="!isLoaded()"
                 [showEmptyState]="isLoaded() && sessions().length === 0"
+                [selectedIds]="selectedIds()"
                 (deleteSelected)="onDeleteSelected($event)"
                 (viewSession)="onViewSession($event)"
                 (stopSession)="onStopSession($event)"
