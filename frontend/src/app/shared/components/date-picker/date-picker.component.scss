@@ -125,7 +125,9 @@
         background: #2b2d30;
         color: var(--color-text-primary);
         cursor: pointer;
-        transition: background 0.15s ease, color 0.15s ease;
+        transition:
+            background 0.15s ease,
+            color 0.15s ease;
         padding: 0;
 
         &:hover {

@@ -66,6 +66,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
     private readonly refreshedIsActive = signal<boolean | undefined>(undefined);
     private readonly refreshedCurrentRuns = signal<number | undefined>(undefined);
     private readonly stopPolling$ = new Subject<void>();
+    private hasInitialGETFired = false;
 
     private destroyRef = inject(DestroyRef);
     private readonly flowsApiService = inject(FlowsApiService);
@@ -80,6 +81,26 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             if (!ctrl) return;
             if (ctrl.value !== isActive) {
                 ctrl.patchValue(isActive, { emitEvent: false });
+            }
+        });
+        effect(() => {
+            const backendId = this.node().backendId;
+            if (backendId != null && !this.hasInitialGETFired) {
+                this.hasInitialGETFired = true;
+                this.flowsApiService
+                    .getScheduleTriggerNode(backendId)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe({
+                        next: (dto) => {
+                            this.refreshedNextRun.set(dto.schedule?.next_run_date_time ?? null);
+                            this.refreshedIsActive.set(dto.is_active);
+                            this.refreshedCurrentRuns.set(dto.current_runs);
+                            this.syncRefreshedDataToNode(dto);
+                            this.stopPolling$.next();
+                            this.schedulePoll(this.computeNextPollDelay(dto));
+                        },
+                        error: () => {},
+                    });
             }
         });
         this.destroyRef.onDestroy(() => this.stopPolling$.next());
@@ -227,6 +248,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
         this.refreshedNextRun.set(undefined);
         this.refreshedIsActive.set(undefined);
         this.refreshedCurrentRuns.set(undefined);
+        this.hasInitialGETFired = false;
         this.initialNodeName = this.node().node_name;
         this.submitted.set(false);
         this.startRowError.set('');
@@ -353,6 +375,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
 
         const backendId = this.node().backendId;
         if (backendId != null) {
+            this.hasInitialGETFired = true;
             this.flowsApiService
                 .getScheduleTriggerNode(backendId)
                 .pipe(takeUntilDestroyed(this.destroyRef))
@@ -361,6 +384,9 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
                         this.refreshedNextRun.set(dto.schedule?.next_run_date_time ?? null);
                         this.refreshedIsActive.set(dto.is_active);
                         this.refreshedCurrentRuns.set(dto.current_runs);
+                        this.syncRefreshedDataToNode(dto);
+                        this.stopPolling$.next();
+                        this.schedulePoll(this.computeNextPollDelay(dto));
                     },
                     error: () => {},
                 });
@@ -618,6 +644,9 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             }
         }
 
+        const refreshedNext = this.refreshedNextRun();
+        const refreshedCurrent = this.refreshedCurrentRuns();
+
         const data: ScheduleTriggerNodeData = {
             isActive: f.is_active ?? false,
             runMode,
@@ -628,9 +657,9 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             endType,
             endDateTime,
             maxRuns,
-            currentRuns: this.node().data.currentRuns ?? 0,
+            currentRuns: refreshedCurrent !== undefined ? refreshedCurrent : (this.node().data.currentRuns ?? 0),
             timezone: (f.timezone as string | null) ?? '',
-            nextRunDateTime: this.node().data.nextRunDateTime ?? null,
+            nextRunDateTime: refreshedNext !== undefined ? refreshedNext : (this.node().data.nextRunDateTime ?? null),
         };
 
         const formName = f.node_name ?? this.node().node_name;
@@ -659,6 +688,11 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             }
         } else {
             resolvedName = formName;
+        }
+
+        if (resolvedName !== formName) {
+            this.form.get('node_name')!.setValue(resolvedName, { emitEvent: false });
+            this.initialNodeName = resolvedName;
         }
 
         return {
@@ -769,6 +803,7 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
                             this.refreshedNextRun.set(dto.schedule?.next_run_date_time ?? null);
                             this.refreshedIsActive.set(dto.is_active);
                             this.refreshedCurrentRuns.set(dto.current_runs);
+                            this.syncRefreshedDataToNode(dto);
                             this.schedulePoll(this.computeNextPollDelay(dto));
                         },
                         error: () => {
@@ -778,10 +813,35 @@ export class ScheduleTriggerNodePanelComponent extends BaseSidePanel<ScheduleTri
             });
     }
 
+    private syncRefreshedDataToNode(dto: GetScheduleTriggerNodeRequest): void {
+        if (this.scheduleDirty()) return;
+        const current = this.node();
+        const newIsActive = dto.is_active;
+        const newNextRun = dto.schedule?.next_run_date_time ?? null;
+        const newCurrentRuns = dto.current_runs;
+        if (
+            current.data.isActive === newIsActive &&
+            current.data.nextRunDateTime === newNextRun &&
+            current.data.currentRuns === newCurrentRuns
+        ) {
+            return;
+        }
+        const updatedNode: ScheduleTriggerNodeModel = {
+            ...current,
+            data: {
+                ...current.data,
+                isActive: newIsActive,
+                nextRunDateTime: newNextRun,
+                currentRuns: newCurrentRuns,
+            },
+        };
+        this.flowService.updateNode(updatedNode);
+    }
+
     private computeNextPollDelay(dto: GetScheduleTriggerNodeRequest): number {
         if (!dto.is_active) return 60_000;
         const next = dto.schedule?.next_run_date_time;
-        if (!next) return 60_000;
+        if (!next) return 3_000;
         const msUntilRun = new Date(next).getTime() - Date.now();
         if (msUntilRun <= 2 * 60_000) return 5_000;
         if (msUntilRun <= 10 * 60_000) return 15_000;

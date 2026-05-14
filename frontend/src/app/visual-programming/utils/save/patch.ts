@@ -135,6 +135,11 @@ function buildCreatedNodeIdMap(
     );
     mapByNewIds(nodeDiff.endNodes.toCreate, responseGraph.end_node_list ?? [], existingIdsByType(NodeType.END));
     mapByNewIds(nodeDiff.noteNodes.toCreate, responseGraph.graph_note_list ?? [], existingIdsByType(NodeType.NOTE));
+    mapByNewIds(
+        nodeDiff.scheduleNodes.toCreate,
+        responseGraph.schedule_trigger_node_list ?? [],
+        existingIdsByType(NodeType.SCHEDULE_TRIGGER)
+    );
 
     return mapping;
 }
