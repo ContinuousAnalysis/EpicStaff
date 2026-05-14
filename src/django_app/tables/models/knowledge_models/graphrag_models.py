@@ -95,6 +95,7 @@ class AgentGraphRag(models.Model):
     class SearchMethod(models.TextChoices):
         BASIC = "basic", "Basic Search"
         LOCAL = "local", "Local Search"
+        GLOBAL = "global_search", "Global Search"
 
     agent = models.ForeignKey(
         Agent,
@@ -106,10 +107,10 @@ class AgentGraphRag(models.Model):
         GraphRag, on_delete=models.CASCADE, related_name="agent_links"
     )
     search_method = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=SearchMethod.choices,
         default=SearchMethod.BASIC,
-        help_text="Active search method: basic or local",
+        help_text="Active search method: basic, local or global_search",
     )
 
     class Meta:
@@ -329,79 +330,94 @@ class GraphRagLocalSearchConfig(models.Model):
         return f"GraphRagLocalSearchConfig({self.pk})"
 
 
-# class GraphRagGlobalSearchConfig(models.Model):
-#     """
-#     The default configuration section for Global Search.
-#     """
+class GraphRagGlobalSearchConfig(models.Model):
+    """
+    The default configuration section for Global Search.
+    """
 
-#     map_prompt = models.TextField(
-#         null=True,
-#         blank=True,
-#         help_text="The global search mapper prompt to use.",
-#         default=None,
-#     )
+    agent = models.OneToOneField(
+        Agent,
+        on_delete=models.CASCADE,
+        related_name="graph_global_search_config",
+        help_text="Agent this global search configuration belongs to",
+    )
 
-#     reduce_prompt = models.TextField(
-#         null=True,
-#         blank=True,
-#         help_text="The global search reducer prompt to use.",
-#         default=None,
-#     )
+    map_prompt = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The global search mapper prompt to use.",
+        default=None,
+    )
 
-#     knowledge_prompt = models.TextField(
-#         null=True,
-#         blank=True,
-#         help_text="The global search general prompt to use.",
-#         default=None,
-#     )
+    reduce_prompt = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The global search reducer prompt to use.",
+        default=None,
+    )
 
-#     max_context_tokens = models.IntegerField(
-#         default=12000,
-#         help_text="The maximum context size in tokens.",
-#     )
+    knowledge_prompt = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The global search general prompt to use.",
+        default=None,
+    )
 
-#     data_max_tokens = models.IntegerField(
-#         default=12000,
-#         help_text="The data llm maximum tokens.",
-#     )
+    max_context_tokens = models.IntegerField(
+        default=12000,
+        help_text="The maximum context size in tokens.",
+    )
 
-#     map_max_length = models.IntegerField(
-#         default=1000,
-#         help_text="The map llm maximum response length in words.",
-#     )
+    data_max_tokens = models.IntegerField(
+        default=12000,
+        help_text="The data llm maximum tokens.",
+    )
 
-#     reduce_max_length = models.IntegerField(
-#         default=2000,
-#         help_text="The reduce llm maximum response length in words.",
-#     )
+    map_max_length = models.IntegerField(
+        default=1000,
+        help_text="The map llm maximum response length in words.",
+    )
 
-#     dynamic_search_threshold = models.IntegerField(
-#         default=1,
-#         help_text="Rating threshold to include a community report.",
-#     )
+    reduce_max_length = models.IntegerField(
+        default=2000,
+        help_text="The reduce llm maximum response length in words.",
+    )
 
-#     dynamic_search_keep_parent = models.BooleanField(
-#         default=False,
-#         help_text="Keep parent community if any of the child communities are relevant.",
-#     )
+    dynamic_community_selection = models.BooleanField(
+        default=False,
+        help_text="Enable dynamic community selection at query time.",
+    )
 
-#     dynamic_search_num_repeats = models.IntegerField(
-#         default=1,
-#         help_text="Number of times to rate the same community report.",
-#     )
+    dynamic_search_threshold = models.IntegerField(
+        default=1,
+        help_text="Rating threshold to include a community report.",
+    )
 
-#     dynamic_search_use_summary = models.BooleanField(
-#         default=False,
-#         help_text="Use community summary instead of full_context.",
-#     )
+    dynamic_search_keep_parent = models.BooleanField(
+        default=False,
+        help_text="Keep parent community if any of the child communities are relevant.",
+    )
 
-#     dynamic_search_max_level = models.IntegerField(
-#         default=2,
-#         help_text="The maximum level of community hierarchy to consider if none of the processed communities are relevant.",
-#     )
+    dynamic_search_num_repeats = models.IntegerField(
+        default=1,
+        help_text="Number of times to rate the same community report.",
+    )
 
-#     def __str__(self):
-#         return f"GraphRagGlobalSearchConfig({self.pk})"
+    dynamic_search_use_summary = models.BooleanField(
+        default=False,
+        help_text="Use community summary instead of full_context.",
+    )
+
+    dynamic_search_max_level = models.IntegerField(
+        default=2,
+        help_text="The maximum level of community hierarchy to consider if none of the processed communities are relevant.",
+    )
+
+    class Meta:
+        db_table = "graph_rag_global_search_config"
+
+    def __str__(self):
+        return f"GraphRagGlobalSearchConfig({self.pk})"
 
 
 # class GraphRagDriftSearchConfig(models.Model):

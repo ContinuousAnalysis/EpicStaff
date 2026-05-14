@@ -9,6 +9,7 @@ from tables.models.knowledge_models.graphrag_models import (
     AgentGraphRag,
     GraphRagBasicSearchConfig,
     GraphRagLocalSearchConfig,
+    GraphRagGlobalSearchConfig,
 )
 from tables.models.crew_models import Agent
 from tables.exceptions import (
@@ -225,9 +226,10 @@ class RagAssignmentService:
         # Create M2M link
         AgentGraphRag.objects.create(agent=agent, graph_rag=graph_rag)
 
-        # Create both search configs with defaults
+        # Create all search configs with defaults
         GraphRagBasicSearchConfig.objects.get_or_create(agent=agent)
         GraphRagLocalSearchConfig.objects.get_or_create(agent=agent)
+        GraphRagGlobalSearchConfig.objects.get_or_create(agent=agent)
 
         return graph_rag
 
@@ -301,19 +303,21 @@ class SearchConfigService:
         Search configs are independent from RAG assignment — returned
         whenever they exist in DB regardless of AgentGraphRag link.
 
-        Returns None only if neither basic nor local config exists.
+        Returns None only if no graph search configs exist.
 
         Returns:
             {
                 "search_method": "basic",
                 "basic": {"prompt": null, "k": 10, "max_context_tokens": 12000},
                 "local": {"prompt": null, "text_unit_prop": 0.5, ...},
+                "global_search": {"map_prompt": null, ...},
             }
         """
         basic = GraphRagBasicSearchConfig.objects.filter(agent=agent).first()
         local = GraphRagLocalSearchConfig.objects.filter(agent=agent).first()
+        global_cfg = GraphRagGlobalSearchConfig.objects.filter(agent=agent).first()
 
-        if basic is None and local is None:
+        if basic is None and local is None and global_cfg is None:
             return None
 
         # search_method from AgentGraphRag if assigned, null if no graph rag
@@ -343,6 +347,25 @@ class SearchConfigService:
             }
         else:
             result["local"] = None
+
+        if global_cfg is not None:
+            result["global_search"] = {
+                "map_prompt": global_cfg.map_prompt,
+                "reduce_prompt": global_cfg.reduce_prompt,
+                "knowledge_prompt": global_cfg.knowledge_prompt,
+                "max_context_tokens": global_cfg.max_context_tokens,
+                "data_max_tokens": global_cfg.data_max_tokens,
+                "map_max_length": global_cfg.map_max_length,
+                "reduce_max_length": global_cfg.reduce_max_length,
+                "dynamic_community_selection": global_cfg.dynamic_community_selection,
+                "dynamic_search_threshold": global_cfg.dynamic_search_threshold,
+                "dynamic_search_keep_parent": global_cfg.dynamic_search_keep_parent,
+                "dynamic_search_num_repeats": global_cfg.dynamic_search_num_repeats,
+                "dynamic_search_use_summary": global_cfg.dynamic_search_use_summary,
+                "dynamic_search_max_level": global_cfg.dynamic_search_max_level,
+            }
+        else:
+            result["global_search"] = None
 
         return result
 
@@ -377,6 +400,12 @@ class SearchConfigService:
         local_config = config.get("local")
         if local_config:
             SearchConfigService.update_graph_local_search_config(agent, **local_config)
+
+        global_config = config.get("global_search")
+        if global_config:
+            SearchConfigService.update_graph_global_search_config(
+                agent, **global_config
+            )
 
     @staticmethod
     def create_default_search_config(agent: Agent) -> NaiveRagSearchConfig:
@@ -419,9 +448,10 @@ class SearchConfigService:
 
     @staticmethod
     def create_default_graph_search_configs(agent: Agent):
-        """Create both basic and local search configs with defaults."""
+        """Create basic, local and global search configs with defaults."""
         GraphRagBasicSearchConfig.objects.get_or_create(agent=agent)
         GraphRagLocalSearchConfig.objects.get_or_create(agent=agent)
+        GraphRagGlobalSearchConfig.objects.get_or_create(agent=agent)
 
     @staticmethod
     def update_graph_search_method(agent: Agent, search_method: str):
@@ -454,6 +484,34 @@ class SearchConfigService:
             "top_k_entities",
             "top_k_relationships",
             "max_context_tokens",
+        )
+        updated = False
+        for field, value in kwargs.items():
+            if field in valid_fields and value is not None:
+                setattr(config, field, value)
+                updated = True
+        if updated:
+            config.save()
+        return config
+
+    @staticmethod
+    def update_graph_global_search_config(agent: Agent, **kwargs):
+        """Update global search config. Creates if doesn't exist."""
+        config, _ = GraphRagGlobalSearchConfig.objects.get_or_create(agent=agent)
+        valid_fields = (
+            "map_prompt",
+            "reduce_prompt",
+            "knowledge_prompt",
+            "max_context_tokens",
+            "data_max_tokens",
+            "map_max_length",
+            "reduce_max_length",
+            "dynamic_community_selection",
+            "dynamic_search_threshold",
+            "dynamic_search_keep_parent",
+            "dynamic_search_num_repeats",
+            "dynamic_search_use_summary",
+            "dynamic_search_max_level",
         )
         updated = False
         for field, value in kwargs.items():

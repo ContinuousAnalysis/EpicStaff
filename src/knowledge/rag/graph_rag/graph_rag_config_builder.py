@@ -17,10 +17,17 @@ from graphrag.config.enums import (
     InputFileType,
     ChunkStrategyType,
 )
-from src.shared.models import GraphRagBasicSearchParams, GraphRagLocalSearchParams
+from src.shared.models import (
+    GraphRagBasicSearchParams,
+    GraphRagLocalSearchParams,
+    GraphRagGlobalSearchParams,
+)
 from rag.graph_rag.utils import (
     build_basic_search_prompt,
     build_local_search_prompt,
+    build_global_search_map_prompt,
+    build_global_search_reduce_prompt,
+    build_global_search_knowledge_prompt,
 )
 
 
@@ -416,3 +423,33 @@ class GraphRagConfigBuilder:
         config.local_search.top_k_entities = params.top_k_entities
         config.local_search.top_k_relationships = params.top_k_relationships
         config.local_search.max_context_tokens = params.max_context_tokens
+
+    def apply_global_search_params(
+        self,
+        config: GraphRagConfig,
+        params: GraphRagGlobalSearchParams,
+    ) -> None:
+        config.global_search.map_prompt = build_global_search_map_prompt(
+            params.map_prompt
+        )
+        config.global_search.reduce_prompt = build_global_search_reduce_prompt(
+            params.reduce_prompt
+        )
+        config.global_search.knowledge_prompt = build_global_search_knowledge_prompt(
+            params.knowledge_prompt
+        )
+        config.global_search.max_context_tokens = params.max_context_tokens
+        config.global_search.data_max_tokens = params.data_max_tokens
+        config.global_search.map_max_length = params.map_max_length
+        config.global_search.reduce_max_length = params.reduce_max_length
+        config.global_search.dynamic_search_threshold = params.dynamic_search_threshold
+        config.global_search.dynamic_search_keep_parent = (
+            params.dynamic_search_keep_parent
+        )
+        config.global_search.dynamic_search_num_repeats = (
+            params.dynamic_search_num_repeats
+        )
+        config.global_search.dynamic_search_use_summary = (
+            params.dynamic_search_use_summary
+        )
+        config.global_search.dynamic_search_max_level = params.dynamic_search_max_level

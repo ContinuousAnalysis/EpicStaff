@@ -38,8 +38,27 @@ class GraphRagLocalSearchParams(BaseModel):
     max_context_tokens: int = 12000
 
 
+class GraphRagGlobalSearchParams(BaseModel):
+    search_method: Literal["global_search"] = "global_search"
+    dynamic_community_selection: bool = False
+    map_prompt: str | None = None
+    reduce_prompt: str | None = None
+    knowledge_prompt: str | None = None
+    max_context_tokens: int = 12000
+    data_max_tokens: int = 12000
+    map_max_length: int = 1000
+    reduce_max_length: int = 2000
+    dynamic_search_threshold: int = 1
+    dynamic_search_keep_parent: bool = False
+    dynamic_search_num_repeats: int = 1
+    dynamic_search_use_summary: bool = False
+    dynamic_search_max_level: int = 2
+
+
 GraphSearchParams = Annotated[
-    Union[GraphRagBasicSearchParams, GraphRagLocalSearchParams],
+    Union[
+        GraphRagBasicSearchParams, GraphRagLocalSearchParams, GraphRagGlobalSearchParams
+    ],
     Field(discriminator="search_method"),
 ]
 

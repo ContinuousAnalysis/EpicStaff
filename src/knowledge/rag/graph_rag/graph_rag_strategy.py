@@ -3,20 +3,20 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from loguru import logger
-
 from graphrag.api.index import build_index
-from graphrag.api.query import basic_search, local_search
+from graphrag.api.query import basic_search, global_search, local_search
 from graphrag.config.models.graph_rag_config import GraphRagConfig
-
-from rag.base_rag_strategy import BaseRAGStrategy
-from rag.graph_rag.graph_rag_file_manager import GraphRagFileManager
-from rag.graph_rag.graph_rag_config_builder import GraphRagConfigBuilder
+from loguru import logger
 from src.shared.models import (
-    GraphRagSearchConfig,
     BaseKnowledgeSearchMessageResponse,
+    GraphRagGlobalSearchParams,
+    GraphRagSearchConfig,
     KnowledgeChunkResponse,
 )
+
+from rag.base_rag_strategy import BaseRAGStrategy
+from rag.graph_rag.graph_rag_config_builder import GraphRagConfigBuilder
+from rag.graph_rag.graph_rag_file_manager import GraphRagFileManager
 from settings import UnitOfWork
 
 
@@ -238,6 +238,10 @@ class GraphRAGStrategy(BaseRAGStrategy):
                 self.config_builder.apply_local_search_params(
                     graphrag_config, search_params
                 )
+            elif search_method == "global_search":
+                self.config_builder.apply_global_search_params(
+                    graphrag_config, search_params
+                )
             else:
                 self.config_builder.apply_basic_search_params(
                     graphrag_config, search_params
@@ -250,6 +254,14 @@ class GraphRAGStrategy(BaseRAGStrategy):
                     root_folder=root_folder,
                     graphrag_config=graphrag_config,
                     query=query,
+                )
+            elif search_method == "global_search":
+                logger.info(f"Running global search for graph_rag_id: {graph_rag_id}")
+                response, context = self._run_global_search(
+                    root_folder=root_folder,
+                    graphrag_config=graphrag_config,
+                    query=query,
+                    search_params=search_params,
                 )
             else:
                 logger.info(f"Running basic search for graph_rag_id: {graph_rag_id}")
@@ -345,6 +357,36 @@ class GraphRAGStrategy(BaseRAGStrategy):
                 relationships=relationships,
                 covariates=covariates,
                 community_level=2,
+                response_type="Multiple Paragraphs",
+                query=query,
+            )
+        )
+
+    def _run_global_search(
+        self,
+        root_folder: Path,
+        graphrag_config: GraphRagConfig,
+        query: str,
+        search_params: GraphRagGlobalSearchParams,
+    ) -> tuple:
+        """
+        Run global search using entities, communities, and community_reports.
+
+        Global search aggregates over the full community hierarchy, so it does
+        not require text_units, relationships or covariates.
+        """
+        entities = self._load_parquet(root_folder, "entities.parquet")
+        communities = self._load_parquet(root_folder, "communities.parquet")
+        community_reports = self._load_parquet(root_folder, "community_reports.parquet")
+
+        return asyncio.run(
+            global_search(
+                config=graphrag_config,
+                entities=entities,
+                communities=communities,
+                community_reports=community_reports,
+                community_level=2,
+                dynamic_community_selection=search_params.dynamic_community_selection,
                 response_type="Multiple Paragraphs",
                 query=query,
             )

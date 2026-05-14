@@ -1,22 +1,23 @@
 from rest_framework import serializers
+
+from tables.constants.knowledge_constants import (
+    GRAPHRAG_MAX_CHUNK_OVERLAP,
+    GRAPHRAG_MAX_CHUNK_SIZE,
+    GRAPHRAG_MAX_MAX_CLUSTER_SIZE,
+    GRAPHRAG_MAX_MAX_GLEANINGS,
+    GRAPHRAG_MIN_CHUNK_OVERLAP,
+    GRAPHRAG_MIN_CHUNK_SIZE,
+    GRAPHRAG_MIN_MAX_CLUSTER_SIZE,
+    GRAPHRAG_MIN_MAX_GLEANINGS,
+)
 from tables.models.knowledge_models import (
     GraphRag,
+    GraphRagChunkStrategyType,
     GraphRagDocument,
     GraphRagIndexConfig,
     GraphRagInputFileType,
-    GraphRagChunkStrategyType,
 )
 from tables.serializers.knowledge_serializers import BaseRagTypeSerializer
-from tables.constants.knowledge_constants import (
-    GRAPHRAG_MIN_CHUNK_SIZE,
-    GRAPHRAG_MAX_CHUNK_SIZE,
-    GRAPHRAG_MIN_CHUNK_OVERLAP,
-    GRAPHRAG_MAX_CHUNK_OVERLAP,
-    GRAPHRAG_MIN_MAX_GLEANINGS,
-    GRAPHRAG_MAX_MAX_GLEANINGS,
-    GRAPHRAG_MIN_MAX_CLUSTER_SIZE,
-    GRAPHRAG_MAX_MAX_CLUSTER_SIZE,
-)
 
 
 class GraphRagCreateSerializer(serializers.Serializer):
@@ -347,11 +348,85 @@ class GraphLocalSearchConfigInputSerializer(serializers.Serializer):
     )
 
 
+class GraphGlobalSearchConfigInputSerializer(serializers.Serializer):
+    """Input serializer for graph RAG global search config."""
+
+    dynamic_community_selection = serializers.BooleanField(
+        required=False,
+        help_text="Whether to use dynamic community selection",
+    )
+    map_prompt = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Custom map prompt",
+    )
+    reduce_prompt = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Custom reduce prompt",
+    )
+    knowledge_prompt = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Custom knowledge prompt",
+    )
+    max_context_tokens = serializers.IntegerField(
+        required=False,
+        min_value=100,
+        max_value=100000,
+        help_text="Maximum context tokens (100-100000)",
+    )
+    data_max_tokens = serializers.IntegerField(
+        required=False,
+        min_value=100,
+        max_value=100000,
+        help_text="Maximum data tokens (100-100000)",
+    )
+    map_max_length = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=10000,
+        help_text="Maximum map output length (1-10000)",
+    )
+    reduce_max_length = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=10000,
+        help_text="Maximum reduce output length (1-10000)",
+    )
+    dynamic_search_threshold = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=10,
+        help_text="Dynamic search threshold (1-10)",
+    )
+    dynamic_search_keep_parent = serializers.BooleanField(
+        required=False, help_text="Whether to keep parent community in results"
+    )
+    dynamic_search_num_repeats = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=5,
+        help_text="Number of times to repeat dynamic search (1-5)",
+    )
+    dynamic_search_use_summary = serializers.BooleanField(
+        required=False, help_text="Whether to use summary for dynamic search"
+    )
+    dynamic_search_max_level = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=5,
+    )
+
+
 class GraphSearchConfigInputSerializer(serializers.Serializer):
     """Input serializer for graph RAG search config wrapper."""
 
     search_method = serializers.ChoiceField(
-        choices=["basic", "local"],
+        choices=["basic", "local", "global_search"],
         required=False,
         help_text="Active search method",
     )
@@ -362,4 +437,8 @@ class GraphSearchConfigInputSerializer(serializers.Serializer):
     local = GraphLocalSearchConfigInputSerializer(
         required=False,
         help_text="Local search configuration",
+    )
+    global_search = GraphGlobalSearchConfigInputSerializer(
+        required=False,
+        help_text="Global search configuration",
     )
