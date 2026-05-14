@@ -84,9 +84,17 @@ import { ClipboardService } from '../services/clipboard.service';
 import { FlowService } from '../services/flow.service';
 import { NodeFactoryService } from '../services/node-factory.service';
 import { SidePanelService } from '../services/side-panel.service';
+import { BackwardConnectionBuilder } from '../core/connection-builders/backward-connection.builder';
 import { UndoRedoService } from '../services/undo-redo.service';
 import { createFlowConnection } from '../utils/connection.factory';
 import { normalizeFlowPorts } from '../utils/load';
+import {
+    generatePortsForClassificationDecisionTableNode,
+} from '../core/helpers/helpers';
+
+const connectionBuilders = {
+    ['backward']: new BackwardConnectionBuilder(),
+};
 
 function waypointsEqual(a: IPoint[], b: IPoint[]): boolean {
     if (a.length !== b.length) return false;
