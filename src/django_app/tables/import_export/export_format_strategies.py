@@ -51,7 +51,9 @@ class CsvExportFormatStrategy(ExportFormatStrategy):
         writer = csv.DictWriter(buf, fieldnames=self.fields, extrasaction="ignore")
         writer.writeheader()
         for row in rows:
-            writer.writerow(self.row_mapper(row))
+            writer.writerow(
+                {k: ("" if v is None else v) for k, v in self.row_mapper(row).items()}
+            )
 
         filename = generate_file_name(base_name, prefix=prefix).replace(".json", ".csv")
         response = HttpResponse(buf.getvalue(), content_type="text/csv")
