@@ -102,8 +102,14 @@
             transition: transform 0.2s;
         }
 
-        .delete-btn {
+        .right-actions {
             margin-left: auto;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .delete-btn {
             background: #e0575b;
             color: #fff;
             border: none;
@@ -140,13 +146,5 @@
         margin-top: 16px;
         display: flex;
         justify-content: flex-start;
-    }
-}
-
-.results-length {
-    margin-right: 10px;
-
-    &.invisible {
-        display: none;
     }
 }
