@@ -402,3 +402,68 @@ class NaiveSearchConfigInputSerializer(serializers.Serializer):
         max_value=1.0,
         help_text="Similarity threshold for search (0.0-1.0)",
     )
+
+
+class ChunkSearchRequestSerializer(serializers.Serializer):
+    """Query params for NaiveRagChunkSearchView."""
+
+    q = serializers.CharField(
+        required=True,
+        trim_whitespace=False,
+        help_text="Search query (case-insensitive substring match, spaces preserved)",
+    )
+    limit = serializers.IntegerField(
+        required=False,
+        min_value=0,
+        help_text="Max number of chunk IDs to return",
+    )
+    offset = serializers.IntegerField(
+        required=False,
+        min_value=0,
+        default=0,
+        help_text="Number of chunk IDs to skip",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        default_limit = self.context.get("default_limit")
+        if default_limit is not None:
+            self.fields["limit"].default = default_limit
+
+    def validate_limit(self, value):
+        max_limit = self.context.get("max_limit")
+        if max_limit is not None:
+            return min(value, max_limit)
+        return value
+
+
+class ChunkSearchResponseSerializer(serializers.Serializer):
+    """Response serializer for chunk search endpoint."""
+
+    naive_rag_id = serializers.IntegerField()
+    document_config_id = serializers.IntegerField()
+    query = serializers.CharField()
+    total_matches = serializers.IntegerField()
+    limit = serializers.IntegerField()
+    offset = serializers.IntegerField()
+    preview_chunk_ids = serializers.ListField(child=serializers.IntegerField())
+
+
+class PreviewChunksByIdsRequestSerializer(serializers.Serializer):
+    """Request serializer for fetching preview chunks by a list of ids."""
+
+    preview_chunk_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=True,
+        allow_empty=False,
+        help_text="List of preview_chunk_id values to fetch",
+    )
+
+
+class PreviewChunksByIdsResponseSerializer(serializers.Serializer):
+    """Response serializer for fetching preview chunks by a list of ids."""
+
+    naive_rag_id = serializers.IntegerField()
+    document_config_id = serializers.IntegerField()
+    total = serializers.IntegerField()
+    chunks = NaiveRagPreviewChunkSerializer(many=True)

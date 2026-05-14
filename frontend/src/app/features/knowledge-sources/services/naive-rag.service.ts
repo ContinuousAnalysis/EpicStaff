@@ -5,7 +5,12 @@ import { Observable } from 'rxjs';
 import { ConfigService } from '../../../services/config';
 import { StartIndexingDtoRequest, StartIndexingDtoResponse } from '../models/base-rag.model';
 import { CreateNaiveRagForCollectionResponse } from '../models/naive-rag.model';
-import { GetNaiveRagDocumentChunksResponse, NaiveRagChunkingResponse } from '../models/naive-rag-chunk.model';
+import {
+    ChunkSearchResponse,
+    GetChunksByIdsResponse,
+    GetNaiveRagDocumentChunksResponse,
+    NaiveRagChunkingResponse,
+} from '../models/naive-rag-chunk.model';
 import {
     BulkDeleteNaiveRagDocumentDtoRequest,
     BulkDeleteNaiveRagDocumentDtoResponse,
@@ -109,6 +114,39 @@ export class NaiveRagService {
         return this.http.get<GetNaiveRagDocumentChunksResponse>(
             `${this.apiUrl}${ragId}/document-configs/${documentId}/chunks/`,
             { params }
+        );
+    }
+
+    searchChunks(
+        ragId: number,
+        documentId: number,
+        query: string,
+        offset?: number,
+        limit?: number
+    ): Observable<ChunkSearchResponse> {
+        let params = new HttpParams().set('q', query);
+
+        if (offset !== undefined) {
+            params = params.set('offset', offset.toString());
+        }
+        if (limit !== undefined) {
+            params = params.set('limit', limit.toString());
+        }
+
+        return this.http.get<ChunkSearchResponse>(
+            `${this.apiUrl}${ragId}/document-configs/${documentId}/chunks/search/`,
+            { params }
+        );
+    }
+
+    getChunksByIds(ragId: number, documentId: number, chunkIds: number[]): Observable<GetChunksByIdsResponse> {
+        const dto = {
+            preview_chunk_ids: chunkIds,
+        };
+
+        return this.http.post<GetChunksByIdsResponse>(
+            `${this.apiUrl}${ragId}/document-configs/${documentId}/chunks/by-ids/`,
+            dto
         );
     }
 }
