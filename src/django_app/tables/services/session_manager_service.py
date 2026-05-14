@@ -435,7 +435,12 @@ class SessionManagerService(metaclass=SingletonMeta):
         cv = self.converter_service
 
         crew_node_data_list = [
-            cv.convert_crew_node_to_pydantic(crew_node=item, resolver=resolver)
+            cv.convert_crew_node_to_pydantic(
+                crew_node=item,
+                resolver=resolver,
+                graph_id=graph.pk,
+                session_id=session.pk if session else None,
+            )
             for item in crew_node_list
         ]
         python_node_data_list = [
