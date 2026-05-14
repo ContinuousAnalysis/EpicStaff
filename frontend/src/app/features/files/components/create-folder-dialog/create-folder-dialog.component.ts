@@ -1,4 +1,5 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -43,7 +44,7 @@ export interface FolderNode {
 
 @Component({
     selector: 'app-create-folder-dialog',
-    imports: [FormsModule, AppSvgIconComponent, Spinner2Component, MatIconModule, MatTooltipModule],
+    imports: [FormsModule, AppSvgIconComponent, Spinner2Component, MatIconModule, MatTooltipModule, OverlayModule],
     templateUrl: './create-folder-dialog.component.html',
     styleUrls: ['./create-folder-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -102,6 +103,15 @@ export class CreateFolderDialogComponent {
     readonly folderName = signal('');
     readonly isDragging = signal(false);
     readonly files = signal<File[]>([]);
+    readonly viewAllOpen = signal(false);
+
+    toggleViewAll(): void {
+        this.viewAllOpen.update((v) => !v);
+    }
+
+    closeViewAll(): void {
+        this.viewAllOpen.set(false);
+    }
 
     // Destination folder dropdown
     readonly dropdownOpen = signal(false);

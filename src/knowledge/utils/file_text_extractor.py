@@ -1,5 +1,5 @@
 import csv
-import fitz
+import pdfplumber
 from docx import Document
 from io import BytesIO, StringIO
 from bs4 import BeautifulSoup
@@ -56,13 +56,48 @@ def _is_valid_pdf(binary_content: bytes) -> bool:
     return content.startswith(b"%PDF-")
 
 
+def _extract_page_text(page) -> str:
+    """
+    Make pdfplumber extraction output similar to PyMuPDF output.
+    """
+    lines = page.extract_text_lines(
+        strip=True,
+        return_chars=False,
+        x_tolerance=3,
+        y_tolerance=3,
+    )
+    if not lines:
+        return ""
+    if len(lines) == 1:
+        return lines[0]["text"]
+
+    spacings = [
+        lines[i]["top"] - lines[i - 1]["top"]
+        for i in range(1, len(lines))
+        if lines[i]["top"] > lines[i - 1]["top"]
+    ]
+    if not spacings:
+        return "\n".join(line["text"] + " " for line in lines).rstrip(" ")
+
+    median_spacing = sorted(spacings)[len(spacings) // 2]
+    paragraph_threshold = median_spacing * 1.5
+
+    parts = [lines[0]["text"] + " "]
+    for i in range(1, len(lines)):
+        spacing = lines[i]["top"] - lines[i - 1]["top"]
+        if spacing > paragraph_threshold:
+            parts.append(" ")
+        parts.append(lines[i]["text"] + " ")
+
+    return "\n".join(parts).rstrip(" ")
+
+
 def extract_text_from_pdf(binary_content: bytes) -> str:
     """
     Extract text from PDF files.
     Falls back to plain text extraction if the content is not a valid PDF.
     """
 
-    # Check if content is actually a valid PDF
     if not _is_valid_pdf(binary_content):
         logger.warning(
             "Content has .pdf extension but is not a valid PDF file. "
@@ -72,21 +107,17 @@ def extract_text_from_pdf(binary_content: bytes) -> str:
 
     text_parts = []
     try:
-        pdf_document = fitz.open(stream=binary_content, filetype="pdf")
-
-        for page_num in range(pdf_document.page_count):
-            page = pdf_document[page_num]
-            page_text = page.get_text("text")
-
-            if page_text.strip():
-                text_parts.append(page_text.strip())
-
-        pdf_document.close()
+        with pdfplumber.open(BytesIO(binary_content)) as pdf_document:
+            for page in pdf_document.pages:
+                page_text = _extract_page_text(page)
+                if page_text:
+                    text_parts.append(page_text)
 
         if not text_parts:
             logger.warning("No text extracted from PDF")
             return ""
 
+        logger.info(text_parts)
         return "\n\n".join(text_parts)
 
     except Exception as e:
