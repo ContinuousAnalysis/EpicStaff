@@ -1,0 +1,69 @@
+<div class="table-wrapper">
+    <!-- HEADER ROW -->
+    <div
+        class="table-header"
+        [style.grid-template-columns]="gridTemplateColumns()"
+    >
+        @if (selectable()) {
+            <div class="table-cell checkbox">
+                <app-checkbox
+                    [checked]="allSelected()"
+                    [indeterminate]="indeterminate()"
+                    (changed)="toggleAll()"
+                />
+            </div>
+        }
+        @for (col of columns(); track col.key) {
+            <div
+                class="table-cell cell"
+                [class.center]="col.align === 'center'"
+                [class.end]="col.align === 'end'"
+            >
+                @if (col.filterItems?.length) {
+                    <app-multi-select
+                        icon="filter-rows"
+                        [label]="col.label ?? ''"
+                        [items]="col.filterItems!"
+                        (selectionChange)="onFilterChange(col.key, $event)"
+                    />
+                } @else {
+                    <span class="col-label">{{ col.label }}</span>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- DATA ROWS -->
+    <div class="table-body">
+        @for (item of filteredData(); track getRowId(item); let i = $index) {
+            <div
+                class="table-row"
+                [class.selected]="isSelected(item)"
+                [style.grid-template-columns]="gridTemplateColumns()"
+                (click)="rowClick.emit(item)"
+            >
+                @if (selectable()) {
+                    <div
+                        class="table-cell checkbox"
+                        (click)="$event.stopPropagation()"
+                    >
+                        <app-checkbox
+                            [checked]="isSelected(item)"
+                            (changed)="toggleRow(item)"
+                        />
+                    </div>
+                }
+                @for (col of columns(); track col.key) {
+                    <div class="table-cell">
+                        @if (getCellTemplate(col.key); as tmpl) {
+                            <ng-container *ngTemplateOutlet="tmpl; context: { $implicit: item, index: i }" />
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Empty state -->
+    <ng-content select="[tableEmpty]" />
+</div>
