@@ -1912,13 +1912,7 @@ class GraphSerializer(serializers.ModelSerializer):
         return instance
 
 
-class OrganizationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Organization
-        fields = ["id", "name", "is_active", "created_at", "updated_at"]
-        read_only_fields = ["id", "created_at", "updated_at"]
-
-
+# TODO: refactor for rbac
 class OrganizationUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrganizationUser
@@ -1926,6 +1920,7 @@ class OrganizationUserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "joined_at"]
 
 
+# TODO: refactor for rbac
 class GraphOrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = GraphOrganization
@@ -1977,6 +1972,7 @@ class GraphOrganizationSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
+# TODO: refactor for rbac
 class GraphOrganizationUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = GraphOrganizationUser

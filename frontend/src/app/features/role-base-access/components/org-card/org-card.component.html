@@ -1,0 +1,34 @@
+<div class="header">
+    <div class="name-row">
+        <app-org-avatar [name]="organization().name" />
+        <span class="name">{{ organization().name }}</span>
+    </div>
+    <!--    <app-button mod="small" type="primary" class="open-btn" rightIcon="arrow-up-right" (click)="onOpen()">-->
+    <!--        Open-->
+    <!--    </app-button>-->
+</div>
+<div class="footer">
+    <span class="org-users">{{ organization().member_count }} Users</span>
+    <div class="org-metrics">
+        <!--        <span class="metric">-->
+        <!--            <app-svg-icon icon="folder" size="14px" />-->
+        <!--            {{ organization().projects }}-->
+        <!--        </span>-->
+        <!--        <span class="metric">-->
+        <!--            <app-svg-icon icon="agent" size="14px" />-->
+        <!--            {{ organization().agents }}-->
+        <!--        </span>-->
+        <!--        <span class="metric">-->
+        <!--            <app-svg-icon icon="tools" size="14px" />-->
+        <!--            {{ organization().tools }}-->
+        <!--        </span>-->
+        <!--        <span class="metric">-->
+        <!--            <app-svg-icon icon="flow" size="14px" style="transform: rotate(90deg)" />-->
+        <!--            {{ organization().flows }}-->
+        <!--        </span>-->
+        <!--        <span class="metric">-->
+        <!--            <app-svg-icon icon="knowledge" size="14px" />-->
+        <!--            {{ organization().knowledges }}-->
+        <!--        </span>-->
+    </div>
+</div>

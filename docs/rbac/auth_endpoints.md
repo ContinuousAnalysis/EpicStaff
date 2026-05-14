@@ -315,7 +315,7 @@ See the dedicated [`sse_auth.md`](./sse_auth.md) for the complete FE flow.
     "memberships": [
       {
         "organization": { "id": 1, "name": "Acme Inc" },
-        "role":         { "id": 2, "name": "Org Admin" },
+        "role":         { "id": 2, "name": "Superadmin" },
         "joined_at":    "2026-04-17T18:00:00Z"
       }
     ]

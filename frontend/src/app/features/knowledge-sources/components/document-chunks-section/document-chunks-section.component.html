@@ -44,10 +44,23 @@
                         }
                     "
                 ></ng-container>
+                <app-chunk-search-bar
+                    [totalChunks]="state.total"
+                    [totalMatches]="chunkSearchState().totalMatches"
+                    [currentMatchIndex]="chunkSearchState().currentMatchIndex"
+                    [searchLoading]="chunkSearchState().loading"
+                    [resetKey]="selectedDocumentId()"
+                    (searchChange)="onSearchChange($event)"
+                    (prevMatch)="onPrevMatch()"
+                    (nextMatch)="onNextMatch()"
+                />
                 <app-chunk-preview
                     [chunkingState]="state"
                     [ragId]="naiveRagId()"
                     [docId]="selectedDocumentId()!"
+                    [collectionId]="collectionId()"
+                    [searchState]="chunkSearchState()"
+                    [activeMatchIndex]="chunkSearchState().currentMatchIndex"
                 />
             }
             @case ('chunks_outdated') {
@@ -63,10 +76,23 @@
                         }
                     "
                 ></ng-container>
+                <app-chunk-search-bar
+                    [totalChunks]="state.total"
+                    [totalMatches]="chunkSearchState().totalMatches"
+                    [currentMatchIndex]="chunkSearchState().currentMatchIndex"
+                    [searchLoading]="chunkSearchState().loading"
+                    [resetKey]="selectedDocumentId()"
+                    (searchChange)="onSearchChange($event)"
+                    (prevMatch)="onPrevMatch()"
+                    (nextMatch)="onNextMatch()"
+                />
                 <app-chunk-preview
                     [chunkingState]="state"
                     [ragId]="naiveRagId()"
                     [docId]="selectedDocumentId()!"
+                    [collectionId]="collectionId()"
+                    [searchState]="chunkSearchState()"
+                    [activeMatchIndex]="chunkSearchState().currentMatchIndex"
                 />
             }
         }
