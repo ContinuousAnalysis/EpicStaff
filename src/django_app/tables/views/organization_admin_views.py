@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from tables.serializers.organization_serializers import (
     OrganizationCreateRequestSerializer,
+    OrganizationListResponseSerializer,
     OrganizationRenameRequestSerializer,
     OrganizationResponseSerializer,
 )
@@ -41,12 +42,16 @@ class OrganizationAdminViewSet(viewsets.ViewSet):
 
     @extend_schema(
         summary="List organizations (superadmin)",
-        responses={200: OrganizationResponseSerializer(many=True)},
+        responses={200: OrganizationListResponseSerializer(many=True)},
     )
     def list(self, request):
         is_active = self._parse_is_active(request.query_params.get("is_active"))
-        qs = self._service.list_organizations(is_active=is_active)
-        return Response(OrganizationResponseSerializer(qs, many=True).data)
+        orgs = self._service.list_organizations_with_admins(is_active=is_active)
+        return Response(
+            OrganizationListResponseSerializer(
+                orgs, many=True, context={"request": request}
+            ).data
+        )
 
     @extend_schema(
         summary="Create an organization (superadmin)",
