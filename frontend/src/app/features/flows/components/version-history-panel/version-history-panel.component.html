@@ -73,6 +73,12 @@
                             </button>
                             <button
                                 class="dropdown-item"
+                                (click)="createFlowfromVersion(version, $event)"
+                            >
+                                Create flow from this
+                            </button>
+                            <button
+                                class="dropdown-item"
                                 (click)="startEdit(version, 'name')"
                             >
                                 Rename

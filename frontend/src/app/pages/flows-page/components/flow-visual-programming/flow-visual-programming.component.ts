@@ -46,6 +46,7 @@ import {
     GraphRestoreResponse,
     RestoreWarning,
 } from '../../../../features/flows/models/graph.model';
+import { CreateGraphWarningsService } from '../../../../features/flows/services/create-graph-warnings.service';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { RunGraphService } from '../../../../features/flows/services/run-graph-session.service';
@@ -156,7 +157,8 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly epicChatService: EpicChatService,
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
         private readonly unsavedChangesDialog: UnsavedChangesDialogService,
-        private readonly undoRedoService: UndoRedoService
+        private readonly undoRedoService: UndoRedoService,
+        private readonly createGraphWarningService: CreateGraphWarningsService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
         this.routeParamMap = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
@@ -177,6 +179,8 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
     public ngOnInit(): void {
         this.flowUnsavedStateService.register(this);
+        const warnings = this.createGraphWarningService.readPending();
+        if (warnings.length) this.restoreWarnings.set(warnings);
     }
 
     public refreshCurrentFlow(): void {
