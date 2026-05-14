@@ -366,6 +366,21 @@ class EpicStaffStorage:
 
         self.write(path, existing + content)
 
+    def insert_lines(self, path: str, line_number: int, content: str) -> None:
+        if line_number < 1:
+            raise ValueError(f"line_number must be >= 1, got {line_number}")
+
+        try:
+            existing = self.read(path)
+        except FileNotFoundError:
+            existing = ""
+
+        lines = existing.split("\n")
+        idx = min(line_number - 1, len(lines))
+        new_lines = content.split("\n")
+        merged = lines[:idx] + new_lines + lines[idx:]
+        self.write(path, "\n".join(merged))
+
     @contextmanager
     def as_local(self, path: str) -> Generator[str, None, None]:
         check_storage_permission("as_local", path)
