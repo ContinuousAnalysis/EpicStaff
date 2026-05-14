@@ -1,14 +1,14 @@
 import { FullMembership, OrgUserResponse, UserRole } from '@shared/models';
 import { forkJoin, map, Observable, of } from 'rxjs';
 
-import { CurrentUserService } from '../../../../services/auth/current-user.service';
+import { ProfileService } from '../../../../services/auth/profile.service';
 import { UserService } from '../../services/users/user.service';
 import { NormalizedUser, UserFetchStrategy } from './user-fetch.strategy';
 
 export class OrgAdminUserFetchStrategy implements UserFetchStrategy {
     constructor(
         private userService: UserService,
-        private currentUserService: CurrentUserService
+        private currentUserService: ProfileService
     ) {}
 
     fetchUsers(): Observable<NormalizedUser[]> {

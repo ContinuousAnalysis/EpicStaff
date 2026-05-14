@@ -3,21 +3,19 @@ import { CanActivateFn, Router } from '@angular/router';
 import { GetMeResponse, UserRole } from '@shared/models';
 import { map, of } from 'rxjs';
 
-import { AuthService } from '../../services/auth/auth.service';
-import { CurrentUserService } from '../../services/auth/current-user.service';
+import { ProfileService } from '../../services/auth/profile.service';
 
-function resolveUser(currentUserService: CurrentUserService, authService: AuthService) {
+function resolveUser(currentUserService: ProfileService) {
     const cached = currentUserService.currentUserSignal();
-    return cached ? of(cached) : authService.getCurrentUser();
+    return cached ? of(cached) : currentUserService.getCurrentUser();
 }
 
 /** Allows SuperAdmins and OrgAdmins. Redirects Members/Viewers away from workspace. */
 export const workspaceGuard: CanActivateFn = () => {
-    const currentUserService = inject(CurrentUserService);
-    const authService = inject(AuthService);
+    const currentUserService = inject(ProfileService);
     const router = inject(Router);
 
-    return resolveUser(currentUserService, authService).pipe(
+    return resolveUser(currentUserService).pipe(
         map((user: GetMeResponse) => {
             const isSuperAdmin = user.is_superadmin;
             const isOrgAdmin = user.memberships.some((m) => m.role.id === UserRole.ORG_ADMIN);
@@ -28,11 +26,10 @@ export const workspaceGuard: CanActivateFn = () => {
 
 /** Allows only SuperAdmins. Redirects OrgAdmins to /workspace/users. */
 export const superAdminGuard: CanActivateFn = () => {
-    const currentUserService = inject(CurrentUserService);
-    const authService = inject(AuthService);
+    const currentUserService = inject(ProfileService);
     const router = inject(Router);
 
-    return resolveUser(currentUserService, authService).pipe(
+    return resolveUser(currentUserService).pipe(
         map((user: GetMeResponse) => (user.is_superadmin ? true : router.parseUrl('/workspace/users')))
     );
 };

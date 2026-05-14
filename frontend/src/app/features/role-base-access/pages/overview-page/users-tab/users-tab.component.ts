@@ -14,7 +14,7 @@ import {
 } from '@shared/components';
 import { finalize } from 'rxjs/operators';
 
-import { CurrentUserService } from '../../../../../services/auth/current-user.service';
+import { ProfileService } from '../../../../../services/auth/profile.service';
 import {
     CreateUserDialogComponent,
     UserDialogData,
@@ -55,7 +55,7 @@ export class UsersTabComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private userService = inject(UserService);
     private adminUserService = inject(AdminUserService);
-    private currentUserService = inject(CurrentUserService);
+    private currentUserService = inject(ProfileService);
 
     private normalizedUsers = signal<NormalizedUser[]>([]);
 

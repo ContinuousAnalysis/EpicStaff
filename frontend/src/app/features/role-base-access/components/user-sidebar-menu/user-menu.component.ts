@@ -7,7 +7,7 @@ import { EMPTY } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { AuthService } from '../../../../services/auth/auth.service';
-import { CurrentUserService } from '../../../../services/auth/current-user.service';
+import { ProfileService } from '../../../../services/auth/profile.service';
 import { OrgAvatarComponent } from '../org-avatar/org-avatar.component';
 import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
 
@@ -21,7 +21,7 @@ import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
 export class UserMenuComponent {
     private authService = inject(AuthService);
     private router = inject(Router);
-    protected currentUserService = inject(CurrentUserService);
+    protected currentUserService = inject(ProfileService);
 
     public user = input.required<GetMeResponse>();
     public organizations = computed<FullMembership[]>(() => this.user().memberships);
@@ -34,8 +34,13 @@ export class UserMenuComponent {
     }
 
     public onWorkspaceClick(): void {
-        this.router.navigate(['/workspace']);
         this.isUserMenuOpen.set(false);
+        this.router.navigate(['/workspace']);
+    }
+
+    public onProfileClick(): void {
+        this.isUserMenuOpen.set(false);
+        this.router.navigate(['/profile']);
     }
 
     public onSignOutClick(): void {

@@ -109,10 +109,16 @@
                         class="user-avatar-btn"
                         (click)="toggleUserMenu($event)"
                     >
-                        <app-user-avatar [name]="user.display_name || user.email" />
+                        <app-user-avatar
+                            [name]="user.display_name || user.email"
+                            [avatarUrl]="user.avatar_url"
+                        />
                     </div>
                     @if (isUserMenuOpen()) {
-                        <app-user-menu [user]="user" />
+                        <app-user-menu
+                            [user]="user"
+                            [(isUserMenuOpen)]="isUserMenuOpen"
+                        />
                     }
                 </div>
             </li>

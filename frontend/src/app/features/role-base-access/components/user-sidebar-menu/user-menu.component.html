@@ -1,7 +1,10 @@
 <div class="user-menu-panel">
     <!-- User header -->
     <div class="user-header">
-        <app-user-avatar [name]="user().display_name || user().email" />
+        <app-user-avatar
+            [name]="user().display_name || user().email"
+            [avatarUrl]="user().avatar_url"
+        />
         <div class="user-info">
             <div class="user-name">{{ user().display_name || user().email }}</div>
             <div class="user-role">Super Admin</div>
@@ -29,11 +32,13 @@
         </div>
 
         <div class="menu-divider"></div>
+    }
 
-        <!-- Navigation section -->
-        <div class="menu-section">
-            <div class="section-label">Navigation</div>
-            <div class="nav-list">
+    <!-- Navigation section -->
+    <div class="menu-section">
+        <div class="section-label">Navigation</div>
+        <div class="nav-list">
+            @if (currentUserService.canManageUsers()) {
                 <button
                     class="nav-item"
                     (click)="onWorkspaceClick()"
@@ -45,16 +50,23 @@
                     />
                     <span class="nav-label">Workspace</span>
                 </button>
+            }
 
-                <!--            <button class="nav-item" (click)="onProfileClick()">-->
-                <!--                <app-svg-icon size="20px" icon="profile" class="nav-icon" />-->
-                <!--                <span class="nav-label">My Profile</span>-->
-                <!--            </button>-->
-            </div>
+            <button
+                class="nav-item"
+                (click)="onProfileClick()"
+            >
+                <app-svg-icon
+                    size="20px"
+                    icon="profile"
+                    class="nav-icon"
+                />
+                <span class="nav-label">My Profile</span>
+            </button>
         </div>
+    </div>
 
-        <div class="menu-divider"></div>
-    }
+    <div class="menu-divider"></div>
 
     <div class="menu-section">
         <button

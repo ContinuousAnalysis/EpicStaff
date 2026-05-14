@@ -18,6 +18,25 @@
             />
         </button>
     </div>
+} @else if (showExisting()) {
+    <div class="filled">
+        <img
+            class="preview"
+            [src]="initialUrl()"
+            alt="Current avatar"
+        />
+        <span class="name">Current avatar</span>
+        <button
+            class="clear"
+            type="button"
+            (click)="onRemoveExisting()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="14px"
+            />
+        </button>
+    </div>
 } @else {
     <app-file-uploader
         accept="image/jpeg,image/png"

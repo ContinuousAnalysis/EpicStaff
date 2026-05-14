@@ -34,7 +34,7 @@
 
         <div class="control">
             <label class="label">
-                Email<span class="required">*</span>
+                Email
                 <app-help-tooltip
                     [text]="''"
                     position="right"
@@ -44,7 +44,6 @@
                 placeholder="Enter email..."
                 formControlName="email"
             />
-            <app-validation-errors [control]="form.get('email')!" />
         </div>
 
         <div class="control top">
@@ -55,7 +54,11 @@
                     position="right"
                 />
             </label>
-            <app-avatar-upload (imageChange)="form.patchValue({ picture: $event })" />
+            <app-avatar-upload
+                [initialUrl]="data.avatarUrl"
+                (imageChange)="onAvatarChanged($event)"
+                (existingRemoved)="onExistingAvatarRemoved()"
+            />
         </div>
     </form>
 

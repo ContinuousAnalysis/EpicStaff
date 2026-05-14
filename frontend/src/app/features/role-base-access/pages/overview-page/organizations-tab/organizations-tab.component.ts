@@ -17,8 +17,7 @@ import {
 import { GetOrganizationResponse } from '@shared/models';
 import { finalize } from 'rxjs';
 
-import { AuthService } from '../../../../../services/auth/auth.service';
-import { CurrentUserService } from '../../../../../services/auth/current-user.service';
+import { ProfileService } from '../../../../../services/auth/profile.service';
 import { ToastService } from '../../../../../services/notifications';
 import { CreateOrganizationDialogComponent } from '../../../components/create-organization-dialog/create-organization-dialog.component';
 import { OrgAvatarComponent } from '../../../components/org-avatar/org-avatar.component';
@@ -54,8 +53,7 @@ export class OrganizationsTabComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private confirmation = inject(ConfirmationDialogService);
     private organizationStorage = inject(OrganizationsStorageService);
-    private authService = inject(AuthService);
-    private currentUserService = inject(CurrentUserService);
+    private currentUserService = inject(ProfileService);
     private toast = inject(ToastService);
 
     readonly searchTerm = signal('');

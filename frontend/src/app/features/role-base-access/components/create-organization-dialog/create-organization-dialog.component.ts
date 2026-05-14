@@ -19,7 +19,7 @@ import {
 import { CreateOrganizationRequest, GetOrganizationResponse, UserRole } from '@shared/models';
 import { catchError, finalize, forkJoin, Observable, of, switchMap } from 'rxjs';
 
-import { CurrentUserService } from '../../../../services/auth/current-user.service';
+import { ProfileService } from '../../../../services/auth/profile.service';
 import { ToastService } from '../../../../services/notifications';
 import { USER_ROLES } from '../../constants/user-roles-select-items.constant';
 import { AdminUserService } from '../../services/admin/admin-user.service';
@@ -54,7 +54,7 @@ export class CreateOrganizationDialogComponent implements OnInit {
     private organizationStorage = inject(OrganizationsStorageService);
     private userService = inject(UserService);
     private adminUserService = inject(AdminUserService);
-    private currentUserService = inject(CurrentUserService);
+    private currentUserService = inject(ProfileService);
     private dialogData = inject<GetOrganizationResponse>(DIALOG_DATA, { optional: true });
 
     readonly isEditMode = !!this.dialogData;

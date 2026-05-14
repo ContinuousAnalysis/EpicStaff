@@ -29,7 +29,7 @@
                 let-row
             >
                 <div class="org-cell">
-                    <app-org-avatar [name]="$any(row['name'])" />
+                    <app-org-avatar [name]="row['name']" />
                     <span class="org-name">{{ row['name'] }}</span>
                 </div>
             </ng-template>

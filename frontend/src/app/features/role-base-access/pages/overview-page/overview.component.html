@@ -1,12 +1,19 @@
 <div class="overview-page">
     <div class="overview-header">
-        <h1 class="overview-title-row">
-            <span class="overview-title">Overview</span>
-            <span class="overview-subtitle"
-                >Here you can view overall insights, along with the list of organizations, users, and their access
-                permissions.</span
+        <div class="header">
+            <div
+                class="header-titles"
+                appHideInlineSubtitleOnOverflow
             >
-        </h1>
+                <h1 class="title">
+                    Overview
+                    <span class="subtitle-inline"
+                        >Here you can view overall insights, along with the list of organizations, users, and their
+                        access permissions.</span
+                    >
+                </h1>
+            </div>
+        </div>
         <nav class="overview-tabs">
             @if (currentUserService.canManageOrgs()) {
                 <a

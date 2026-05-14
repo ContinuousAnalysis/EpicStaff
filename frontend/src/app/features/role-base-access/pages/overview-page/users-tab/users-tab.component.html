@@ -39,7 +39,10 @@
             let-row
         >
             <div class="user-cell">
-                <app-user-avatar [name]="row['display_name'] || row['email']" />
+                <app-user-avatar
+                    [name]="row['display_name'] || row['email']"
+                    [avatarUrl]="row['avatar_url']"
+                />
                 <div class="user-info">
                     <span class="user-name">{{ row['display_name'] }}</span>
                     <span class="user-email">{{ row['email'] }}</span>

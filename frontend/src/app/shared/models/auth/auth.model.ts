@@ -1,5 +1,3 @@
-import { FullMembership } from '../role-based-access';
-
 export interface FirstSetupStatus {
     needs_setup: boolean;
 }
@@ -17,6 +15,11 @@ export interface FirstSetupResponse {
     user: SetupUserResponse;
 }
 
+export interface TokenPair {
+    access: string;
+    refresh: string;
+}
+
 export interface SetupOrganizationResponse {
     id: number;
     is_active: boolean;
@@ -28,13 +31,4 @@ export interface SetupUserResponse {
     email: string;
     id: number;
     is_superadmin: boolean;
-}
-
-export interface GetMeResponse {
-    id: number;
-    email: string;
-    display_name: string;
-    avatar_url: string;
-    is_superadmin: boolean;
-    memberships: FullMembership[];
 }

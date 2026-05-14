@@ -275,6 +275,13 @@ export const routes: Routes = [
                             },
                         ],
                     },
+                    {
+                        path: 'profile',
+                        loadComponent: () =>
+                            import('./features/role-base-access/pages/profile-page/profile-page.component').then(
+                                (m) => m.ProfilePageComponent
+                            ),
+                    },
                 ],
             },
             {

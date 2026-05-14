@@ -19,7 +19,7 @@ import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
 import { UserAvatarComponent } from '../../../features/role-base-access/components/user-avatar/user-avatar.component';
 import { UserMenuComponent } from '../../../features/role-base-access/components/user-sidebar-menu/user-menu.component';
 import { AuthService } from '../../../services/auth/auth.service';
-import { CurrentUserService } from '../../../services/auth/current-user.service';
+import { ProfileService } from '../../../services/auth/profile.service';
 import { ConfigService } from '../../../services/config/config.service';
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { TooltipComponent } from './tooltip/tooltip.component';
@@ -54,7 +54,7 @@ interface NavItem {
     schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class LeftSidebarComponent implements AfterViewInit {
-    private currentUserService = inject(CurrentUserService);
+    private currentUserService = inject(ProfileService);
 
     public topNavItems: NavItem[];
     public bottomNavItems: NavItem[];

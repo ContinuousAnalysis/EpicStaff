@@ -16,7 +16,7 @@ import { FullMembership, GetOrganizationResponse } from '@shared/models';
 import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
-import { CurrentUserService } from '../../../../services/auth/current-user.service';
+import { ProfileService } from '../../../../services/auth/profile.service';
 import { ToastService } from '../../../../services/notifications';
 import { AdminUserService } from '../../services/admin/admin-user.service';
 import { OrganizationsStorageService } from '../../services/admin/organizations-storage.service';
@@ -40,7 +40,7 @@ export class CreateUserDialogComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private dialogRef = inject(DialogRef);
     private dialogData = inject<UserDialogData>(DIALOG_DATA, { optional: true });
-    private currentUserService = inject(CurrentUserService);
+    private currentUserService = inject(ProfileService);
     private adminUserService = inject(AdminUserService);
     private userService = inject(UserService);
     private organizationsStorage = inject(OrganizationsStorageService);

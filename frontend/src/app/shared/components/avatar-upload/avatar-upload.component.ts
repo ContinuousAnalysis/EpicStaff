@@ -1,5 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, output, signal } from '@angular/core';
 import { take } from 'rxjs';
 
 import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
@@ -17,8 +17,11 @@ export class AvatarUploadComponent {
     private dialog = inject(Dialog);
     private destroyRef = inject(DestroyRef);
 
+    initialUrl = input<string | null>(null);
+
     readonly selectedFile = signal<File | null>(null);
     readonly previewUrl = signal<string | null>(null);
+    readonly existingCleared = signal(false);
 
     readonly fileSizeLabel = computed(() => {
         const size = this.selectedFile()?.size ?? 0;
@@ -28,7 +31,10 @@ export class AvatarUploadComponent {
         return `${Math.round(size / 1024)} KB`;
     });
 
+    readonly showExisting = computed(() => !!this.initialUrl() && !this.existingCleared() && !this.selectedFile());
+
     imageChange = output<File | null>();
+    existingRemoved = output<void>();
 
     constructor() {
         this.destroyRef.onDestroy(() => this.revokePreviewUrl());
@@ -55,6 +61,11 @@ export class AvatarUploadComponent {
         this.revokePreviewUrl();
         this.selectedFile.set(null);
         this.imageChange.emit(null);
+    }
+
+    onRemoveExisting(): void {
+        this.existingCleared.set(true);
+        this.existingRemoved.emit();
     }
 
     private revokePreviewUrl(): void {

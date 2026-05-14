@@ -31,7 +31,7 @@
             let-row
         >
             <div class="org-cell">
-                <app-org-avatar [name]="$any(row['name'])" />
+                <app-org-avatar [name]="row['name']" />
                 <span class="org-name">{{ row['name'] }}</span>
             </div>
         </ng-template>
@@ -40,7 +40,10 @@
         <ng-template appTableCell="admin">
             @if (currentUser(); as user) {
                 <div class="user-cell">
-                    <app-user-avatar [name]="user.display_name || user.email" />
+                    <app-user-avatar
+                        [name]="user.display_name || user.email"
+                        [avatarUrl]="user.avatar_url"
+                    />
                     <div class="user-info">
                         <span class="user-name">{{ user.display_name || user.email }}</span>
                         <span class="user-role">Super Admin</span>
@@ -71,7 +74,7 @@
             let-row
         >
             <app-status-badge
-                [modifier]="$any(row['status'])"
+                [modifier]="row['status']"
                 [label]="row['status'] === 'active' ? 'Active' : 'Deactivated'"
                 [icon]="row['status'] === 'deactivated' ? 'clock' : null"
             />

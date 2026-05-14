@@ -7,19 +7,14 @@ import {
     FirstSetupRequest,
     FirstSetupResponse,
     FirstSetupStatus,
-    GetMeResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
+    TokenPair,
 } from '@shared/models';
 import { catchError, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { ConfigService } from '../config';
-import { CurrentUserService } from './current-user.service';
-
-interface TokenPair {
-    access: string;
-    refresh: string;
-}
+import { ProfileService } from './profile.service';
 
 interface TokenDecoded {
     exp: number;
@@ -34,7 +29,7 @@ export class AuthService {
     private readonly http = inject(HttpClient);
     private readonly configService = inject(ConfigService);
     private readonly router = inject(Router);
-    private readonly currentUserService = inject(CurrentUserService);
+    private readonly currentUserService = inject(ProfileService);
 
     private readonly accessKey = 'auth.access';
     private readonly refreshKey = 'auth.refresh';
@@ -128,12 +123,6 @@ export class AuthService {
         );
 
         return this.refreshInProgress$;
-    }
-
-    getCurrentUser(): Observable<GetMeResponse> {
-        return this.http
-            .get<GetMeResponse>(`${this.baseUrl}me/`)
-            .pipe(tap((user) => this.currentUserService.setUser(user)));
     }
 
     removeTokensAndNavToLogin(): void {
