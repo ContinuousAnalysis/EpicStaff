@@ -164,9 +164,14 @@ we tell the user an email is coming?" — inspect it, not `EMAIL_BACKEND`.
   Enforced uniformly by `PrintableAsciiPasswordValidator` plugged into
   `AUTH_PASSWORD_VALIDATORS`. Email fields likewise reject any
   whitespace character.
-* **Admin gate in service.** `is_superadmin` check is inside
-  `admin_reset`, not the view — shared with any future non-HTTP
-  caller.
+* **Admin gate enforced at TWO layers.** `IsSuperadmin` permission class on
+  `AdminPasswordResetView` rejects non-superadmin callers with the
+  project-standard 403 envelope (`code: permission_denied`) before the
+  service is reached. The in-service `actor.is_superadmin` check inside
+  `PasswordRecoveryService.admin_reset` stays as defense-in-depth — it
+  would only fire on a programming error or a future non-HTTP caller
+  forgetting to gate. Either gate alone would be sufficient; both
+  together are deliberate.
 * **Fail-silent email.** SMTP errors are logged, never surfaced, so the
   HTTP response stays uniform (no side-channel).
 

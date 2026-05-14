@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from tables.services.rbac.authentication import JwtOrApiKeyAuthentication
+from tables.services.rbac.permissions import IsSuperadmin
 from tables.models.rbac_models import ApiKey
 from tables.serializers.rbac_serializers import (
     AdminPasswordResetSerializer,
@@ -448,12 +449,14 @@ class PasswordChangeView(APIView):
 class AdminPasswordResetView(APIView):
     """Superadmin-only: set any user's password to a value the admin supplies.
 
-    Superadmin gate is enforced inside the service so CLI and API share
-    the same authorization path.
+    Defense-in-depth: the IsSuperadmin permission class rejects non-superadmin
+    callers with the project's standard 403 envelope before the service is
+    reached. The in-service `actor.is_superadmin` check inside
+    `PasswordRecoveryService.admin_reset` stays as a redundant safety net.
     """
 
     authentication_classes = [JwtOrApiKeyAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSuperadmin]
 
     _validator = AuthValidationService()
     _service = PasswordRecoveryService()
@@ -480,7 +483,7 @@ class AdminPasswordResetView(APIView):
 
 class ResetUserView(APIView):
     authentication_classes = [JwtOrApiKeyAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSuperadmin]
 
     _service = ResetUserService()
     _validator = AuthValidationService()

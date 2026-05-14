@@ -1,0 +1,39 @@
+<div class="overview-page">
+    <div class="overview-header">
+        <h1 class="overview-title-row">
+            <span class="overview-title">Overview</span>
+            <span class="overview-subtitle"
+                >Here you can view overall insights, along with the list of organizations, users, and their access
+                permissions.</span
+            >
+        </h1>
+        <nav class="overview-tabs">
+            <a
+                routerLink="main"
+                routerLinkActive="active"
+                class="overview-tab"
+            >
+                <app-svg-icon
+                    size="18px"
+                    icon="home"
+                />
+                Main
+            </a>
+            <span class="tab-divider">/</span>
+            <a
+                routerLink="organizations"
+                routerLinkActive="active"
+                class="overview-tab"
+            >
+                <app-svg-icon
+                    size="18px"
+                    icon="buildings"
+                />
+                Organizations
+            </a>
+        </nav>
+    </div>
+    <div class="overview-content">
+        <router-outlet></router-outlet>
+    </div>
+</div>
