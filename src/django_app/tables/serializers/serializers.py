@@ -4,6 +4,7 @@ from tables.models.crew_models import ToolConfig
 from tables.models.python_models import PythonCodeTool
 from tables.models.python_models import PythonCodeToolConfig
 from tables.models import PythonCode
+from tables.models.session_models import Session
 
 
 class RunSessionSerializer(serializers.Serializer):
@@ -105,6 +106,18 @@ class BulkExportSerializer(serializers.Serializer):
         allow_empty=False,
         help_text="List of entity IDs",
     )
+
+
+class SessionExportAllSerializer(serializers.Serializer):
+    graph_id = serializers.IntegerField(required=False, min_value=1)
+    status = serializers.ListField(
+        child=serializers.ChoiceField(choices=Session.SessionStatus.choices),
+        required=False,
+    )
+    created_at_after = serializers.DateTimeField(required=False)
+    created_at_before = serializers.DateTimeField(required=False)
+    finished_at_after = serializers.DateTimeField(required=False)
+    finished_at_before = serializers.DateTimeField(required=False)
 
 
 class ImportRequestSerializer(serializers.Serializer):
