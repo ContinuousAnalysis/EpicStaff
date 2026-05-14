@@ -87,6 +87,7 @@ from tables.serializers.serializers import (
     RunSessionSerializer,
     RegisterTelegramTriggerSerializer,
     RunPythonCodeSerializer,
+    SessionExportAllSerializer,
 )
 
 from tables.serializers.quickstart_serializers import (
@@ -252,34 +253,50 @@ class SessionViewSet(
         return self.import_export_service.bulk_export(entity_ids, fmt=fmt)
 
     @extend_schema(
-        description="Export messages from all top-level sessions belonging to a graph as a single downloadable file. "
+        description="Export messages from top-level sessions matching the given filters as a single downloadable file. "
         "Includes messages from all nested sub-sessions.",
+        request=SessionExportAllSerializer,
         parameters=[_FORMAT_QUERY_PARAM],
         responses={
             200: OpenApiResponse(
                 description="File download (application/json or text/csv)."
             ),
-            404: OpenApiResponse(
-                description="Graph not found or no sessions exist for this graph."
-            ),
+            400: OpenApiResponse(description="Invalid request body."),
+            404: OpenApiResponse(description="No sessions match the given filters."),
         },
     )
-    @action(
-        detail=False, methods=["get"], url_path=r"export-by-graph/(?P<graph_id>[0-9]+)"
-    )
-    def export_by_graph(self, request, graph_id: int):
-        if not Graph.objects.filter(id=graph_id).exists():
-            raise NotFound(f"Graph {graph_id} not found")
+    @action(detail=False, methods=["post"], url_path="export_all")
+    def export_all(self, request):
+        serializer = SessionExportAllSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
 
-        session_ids = list(
-            Session.objects.filter(
-                graph_id=graph_id, parent_session_id=None
-            ).values_list("id", flat=True)
-        )
+        if (
+            "graph_id" in data
+            and not Graph.objects.filter(id=data["graph_id"]).exists()
+        ):
+            raise NotFound(f"Graph {data['graph_id']} not found")
+
+        qs = Session.objects.filter(parent_session_id=None)
+
+        if "graph_id" in data:
+            qs = qs.filter(graph_id=data["graph_id"])
+        if "status" in data:
+            qs = qs.filter(status__in=data["status"])
+        if "created_at_after" in data:
+            qs = qs.filter(created_at__gte=data["created_at_after"])
+        if "created_at_before" in data:
+            qs = qs.filter(created_at__lte=data["created_at_before"])
+        if "finished_at_after" in data:
+            qs = qs.filter(finished_at__gte=data["finished_at_after"])
+        if "finished_at_before" in data:
+            qs = qs.filter(finished_at__lte=data["finished_at_before"])
+
+        session_ids = list(qs.values_list("id", flat=True))
 
         if not session_ids:
             return Response(
-                {"message": "No sessions found for this graph"},
+                {"message": "No sessions match the given filters"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
