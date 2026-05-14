@@ -55,9 +55,42 @@ class GraphRagGlobalSearchParams(BaseModel):
     dynamic_search_max_level: int = 2
 
 
+class GraphRagDriftSearchParams(BaseModel):
+    search_method: Literal["drift_search"] = "drift_search"
+    # Prompts
+    prompt: str | None = None
+    reduce_prompt: str | None = None
+    # Token configuration
+    data_max_tokens: int = 12000
+    reduce_max_tokens: int | None = None
+    reduce_max_completion_tokens: int | None = None
+    primer_llm_max_tokens: int = 12000
+    local_search_max_data_tokens: int = 12000
+    local_search_llm_max_gen_tokens: int | None = None
+    local_search_llm_max_gen_completion_tokens: int | None = None
+    # Search behavior
+    concurrency: int = 32
+    drift_k_followups: int = 20
+    primer_folds: int = 5
+    n_depth: int = 3
+    # Local search tuning
+    local_search_text_unit_prop: float = 0.9
+    local_search_community_prop: float = 0.1
+    local_search_top_k_mapped_entities: int = 10
+    local_search_top_k_relationships: int = 10
+    # LLM generation
+    reduce_temperature: float = 0.0
+    local_search_temperature: float = 0.0
+    local_search_top_p: float = 1.0
+    local_search_n: int = 1
+
+
 GraphSearchParams = Annotated[
     Union[
-        GraphRagBasicSearchParams, GraphRagLocalSearchParams, GraphRagGlobalSearchParams
+        GraphRagBasicSearchParams,
+        GraphRagLocalSearchParams,
+        GraphRagGlobalSearchParams,
+        GraphRagDriftSearchParams,
     ],
     Field(discriminator="search_method"),
 ]

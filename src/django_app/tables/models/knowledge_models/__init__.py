@@ -25,6 +25,7 @@ from .graphrag_models import (
     GraphRagBasicSearchConfig,
     GraphRagLocalSearchConfig,
     GraphRagGlobalSearchConfig,
+    GraphRagDriftSearchConfig,
 )
 
 __all__ = [
@@ -51,4 +52,5 @@ __all__ = [
     "GraphRagBasicSearchConfig",
     "GraphRagLocalSearchConfig",
     "GraphRagGlobalSearchConfig",
+    "GraphRagDriftSearchConfig",
 ]

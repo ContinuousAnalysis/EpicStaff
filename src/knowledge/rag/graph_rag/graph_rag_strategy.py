@@ -4,7 +4,7 @@ from typing import Optional
 
 import pandas as pd
 from graphrag.api.index import build_index
-from graphrag.api.query import basic_search, global_search, local_search
+from graphrag.api.query import basic_search, drift_search, global_search, local_search
 from graphrag.config.models.graph_rag_config import GraphRagConfig
 from loguru import logger
 from src.shared.models import (
@@ -242,6 +242,10 @@ class GraphRAGStrategy(BaseRAGStrategy):
                 self.config_builder.apply_global_search_params(
                     graphrag_config, search_params
                 )
+            elif search_method == "drift_search":
+                self.config_builder.apply_drift_search_params(
+                    graphrag_config, search_params
+                )
             else:
                 self.config_builder.apply_basic_search_params(
                     graphrag_config, search_params
@@ -262,6 +266,13 @@ class GraphRAGStrategy(BaseRAGStrategy):
                     graphrag_config=graphrag_config,
                     query=query,
                     search_params=search_params,
+                )
+            elif search_method == "drift_search":
+                logger.info(f"Running drift search for graph_rag_id: {graph_rag_id}")
+                response, context = self._run_drift_search(
+                    root_folder=root_folder,
+                    graphrag_config=graphrag_config,
+                    query=query,
                 )
             else:
                 logger.info(f"Running basic search for graph_rag_id: {graph_rag_id}")
@@ -392,6 +403,36 @@ class GraphRAGStrategy(BaseRAGStrategy):
             )
         )
 
+    def _run_drift_search(
+        self,
+        root_folder: Path,
+        graphrag_config: GraphRagConfig,
+        query: str,
+    ) -> tuple:
+        """
+        Run drift search using entities, communities, community_reports,
+        text_units and relationships (same data shape as local, no covariates).
+        """
+        text_units = self._load_parquet(root_folder, "text_units.parquet")
+        entities = self._load_parquet(root_folder, "entities.parquet")
+        communities = self._load_parquet(root_folder, "communities.parquet")
+        community_reports = self._load_parquet(root_folder, "community_reports.parquet")
+        relationships = self._load_parquet(root_folder, "relationships.parquet")
+
+        return asyncio.run(
+            drift_search(
+                config=graphrag_config,
+                entities=entities,
+                communities=communities,
+                community_reports=community_reports,
+                text_units=text_units,
+                relationships=relationships,
+                community_level=2,
+                response_type="Multiple Paragraphs",
+                query=query,
+            )
+        )
+
     def _load_parquet(self, root_folder: Path, filename: str) -> pd.DataFrame:
         """Load a parquet file from the output directory."""
         file_path = root_folder / "output" / filename
@@ -416,12 +457,16 @@ class GraphRAGStrategy(BaseRAGStrategy):
         """
         if not response:
             return []
+        if search_method.endswith("_search"):
+            chunk_source = f"graphrag_{search_method}"
+        else:
+            chunk_source = f"graphrag_{search_method}_search"
         return [
             KnowledgeChunkResponse(
                 chunk_order=1,
                 chunk_similarity=1.0,
                 chunk_text=str(response),
-                chunk_source=f"graphrag_{search_method}_search",
+                chunk_source=chunk_source,
             )
         ]
 

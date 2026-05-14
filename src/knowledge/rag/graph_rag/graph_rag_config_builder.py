@@ -21,10 +21,13 @@ from src.shared.models import (
     GraphRagBasicSearchParams,
     GraphRagLocalSearchParams,
     GraphRagGlobalSearchParams,
+    GraphRagDriftSearchParams,
 )
 from rag.graph_rag.utils import (
     build_basic_search_prompt,
     build_local_search_prompt,
+    build_drift_search_prompt,
+    build_drift_search_reduce_prompt,
     build_global_search_map_prompt,
     build_global_search_reduce_prompt,
     build_global_search_knowledge_prompt,
@@ -453,3 +456,51 @@ class GraphRagConfigBuilder:
             params.dynamic_search_use_summary
         )
         config.global_search.dynamic_search_max_level = params.dynamic_search_max_level
+
+    def apply_drift_search_params(
+        self,
+        config: GraphRagConfig,
+        params: GraphRagDriftSearchParams,
+    ) -> None:
+        """
+        Overlay Redis-provided drift search params onto GraphRagConfig in-place.
+        """
+        config.drift_search.prompt = build_drift_search_prompt(params.prompt)
+        config.drift_search.reduce_prompt = build_drift_search_reduce_prompt(
+            params.reduce_prompt
+        )
+        config.drift_search.data_max_tokens = params.data_max_tokens
+        config.drift_search.reduce_max_tokens = params.reduce_max_tokens
+        config.drift_search.reduce_max_completion_tokens = (
+            params.reduce_max_completion_tokens
+        )
+        config.drift_search.reduce_temperature = params.reduce_temperature
+        config.drift_search.concurrency = params.concurrency
+        config.drift_search.drift_k_followups = params.drift_k_followups
+        config.drift_search.primer_folds = params.primer_folds
+        config.drift_search.primer_llm_max_tokens = params.primer_llm_max_tokens
+        config.drift_search.n_depth = params.n_depth
+        config.drift_search.local_search_text_unit_prop = (
+            params.local_search_text_unit_prop
+        )
+        config.drift_search.local_search_community_prop = (
+            params.local_search_community_prop
+        )
+        config.drift_search.local_search_top_k_mapped_entities = (
+            params.local_search_top_k_mapped_entities
+        )
+        config.drift_search.local_search_top_k_relationships = (
+            params.local_search_top_k_relationships
+        )
+        config.drift_search.local_search_max_data_tokens = (
+            params.local_search_max_data_tokens
+        )
+        config.drift_search.local_search_temperature = params.local_search_temperature
+        config.drift_search.local_search_top_p = params.local_search_top_p
+        config.drift_search.local_search_n = params.local_search_n
+        config.drift_search.local_search_llm_max_gen_tokens = (
+            params.local_search_llm_max_gen_tokens
+        )
+        config.drift_search.local_search_llm_max_gen_completion_tokens = (
+            params.local_search_llm_max_gen_completion_tokens
+        )

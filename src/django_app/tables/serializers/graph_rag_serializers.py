@@ -422,11 +422,151 @@ class GraphGlobalSearchConfigInputSerializer(serializers.Serializer):
     )
 
 
+class GraphDriftSearchConfigInputSerializer(serializers.Serializer):
+    """Input serializer for graph RAG drift search config."""
+
+    # Prompts
+    prompt = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Custom drift search prompt",
+    )
+    reduce_prompt = serializers.CharField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Custom drift search reduce prompt",
+    )
+    # Token configuration
+    data_max_tokens = serializers.IntegerField(
+        required=False,
+        min_value=100,
+        max_value=100000,
+        help_text="Maximum data tokens (100-100000)",
+    )
+    reduce_max_tokens = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=1,
+        max_value=100000,
+        help_text="Maximum reduce response tokens",
+    )
+    reduce_max_completion_tokens = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=1,
+        max_value=100000,
+        help_text="Maximum reduce completion tokens",
+    )
+    primer_llm_max_tokens = serializers.IntegerField(
+        required=False,
+        min_value=100,
+        max_value=100000,
+        help_text="Maximum primer LLM tokens (100-100000)",
+    )
+    local_search_max_data_tokens = serializers.IntegerField(
+        required=False,
+        min_value=100,
+        max_value=100000,
+        help_text="Maximum context tokens for local search (100-100000)",
+    )
+    local_search_llm_max_gen_tokens = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=1,
+        max_value=100000,
+        help_text="Maximum LLM generated tokens in local search",
+    )
+    local_search_llm_max_gen_completion_tokens = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=1,
+        max_value=100000,
+        help_text="Maximum LLM generated completion tokens in local search",
+    )
+    # Search behavior
+    concurrency = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=256,
+        help_text="Number of concurrent requests (1-256)",
+    )
+    drift_k_followups = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=100,
+        help_text="Number of top global results to retrieve (1-100)",
+    )
+    primer_folds = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=50,
+        help_text="Number of folds for search priming (1-50)",
+    )
+    n_depth = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=10,
+        help_text="Number of drift search steps to take (1-10)",
+    )
+    # Local search tuning
+    local_search_text_unit_prop = serializers.FloatField(
+        required=False,
+        min_value=0.0,
+        max_value=1.0,
+        help_text="Text unit proportion (0.0-1.0)",
+    )
+    local_search_community_prop = serializers.FloatField(
+        required=False,
+        min_value=0.0,
+        max_value=1.0,
+        help_text="Community proportion (0.0-1.0)",
+    )
+    local_search_top_k_mapped_entities = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=100,
+        help_text="Top K mapped entities (1-100)",
+    )
+    local_search_top_k_relationships = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=100,
+        help_text="Top K mapped relationships (1-100)",
+    )
+    # LLM generation
+    reduce_temperature = serializers.FloatField(
+        required=False,
+        min_value=0.0,
+        max_value=2.0,
+        help_text="Temperature for reduce generation (0.0-2.0)",
+    )
+    local_search_temperature = serializers.FloatField(
+        required=False,
+        min_value=0.0,
+        max_value=2.0,
+        help_text="Temperature for local search generation (0.0-2.0)",
+    )
+    local_search_top_p = serializers.FloatField(
+        required=False,
+        min_value=0.0,
+        max_value=1.0,
+        help_text="Top-p for local search generation (0.0-1.0)",
+    )
+    local_search_n = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=10,
+        help_text="Number of completions in local search (1-10)",
+    )
+
+
 class GraphSearchConfigInputSerializer(serializers.Serializer):
     """Input serializer for graph RAG search config wrapper."""
 
     search_method = serializers.ChoiceField(
-        choices=["basic", "local", "global_search"],
+        choices=["basic", "local", "global_search", "drift_search"],
         required=False,
         help_text="Active search method",
     )
@@ -441,4 +581,8 @@ class GraphSearchConfigInputSerializer(serializers.Serializer):
     global_search = GraphGlobalSearchConfigInputSerializer(
         required=False,
         help_text="Global search configuration",
+    )
+    drift_search = GraphDriftSearchConfigInputSerializer(
+        required=False,
+        help_text="Drift search configuration",
     )

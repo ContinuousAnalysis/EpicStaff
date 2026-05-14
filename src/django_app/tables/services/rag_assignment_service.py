@@ -10,6 +10,7 @@ from tables.models.knowledge_models.graphrag_models import (
     GraphRagBasicSearchConfig,
     GraphRagLocalSearchConfig,
     GraphRagGlobalSearchConfig,
+    GraphRagDriftSearchConfig,
 )
 from tables.models.crew_models import Agent
 from tables.exceptions import (
@@ -230,6 +231,7 @@ class RagAssignmentService:
         GraphRagBasicSearchConfig.objects.get_or_create(agent=agent)
         GraphRagLocalSearchConfig.objects.get_or_create(agent=agent)
         GraphRagGlobalSearchConfig.objects.get_or_create(agent=agent)
+        GraphRagDriftSearchConfig.objects.get_or_create(agent=agent)
 
         return graph_rag
 
@@ -311,13 +313,15 @@ class SearchConfigService:
                 "basic": {"prompt": null, "k": 10, "max_context_tokens": 12000},
                 "local": {"prompt": null, "text_unit_prop": 0.5, ...},
                 "global_search": {"map_prompt": null, ...},
+                "drift_search": {"prompt": null, "reduce_prompt": null, ...}
             }
         """
         basic = GraphRagBasicSearchConfig.objects.filter(agent=agent).first()
         local = GraphRagLocalSearchConfig.objects.filter(agent=agent).first()
         global_cfg = GraphRagGlobalSearchConfig.objects.filter(agent=agent).first()
+        drift_cfg = GraphRagDriftSearchConfig.objects.filter(agent=agent).first()
 
-        if basic is None and local is None and global_cfg is None:
+        if basic is None and local is None and global_cfg is None and drift_cfg is None:
             return None
 
         # search_method from AgentGraphRag if assigned, null if no graph rag
@@ -367,6 +371,33 @@ class SearchConfigService:
         else:
             result["global_search"] = None
 
+        if drift_cfg is not None:
+            result["drift_search"] = {
+                "prompt": drift_cfg.prompt,
+                "reduce_prompt": drift_cfg.reduce_prompt,
+                "data_max_tokens": drift_cfg.data_max_tokens,
+                "reduce_max_tokens": drift_cfg.reduce_max_tokens,
+                "reduce_max_completion_tokens": drift_cfg.reduce_max_completion_tokens,
+                "reduce_temperature": drift_cfg.reduce_temperature,
+                "concurrency": drift_cfg.concurrency,
+                "drift_k_followups": drift_cfg.drift_k_followups,
+                "primer_folds": drift_cfg.primer_folds,
+                "primer_llm_max_tokens": drift_cfg.primer_llm_max_tokens,
+                "n_depth": drift_cfg.n_depth,
+                "local_search_text_unit_prop": drift_cfg.local_search_text_unit_prop,
+                "local_search_community_prop": drift_cfg.local_search_community_prop,
+                "local_search_top_k_mapped_entities": drift_cfg.local_search_top_k_mapped_entities,
+                "local_search_top_k_relationships": drift_cfg.local_search_top_k_relationships,
+                "local_search_max_data_tokens": drift_cfg.local_search_max_data_tokens,
+                "local_search_temperature": drift_cfg.local_search_temperature,
+                "local_search_top_p": drift_cfg.local_search_top_p,
+                "local_search_n": drift_cfg.local_search_n,
+                "local_search_llm_max_gen_tokens": drift_cfg.local_search_llm_max_gen_tokens,
+                "local_search_llm_max_gen_completion_tokens": drift_cfg.local_search_llm_max_gen_completion_tokens,
+            }
+        else:
+            result["drift_search"] = None
+
         return result
 
     # Write methods
@@ -406,6 +437,10 @@ class SearchConfigService:
             SearchConfigService.update_graph_global_search_config(
                 agent, **global_config
             )
+
+        drift_config = config.get("drift_search")
+        if drift_config:
+            SearchConfigService.update_graph_drift_search_config(agent, **drift_config)
 
     @staticmethod
     def create_default_search_config(agent: Agent) -> NaiveRagSearchConfig:
@@ -448,10 +483,11 @@ class SearchConfigService:
 
     @staticmethod
     def create_default_graph_search_configs(agent: Agent):
-        """Create basic, local and global search configs with defaults."""
+        """Create basic, local, global and drift search configs with defaults."""
         GraphRagBasicSearchConfig.objects.get_or_create(agent=agent)
         GraphRagLocalSearchConfig.objects.get_or_create(agent=agent)
         GraphRagGlobalSearchConfig.objects.get_or_create(agent=agent)
+        GraphRagDriftSearchConfig.objects.get_or_create(agent=agent)
 
     @staticmethod
     def update_graph_search_method(agent: Agent, search_method: str):
@@ -512,6 +548,42 @@ class SearchConfigService:
             "dynamic_search_num_repeats",
             "dynamic_search_use_summary",
             "dynamic_search_max_level",
+        )
+        updated = False
+        for field, value in kwargs.items():
+            if field in valid_fields and value is not None:
+                setattr(config, field, value)
+                updated = True
+        if updated:
+            config.save()
+        return config
+
+    @staticmethod
+    def update_graph_drift_search_config(agent: Agent, **kwargs):
+        """Update drift search config. Creates if doesn't exist."""
+        config, _ = GraphRagDriftSearchConfig.objects.get_or_create(agent=agent)
+        valid_fields = (
+            "prompt",
+            "reduce_prompt",
+            "data_max_tokens",
+            "reduce_max_tokens",
+            "reduce_max_completion_tokens",
+            "reduce_temperature",
+            "concurrency",
+            "drift_k_followups",
+            "primer_folds",
+            "primer_llm_max_tokens",
+            "n_depth",
+            "local_search_text_unit_prop",
+            "local_search_community_prop",
+            "local_search_top_k_mapped_entities",
+            "local_search_top_k_relationships",
+            "local_search_max_data_tokens",
+            "local_search_temperature",
+            "local_search_top_p",
+            "local_search_n",
+            "local_search_llm_max_gen_tokens",
+            "local_search_llm_max_gen_completion_tokens",
         )
         updated = False
         for field, value in kwargs.items():

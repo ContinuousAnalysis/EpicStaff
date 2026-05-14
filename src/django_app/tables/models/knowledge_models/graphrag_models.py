@@ -96,6 +96,7 @@ class AgentGraphRag(models.Model):
         BASIC = "basic", "Basic Search"
         LOCAL = "local", "Local Search"
         GLOBAL = "global_search", "Global Search"
+        DRIFT = "drift_search", "Drift Search"
 
     agent = models.ForeignKey(
         Agent,
@@ -110,7 +111,7 @@ class AgentGraphRag(models.Model):
         max_length=20,
         choices=SearchMethod.choices,
         default=SearchMethod.BASIC,
-        help_text="Active search method: basic, local or global_search",
+        help_text="Active search method: basic, local, global_search or drift_search",
     )
 
     class Meta:
@@ -420,131 +421,141 @@ class GraphRagGlobalSearchConfig(models.Model):
         return f"GraphRagGlobalSearchConfig({self.pk})"
 
 
-# class GraphRagDriftSearchConfig(models.Model):
-#     """
-#     The default configuration section for Drift Search.
-#     """
+class GraphRagDriftSearchConfig(models.Model):
+    """
+    The default configuration section for Drift Search.
+    """
 
-#     # Prompts
-#     prompt = models.TextField(
-#         null=True,
-#         blank=True,
-#         default=None,
-#         help_text="The drift search prompt to use.",
-#     )
+    agent = models.OneToOneField(
+        Agent,
+        on_delete=models.CASCADE,
+        related_name="graph_drift_search_config",
+        help_text="Agent this drift search configuration belongs to",
+    )
 
-#     reduce_prompt = models.TextField(
-#         null=True,
-#         blank=True,
-#         default=None,
-#         help_text="The drift search reduce prompt to use.",
-#     )
+    # Prompts
+    prompt = models.TextField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="The drift search prompt to use.",
+    )
 
-#     # Token configuration
-#     data_max_tokens = models.IntegerField(
-#         default=12000,
-#         help_text="The data llm maximum tokens.",
-#     )
+    reduce_prompt = models.TextField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="The drift search reduce prompt to use.",
+    )
 
-#     reduce_max_tokens = models.IntegerField(
-#         null=True,
-#         blank=True,
-#         default=None,
-#         help_text="The reduce llm maximum tokens response to produce.",
-#     )
+    # Token configuration
+    data_max_tokens = models.IntegerField(
+        default=12000,
+        help_text="The data llm maximum tokens.",
+    )
 
-#     reduce_temperature = models.FloatField(
-#         default=0.0,
-#         help_text="The temperature to use for token generation in reduce.",
-#     )
+    reduce_max_tokens = models.IntegerField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="The reduce llm maximum tokens response to produce.",
+    )
 
-#     reduce_max_completion_tokens = models.IntegerField(
-#         null=True,
-#         blank=True,
-#         default=None,
-#         help_text="The reduce llm maximum tokens response to produce.",
-#     )
+    reduce_temperature = models.FloatField(
+        default=0.0,
+        help_text="The temperature to use for token generation in reduce.",
+    )
 
-#     # Execution settings
-#     concurrency = models.IntegerField(
-#         default=32,
-#         help_text="The number of concurrent requests.",
-#     )
+    reduce_max_completion_tokens = models.IntegerField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="The reduce llm maximum tokens response to produce.",
+    )
 
-#     drift_k_followups = models.IntegerField(
-#         default=20,
-#         help_text="The number of top global results to retrieve.",
-#     )
+    # Execution settings
+    concurrency = models.IntegerField(
+        default=32,
+        help_text="The number of concurrent requests.",
+    )
 
-#     primer_folds = models.IntegerField(
-#         default=5,
-#         help_text="The number of folds for search priming.",
-#     )
+    drift_k_followups = models.IntegerField(
+        default=20,
+        help_text="The number of top global results to retrieve.",
+    )
 
-#     primer_llm_max_tokens = models.IntegerField(
-#         default=12000,
-#         help_text="The maximum number of tokens for the LLM in primer.",
-#     )
+    primer_folds = models.IntegerField(
+        default=5,
+        help_text="The number of folds for search priming.",
+    )
 
-#     n_depth = models.IntegerField(
-#         default=3,
-#         help_text="The number of drift search steps to take.",
-#     )
+    primer_llm_max_tokens = models.IntegerField(
+        default=12000,
+        help_text="The maximum number of tokens for the LLM in primer.",
+    )
 
-#     # Local search tuning
-#     local_search_text_unit_prop = models.FloatField(
-#         default=0.9,
-#         help_text="The proportion of search dedicated to text units.",
-#     )
+    n_depth = models.IntegerField(
+        default=3,
+        help_text="The number of drift search steps to take.",
+    )
 
-#     local_search_community_prop = models.FloatField(
-#         default=0.1,
-#         help_text="The proportion of search dedicated to community properties.",
-#     )
+    # Local search tuning
+    local_search_text_unit_prop = models.FloatField(
+        default=0.9,
+        help_text="The proportion of search dedicated to text units.",
+    )
 
-#     local_search_top_k_mapped_entities = models.IntegerField(
-#         default=10,
-#         help_text="The number of top K entities to map during local search.",
-#     )
+    local_search_community_prop = models.FloatField(
+        default=0.1,
+        help_text="The proportion of search dedicated to community properties.",
+    )
 
-#     local_search_top_k_relationships = models.IntegerField(
-#         default=10,
-#         help_text="The number of top K relationships to map during local search.",
-#     )
+    local_search_top_k_mapped_entities = models.IntegerField(
+        default=10,
+        help_text="The number of top K entities to map during local search.",
+    )
 
-#     local_search_max_data_tokens = models.IntegerField(
-#         default=12000,
-#         help_text="The maximum context size in tokens for local search.",
-#     )
+    local_search_top_k_relationships = models.IntegerField(
+        default=10,
+        help_text="The number of top K relationships to map during local search.",
+    )
 
-#     local_search_temperature = models.FloatField(
-#         default=0.0,
-#         help_text="The temperature to use for token generation in local search.",
-#     )
+    local_search_max_data_tokens = models.IntegerField(
+        default=12000,
+        help_text="The maximum context size in tokens for local search.",
+    )
 
-#     local_search_top_p = models.FloatField(
-#         default=1.0,
-#         help_text="The top-p value to use for token generation in local search.",
-#     )
+    local_search_temperature = models.FloatField(
+        default=0.0,
+        help_text="The temperature to use for token generation in local search.",
+    )
 
-#     local_search_n = models.IntegerField(
-#         default=1,
-#         help_text="The number of completions to generate in local search.",
-#     )
+    local_search_top_p = models.FloatField(
+        default=1.0,
+        help_text="The top-p value to use for token generation in local search.",
+    )
 
-#     local_search_llm_max_gen_tokens = models.IntegerField(
-#         null=True,
-#         blank=True,
-#         default=None,
-#         help_text="The maximum number of generated tokens for the LLM in local search.",
-#     )
+    local_search_n = models.IntegerField(
+        default=1,
+        help_text="The number of completions to generate in local search.",
+    )
 
-#     local_search_llm_max_gen_completion_tokens = models.IntegerField(
-#         null=True,
-#         blank=True,
-#         default=None,
-#         help_text="The maximum number of generated tokens for the LLM in local search.",
-#     )
+    local_search_llm_max_gen_tokens = models.IntegerField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="The maximum number of generated tokens for the LLM in local search.",
+    )
 
-#     def __str__(self):
-#         return f"GraphRagDriftSearchConfig({self.pk})"
+    local_search_llm_max_gen_completion_tokens = models.IntegerField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text="The maximum number of generated tokens for the LLM in local search.",
+    )
+
+    class Meta:
+        db_table = "graph_rag_drift_search_config"
+
+    def __str__(self):
+        return f"GraphRagDriftSearchConfig({self.pk})"
