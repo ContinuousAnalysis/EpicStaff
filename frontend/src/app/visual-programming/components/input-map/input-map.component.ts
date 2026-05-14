@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { EventEmitter } from '@angular/core';
 import { signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
     AbstractControl,
     ControlContainer,
@@ -13,10 +13,11 @@ import {
     ReactiveFormsModule,
 } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Subscription } from 'rxjs';
+import { filter, Subscription } from 'rxjs';
 import { distinctUntilChanged, finalize } from 'rxjs/operators';
 
 import { GraphSessionService, GraphSessionStatus } from '../../../features/flows/services/flows-sessions.service';
+import { RunSessionSSEService } from '../../../pages/running-graph/services/graph-session-sse.service';
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ToggleSwitchComponent } from '../../../shared/components/form-controls/toggle-switch/toggle-switch.component';
 import { HelpTooltipComponent } from '../../../shared/components/help-tooltip/help-tooltip.component';
@@ -48,13 +49,15 @@ import { SidePanelService } from '../../services/side-panel.service';
                     position="right"
                     text="Maps function arguments to domain variables using key-value pairs. For example, 'project_id' = 'current_project' maps the function parameter 'project_id' to the flow variable 'current_project'."
                 ></app-help-tooltip>
-                <div class="test-mode-header">
-                    <span>Test mode</span>
-                    <app-toggle-switch
-                        [checked]="testMode"
-                        (checkedChange)="onTestModeToggle($event)"
-                    />
-                </div>
+                @if (showTestMode) {
+                    <div class="test-mode-header">
+                        <span>Test mode</span>
+                        <app-toggle-switch
+                            [checked]="testMode"
+                            (checkedChange)="onTestModeToggle($event)"
+                        />
+                    </div>
+                }
             </div>
 
             @if (!testMode) {
@@ -159,6 +162,12 @@ import { SidePanelService } from '../../services/side-panel.service';
                 >
                     <i class="ti ti-plus"></i> Add Input
                 </button>
+                <div
+                    class="test-input-dirty-warning"
+                    [class.visible]="testInputDirty"
+                >
+                    <div class="test-input-dirty-warning__inner">Click "Save node" to save test variables.</div>
+                </div>
                 <div class="test-mode-actions">
                     <button
                         type="button"
@@ -337,7 +346,6 @@ import { SidePanelService } from '../../services/side-panel.service';
                 display: flex;
                 gap: 0.5rem;
                 width: 100%;
-                margin-top: 0.75rem;
             }
 
             .btn-secondary,
@@ -391,16 +399,60 @@ import { SidePanelService } from '../../services/side-panel.service';
                 color: inherit;
                 margin-top: 8px;
             }
+
+            .test-input-dirty-warning {
+                display: grid;
+                grid-template-rows: 0fr;
+                transition: grid-template-rows 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+
+                &.visible {
+                    grid-template-rows: 1fr;
+
+                    .test-input-dirty-warning__inner {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+
+                &__inner {
+                    display: flex;
+                    align-items: center;
+                    overflow: hidden;
+                    min-height: 0;
+                    font-size: 0.75rem;
+                    border-radius: 5px;
+                    border-left: 3px solid #efd616;
+                    background-color: rgba(239, 214, 22, 0.08);
+                    color: #efd616;
+                    padding: 0.25rem 0.5rem;
+                    transform: translateY(-100%);
+                    opacity: 0;
+                    transition:
+                        transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                        opacity 0.25s ease;
+                }
+
+                .save-node-svg {
+                    color: var(--accent-color);
+                    background: var(--color-nodes-sidepanel-bg);
+                    border: none;
+                    padding: 0.25rem;
+                    border-radius: 4px;
+                    margin: 0 3px;
+                }
+            }
         `,
     ],
 })
 export class InputMapComponent implements OnInit, OnChanges {
     @Input() activeColor: string = '#685fff';
     @Input() testMode: boolean = false;
+    @Input() showTestMode: boolean = false;
     @Input() pythonNodeId: number | null = null;
     @Input() graphId: number | null = null;
     @Input() nodeName: string | null = null;
     @Input() testRunning: boolean = false;
+    @Input() testInputDirty: boolean = false;
     @Output() testModeChange = new EventEmitter<boolean>();
     @Output() runTest = new EventEmitter<Record<string, string>>();
 
@@ -416,12 +468,20 @@ export class InputMapComponent implements OnInit, OnChanges {
 
     private readonly pythonCodeRunService = inject(PythonCodeRunService);
     private readonly graphSessionService = inject(GraphSessionService);
+    private readonly runSessionSSEService = inject(RunSessionSSEService);
 
     constructor(
         private controlContainer: ControlContainer,
         private fb: FormBuilder,
         private sidePanelService: SidePanelService
-    ) {}
+    ) {
+        toObservable(this.runSessionSSEService.status)
+            .pipe(
+                filter((status) => status === GraphSessionStatus.ENDED),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe(() => this.hasSuccessfulSession.set(true));
+    }
 
     ngOnInit() {
         if (this.pairs.length === 0) {
@@ -434,7 +494,6 @@ export class InputMapComponent implements OnInit, OnChanges {
             });
         }
         this.attachKeyMirroringToAllPairs();
-        this.checkSuccessfulSessions();
     }
 
     ngOnChanges(changes: SimpleChanges): void {

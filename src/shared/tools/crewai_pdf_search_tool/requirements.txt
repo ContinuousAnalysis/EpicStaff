@@ -1,4 +1,4 @@
 pydantic
-PyPDF2
+pdfplumber
 openai
 numpy

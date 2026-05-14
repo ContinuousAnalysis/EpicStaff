@@ -1,6 +1,6 @@
 export * from './agent-search-config.model';
 export * from './api-error.model';
-export * from './auth/auth.model';
+export * from './auth';
 export * from './crew_run_message.model';
 export * from './embeddings/embedding.model';
 export * from './embeddings/embedding-config.model';
@@ -12,6 +12,7 @@ export * from './ngrok/ngrok-config.model';
 export * from './realtime-voice/realtime-llm-config.model';
 export * from './realtime-voice/realtime-model.model';
 export * from './realtime-voice/voice-settings.model';
+export * from './role-based-access';
 export * from './RunCrewSession.model';
 export * from './tag.model';
 export * from './task-message.model';
