@@ -1,0 +1,29 @@
+<div class="stat-card">
+    <div class="stat-header">
+        @if (data().icon; as icon) {
+            <app-svg-icon
+                [icon]="icon"
+                size="16px"
+                class="stat-icon"
+            />
+        }
+        <span class="stat-label">{{ data().label }}</span>
+    </div>
+    <div class="stat-value">{{ data().value }}</div>
+    <div class="stat-footer">
+        @if (data().delta; as delta) {
+            <span
+                class="stat-delta"
+                [class.red]="delta.color === 'red'"
+                [class.green]="delta.color === 'green'"
+            >
+                <app-svg-icon
+                    [icon]="delta.trend === 'increase' ? 'arrow-up' : 'arrow-down'"
+                    size="16px"
+                />
+                {{ delta.value }}
+            </span>
+            <span class="stat-delta-label">{{ delta.label }}</span>
+        }
+    </div>
+</div>

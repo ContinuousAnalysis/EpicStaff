@@ -1,0 +1,14 @@
+<span
+    class="badge"
+    [class]="modifier()"
+>
+    @if (icon()) {
+        <app-svg-icon
+            [icon]="icon()!"
+            size="12px"
+        />
+    } @else {
+        <span class="dot"></span>
+    }
+    {{ label() }}
+</span>

@@ -3,32 +3,51 @@
     display: flex;
     flex-grow: 1;
     overflow: hidden;
+    background-color: var(--color-ks-card-background);
+    border-radius: 0 0 10px 10px;
+    padding: 0.5rem 0;
+    position: relative;
+
+    &::after {
+        content: '';
+        position: absolute;
+        left: 99px;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--color-divider-subtle);
+    }
 }
 
 .chunk {
     &__items {
         display: flex;
         width: 100%;
-        padding: 0.375rem 0;
         font-size: 0.875rem;
-        line-height: 130%;
+        //line-height: 130%;
         font-weight: 200;
         white-space: pre-wrap;
         overflow: auto;
-        border-radius: 10px;
-        background-color: var(--color-ks-card-background);
     }
 
-    &__id-container {
+    &__id-column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         width: 100px;
         flex-shrink: 0;
-        border-right: 1px solid var(--color-divider-subtle);
+        padding: 0.5rem 0;
+    }
+
+    &__id-wrapper {
+        flex-shrink: 0;
     }
 
     &__id-item {
-        position: absolute;
-        left: calc(-2rem - 80px);
-        transform: translateY(3px);
+        transform: translateY(2px);
+        position: sticky;
+        top: 0;
+        display: inline-block;
         padding: 0.25rem 1rem;
         height: 1.175rem;
         line-height: 100%;
@@ -47,21 +66,22 @@
             color: var(--color-ks-status-completed);
             background-color: rgb(34, 34, 43);
         }
-    }
 
-    &__id-spinner {
-        position: relative;
-        top: -4px;
-        left: -20px;
+        &--clickable {
+            cursor: pointer;
+
+            &:hover {
+                opacity: 0.8;
+            }
+        }
     }
 
     &__text-container {
         flex-grow: 1;
         position: relative;
-        margin-left: 2rem;
-        padding: 0.5rem 0;
+        margin: 0.5rem 0 0.5rem 2rem;
         line-height: 150%;
-        width: calc(100% - 100px - 2rem); //100% - id-container_width - margin-left
+        width: calc(100% - 100px - 2rem);
     }
 
     &__item {
@@ -111,6 +131,19 @@
         &--blurred {
             filter: blur(3px);
             animation: blink 2s ease-in-out infinite;
+        }
+    }
+
+    // ::ng-deep needed because highlights are injected via [innerHTML]
+    // and don't receive Angular's encapsulation attributes
+    &__item ::ng-deep .chunk__highlight {
+        background-color: rgba(255, 207, 0, 0.3);
+        color: inherit;
+        border-radius: 2px;
+        padding: 0 1px;
+
+        &--active {
+            background-color: rgba(255, 165, 0, 0.6);
         }
     }
 }

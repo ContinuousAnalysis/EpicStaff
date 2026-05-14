@@ -7,6 +7,7 @@ import {
     CUSTOM_ELEMENTS_SCHEMA,
     DestroyRef,
     ElementRef,
+    OnInit,
     signal,
     ViewChild,
 } from '@angular/core';
@@ -56,7 +57,7 @@ interface NavItem {
     changeDetection: ChangeDetectionStrategy.OnPush,
     schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
-export class LeftSidebarComponent implements AfterViewInit {
+export class LeftSidebarComponent implements OnInit, AfterViewInit {
     public topNavItems: NavItem[];
     public bottomNavItems: NavItem[];
     public isEpicChatEnabled: boolean;

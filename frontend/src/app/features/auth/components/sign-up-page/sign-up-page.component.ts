@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -22,7 +21,6 @@ type PageState = 'form' | 'loading' | 'success';
 @Component({
     selector: 'app-sign-up',
     imports: [
-        CommonModule,
         ReactiveFormsModule,
         ButtonComponent,
         CustomInputComponent,
@@ -32,7 +30,7 @@ type PageState = 'form' | 'loading' | 'success';
         AppSvgIconComponent,
     ],
     templateUrl: './sign-up-page.component.html',
-    styleUrls: ['../login-page/login-page.component.scss', './sign-up-page.component.scss'],
+    styleUrls: ['./sign-up-page.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SignUpPageComponent {

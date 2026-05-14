@@ -23,6 +23,22 @@ export const routes: Routes = [
         canActivate: [guestGuard],
     },
     {
+        path: 'forgot-password',
+        loadComponent: () =>
+            import('./features/auth/components/forgot-pass-page/forgot-password-page.component').then(
+                (m) => m.ForgotPasswordPageComponent
+            ),
+        canActivate: [guestGuard],
+    },
+    {
+        path: 'reset-password',
+        loadComponent: () =>
+            import('./features/auth/components/reset-password-page/reset-password-page.component').then(
+                (m) => m.ResetPasswordPageComponent
+            ),
+        canActivate: [guestGuard],
+    },
+    {
         path: 'onboarding',
         loadComponent: () =>
             import('./features/auth/components/onboarding-page/onboarding-page.component').then(
@@ -217,6 +233,34 @@ export const routes: Routes = [
                             import('./features/flows/pages/global-sessions-list/global-sessions-list.component').then(
                                 (m) => m.GlobalSessionsListComponent
                             ),
+                    },
+                    {
+                        path: 'workspace',
+                        loadComponent: () =>
+                            import('./features/role-base-access/pages/overview-page/overview.component').then(
+                                (m) => m.OverviewComponent
+                            ),
+                        children: [
+                            {
+                                path: '',
+                                redirectTo: 'main',
+                                pathMatch: 'full',
+                            },
+                            {
+                                path: 'main',
+                                loadComponent: () =>
+                                    import('./features/role-base-access/pages/overview-page/main-tab/main-tab.component').then(
+                                        (m) => m.MainTabComponent
+                                    ),
+                            },
+                            {
+                                path: 'organizations',
+                                loadComponent: () =>
+                                    import('./features/role-base-access/pages/overview-page/organizations-tab/organizations-tab.component').then(
+                                        (m) => m.OrganizationsTabComponent
+                                    ),
+                            },
+                        ],
                     },
                 ],
             },
