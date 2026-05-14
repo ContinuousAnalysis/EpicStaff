@@ -1,4 +1,4 @@
-<div class="multi-select">
+@if (!hideTrigger()) {
     <div
         #triggerBtn
         class="multi-select__btn"
@@ -14,17 +14,26 @@
             />
         }
     </div>
-</div>
+}
+
+@if (hideTrigger()) {
+    <span
+        #triggerBtn
+        style="display: none"
+    ></span>
+}
 
 <ng-template #dropdownTemplate>
     <div class="multi-select__dropdown">
-        <input
-            class="multi-select__search"
-            type="text"
-            [value]="search()"
-            (input)="search.set($any($event.target).value)"
-            [placeholder]="searchPlaceholder()"
-        />
+        @if (showSearch()) {
+            <input
+                class="multi-select__search"
+                type="text"
+                [value]="search()"
+                (input)="search.set($any($event.target).value)"
+                [placeholder]="searchPlaceholder()"
+            />
+        }
 
         <div class="multi-select__list">
             @for (group of groupedFiltered(); track group.group ?? 'default') {
@@ -38,8 +47,16 @@
                     <div
                         class="multi-select__item"
                         [class.multi-select__item--selected]="isChecked(item.value)"
+                        [class.multi-select__item--checkbox-left]="checkboxPosition() === 'left'"
+                        [class.multi-select__item--checkbox-white]="color() === 'white'"
                         (click)="toggleValue(item.value)"
                     >
+                        @if (checkboxPosition() === 'left') {
+                            <app-checkbox
+                                mod="multiselect"
+                                [checked]="isChecked(item.value)"
+                            />
+                        }
                         <span>
                             {{ item.name }}
                             @if (item.tip) {
@@ -48,10 +65,12 @@
                                 </span>
                             }
                         </span>
-                        <app-checkbox
-                            mod="multiselect"
-                            [checked]="isChecked(item.value)"
-                        />
+                        @if (checkboxPosition() === 'right') {
+                            <app-checkbox
+                                mod="multiselect"
+                                [checked]="isChecked(item.value)"
+                            />
+                        }
                     </div>
                 }
             }

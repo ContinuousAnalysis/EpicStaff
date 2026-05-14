@@ -1,11 +1,15 @@
 import uuid
 from copy import deepcopy
 
-from tables.models import Graph, Crew, Organization, GraphOrganization
-from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
+from tables.models import Graph, Crew
+from tables.models.graph_models import ClassificationConditionGroup
 from tables.serializers.model_serializers import (
     CrewSerializer,
+    GraphOrganization,
+    Organization,
+    ClassificationDecisionTablePrompt,
 )
+from tables.constants.organization_constants import DEFAULT_ORGANIZATION_NAME
 from tables.import_export.strategies.base import EntityImportExportStrategy
 from tables.import_export.serializers.graph import (
     GraphImportSerializer,
@@ -48,6 +52,17 @@ class GraphStrategy(EntityImportExportStrategy):
         deps[EntityType.LLM_CONFIG] = set(
             instance.code_agent_node_list.values_list("llm_config_id", flat=True)
         )
+        deps[EntityType.LLM_CONFIG] |= set(
+            instance.classification_decision_table_node_list.values_list(
+                "default_llm_config_id", flat=True
+            )
+        )
+        deps[EntityType.LLM_CONFIG] |= set(
+            ClassificationDecisionTablePrompt.objects.filter(
+                cdt_node__graph=instance
+            ).values_list("llm_config_id", flat=True)
+        )
+        deps[EntityType.LLM_CONFIG].discard(None)
         return deps
 
     def export_entity(self, instance: Graph) -> dict:
@@ -95,6 +110,7 @@ class GraphStrategy(EntityImportExportStrategy):
         self._create_edges(edges_data, graph, node_mapper)
         self._create_conditional_edges(conditional_edges_data, graph, node_mapper)
         self._remap_decision_table_references(graph, node_mapper)
+        self._remap_classification_decision_table_references(graph, node_mapper)
         self._update_metadata_node_ids(graph, node_mapper)
 
         return graph
@@ -196,6 +212,40 @@ class GraphStrategy(EntityImportExportStrategy):
                 )
 
             for group in dt_node.condition_groups.all():
+                if group.next_node_id:
+                    new_id = id_mapper.get_or_none(NODE_MAPPING_KEY, group.next_node_id)
+                    if new_id:
+                        group.next_node_id = new_id
+                        group.save(update_fields=["next_node_id"])
+
+    def _remap_classification_decision_table_references(
+        self, graph: Graph, id_mapper: IDMapper
+    ):
+        for cdt_node in graph.classification_decision_table_node_list.all():
+            updated = False
+
+            if cdt_node.default_next_node_id:
+                new_id = id_mapper.get_or_none(
+                    NODE_MAPPING_KEY, cdt_node.default_next_node_id
+                )
+                if new_id:
+                    cdt_node.default_next_node_id = new_id
+                    updated = True
+
+            if cdt_node.next_error_node_id:
+                new_id = id_mapper.get_or_none(
+                    NODE_MAPPING_KEY, cdt_node.next_error_node_id
+                )
+                if new_id:
+                    cdt_node.next_error_node_id = new_id
+                    updated = True
+
+            if updated:
+                cdt_node.save(
+                    update_fields=["default_next_node_id", "next_error_node_id"]
+                )
+
+            for group in cdt_node.condition_groups.all():
                 if group.next_node_id:
                     new_id = id_mapper.get_or_none(NODE_MAPPING_KEY, group.next_node_id)
                     if new_id:
