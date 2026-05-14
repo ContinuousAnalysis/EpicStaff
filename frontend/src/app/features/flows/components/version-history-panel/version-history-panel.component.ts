@@ -16,7 +16,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { IconButtonComponent } from '@shared/components';
-import { EMPTY, filter, switchMap } from 'rxjs';
+import { EMPTY, filter, Observable, of, switchMap } from 'rxjs';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
 import { ConfirmationDialogService } from '../../../../shared/components/cofirm-dialog/confimation-dialog.service';
@@ -72,7 +72,8 @@ export class VersionHistoryPanelComponent implements OnInit {
         private confirmationDialogService: ConfirmationDialogService,
         private unsavedChangesDialogService: UnsavedChangesDialogService,
         private cdr: ChangeDetectorRef,
-        @Inject(DIALOG_DATA) public data: { graphId: number; hasUnsavedChanges?: () => boolean },
+        @Inject(DIALOG_DATA)
+        public data: { graphId: number; hasUnsavedChanges?: () => boolean; saveCurrentState?: () => Observable<void> },
         public dialogRef: DialogRef<GraphRestoreResponse | undefined>
     ) {}
 
@@ -96,7 +97,14 @@ export class VersionHistoryPanelComponent implements OnInit {
 
     public restoreSelectedVersion(): void {
         const version = this.versionsList.find((v) => v.id === this.selectedVersionId);
-        if (version) this.restore(version);
+        if (!version) return;
+
+        const pendingName =
+            this.editingVersionId === version.id && this.editingField === 'name' && this.editingValue.trim()
+                ? this.editingValue.trim()
+                : null;
+
+        this.restore(pendingName ? { ...version, name: pendingName } : version);
     }
 
     public startEdit(version: GraphVersionDto, field: 'name' | 'description'): void {
@@ -187,6 +195,9 @@ export class VersionHistoryPanelComponent implements OnInit {
             .subscribe({
                 next: () => {
                     this.versionsList = this.versionsList.filter((v) => v.id !== version.id);
+                    if (this.selectedVersionId === version.id) {
+                        this.selectedVersionId = null;
+                    }
                     this.toastService.success('Version deleted');
                 },
                 error: () => {
@@ -214,7 +225,8 @@ export class VersionHistoryPanelComponent implements OnInit {
             .pipe(
                 switchMap((result) => {
                     if (result === 'save') {
-                        return this.flowApiService.restoreGraphVersion(version.id, true);
+                        const save$ = this.data.saveCurrentState?.() ?? of(void 0);
+                        return save$.pipe(switchMap(() => this.flowApiService.restoreGraphVersion(version.id, true)));
                     }
                     if (result === 'dont-save') {
                         return this.flowApiService.restoreGraphVersion(version.id, false);

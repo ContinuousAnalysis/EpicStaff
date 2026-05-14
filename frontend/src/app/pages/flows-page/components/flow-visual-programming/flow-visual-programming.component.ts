@@ -59,6 +59,7 @@ import { NodeType } from '../../../../visual-programming/core/enums/node-type';
 import { FlowModel } from '../../../../visual-programming/core/models/flow.model';
 import { FlowGraphComponent } from '../../../../visual-programming/flow-graph/flow-graph.component';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
+import { UndoRedoService } from '../../../../visual-programming/services/undo-redo.service';
 import {
     createStartNode,
     hasStartNode,
@@ -154,7 +155,8 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly elementRef: ElementRef,
         private readonly epicChatService: EpicChatService,
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
-        private readonly unsavedChangesDialog: UnsavedChangesDialogService
+        private readonly unsavedChangesDialog: UnsavedChangesDialogService,
+        private readonly undoRedoService: UndoRedoService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
         this.routeParamMap = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
@@ -254,6 +256,13 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     }
 
     private saveGraphForRun(): Observable<void> {
+        if (!this.hasUnsavedChanges()) return of(void 0);
+        if (this.isSaving()) return EMPTY;
+
+        return this.saveFlowState(this.currentFlowState(), false);
+    }
+
+    public saveCurrentState(): Observable<void> {
         if (!this.hasUnsavedChanges()) return of(void 0);
         if (this.isSaving()) return EMPTY;
 
@@ -554,7 +563,11 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
             positionStrategy,
             height: 'calc(100% - 5rem)',
             width: '380px',
-            data: { graphId: this.graph.id, hasUnsavedChanges: () => this.hasUnsavedChanges() },
+            data: {
+                graphId: this.graph.id,
+                hasUnsavedChanges: () => this.hasUnsavedChanges(),
+                saveCurrentState: () => this.saveCurrentState(),
+            },
         });
 
         dialogRef.closed
@@ -564,6 +577,8 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
             )
             .subscribe((response) => {
                 this.restoreWarnings.set(response.warnings);
+                this.undoRedoService.setUndoStack([]);
+                this.undoRedoService.setRedoStack([]);
                 this.refreshCurrentFlow();
             });
     }
