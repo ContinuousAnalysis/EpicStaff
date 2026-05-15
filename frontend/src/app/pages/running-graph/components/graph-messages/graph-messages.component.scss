@@ -472,7 +472,8 @@
         margin-top: 2rem;
     }
 
-    .scroll-to-top-btn {
+    .scroll-to-top-btn,
+    .scroll-to-bottom-btn {
         position: sticky;
         bottom: 16px;
         align-self: flex-end;
@@ -504,6 +505,24 @@
             background-color: #685fff;
             color: var(--color-text-primary);
             border-color: #685fff;
+        }
+    }
+
+    .scroll-to-bottom-btn {
+        .unseen-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            background-color: #685fff;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 18px;
+            text-align: center;
         }
     }
 }
