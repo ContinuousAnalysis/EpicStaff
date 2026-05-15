@@ -578,6 +578,18 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
         this.isLoaded.set(true);
 
+        if (this.isEpicChatEnabled && graph?.id) {
+            const flowUrl = this.normalizeApiUrl(this.configService.apiUrl);
+            if (flowUrl) {
+                this.epicChatService.setActiveFlow({
+                    flowId: graph.id,
+                    name: graph.name?.trim() || `Flow ${graph.id}`,
+                    description: graph.description?.trim() ?? '',
+                    flowUrl,
+                });
+            }
+        }
+
         if (showRefreshToast) {
             this.toastService.success('Flow refreshed');
         }

@@ -119,7 +119,7 @@
         }
     </ul>
 
-    @if (isEpicChatEnabled) {
+    @if (isEpicChatEnabled && user(); as currentUser) {
         <epic-chat
             #epicChat
             class="epic-chat-host"
@@ -128,6 +128,7 @@
             base-path="/epicchat-widget/"
             chat-icon-path=""
             message-timeout="180000"
+            [uniqueUserId]="currentUser.id.toString()"
             [apiBaseUrl]="apiBaseUrl"
             [accessToken]="accessToken"
             [attr.chat-left]="epicChatService.isDocked() ? epicChatService.dockLeftPx() + 'px' : '68px'"
