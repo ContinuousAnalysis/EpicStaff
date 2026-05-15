@@ -61,7 +61,9 @@ class UserAdminViewSet(viewsets.ViewSet):
         )
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(qs, request, view=self)
-        serializer = UserResponseSerializer(page, many=True)
+        serializer = UserResponseSerializer(
+            page, many=True, context={"request": request}
+        )
         return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
@@ -85,7 +87,8 @@ class UserAdminViewSet(viewsets.ViewSet):
         # Re-fetch via the read queryset so memberships[] is prefetched.
         user = self._service.list_users(actor=request.user).get(pk=user.pk)
         return Response(
-            UserResponseSerializer(user).data, status=status.HTTP_201_CREATED
+            UserResponseSerializer(user, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
         )
 
     @action(detail=True, methods=["post"], url_path="grant-superadmin")
@@ -101,7 +104,7 @@ class UserAdminViewSet(viewsets.ViewSet):
             actor=request.user, target_user_id=int(pk)
         )
         user = self._service.list_users(actor=request.user).get(pk=user.pk)
-        return Response(UserResponseSerializer(user).data)
+        return Response(UserResponseSerializer(user, context={"request": request}).data)
 
     @action(detail=True, methods=["post"], url_path="revoke-superadmin")
     @extend_schema(
@@ -117,7 +120,7 @@ class UserAdminViewSet(viewsets.ViewSet):
             actor=request.user, target_user_id=int(pk)
         )
         user = self._service.list_users(actor=request.user).get(pk=user.pk)
-        return Response(UserResponseSerializer(user).data)
+        return Response(UserResponseSerializer(user, context={"request": request}).data)
 
 
 class OrganizationMembershipAdminViewSet(viewsets.ViewSet):
