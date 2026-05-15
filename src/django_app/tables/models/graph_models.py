@@ -182,9 +182,11 @@ class SubGraphNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="subgraph_node_list"
     )
     subgraph = models.ForeignKey(
-        "Graph", on_delete=models.CASCADE, related_name="as_subgraph"
+        "Graph",
+        on_delete=models.SET_NULL,
+        related_name="as_subgraph",
+        null=True,
     )
-    # TODO: maybe SET_NULL on delete?
 
 
 class CodeAgentNode(BaseNode):

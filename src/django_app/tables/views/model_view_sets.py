@@ -16,7 +16,7 @@ from django_filters.rest_framework import (
     NumberFilter,
 )
 from rest_framework import filters as drf_filters
-from rest_framework import generics, mixins, status, viewsets
+from rest_framework import generics, mixins, status, viewsets, serializers
 from rest_framework.decorators import action
 from rest_framework.exceptions import (
     PermissionDenied,
@@ -90,7 +90,14 @@ from tables.models.llm_models import (
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
 )
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+    OpenApiParameter,
+    OpenApiResponse,
+)
+from drf_spectacular.types import OpenApiTypes
 from tables.swagger_schemas.graph_bulk_save_schema import (
     SAVE_FLOW_SWAGGER as _SAVE_FLOW_SWAGGER,
 )
@@ -869,6 +876,30 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
 
+@extend_schema_view(
+    restore=extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name="RestoreResponse",
+                fields={
+                    "graph_id": serializers.IntegerField(),
+                    "warnings": serializers.ListField(child=serializers.DictField()),
+                    "auto_backup_version_id": serializers.IntegerField(allow_null=True),
+                },
+            )
+        },
+        parameters=[
+            OpenApiParameter(
+                name="backup",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="If true, creates a backup version before restoring.",
+            )
+        ],
+    ),
+)
 class GraphVersionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["graph_id"]
@@ -908,6 +939,13 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="all")
     def all(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
+
+    @action(detail=True, methods=["post"], url_path="restore")
+    def restore(self, request, *args, **kwargs):
+        version = self.get_object()
+        backup = request.query_params.get("backup", "").lower() == "true"
+        result = GraphVersioningService().restore_version(version, backup=backup)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class IdempotentNodeCreateMixin:

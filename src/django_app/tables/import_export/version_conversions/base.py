@@ -28,6 +28,23 @@ class VersionConverter:
 
     @classmethod
     def convert(cls, data: dict) -> dict:
+        """
+        Convert import data dict to the current IMPORT_VERSION via chain of conversions
+
+        Preconditions
+            - data is non-empty dict
+            - Partial data bundle is allowed (missing key are allowed)
+            - Convertions MUST guard against missing keys
+            - data["version"] is an int <= IMPORT_VERSION (default to 1 if absent)
+            - A migration func is registered for every version
+        Postconditions
+            - Returned dict has data["version"] == IMPORT_VERSION
+            - All other keys are preserved/transformed by the convertion chain
+        Raises
+            - ValidationError:
+                - if data["version"] > IMPORT_VERSION
+                - if no convertion path exists for an intermediate version
+        """
         version = data.get("version", 1)  # old files default to v1
 
         if version > IMPORT_VERSION:
