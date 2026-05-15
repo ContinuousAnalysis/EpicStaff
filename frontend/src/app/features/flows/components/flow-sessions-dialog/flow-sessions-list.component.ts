@@ -4,18 +4,29 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    DestroyRef,
     effect,
     ElementRef,
     Inject,
+    inject,
     OnInit,
     signal,
     ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { IconButtonComponent, PaginationControlsComponent } from '@shared/components';
-import { Subject, takeUntil } from 'rxjs';
+import {
+    ActionDropdownButtonComponent,
+    ActionDropdownItem,
+    IconButtonComponent,
+    PaginationControlsComponent,
+} from '@shared/components';
+import { finalize, Subject, takeUntil } from 'rxjs';
 import { NodeGroup } from 'src/app/shared/models/node-group.model';
 
+import { ExportFormat, ImportExportService } from '../../../../core/services/import-export.service';
+import { ToastService } from '../../../../services/notifications/toast.service';
+import { downloadBlob } from '../../../../shared/utils/download-blob.util';
 import { GraphDto } from '../../models/graph.model';
 import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../../services/flows-sessions.service';
 import { FlowSessionNodeFilterDropdownComponent } from './flow-session-node-filter-dropdown.component';
@@ -34,6 +45,7 @@ import { FlowSessionsTableComponent } from './flow-sessions-table.component';
         FlowSessionStatusFilterDropdownComponent,
         FlowSessionNodeFilterDropdownComponent,
         IconButtonComponent,
+        ActionDropdownButtonComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -51,7 +63,16 @@ export class FlowSessionsListComponent implements OnInit {
     private reloadTrigger = signal(0);
     public availableNodeGroups = signal<NodeGroup[]>([]);
     public selectedIds = signal<Set<number>>(new Set());
+    public isExporting = signal(false);
     private cancelLoad$ = new Subject<void>();
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly importExportService = inject(ImportExportService);
+    private readonly toastService = inject(ToastService);
+
+    readonly exportItems: ActionDropdownItem[] = [
+        { label: 'Export as JSON', value: 'json' },
+        { label: 'Export as CSV', value: 'csv' },
+    ];
 
     @ViewChild('sessionSearchInput')
     sessionSearchInput!: ElementRef<HTMLInputElement>;
@@ -270,5 +291,30 @@ export class FlowSessionsListComponent implements OnInit {
     public onBulkDelete(): void {
         this.onDeleteSelected(Array.from(this.selectedIds()));
         this.selectedIds.set(new Set());
+    }
+
+    public onExport(format: ExportFormat): void {
+        this.isExporting.set(true);
+        const obs$ =
+            this.selectedIds().size > 0
+                ? this.importExportService.bulkExportSessions(Array.from(this.selectedIds()), format)
+                : this.importExportService.exportAll({ graph: this.flow.id }, format);
+
+        obs$.pipe(
+            finalize(() => this.isExporting.set(false)),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe({
+            next: (blob) => {
+                downloadBlob(blob, `sessions_export_${Date.now()}.${format}`);
+                this.toastService.success('Sessions exported successfully');
+            },
+            error: () => {
+                this.toastService.error('Failed to export sessions');
+            },
+        });
+    }
+
+    public onExportItemSelected(item: ActionDropdownItem): void {
+        this.onExport(item.value as ExportFormat);
     }
 }

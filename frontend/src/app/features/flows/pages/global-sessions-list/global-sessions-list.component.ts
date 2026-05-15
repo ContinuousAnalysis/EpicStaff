@@ -2,9 +2,17 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterModule } from '@angular/router';
-import { AppSvgIconComponent, PaginationControlsComponent } from '@shared/components';
-import { Subject, takeUntil } from 'rxjs';
+import {
+    ActionDropdownButtonComponent,
+    ActionDropdownItem,
+    AppSvgIconComponent,
+    PaginationControlsComponent,
+} from '@shared/components';
+import { finalize, Observable, Subject, takeUntil } from 'rxjs';
 
+import { ExportFormat, ImportExportService } from '../../../../core/services/import-export.service';
+import { ToastService } from '../../../../services/notifications/toast.service';
+import { downloadBlob } from '../../../../shared/utils/download-blob.util';
 import { FlowNameFilterDropdownComponent } from '../../components/flow-sessions-dialog/flow-name-filter-dropdown.component';
 import { FlowSessionsTableComponent } from '../../components/flow-sessions-dialog/flow-sessions-table.component';
 import { GetGraphLightRequest } from '../../models/graph.model';
@@ -21,6 +29,7 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
         PaginationControlsComponent,
         AppSvgIconComponent,
         RouterModule,
+        ActionDropdownButtonComponent,
     ],
     template: ` <div class="global-sessions-wrapper">
         <div class="global-sessions-header">
@@ -51,19 +60,22 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                         <div class="toggle-thumb"></div>
                     </div>
                 </label>
-                <button
-                    class="delete-btn"
-                    [class.invisible]="selectedIds().size === 0"
-                    (click)="onBulkDelete()"
-                >
-                    Delete Selected ({{ selectedIds().size }})
-                </button>
-                <span
-                    [class.invisible]="selectedIds().size > 0"
-                    class="results-length"
-                >
-                    {{ totalCount() }} Results
-                </span>
+                <div class="right-actions">
+                    <button
+                        class="delete-btn"
+                        [class.invisible]="selectedIds().size === 0"
+                        (click)="onBulkDelete()"
+                    >
+                        Delete Selected ({{ selectedIds().size }})
+                    </button>
+                    <app-action-dropdown-button
+                        [label]="'Export (' + (selectedIds().size === 0 ? totalCount() : selectedIds().size) + ')'"
+                        [items]="exportItems"
+                        [disabled]="isExporting()"
+                        (mainClick)="onExport('json')"
+                        (itemClick)="onExportItemSelected($event)"
+                    />
+                </div>
             </div>
             <div class="table-container">
                 <app-flow-sessions-table
@@ -75,6 +87,7 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                     [statusFilter]="statusFilter()"
                     [isLoading]="!isLoaded()"
                     [showEmptyState]="isLoaded() && sessions().length === 0"
+                    [selectedIds]="selectedIds()"
                     (deleteSelected)="onDeleteSelected($event)"
                     (viewSession)="onViewSession($event)"
                     (stopSession)="onStopSession($event)"
@@ -112,14 +125,22 @@ export class GlobalSessionsListComponent {
     public selectedIds = signal<Set<number>>(new Set());
     public availableFlows = signal<GetGraphLightRequest[]>([]);
     public totalCount = signal(0);
+    public isExporting = signal(false);
     private reloadTrigger = signal(0);
     private cancelLoad$ = new Subject<void>();
     private destroyRef = inject(DestroyRef);
 
+    readonly exportItems: ActionDropdownItem[] = [
+        { label: 'Export as JSON', value: 'json' },
+        { label: 'Export as CSV', value: 'csv' },
+    ];
+
     constructor(
         private graphSessionService: GraphSessionService,
         private flowsApiService: FlowsApiService,
-        private router: Router
+        private router: Router,
+        private importExportService: ImportExportService,
+        private toastService: ToastService
     ) {
         effect(() => {
             const page = this.currentPage();
@@ -217,6 +238,39 @@ export class GlobalSessionsListComponent {
                     console.error('Failed to delete sessions', err);
                 },
             });
+    }
+
+    public onExport(format: ExportFormat): void {
+        this.isExporting.set(true);
+        let obs$: Observable<Blob>;
+
+        if (this.selectedIds().size > 0) {
+            obs$ = this.importExportService.bulkExportSessions(Array.from(this.selectedIds()), format);
+        } else {
+            const activeStatuses = this.statusFilter().filter((s) => s !== 'all');
+            const filters: { status?: string[] } = {};
+            if (activeStatuses.length > 0) {
+                filters.status = activeStatuses;
+            }
+            obs$ = this.importExportService.exportAll(filters, format);
+        }
+
+        obs$.pipe(
+            finalize(() => this.isExporting.set(false)),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe({
+            next: (blob) => {
+                downloadBlob(blob, `sessions_export_${Date.now()}.${format}`);
+                this.toastService.success('Sessions exported successfully');
+            },
+            error: () => {
+                this.toastService.error('Failed to export sessions');
+            },
+        });
+    }
+
+    public onExportItemSelected(item: ActionDropdownItem): void {
+        this.onExport(item.value as ExportFormat);
     }
 
     private loadGlobalSessions(

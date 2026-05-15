@@ -1,12 +1,12 @@
-@use "./styles/_reset.scss";
-@use "./styles/json-viewer.scss";
-@use "./styles/_variables";
-@use "./styles/_scrollbar";
-@use "./styles/markdown.scss";
-@use "./styles/_material.scss";
-@use "./styles/_overlays";
-@use "./styles/_prompt-tooltip";
-
+@use './styles/_reset.scss';
+@use './styles/json-viewer.scss';
+@use './styles/_variables';
+@use './styles/_scrollbar';
+@use './styles/markdown.scss';
+@use './styles/_material.scss';
+@use './styles/_overlays';
+@use './styles/_prompt-tooltip';
+@use './styles/_action-dropdown-overlay';
 
 .waypoint-tooltip {
     display: none;
