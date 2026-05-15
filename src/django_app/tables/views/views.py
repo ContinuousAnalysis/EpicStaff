@@ -26,6 +26,7 @@ from utils.logger import logger
 
 from drf_spectacular.utils import (
     extend_schema,
+    extend_schema_view,
     OpenApiResponse,
     OpenApiParameter,
     inline_serializer,
@@ -98,7 +99,19 @@ from tables.serializers.default_config_serializers import DefaultModelsSerialize
 from tables.models.default_models import DefaultModels
 from tables.filters import SessionFilter  # CollectionFilter,
 
-from tables.swagger_schemas.answer_to_llm_schema import ANSWER_TO_LLM
+from tables.swagger_schemas.sessions_schema import (
+    ANSWER_TO_LLM,
+    GET_UPDATES_GET,
+    RUN_SESSION_POST,
+    SESSION_BULK_DELETE_POST,
+    SESSION_DESTROY_DELETE,
+    SESSION_LIST_GET,
+    SESSION_OUTPUT_FILES_GET,
+    SESSION_RETRIEVE_GET,
+    SESSION_STATUSES_GET,
+    SESSION_WARNINGS_GET,
+    STOP_SESSION_POST,
+)
 
 from .default_config import *
 
@@ -115,6 +128,10 @@ realtime_service = RealtimeService()
 quickstart_service = QuickstartService()
 
 
+@extend_schema_view(
+    retrieve=extend_schema(**SESSION_RETRIEVE_GET),
+    destroy=extend_schema(**SESSION_DESTROY_DELETE),
+)
 class SessionViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -140,18 +157,7 @@ class SessionViewSet(
     ]  # allowed fields
     ordering = ["-created_at", "id"]  # default ordering
 
-    @extend_schema(
-        description="Retrieve a list of sessions.",
-        parameters=[
-            OpenApiParameter(
-                name="detailed",
-                location=OpenApiParameter.QUERY,
-                description="Whether to include all session details. Set to `false` to return only minimal fields. The `true` value is deprecated and will be removed in a future version.",
-                required=False,
-                type=drf_serializers.BooleanField(),
-            )
-        ],
-    )
+    @extend_schema(**SESSION_LIST_GET)
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
@@ -174,12 +180,7 @@ class SessionViewSet(
 
         return qs
 
-    @extend_schema(
-        description="Get counts of each status grouped by graph ID",
-        responses={
-            200: OpenApiResponse(description="Mapping of graph_id to status counts"),
-        },
-    )
+    @extend_schema(**SESSION_STATUSES_GET)
     @action(detail=False, methods=["GET"])
     def statuses(self, request):
         queryset = self.get_queryset()
@@ -195,16 +196,7 @@ class SessionViewSet(
 
         return Response(data)
 
-    @extend_schema(
-        description="Delete multiple sessions by IDs",
-        request=inline_serializer(
-            name="SessionBulkDeleteRequest",
-            fields={
-                "ids": drf_serializers.ListField(child=drf_serializers.IntegerField()),
-            },
-        ),
-        responses={200: OpenApiResponse(description="Successfully deleted IDs")},
-    )
+    @extend_schema(**SESSION_BULK_DELETE_POST)
     @action(detail=False, methods=["post"], url_path="bulk_delete")
     def bulk_delete(self, request):
         ids = request.data.get("ids", [])
@@ -224,13 +216,7 @@ class SessionViewSet(
             {"deleted": deleted_count, "ids": ids}, status=status.HTTP_200_OK
         )
 
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(description="Session warnings retrieved successfully"),
-            400: OpenApiResponse(description="Session is required"),
-            404: OpenApiResponse(description="Session not found"),
-        },
-    )
+    @extend_schema(**SESSION_WARNINGS_GET)
     @action(detail=True, methods=["get"], url_path="warnings")
     def get_session_warnings(self, request, pk=None):
         session = self.get_object()
@@ -243,14 +229,7 @@ class SessionViewSet(
 
         return Response(warning, status=status.HTTP_200_OK)
 
-    @extend_schema(
-        summary="List session output files",
-        description=(
-            "Returns all storage files recorded as output during the given session, "
-            "ordered by the time they were added."
-        ),
-        responses={200: SessionOutputFileSerializer(many=True)},
-    )
+    @extend_schema(**SESSION_OUTPUT_FILES_GET)
     @action(detail=True, methods=["get"], url_path="output-files")
     def output_files(self, request, pk=None):
         session = self.get_object()
@@ -263,13 +242,7 @@ class SessionViewSet(
 
 
 class RunSession(APIView):
-    @extend_schema(
-        request=RunSessionSerializer,
-        responses={
-            201: OpenApiResponse(description="Session Started"),
-            400: OpenApiResponse(description="Bad Request - Invalid Input"),
-        },
-    )
+    @extend_schema(**RUN_SESSION_POST)
     def post(self, request):
         logger.info("Received POST request to start a new session.")
 
@@ -404,12 +377,7 @@ class RunSession(APIView):
 
 
 class GetUpdates(APIView):
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(description="Session details retrieved successfully"),
-            404: OpenApiResponse(description="Session not found or session ID missing"),
-        }
-    )
+    @extend_schema(**GET_UPDATES_GET)
     def get(self, request, *args, **kwargs):
         session_id = kwargs.get("session_id", None)
         if session_id is None:
@@ -429,12 +397,7 @@ class GetUpdates(APIView):
 
 
 class StopSession(APIView):
-    @extend_schema(
-        responses={
-            204: OpenApiResponse(description="Session stopped"),
-            404: OpenApiResponse(description="Session not found or session ID missing"),
-        },
-    )
+    @extend_schema(**STOP_SESSION_POST)
     def post(self, request, *args, **kwargs):
         session_id = kwargs.get("session_id", None)
         if session_id is None:

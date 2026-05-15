@@ -5,8 +5,7 @@ import copy
 
 from loguru import logger
 from rest_framework.views import APIView
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, inline_serializer
-from rest_framework import serializers as drf_serializers
+from drf_spectacular.utils import extend_schema
 from asgiref.sync import sync_to_async
 
 from tables.utils.mixins import SSEMixin
@@ -14,41 +13,14 @@ from tables.models.session_models import Session
 from tables.models.vector_models import MemoryDatabase
 from tables.models.graph_models import GraphSessionMessage
 from tables.services.redis_service import RedisService
+from tables.swagger_schemas.sessions_schema import RUN_SESSION_SSE_GET
 
 
 redis_service = RedisService()
 
 
 class RunSessionSSEViewSwagger(APIView):
-    @extend_schema(
-        summary="Subscribe to real-time updates via SSE",
-        description="""
-            Starts a **Server-Sent Events (SSE)** stream for a given run session.
-
-            This endpoint continuously pushes the following event types:
-            - **messages**: New or historical graph session messages
-            - **status**: Session status updates
-            - **memory**: Memory entries related to this session
-            - **fatal-error**: If view crushes, so the frontend could close the connection
-
-            Note: This is a streaming endpoint and won't produce a visible response in Swagger UI.
-            For testing, use the `?test=true` query param to receive a few finite sample events.
-        """,
-        parameters=[
-            OpenApiParameter(
-                name="test",
-                location=OpenApiParameter.QUERY,
-                type=drf_serializers.BooleanField(),
-                description="If true, returns 3 sample events and closes the stream. Useful for Swagger.",
-                required=False,
-            )
-        ],
-        responses={
-            200: OpenApiResponse(
-                description="SSE stream of real-time events (text/event-stream)",
-            )
-        },
-    )
+    @extend_schema(**RUN_SESSION_SSE_GET)
     def get(self, request, *args, **kwargs):
         pass  # Just for docs
 
