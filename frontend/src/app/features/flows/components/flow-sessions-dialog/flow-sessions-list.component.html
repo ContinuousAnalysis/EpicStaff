@@ -44,7 +44,7 @@
                 <app-action-dropdown-button
                     [label]="'Export (' + (selectedIds().size === 0 ? totalCount : selectedIds().size) + ')'"
                     [items]="exportItems"
-                    [disabled]="isExporting()"
+                    [disabled]="isExporting() || (selectedIds().size === 0 && totalCount === 0)"
                     (mainClick)="onExport('json')"
                     (itemClick)="onExportItemSelected($event)"
                 />
