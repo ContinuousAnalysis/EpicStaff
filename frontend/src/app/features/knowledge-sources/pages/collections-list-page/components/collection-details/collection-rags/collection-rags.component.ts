@@ -79,7 +79,7 @@ export class CollectionRagsComponent {
         const dialog = this.dialog.open(dialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
-            data: { ragId },
+            data: { ragId, collectionId: this.collection().collection_id },
             disableClose: true,
         });
 

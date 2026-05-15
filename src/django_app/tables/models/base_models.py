@@ -141,6 +141,19 @@ class SoftDeleteMixin(models.Model):
     class Meta:
         abstract = True
 
+    def delete(self, using=None, keep_parents=False):
+        self.is_active = False
+        self.deleted_at = timezone.now()
+        self.save(update_fields=["is_active", "deleted_at"])
+
+    def hard_delete(self):
+        super().delete()
+
+    def restore(self):
+        self.is_active = True
+        self.deleted_at = None
+        self.save(update_fields=["is_active", "deleted_at"])
+
 
 class TimestampMixin(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)

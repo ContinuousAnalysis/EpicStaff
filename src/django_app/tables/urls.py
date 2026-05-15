@@ -49,7 +49,6 @@ from tables.views.model_view_sets import (
     RealtimeModelViewSet,
     RealtimeAgentViewSet,
     RealtimeAgentChatViewSet,
-    OrganizationViewSet,
     OrganizationUserViewSet,
     GraphOrganizationViewSet,
     GraphOrganizationUserViewSet,
@@ -84,6 +83,7 @@ from tables.views.views import (
     QuickstartView,
     QuickstartApplyView,
     delete_environment_config,
+    PythonNodeLastTestInputView,
 )
 
 from tables.views.default_config import (
@@ -107,6 +107,8 @@ from tables.views.knowledge_views.naive_rag_views import (
     ProcessNaiveRagDocumentChunkingView,
     NaiveRagChunkViewSet,
     NaiveRagChunkPreviewView,
+    NaiveRagChunkSearchView,
+    NaiveRagPreviewChunkBulkByIdsView,
 )
 from tables.views.knowledge_views.graph_rag_views import (
     GraphRagViewSet,
@@ -119,6 +121,8 @@ from tables.views.sse_views import (
     RunSessionSSEViewSwagger,
     FilteredRunSessionSSEView,
 )
+
+from tables.views.organization_admin_views import OrganizationAdminViewSet
 
 router = DefaultRouter()
 router.register(r"template-agents", TemplateAgentReadWriteViewSet)
@@ -177,7 +181,6 @@ router.register(r"decision-table-node", DecisionTableNodeModelViewSet)
 
 router.register(r"sessions", SessionViewSet, basename="session")
 router.register(r"mcp-tools", McpToolViewSet)
-router.register(r"organizations", OrganizationViewSet)
 router.register(r"organization-users", OrganizationUserViewSet)
 router.register(r"graph-organizations", GraphOrganizationViewSet)
 router.register(r"graph-organization-users", GraphOrganizationUserViewSet)
@@ -194,12 +197,18 @@ router.register(r"ngrok-config", NgrokWebhookConfigViewSet)
 router.register(r"labels", LabelViewSet)
 router.register(r"storage", StorageAPIView, basename="storage")
 
+admin_router = DefaultRouter()
+admin_router.register(
+    r"organizations", OrganizationAdminViewSet, basename="admin-organization"
+)
+
 urlpatterns = [
     path(
         "documents/bulk-delete/",
         DocumentManagementViewSet.as_view({"post": "bulk_delete"}),
         name="document-bulk-delete",
     ),
+    path("admin/", include(admin_router.urls)),
     path("", include(router.urls)),
     path("run-session/", RunSession.as_view(), name="run-session"),
     path("answer-to-llm/", AnswerToLLM.as_view(), name="answer-to-llm"),
@@ -224,6 +233,11 @@ urlpatterns = [
         "run-python-code/",
         RunPythonCodeAPIView.as_view(),
         name="run-python-code",
+    ),
+    path(
+        "pythonnodes/<int:pk>/last-session-input/",
+        PythonNodeLastTestInputView.as_view(),
+        name="python-node-last-session-input",
     ),
     path(
         "init-realtime/",
@@ -289,6 +303,16 @@ urlpatterns = [
         "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/process-chunking/",
         ProcessNaiveRagDocumentChunkingView.as_view(),
         name="process-document-chunking",
+    ),
+    path(
+        "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/chunks/search/",
+        NaiveRagChunkSearchView.as_view(),
+        name="naive-rag-chunks-search",
+    ),
+    path(
+        "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/chunks/by-ids/",
+        NaiveRagPreviewChunkBulkByIdsView.as_view(),
+        name="naive-rag-chunks-by-ids",
     ),
     path(
         "naive-rag/<int:naive_rag_id>/document-configs/<int:document_config_id>/chunks/",

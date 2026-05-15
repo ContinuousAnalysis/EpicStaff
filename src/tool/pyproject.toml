@@ -19,10 +19,6 @@ uvicorn = "0.32.0"
 pytest = "^8.3.3"
 pytest-mock = "^3.14.0"
 
-
-[tool.poetry.group.custom_tools.dependencies]
-open-interpreter = "^0.4.3"
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

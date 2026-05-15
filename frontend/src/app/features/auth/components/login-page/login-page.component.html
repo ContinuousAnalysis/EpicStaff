@@ -37,7 +37,11 @@
             <div class="remember-row">
                 <app-checkbox formControlName="rememberMe" />
                 <span class="remember-label">Remember me</span>
-                <span class="forgot-label">Forgot?</span>
+                <span
+                    class="forgot-label"
+                    (mousedown)="navToForgotPassword()"
+                    >Forgot?</span
+                >
             </div>
         </form>
 
@@ -54,7 +58,7 @@
         <app-button
             class="btn"
             (click)="onSubmit()"
-            [disabled]="loading || form.invalid || throttleSecondsLeft() > 0"
+            [disabled]="loading() || form.invalid || throttleSecondsLeft() > 0"
         >
             Login
         </app-button>

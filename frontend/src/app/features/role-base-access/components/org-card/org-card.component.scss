@@ -1,0 +1,57 @@
+:host {
+    background: var(--color-nodes-background);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    border-bottom: 1px solid var(--color-divider-subtle);
+
+    .name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+    }
+
+    .open-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+}
+
+.footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    font-size: 14px;
+
+    .org-users {
+        color: var(--purple-primary);
+    }
+
+    .org-metrics {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        .metric {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary-60);
+        }
+    }
+}

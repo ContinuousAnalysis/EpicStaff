@@ -9,14 +9,20 @@ import {
     Inject,
     inject,
     OnInit,
+    QueryList,
+    ViewChild,
+    ViewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { IconButtonComponent } from '@shared/components';
+import { EMPTY, filter, Observable, of, switchMap } from 'rxjs';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
+import { ConfirmationDialogService } from '../../../../shared/components/cofirm-dialog/confimation-dialog.service';
 import { SpinnerComponent } from '../../../../shared/components/spinner/spinner.component';
-import { GraphVersionDto } from '../../models/graph.model';
+import { UnsavedChangesDialogService } from '../../../../shared/components/unsaved-changes-dialog/unsaved-changes-dialog.service';
+import { GraphRestoreResponse, GraphVersionDto } from '../../models/graph.model';
 import { FlowsApiService } from '../../services/flows-api.service';
 
 @Component({
@@ -29,17 +35,23 @@ export class VersionHistoryPanelComponent implements OnInit {
     public versionsList: GraphVersionDto[] = [];
     public isLoading = true;
     public openMenuId: number | null = null;
+    public selectedVersionId: number | null = null;
     public editingVersionId: number | null = null;
     public editingField: 'name' | 'description' | null = null;
     public editingValue: string = '';
     private editingVersion: GraphVersionDto | null = null;
+    private isSaving = false;
+
+    @ViewChild('versionEditInput') editInput?: ElementRef<HTMLInputElement | HTMLTextAreaElement>;
+    @ViewChildren('versionMenu') versionMenus!: QueryList<ElementRef>;
 
     private destroyRef = inject(DestroyRef);
 
     @HostListener('document:click', ['$event'])
     onDocumentClick(event: MouseEvent): void {
-        const menus = this.el.nativeElement.querySelectorAll('.version-menu');
-        const clickedInsideMenu = Array.from(menus).some((m) => (m as HTMLElement).contains(event.target as Node));
+        const clickedInsideMenu = this.versionMenus?.some((menuRef) =>
+            menuRef.nativeElement.contains(event.target as Node)
+        );
         if (!clickedInsideMenu) {
             this.openMenuId = null;
         }
@@ -49,8 +61,7 @@ export class VersionHistoryPanelComponent implements OnInit {
     onDocumentMouseDown(event: MouseEvent): void {
         const editing = this.editingVersion;
         if (!editing) return;
-        const input = this.el.nativeElement.querySelector('.version-edit-input');
-        if (input && !input.contains(event.target as Node)) {
+        if (this.editInput && !this.editInput.nativeElement.contains(event.target as Node)) {
             this.saveEdit(editing);
         }
     }
@@ -58,10 +69,12 @@ export class VersionHistoryPanelComponent implements OnInit {
     constructor(
         private flowApiService: FlowsApiService,
         private toastService: ToastService,
-        private el: ElementRef,
+        private confirmationDialogService: ConfirmationDialogService,
+        private unsavedChangesDialogService: UnsavedChangesDialogService,
         private cdr: ChangeDetectorRef,
-        @Inject(DIALOG_DATA) public data: { graphId: number },
-        public dialogRef: DialogRef<void>
+        @Inject(DIALOG_DATA)
+        public data: { graphId: number; hasUnsavedChanges?: () => boolean; saveCurrentState?: () => Observable<void> },
+        public dialogRef: DialogRef<GraphRestoreResponse | undefined>
     ) {}
 
     public ngOnInit(): void {
@@ -72,6 +85,28 @@ export class VersionHistoryPanelComponent implements OnInit {
         this.openMenuId = this.openMenuId === id ? null : id;
     }
 
+    public selectVersion(version: GraphVersionDto): void {
+        this.selectedVersionId = version.id;
+    }
+
+    public restoreVersion(version: GraphVersionDto, event?: MouseEvent): void {
+        event?.stopPropagation();
+        this.openMenuId = null;
+        this.restore(version);
+    }
+
+    public restoreSelectedVersion(): void {
+        const version = this.versionsList.find((v) => v.id === this.selectedVersionId);
+        if (!version) return;
+
+        const pendingName =
+            this.editingVersionId === version.id && this.editingField === 'name' && this.editingValue.trim()
+                ? this.editingValue.trim()
+                : null;
+
+        this.restore(pendingName ? { ...version, name: pendingName } : version);
+    }
+
     public startEdit(version: GraphVersionDto, field: 'name' | 'description'): void {
         this.openMenuId = null;
         this.editingVersion = version;
@@ -80,19 +115,23 @@ export class VersionHistoryPanelComponent implements OnInit {
         this.editingValue = field === 'name' ? version.name : version.description || '';
         this.cdr.detectChanges();
         setTimeout(() => {
-            const input = this.el.nativeElement.querySelector('.version-edit-input');
-            if (input) input.focus();
+            this.editInput?.nativeElement.focus();
         });
     }
 
     public saveEdit(version: GraphVersionDto): void {
-        if (!this.editingVersionId || !this.editingField) return;
+        if (!this.editingVersionId || !this.editingField || this.isSaving) return;
+
         const field = this.editingField;
         const value = this.editingValue.trim();
         const originalValue = field === 'name' ? version.name : version.description || '';
-        this.cancelEdit();
-        if (value === originalValue) return;
-        if (field === 'name' && !value) return;
+
+        if ((field === 'name' && !value) || value === originalValue) {
+            this.cancelEdit();
+            return;
+        }
+
+        this.isSaving = true;
 
         const payload =
             field === 'name'
@@ -109,9 +148,14 @@ export class VersionHistoryPanelComponent implements OnInit {
                         this.versionsList[idx] = updated;
                     }
                     this.toastService.success(field === 'name' ? 'Version was renamed' : 'Description was updated');
+                    this.cancelEdit();
                 },
                 error: () => {
                     this.toastService.error('Failed to update version');
+                    this.isSaving = false;
+                },
+                complete: () => {
+                    this.isSaving = false;
                 },
             });
     }
@@ -132,17 +176,93 @@ export class VersionHistoryPanelComponent implements OnInit {
         }
     }
 
+    public deleteVersion(version: GraphVersionDto, event?: MouseEvent): void {
+        event?.stopPropagation();
+        this.openMenuId = null;
+        this.confirmationDialogService
+            .confirm({
+                title: 'Delete Version',
+                message: `This version will be permanently <strong>removed</strong> from the list and cannot be restored.`,
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                type: 'danger',
+            })
+            .pipe(
+                filter((result) => result === true),
+                switchMap(() => this.flowApiService.deleteGraphVersion(version.id)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: () => {
+                    this.versionsList = this.versionsList.filter((v) => v.id !== version.id);
+                    if (this.selectedVersionId === version.id) {
+                        this.selectedVersionId = null;
+                    }
+                    this.toastService.success('Version deleted');
+                },
+                error: () => {
+                    this.toastService.error('Failed to delete version');
+                },
+            });
+    }
+
+    private restore(version: GraphVersionDto): void {
+        const hasUnsaved = this.data.hasUnsavedChanges?.() ?? false;
+        const message = hasUnsaved
+            ? `You have unsaved changes. Restoring <strong>${version.name}</strong> will replace the current flow state. Save a backup of the current state first?`
+            : `Restoring <strong>${version.name}</strong> will replace the current flow state. Save a backup of the current state first?`;
+
+        this.unsavedChangesDialogService
+            .confirm({
+                title: 'Restore version',
+                message,
+                saveText: 'Save & Restore',
+                dontSaveText: 'Just Restore',
+                cancelText: 'Cancel',
+                type: 'warning',
+                showDontSave: true,
+            })
+            .pipe(
+                switchMap((result) => {
+                    if (result === 'save') {
+                        const save$ = this.data.saveCurrentState?.() ?? of(void 0);
+                        return save$.pipe(switchMap(() => this.flowApiService.restoreGraphVersion(version.id, true)));
+                    }
+                    if (result === 'dont-save') {
+                        return this.flowApiService.restoreGraphVersion(version.id, false);
+                    }
+                    return EMPTY;
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: (response) => {
+                    if (response.warnings.length > 0) {
+                        this.toastService.warning(
+                            `Version restored with ${response.warnings.length} warning(s): some nodes or edges were removed`
+                        );
+                    } else {
+                        this.toastService.success('Version restored successfully');
+                    }
+                    this.dialogRef.close(response);
+                },
+                error: () => this.toastService.error('Failed to restore version'),
+            });
+    }
+
     private loadVersions(): void {
-        this.isLoading = true;
-        this.flowApiService.getGraphVersions(this.data.graphId).subscribe({
-            next: (result) => {
-                this.versionsList = result;
-                this.isLoading = false;
-            },
-            error: (err) => {
-                console.error('Failed to load graph versions', err);
-                this.isLoading = false;
-            },
-        });
+        this.flowApiService
+            .getGraphVersions(this.data.graphId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (result) => {
+                    this.versionsList = result;
+                    this.isLoading = false;
+                },
+                error: (err) => {
+                    console.error('Failed to load graph versions', err);
+                    this.isLoading = false;
+                },
+            });
     }
 }

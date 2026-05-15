@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, input, signal } from '@angular/core';
+import { inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, switchMap } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
 import { expandCollapseAnimation } from '../../../../shared/animations/animations-expand-collapse';
@@ -11,6 +12,12 @@ import { CustomInputComponent } from '../../../../shared/components/form-input/f
 import { CodeEditorComponent } from '../../../../user-settings-page/tools/custom-tool-editor/code-editor/code-editor.component';
 import { PythonNodeModel } from '../../../core/models/node.model';
 import { BaseSidePanel } from '../../../core/models/node-panel.abstract';
+import {
+    PollEvent,
+    PythonCodeResult,
+    PythonCodeRunService,
+    RunPythonCodeRequest,
+} from '../../../services/python-code-run.service';
 import { SidePanelService } from '../../../services/side-panel.service';
 import { InputMapComponent } from '../../input-map/input-map.component';
 import { NodeStorageSectionComponent } from '../../node-storage-section/node-storage-section.component';
@@ -20,6 +27,8 @@ import {
     initializeInputMap,
     parseCommaSeparatedList,
 } from '../node-panel-form.utils';
+import { PythonTerminalComponent, TerminalStatus } from './python-terminal/python-terminal.component';
+import { TerminalLogEntry, TerminalLogType } from './python-terminal/terminal-log.model';
 
 @Component({
     standalone: true,
@@ -30,6 +39,7 @@ import {
         InputMapComponent,
         CodeEditorComponent,
         CommonModule,
+        PythonTerminalComponent,
         NodeStorageSectionComponent,
         AppSvgIconComponent,
     ],
@@ -41,92 +51,14 @@ import {
                     [formGroup]="form"
                     class="form-container"
                 >
-                    @if (isExpanded()) {
-                        <div
-                            class="form-layout expanded"
-                            [class.code-editor-fullwidth]="isCodeEditorFullWidth()"
-                        >
-                            @if (!isCodeEditorFullWidth()) {
-                                <div class="form-fields">
-                                    <app-custom-input
-                                        label="Node Name"
-                                        tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
-                                        formControlName="node_name"
-                                        placeholder="Enter node name"
-                                        [activeColor]="activeColor"
-                                        [errorMessage]="getNodeNameErrorMessage()"
-                                    ></app-custom-input>
-
-                                    <div class="input-map">
-                                        <app-input-map [activeColor]="activeColor"></app-input-map>
-                                    </div>
-
-                                    <app-custom-input
-                                        label="Output Variable Path"
-                                        tooltipText="The path where the output of this node will be stored in your flow variables. Leave empty if you don't need to store the output."
-                                        formControlName="output_variable_path"
-                                        placeholder="Enter output variable path (leave empty for null)"
-                                        [activeColor]="activeColor"
-                                    ></app-custom-input>
-
-                                    <app-custom-input
-                                        label="Libraries"
-                                        tooltipText="Python libraries required by this code (comma-separated). For example: requests, pandas, numpy"
-                                        formControlName="libraries"
-                                        placeholder="Enter libraries (e.g., requests, pandas, numpy)"
-                                        [activeColor]="activeColor"
-                                    ></app-custom-input>
-
-                                    <div
-                                        class="stream-config-section"
-                                        formGroupName="stream_config"
-                                    >
-                                        <span class="section-label">Streaming to EpicChat</span>
-                                        <div class="checkbox-list">
-                                            <label class="checkbox-item">
-                                                <input
-                                                    type="checkbox"
-                                                    formControlName="execution_status"
-                                                />
-                                                <span>Execution status</span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <app-node-storage-section
-                                        [useStorage]="useStorage()"
-                                        (onToggleChange)="onStorageToggle($event)"
-                                        (onInsertCode)="insertStorageCode($event)"
-                                        (onRemoveCode)="removeStorageCode($event)"
-                                    ></app-node-storage-section>
-                                </div>
-                            }
-
-                            <div class="code-editor-wrapper">
-                                <button
-                                    type="button"
-                                    class="toggle-icon-button"
-                                    (click)="toggleCodeEditorFullWidth()"
-                                    [attr.aria-label]="
-                                        isCodeEditorFullWidth() ? 'Collapse code editor' : 'Expand code editor'
-                                    "
-                                >
-                                    <app-svg-icon
-                                        [icon]="isCodeEditorFullWidth() ? 'chevron-right' : 'chevron-left'"
-                                        size="1rem"
-                                    ></app-svg-icon>
-                                </button>
-
-                                <app-code-editor
-                                    class="code-editor-section"
-                                    [pythonCode]="pythonCode"
-                                    (pythonCodeChange)="onPythonCodeChange($event)"
-                                    (errorChange)="onCodeErrorChange($event)"
-                                ></app-code-editor>
-                            </div>
-                        </div>
-                    } @else {
-                        <div class="form-layout collapsed">
+                    <div
+                        class="form-layout"
+                        [class.expanded]="isExpanded()"
+                        [class.collapsed]="!isExpanded()"
+                        [class.code-editor-fullwidth]="isExpanded() && isCodeEditorFullWidth()"
+                    >
+                        <!-- Form Fields (stable single instance) -->
+                        <div class="form-fields">
                             <app-custom-input
                                 label="Node Name"
                                 tooltipText="The unique identifier used to reference this Python node. This name must be unique within the flow."
@@ -137,7 +69,18 @@ import {
                             ></app-custom-input>
 
                             <div class="input-map">
-                                <app-input-map [activeColor]="activeColor"></app-input-map>
+                                <app-input-map
+                                    [activeColor]="activeColor"
+                                    [showTestMode]="true"
+                                    [testMode]="isOpenTestMode()"
+                                    [pythonNodeId]="node().backendId"
+                                    [graphId]="graphId()"
+                                    [nodeName]="node().node_name"
+                                    [testRunning]="testRunning()"
+                                    [testInputDirty]="testInputDirty()"
+                                    (testModeChange)="isOpenTestMode.set($event)"
+                                    (runTest)="onRunTest($event)"
+                                ></app-input-map>
                             </div>
 
                             <app-custom-input
@@ -166,6 +109,7 @@ import {
                                         <input
                                             type="checkbox"
                                             formControlName="execution_status"
+                                            [style.accent-color]="activeColor"
                                         />
                                         <span>Execution status</span>
                                     </label>
@@ -178,16 +122,47 @@ import {
                                 (onInsertCode)="insertStorageCode($event)"
                                 (onRemoveCode)="removeStorageCode($event)"
                             ></app-node-storage-section>
+                        </div>
 
-                            <div class="code-editor-section">
+                        <!-- Code editor area: toggle button only present in expanded mode -->
+                        <div class="code-editor-wrapper">
+                            @if (isExpanded()) {
+                                <button
+                                    type="button"
+                                    class="toggle-icon-button"
+                                    (click)="toggleCodeEditorFullWidth()"
+                                    [attr.aria-label]="
+                                        isCodeEditorFullWidth() ? 'Collapse code editor' : 'Expand code editor'
+                                    "
+                                >
+                                    <app-svg-icon
+                                        [icon]="isCodeEditorFullWidth() ? 'chevron-right' : 'chevron-left'"
+                                        size="1rem"
+                                    ></app-svg-icon>
+                                </button>
+                            }
+
+                            <div class="code-editor-column">
                                 <app-code-editor
+                                    class="code-editor-section"
+                                    [class.no-bottom-radius]="isOpenTestMode()"
                                     [pythonCode]="pythonCode"
                                     (pythonCodeChange)="onPythonCodeChange($event)"
                                     (errorChange)="onCodeErrorChange($event)"
                                 ></app-code-editor>
+
+                                @if (isOpenTestMode()) {
+                                    <app-python-terminal
+                                        [logs]="terminalLogs()"
+                                        [terminalHeight]="terminalHeight()"
+                                        [status]="terminalStatus()"
+                                        (heightChange)="onTerminalHeightChange($event)"
+                                        (clearLogs)="onClearLogs()"
+                                    />
+                                }
                             </div>
                         </div>
-                    }
+                    </div>
                 </form>
             </div>
         </div>
@@ -196,16 +171,25 @@ import {
         `
             @use '../../../styles/node-panel-mixins.scss' as mixins;
 
-            .panel-container {
-                display: flex;
-                flex-direction: column;
+            :host {
+                display: block;
                 height: 100%;
                 min-height: 0;
             }
 
+            .panel-container {
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                min-height: 0;
+                overflow: hidden;
+            }
+
             .panel-content {
                 @include mixins.panel-content;
-                height: 100%;
+                flex: 1;
+                overflow-y: auto;
                 min-height: 0;
                 display: flex;
                 flex-direction: column;
@@ -263,6 +247,20 @@ import {
                     flex-direction: column;
                     gap: 1rem;
                     overflow: visible;
+
+                    .form-fields {
+                        flex: 1 1 auto;
+                        max-width: none;
+                        height: auto;
+                        overflow-y: visible;
+                    }
+
+                    .code-editor-wrapper {
+                        flex: 0 0 auto;
+                        height: auto;
+                        display: block;
+                        transition: none;
+                    }
                 }
             }
 
@@ -324,9 +322,23 @@ import {
                 }
             }
 
+            .code-editor-column {
+                align-self: stretch;
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-height: 0;
+                min-width: 0;
+            }
+
             .code-editor-section {
                 border: 1px solid var(--color-divider-subtle, rgba(255, 255, 255, 0.1));
                 border-radius: 0 8px 8px 0;
+
+                &.no-bottom-radius {
+                    border-bottom-left-radius: 0;
+                    border-bottom-right-radius: 0;
+                }
                 overflow: visible;
                 display: flex;
                 flex-direction: column;
@@ -398,24 +410,122 @@ import {
                     cursor: pointer;
                 }
             }
+
+            .panel-header {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                padding: 0 0 0.75rem 0;
+                flex-shrink: 0;
+            }
         `,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
-    public override readonly isExpanded = input<boolean>(false);
+    public readonly graphId = input<number | null>(null);
     public readonly isCodeEditorFullWidth = signal<boolean>(true);
     public readonly useStorage = signal<boolean>(false);
 
+    isOpenTestMode = signal(false);
+    testResult = signal<PythonCodeResult | null>(null);
+    testError = signal<string | null>(null);
+    testRunning = signal(false);
+    terminalLogs = signal<TerminalLogEntry[]>([]);
+    terminalHeight = signal<number>(150);
+
+    terminalStatus = computed<TerminalStatus>(() => {
+        if (this.testRunning()) return 'processing';
+        if (this.testError()) return 'error';
+        const r = this.testResult();
+        if (r) return r.returncode === 0 ? 'done' : 'error';
+        return 'idle';
+    });
+
     pythonCode: string = '';
+    initialPythonCode: string = '';
+    private initialFormSignatureExceptTestValues: string = '';
+    private initialTestInputValuesSignature: string = '';
     codeEditorHasError: boolean = false;
     private readonly pythonCodeChange$ = new Subject<string>();
+    private readonly destroyRef = inject(DestroyRef);
 
-    constructor(private readonly sidePanelService: SidePanelService) {
+    private readonly formDirtyTick = signal(0);
+    public readonly testInputDirty = computed(() => {
+        this.formDirtyTick();
+        if (!this.form) return false;
+        return this.buildTestInputValuesSignature() !== this.initialTestInputValuesSignature;
+    });
+
+    public readonly isDirty = computed(() => {
+        this.formDirtyTick();
+        if (!this.form) return false;
+        return (
+            this.buildFormSignatureExceptTestValues() !== this.initialFormSignatureExceptTestValues ||
+            this.pythonCode !== this.initialPythonCode ||
+            this.buildTestInputValuesSignature() !== this.initialTestInputValuesSignature
+        );
+    });
+    public readonly isSaving = computed(() => this.sidePanelService.savingNodeId() === this.node().id);
+    private wasSaving = false;
+
+    constructor(
+        private readonly sidePanelService: SidePanelService,
+        private readonly pythonCodeRunService: PythonCodeRunService
+    ) {
         super();
         this.pythonCodeChange$.pipe(debounceTime(300), takeUntilDestroyed()).subscribe(() => {
             this.sidePanelService.triggerAutosave();
         });
+        effect(() => {
+            if (this.isOpenTestMode()) {
+                this.sidePanelService.requestExpand();
+                this.isCodeEditorFullWidth.set(false);
+            }
+        });
+        effect(() => {
+            if (!this.isExpanded()) {
+                this.isOpenTestMode.set(false);
+            }
+        });
+        effect(() => {
+            const saving = this.isSaving();
+            if (this.wasSaving && !saving) {
+                this.resetDirtyAfterSave();
+            }
+            this.wasSaving = saving;
+        });
+        this.sidePanelService.graphSaved$.pipe(takeUntilDestroyed()).subscribe(() => this.resetDirtyAfterGraphSave());
+    }
+
+    private resetDirtyAfterSave(): void {
+        if (!this.form) return;
+        this.form.markAsPristine();
+        this.initialPythonCode = this.pythonCode;
+        this.initialFormSignatureExceptTestValues = this.buildFormSignatureExceptTestValues();
+        this.initialTestInputValuesSignature = this.buildTestInputValuesSignature();
+        this.formDirtyTick.update((v) => v + 1);
+    }
+
+    private resetDirtyAfterGraphSave(): void {
+        if (!this.form) return;
+        this.initialPythonCode = this.pythonCode;
+        this.initialFormSignatureExceptTestValues = this.buildFormSignatureExceptTestValues();
+        this.formDirtyTick.update((v) => v + 1);
+    }
+
+    private buildFormSignatureExceptTestValues(): string {
+        const raw = this.form.getRawValue() as Record<string, unknown>;
+        const testInput = (raw['test_input'] as { key: string; value: string }[] | undefined) ?? [];
+        const stripped = {
+            ...raw,
+            test_input: testInput.map((p) => ({ key: p.key, value: '' })),
+        };
+        return JSON.stringify(stripped);
+    }
+
+    private buildTestInputValuesSignature(): string {
+        return JSON.stringify(this.getTestInputValue());
     }
 
     get activeColor(): string {
@@ -429,6 +539,13 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     onPythonCodeChange(code: string): void {
         this.pythonCode = code;
         this.pythonCodeChange$.next(code);
+        this.formDirtyTick.update((v) => v + 1);
+    }
+
+    onSaveClick(): void {
+        if (!this.form || this.form.invalid || this.isSaving()) return;
+        const updatedNode = this.createUpdatedNode({ manualSave: true });
+        this.sidePanelService.requestSaveNode(updatedNode);
     }
 
     onCodeErrorChange(hasError: boolean): void {
@@ -456,6 +573,7 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
     }
 
     initializeForm(): FormGroup {
+        this.terminalLogs.set([]);
         const sc = this.node().stream_config;
 
         this.useStorage.set(this.node().data.use_storage ?? false);
@@ -468,18 +586,44 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             stream_config: this.fb.group({
                 execution_status: [sc?.['execution_status'] ?? true],
             }),
+            test_input: this.fb.array([]),
         });
 
         this.initializeInputMap(form);
+        this.initializeTestInput(form);
 
         this.pythonCode = this.node().data.code || '';
+        this.initialPythonCode = this.pythonCode;
+        this.form = form;
+        this.initialFormSignatureExceptTestValues = this.buildFormSignatureExceptTestValues();
+        this.initialTestInputValuesSignature = this.buildTestInputValuesSignature();
+
+        form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.formDirtyTick.update((v) => v + 1);
+        });
 
         return form;
     }
 
-    createUpdatedNode(): PythonNodeModel {
+    createUpdatedNode(opts?: { manualSave?: boolean }): PythonNodeModel {
         const validInputPairs = getValidInputPairs(this.inputMapPairs);
         const inputMapValue = createInputMapFromPairs(validInputPairs);
+        if (this.isOpenTestMode()) {
+            const testArray = this.form.get('test_input') as FormArray;
+            const testKeys = new Set(
+                testArray.controls.map((c) => (c.value.key as string)?.trim()).filter((k): k is string => !!k)
+            );
+            for (const key of Object.keys(inputMapValue)) {
+                if (!testKeys.has(key)) {
+                    delete inputMapValue[key];
+                }
+            }
+            for (const key of testKeys) {
+                if (!(key in inputMapValue)) {
+                    inputMapValue[key] = 'variables.';
+                }
+            }
+        }
         const librariesArray = parseCommaSeparatedList(this.form.value.libraries);
 
         return {
@@ -489,14 +633,53 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
             output_variable_path: this.form.value.output_variable_path || null,
             data: {
                 ...this.node().data,
-                name: this.node().data.name || 'Python Code',
+                name: this.form.value.node_name || 'Python Code',
                 code: this.pythonCode,
                 entrypoint: 'main',
                 libraries: librariesArray,
                 use_storage: this.useStorage(),
             },
             stream_config: this.form.value.stream_config || {},
+            test_input: opts?.manualSave ? this.getTestInputValue() : this.getTestInputValuePreservingSaved(),
         };
+    }
+
+    private getTestInputValue(): Record<string, string> {
+        const testArray = this.form.get('test_input') as FormArray;
+        return testArray.controls.reduce((acc: Record<string, string>, c) => {
+            const key = (c.value.key as string)?.trim();
+            if (key) {
+                acc[key] = (c.value.value as string) ?? '';
+            }
+            return acc;
+        }, {});
+    }
+
+    private getTestInputValuePreservingSaved(): Record<string, string> {
+        const testArray = this.form.get('test_input') as FormArray;
+        const previouslySaved = (this.node().test_input ?? {}) as Record<string, string>;
+        return testArray.controls.reduce((acc: Record<string, string>, c) => {
+            const key = (c.value.key as string)?.trim();
+            if (key) {
+                acc[key] = previouslySaved[key] ?? '';
+            }
+            return acc;
+        }, {});
+    }
+
+    private initializeTestInput(form: FormGroup): void {
+        const testArray = form.get('test_input') as FormArray;
+        const data = this.node().test_input;
+        if (data && typeof data === 'object') {
+            Object.entries(data).forEach(([key, value]) => {
+                testArray.push(
+                    this.fb.group({
+                        key: [key],
+                        value: [String(value ?? '')],
+                    })
+                );
+            });
+        }
     }
 
     private initializeInputMap(form: FormGroup): void {
@@ -505,5 +688,90 @@ export class PythonNodePanelComponent extends BaseSidePanel<PythonNodeModel> {
 
     toggleCodeEditorFullWidth(): void {
         this.isCodeEditorFullWidth.update((value) => !value);
+    }
+
+    onTerminalHeightChange(height: number): void {
+        this.terminalHeight.set(height);
+    }
+
+    onClearLogs(): void {
+        this.terminalLogs.set([]);
+    }
+
+    private addLog(type: TerminalLogType, message: string): void {
+        this.terminalLogs.update((logs) => [...logs, { timestamp: new Date(), type, message }]);
+    }
+
+    private parseVariableValue(raw: string): unknown {
+        try {
+            return JSON.parse(raw);
+        } catch {
+            return raw;
+        }
+    }
+
+    onRunTest(variables: Record<string, string>): void {
+        this.testRunning.set(true);
+        this.testResult.set(null);
+        this.testError.set(null);
+        this.terminalLogs.set([]);
+
+        this.addLog('info', 'Starting function main()...');
+
+        const libraries = this.form.value.libraries
+            ? this.form.value.libraries
+                  .split(',')
+                  .map((lib: string) => lib.trim())
+                  .filter((lib: string) => lib.length > 0)
+            : [];
+
+        const parsedVariables = Object.fromEntries(
+            Object.entries(variables).map(([k, v]) => [k, this.parseVariableValue(v)])
+        );
+
+        const payload: RunPythonCodeRequest = {
+            python_code_id: this.node().python_code_id ?? null,
+            code: this.pythonCode,
+            entrypoint: 'main',
+            libraries,
+            variables: parsedVariables,
+        };
+
+        this.addLog('info', `Parameters: ${JSON.stringify(parsedVariables)}`);
+
+        this.pythonCodeRunService
+            .runPythonCode(payload)
+            .pipe(
+                switchMap(({ execution_id }) => this.pythonCodeRunService.pollResultWithEvents(execution_id)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: (event: PollEvent) => {
+                    if (event.type === 'polling') {
+                        this.addLog('polling', 'Processing...');
+                    } else if (event.type === 'result') {
+                        const result = event.data;
+                        this.testResult.set(result);
+                        this.testRunning.set(false);
+
+                        if (result.stdout) {
+                            this.addLog('stdout', result.stdout);
+                        }
+                        if (result.stderr) {
+                            this.addLog('stderr', result.stderr);
+                        }
+                        if (result.returncode === 0) {
+                            this.addLog('result', result.result_data || '(empty result)');
+                        } else {
+                            this.addLog('error', `Execution failed (return code: ${result.returncode})`);
+                        }
+                    }
+                },
+                error: (err: Error) => {
+                    this.testError.set(err.message || 'Unknown error');
+                    this.testRunning.set(false);
+                    this.addLog('error', `Error: ${err.message || 'Unknown error'}`);
+                },
+            });
     }
 }
