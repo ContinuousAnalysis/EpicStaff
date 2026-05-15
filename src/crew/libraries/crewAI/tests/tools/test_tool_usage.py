@@ -483,3 +483,193 @@ def test_validate_tool_input_none_input():
 
     arguments = tool_usage._validate_tool_input(None)
     assert arguments == {}  # Expecting an empty dictionary
+
+
+# ---------------------------------------------------------------------------
+# Native litellm tool-calling tests (EST-2668 follow-up)
+# ---------------------------------------------------------------------------
+
+
+def _make_litellm_response(tool_name: str, arguments: dict):
+    """Build a minimal litellm-style response object."""
+    function = MagicMock()
+    function.name = tool_name
+    function.arguments = json.dumps(arguments)
+
+    tool_call = MagicMock()
+    tool_call.function = function
+
+    message = MagicMock()
+    message.tool_calls = [tool_call]
+
+    choice = MagicMock()
+    choice.message = message
+
+    response = MagicMock()
+    response.choices = [choice]
+    return response
+
+
+def _make_fcm_llm(supports_fc: bool = True):
+    llm = MagicMock()
+    llm.supports_function_calling.return_value = supports_fc
+    llm.model = "gpt-4o"
+    llm.api_key = "test-key"
+    llm.api_base = None
+    llm.base_url = None
+    return llm
+
+
+def test_function_calling_native_uses_args_schema(mocker):
+    tool = RandomNumberTool()
+    llm = _make_fcm_llm(supports_fc=True)
+
+    mock_completion = mocker.patch("litellm.completion")
+    mock_completion.return_value = _make_litellm_response(
+        "Random_Number_Generator", {"min_value": 1, "max_value": 10}
+    )
+
+    tool_usage = ToolUsage(
+        tools_handler=MagicMock(),
+        tools=[tool],
+        original_tools=[tool],
+        tools_description="",
+        tools_names="Random Number Generator",
+        task=MagicMock(),
+        function_calling_llm=llm,
+        agent=MagicMock(),
+        action=MagicMock(),
+    )
+
+    result = tool_usage._function_calling("use Random Number Generator with min 1 max 10")
+
+    call_kwargs = mock_completion.call_args.kwargs
+    assert call_kwargs["tool_choice"] == "required"
+    tools_arg = call_kwargs["tools"]
+    assert len(tools_arg) == 1
+    params = tools_arg[0]["function"]["parameters"]
+    assert "min_value" in params["properties"]
+    assert "max_value" in params["properties"]
+    required = params.get("required", [])
+    assert "min_value" in required
+    assert "max_value" in required
+
+    assert result.tool_name == "Random Number Generator"
+    assert result.arguments == {"min_value": 1, "max_value": 10}
+
+
+def test_function_calling_zero_arg_tool(mocker):
+    class NoArgsSchema(BaseModel):
+        pass
+
+    class NoArgsTool(BaseTool):
+        name: str = "Get Current Time"
+        description: str = "Returns current time"
+        args_schema: type[BaseModel] = NoArgsSchema
+
+        def _run(self) -> str:
+            return "now"
+
+    tool = NoArgsTool()
+    llm = _make_fcm_llm(supports_fc=True)
+
+    mock_completion = mocker.patch("litellm.completion")
+    mock_completion.return_value = _make_litellm_response("Get_Current_Time", {})
+
+    tool_usage = ToolUsage(
+        tools_handler=MagicMock(),
+        tools=[tool],
+        original_tools=[tool],
+        tools_description="",
+        tools_names="Get Current Time",
+        task=MagicMock(),
+        function_calling_llm=llm,
+        agent=MagicMock(),
+        action=MagicMock(),
+    )
+
+    result = tool_usage._function_calling("get current time")
+
+    call_kwargs = mock_completion.call_args.kwargs
+    params = call_kwargs["tools"][0]["function"]["parameters"]
+    assert params == {"type": "object", "properties": {}, "additionalProperties": False}
+    assert result.arguments == {}
+
+
+def test_function_calling_invalid_args_falls_back_to_react(mocker):
+    class CliToolArgs(BaseModel):
+        command: str
+
+    class CliTool(BaseTool):
+        name: str = "CLI Executor"
+        description: str = "Runs CLI commands"
+        args_schema: type[BaseModel] = CliToolArgs
+
+        def _run(self, command: str) -> str:
+            return command
+
+    tool = CliTool()
+    llm = _make_fcm_llm(supports_fc=True)
+
+    # FCM returns empty args — missing required field triggers ValidationError
+    mock_completion = mocker.patch("litellm.completion")
+    mock_completion.return_value = _make_litellm_response("CLI_Executor", {})
+
+    action = MagicMock()
+    action.tool = "CLI Executor"
+    action.tool_input = '{"command": "ls"}'
+
+    tool_usage = ToolUsage(
+        tools_handler=MagicMock(),
+        tools=[tool],
+        original_tools=[tool],
+        tools_description="",
+        tools_names="CLI Executor",
+        task=MagicMock(),
+        function_calling_llm=llm,
+        agent=MagicMock(),
+        action=action,
+    )
+
+    result = tool_usage._tool_calling("Action: CLI Executor\nAction Input: {\"command\": \"ls\"}")
+
+    assert result.arguments == {"command": "ls"}
+
+
+def test_function_calling_malformed_react_uses_fcm(mocker):
+    class CliToolArgs(BaseModel):
+        command: str
+
+    class CliTool(BaseTool):
+        name: str = "CLI Executor"
+        description: str = "Runs CLI commands"
+        args_schema: type[BaseModel] = CliToolArgs
+
+        def _run(self, command: str) -> str:
+            return command
+
+    tool = CliTool()
+    llm = _make_fcm_llm(supports_fc=True)
+
+    mock_completion = mocker.patch("litellm.completion")
+    mock_completion.return_value = _make_litellm_response("CLI_Executor", {"command": "ls"})
+
+    action = MagicMock()
+    action.tool = "CLI Executor"
+    action.tool_input = "command: ls"  # not a valid dict — ReAct parser would fail
+
+    tool_usage = ToolUsage(
+        tools_handler=MagicMock(),
+        tools=[tool],
+        original_tools=[tool],
+        tools_description="",
+        tools_names="CLI Executor",
+        task=MagicMock(),
+        function_calling_llm=llm,
+        agent=MagicMock(),
+        action=action,
+    )
+
+    result = tool_usage._tool_calling("Action: CLI Executor\nAction Input: command: ls")
+
+    assert result.arguments == {"command": "ls"}
