@@ -29,6 +29,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
     memberships = MembershipNestedSerializer(
         source="organization_memberships", many=True, read_only=True
     )
+    avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -37,6 +38,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "email",
             "display_name",
             "avatar",
+            "avatar_url",
             "is_superadmin",
             "is_active",
             "created_at",
@@ -44,6 +46,19 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "memberships",
         ]
         read_only_fields = fields
+
+    def get_avatar_url(self, user):
+        if not user.avatar:
+            return None
+        request = self.context.get("request")
+        try:
+            return (
+                request.build_absolute_uri(user.avatar.url)
+                if request is not None
+                else user.avatar.url
+            )
+        except ValueError:
+            return None
 
 
 class _OrgMemberMembershipSerializer(serializers.Serializer):
