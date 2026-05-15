@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from django.http import HttpResponse
 
 from tables.utils.helpers import generate_file_name
+from tables.import_export.tabular.base import TabularProjection
 
 
 class ExportFormatStrategy(ABC):
@@ -28,14 +29,8 @@ class JsonExportFormatStrategy(ExportFormatStrategy):
 
 
 class CsvExportFormatStrategy(ExportFormatStrategy):
-    """
-    Extracts data[entity_type], flattens list-of-lists (e.g. session messages),
-    applies row_mapper and writes CSV.
-    """
-
-    def __init__(self, fields: list[str], row_mapper=None):
-        self.fields = fields
-        self.row_mapper = row_mapper or (lambda row: row)
+    def __init__(self, projection: TabularProjection):
+        self.projection = projection
 
     def render(
         self, data: dict, entity_type: str, prefix: str, base_name: str
@@ -48,11 +43,16 @@ class CsvExportFormatStrategy(ExportFormatStrategy):
                 rows.append(item)
 
         buf = io.StringIO()
-        writer = csv.DictWriter(buf, fieldnames=self.fields, extrasaction="ignore")
+        writer = csv.DictWriter(
+            buf, fieldnames=self.projection.FIELDS, extrasaction="ignore"
+        )
         writer.writeheader()
         for row in rows:
             writer.writerow(
-                {k: ("" if v is None else v) for k, v in self.row_mapper(row).items()}
+                {
+                    k: ("" if v is None else v)
+                    for k, v in self.projection.project(row).items()
+                }
             )
 
         filename = generate_file_name(base_name, prefix=prefix).replace(".json", ".csv")

@@ -107,7 +107,7 @@ from tables.import_export.export_format_strategies import (
     JsonExportFormatStrategy,
     CsvExportFormatStrategy,
 )
-from tables.import_export.strategies.session import SessionStrategy
+from tables.import_export.tabular.session import SessionTabularProjection
 
 from .default_config import *
 
@@ -148,10 +148,7 @@ class SessionViewSet(
             filename_attr="id",
             format_strategies={
                 "json": JsonExportFormatStrategy(),
-                "csv": CsvExportFormatStrategy(
-                    fields=SessionStrategy.CSV_FIELDS,
-                    row_mapper=SessionStrategy.csv_row_mapper,
-                ),
+                "csv": CsvExportFormatStrategy(SessionTabularProjection()),
             },
         )
 
