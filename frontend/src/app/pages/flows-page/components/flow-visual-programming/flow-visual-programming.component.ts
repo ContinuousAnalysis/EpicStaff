@@ -15,7 +15,7 @@ import {
     signal,
     ViewChild,
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
     catchError,
@@ -28,6 +28,7 @@ import {
     Observable,
     of,
     switchMap,
+    take,
     tap,
 } from 'rxjs';
 
@@ -173,14 +174,16 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         effect(() => {
             const graphId = Number(this.routeParamMap().get('id'));
             if (!isFinite(graphId)) return;
+            this.undoRedoService.setUndoStack([]);
+            this.undoRedoService.setRedoStack([]);
+            const warnings = this.createGraphWarningService.readPending();
+            if (warnings.length) this.restoreWarnings.set(warnings);
             this.fetchGraph(graphId);
         });
     }
 
     public ngOnInit(): void {
         this.flowUnsavedStateService.register(this);
-        const warnings = this.createGraphWarningService.readPending();
-        if (warnings.length) this.restoreWarnings.set(warnings);
     }
 
     public refreshCurrentFlow(): void {
@@ -268,9 +271,11 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
     public saveCurrentState(): Observable<void> {
         if (!this.hasUnsavedChanges()) return of(void 0);
-        if (this.isSaving()) return EMPTY;
-
-        return this.saveFlowState(this.currentFlowState(), false);
+        return toObservable(this.isSaving).pipe(
+            filter((saving) => !saving),
+            take(1),
+            switchMap(() => this.saveFlowState(this.currentFlowState(), false))
+        );
     }
 
     public handleRunFlow(): void {

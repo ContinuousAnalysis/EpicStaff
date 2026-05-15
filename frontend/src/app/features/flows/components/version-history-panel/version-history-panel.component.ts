@@ -270,7 +270,7 @@ export class VersionHistoryPanelComponent implements OnInit {
             });
     }
 
-    public createFlowfromVersion(version: GraphVersionDto, $event: MouseEvent): void {
+    public createFlowFromVersion(version: GraphVersionDto, $event: MouseEvent): void {
         $event.stopPropagation();
         this.openMenuId = null;
         this.flowApiService
