@@ -1,7 +1,7 @@
 <div class="toolbar">
     <app-search
-        placeholder="Search by ID..."
-        [width]="'200px'"
+        placeholder="Search by name or email..."
+        [width]="'240px'"
         [(searchTerm)]="searchTerm"
     />
     <span class="count-label">{{ filteredUsers().length }} of {{ usersData().length }} users</span>
@@ -41,10 +41,10 @@
             <div class="user-cell">
                 <app-user-avatar
                     [name]="row['display_name'] || row['email']"
-                    [avatarUrl]="row['avatar_url']"
+                    [avatarUrl]="row['avatar']"
                 />
                 <div class="user-info">
-                    <span class="user-name">{{ row['display_name'] }}</span>
+                    <span class="user-name">{{ row['name'] }}</span>
                     <span class="user-email">{{ row['email'] }}</span>
                 </div>
             </div>
@@ -55,7 +55,28 @@
             appTableCell="roles"
             let-row
         >
-            <span class="role-text">{{ row['roles'] }}</span>
+            @if (row['roles']?.length) {
+                <div
+                    class="role-badges"
+                    appOverflowItems
+                    #roleOverflow="overflowItems"
+                >
+                    @for (role of row['roles']; track role) {
+                        <span
+                            appOverflowItem
+                            class="role-chip"
+                            >{{ role }}</span
+                        >
+                    }
+                    <span
+                        appOverflowBadge
+                        class="overflow-badge"
+                        >+{{ roleOverflow.overflowCount() }}</span
+                    >
+                </div>
+            } @else {
+                <span class="empty-value">-</span>
+            }
         </ng-template>
 
         <!-- ORGANIZATION -->
@@ -63,17 +84,28 @@
             appTableCell="organization"
             let-row
         >
-            <div class="org-badges">
-                @for (org of row['organizationDetails']; track org.id) {
-                    <app-org-avatar
-                        [name]="org.name"
-                        [title]="org.name"
-                    />
-                }
-                @if (!row['organizationDetails']?.length) {
-                    <span class="empty-value">-</span>
-                }
-            </div>
+            @if (row['organizationDetails']?.length) {
+                <div
+                    class="org-badges"
+                    appOverflowItems
+                    #orgOverflow="overflowItems"
+                >
+                    @for (org of row['organizationDetails']; track org.id) {
+                        <app-org-avatar
+                            appOverflowItem
+                            [name]="org.name"
+                            [title]="org.name"
+                        />
+                    }
+                    <span
+                        appOverflowBadge
+                        class="overflow-badge"
+                        >+{{ orgOverflow.overflowCount() }}</span
+                    >
+                </div>
+            } @else {
+                <span class="empty-value">-</span>
+            }
         </ng-template>
 
         <!-- ACTIVE -->

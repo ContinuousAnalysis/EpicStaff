@@ -7,7 +7,7 @@
         />
         <div class="user-info">
             <div class="user-name">{{ user().display_name || user().email }}</div>
-            <div class="user-role">Super Admin</div>
+            <div class="user-role">{{ systemRole() }}</div>
         </div>
     </div>
 

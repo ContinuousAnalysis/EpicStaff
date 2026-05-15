@@ -17,8 +17,12 @@ import {
 import { GetOrganizationResponse } from '@shared/models';
 import { finalize } from 'rxjs';
 
-import { ProfileService } from '../../../../../services/auth/profile.service';
 import { ToastService } from '../../../../../services/notifications';
+import {
+    OverflowBadgeDirective,
+    OverflowItemDirective,
+    OverflowItemsDirective,
+} from '../../../../../shared/directives/overflow-items.directive';
 import { CreateOrganizationDialogComponent } from '../../../components/create-organization-dialog/create-organization-dialog.component';
 import { OrgAvatarComponent } from '../../../components/org-avatar/org-avatar.component';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
@@ -44,6 +48,9 @@ const STATUS_ITEMS: SelectItem[] = [
         StatusBadgeComponent,
         OrgAvatarComponent,
         UserAvatarComponent,
+        OverflowItemsDirective,
+        OverflowItemDirective,
+        OverflowBadgeDirective,
         DatePipe,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,11 +60,10 @@ export class OrganizationsTabComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private confirmation = inject(ConfirmationDialogService);
     private organizationStorage = inject(OrganizationsStorageService);
-    private currentUserService = inject(ProfileService);
     private toast = inject(ToastService);
 
-    readonly searchTerm = signal('');
-    readonly isLoading = signal(true);
+    searchTerm = signal('');
+    isLoading = signal(true);
 
     readonly columns: AppTableColumnDef[] = [
         { key: 'organization', label: 'Organization', width: '2fr' },
@@ -68,12 +74,11 @@ export class OrganizationsTabComponent implements OnInit {
         { key: 'actions', label: 'Actions', width: '1fr', align: 'center' },
     ];
 
-    readonly organizations = this.organizationStorage.organizations;
-    readonly currentUser = this.currentUserService.currentUserSignal;
+    organizations = this.organizationStorage.organizations;
 
-    readonly tableData = computed<TableRow[]>(() => this.organizations().map((org) => this.orgToRow(org)));
+    tableData = computed<TableRow[]>(() => this.organizations().map((org) => this.orgToRow(org)));
 
-    readonly filteredOrgs = computed<TableRow[]>(() => {
+    filteredOrgs = computed<TableRow[]>(() => {
         const term = this.searchTerm().toLowerCase().trim();
         const rows = this.tableData();
         if (!term) return rows;
@@ -152,6 +157,7 @@ export class OrganizationsTabComponent implements OnInit {
         return {
             id: org.id,
             name: org.name,
+            admins: org.admins,
             members: org.member_count,
             created: org.created_at,
             status: org.is_active ? 'active' : 'deactivated',

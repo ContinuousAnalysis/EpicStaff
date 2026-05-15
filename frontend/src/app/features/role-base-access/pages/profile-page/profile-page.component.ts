@@ -46,19 +46,21 @@ export class ProfilePageComponent implements OnInit {
     private authService = inject(AuthService);
     private destroyRef = inject(DestroyRef);
 
-    readonly user = this.currentUserService.currentUserSignal;
-    readonly isLoading = signal(!this.currentUserService.currentUserSignal());
+    user = this.currentUserService.currentUserSignal;
+    systemRole = this.currentUserService.systemRole;
+    isLoading = signal(!this.currentUserService.currentUserSignal());
 
-    readonly organizations = computed(() => this.user()?.memberships ?? []);
+    organizations = computed(() => this.user()?.memberships ?? []);
 
     readonly SORT_ITEMS: SelectItem[] = [
         { name: 'Name', value: 'name' },
         { name: 'Role', value: 'role' },
         { name: 'Joined Date', value: 'joined' },
     ];
-    readonly sortKey = signal<string | null>(null);
 
-    readonly sortedOrganizations = computed(() => {
+    sortKey = signal<string | null>(null);
+
+    sortedOrganizations = computed(() => {
         const orgs = this.organizations();
         const key = this.sortKey();
         if (!key) return orgs;
@@ -70,20 +72,12 @@ export class ProfilePageComponent implements OnInit {
         });
     });
 
-    readonly uniqueRoles = computed(() => {
+    uniqueRoles = computed(() => {
         const user = this.user();
         if (!user) return [];
         const roleIds = new Set(user.memberships.map((m) => m.role.id));
         if (user.is_superadmin) roleIds.add(UserRole.SUPER_ADMIN);
         return [...roleIds].map((r) => ROLE_LABELS[r as UserRole] ?? String(r));
-    });
-
-    readonly systemRole = computed(() => {
-        const user = this.user();
-        if (!user) return '—';
-        if (user.is_superadmin) return ROLE_LABELS[UserRole.SUPER_ADMIN];
-        const firstRole = user.memberships[0]?.role.id;
-        return firstRole != null ? (ROLE_LABELS[firstRole as UserRole] ?? '—') : '—';
     });
 
     ngOnInit(): void {

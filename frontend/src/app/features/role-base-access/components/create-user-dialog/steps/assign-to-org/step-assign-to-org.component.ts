@@ -9,7 +9,7 @@ import {
     SelectItem,
     TableRow,
 } from '@shared/components';
-import { FullMembership, GetOrganizationResponse, UserRole } from '@shared/models';
+import { FullMembership, Organization, UserRole } from '@shared/models';
 
 import { USER_ROLES } from '../../../../constants/user-roles-select-items.constant';
 import { OrgAvatarComponent } from '../../../org-avatar/org-avatar.component';
@@ -34,7 +34,7 @@ export interface OrgAssignment {
     ],
 })
 export class StepAssignToOrgComponent implements OnInit {
-    organizations = input.required<GetOrganizationResponse[]>();
+    organizations = input.required<Organization[]>();
     existingMemberships = input<FullMembership[]>([]);
 
     organizationsTableData = signal<TableRow[]>([]);

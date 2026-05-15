@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 export interface NormalizedUser {
     id: number;
     email: string;
-    displayName: string;
+    avatarUrl: string | null;
+    displayName: string | null;
     isSuperadmin: boolean;
     isActive: boolean;
     memberships: FullMembership[];

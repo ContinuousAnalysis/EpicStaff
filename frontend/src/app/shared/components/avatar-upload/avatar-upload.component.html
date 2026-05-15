@@ -41,8 +41,9 @@
     <app-file-uploader
         accept="image/jpeg,image/png"
         [multiple]="false"
-        hint="JPG, PNG · Max file size 2 MB"
+        hint="JPG, PNG · Image will be resized to 100x100 px"
         mod="sm"
         (filesUploaded)="onFilesUploaded($event)"
+        (filesRejected)="onFilesRejected()"
     />
 }

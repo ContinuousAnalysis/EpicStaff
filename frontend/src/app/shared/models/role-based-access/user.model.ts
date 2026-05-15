@@ -34,7 +34,8 @@ export interface GetUserResponse {
 export interface OrgUserResponse {
     id: number;
     email: string;
-    display_name: string;
+    avatar_url: string | null;
+    display_name: string | null;
     is_superadmin: boolean;
     is_active: boolean;
     membership: OrgUserMembership;

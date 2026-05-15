@@ -27,16 +27,46 @@
     text-overflow: ellipsis;
 }
 
-.role-text {
-    font-size: 14px;
+.role-badges {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: nowrap;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.role-chip {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
     color: var(--text);
+    background: var(--transparent-white-8);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .org-badges {
     display: flex;
     gap: 4px;
-    flex-wrap: wrap;
     align-items: center;
+    flex-wrap: nowrap;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.overflow-badge {
+    display: none; // shown via inline style by OverflowItemsDirective when needed
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-secondary-60);
+    background: var(--transparent-white-8);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .last-active {

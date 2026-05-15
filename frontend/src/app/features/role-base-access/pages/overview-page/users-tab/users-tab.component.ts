@@ -16,6 +16,11 @@ import { finalize } from 'rxjs/operators';
 
 import { ProfileService } from '../../../../../services/auth/profile.service';
 import {
+    OverflowBadgeDirective,
+    OverflowItemDirective,
+    OverflowItemsDirective,
+} from '../../../../../shared/directives/overflow-items.directive';
+import {
     CreateUserDialogComponent,
     UserDialogData,
 } from '../../../components/create-user-dialog/create-user-dialog.component';
@@ -47,6 +52,9 @@ const STATUS_ITEMS: SelectItem[] = [
         StatusBadgeComponent,
         UserAvatarComponent,
         OrgAvatarComponent,
+        OverflowItemsDirective,
+        OverflowItemDirective,
+        OverflowBadgeDirective,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -68,7 +76,12 @@ export class UsersTabComponent implements OnInit {
     filteredUsers = computed(() => {
         const term = this.searchTerm().toLowerCase().trim();
         if (!term) return this.usersData();
-        return this.usersData().filter((row) => (row['name'] as string)?.toLowerCase().includes(term));
+        return this.usersData().filter((row) => {
+            const name = (row['name'] as string)?.toLowerCase();
+            const email = (row['email'] as string)?.toLowerCase();
+
+            return name?.includes(term) || email?.includes(term);
+        });
     });
 
     columns = computed<AppTableColumnDef[]>(() => [
@@ -166,13 +179,14 @@ export class UsersTabComponent implements OnInit {
 
     private mapToRow(user: NormalizedUser): TableRow {
         const orgs = user.memberships.map((m) => m.organization);
-        const roles = user.memberships.map((m) => m.role.name);
+        const roles = [...new Set(user.memberships.map((m) => m.role.name))];
 
         return {
             id: user.id,
             name: user.displayName,
             email: user.email,
-            roles: roles.join(', '),
+            avatar: user.avatarUrl,
+            roles,
             organization: orgs?.map((o) => o.id),
             organizationDetails: orgs,
             lastActive: null,

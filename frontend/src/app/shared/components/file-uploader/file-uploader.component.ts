@@ -23,6 +23,7 @@ export class FileUploaderComponent {
     isDragging = signal(false);
 
     filesUploaded = output<FileList>();
+    filesRejected = output<void>();
 
     onDragOver(event: DragEvent): void {
         event.preventDefault();
@@ -48,9 +49,30 @@ export class FileUploaderComponent {
         event.stopPropagation();
         this.isDragging.set(false);
 
-        if (event.dataTransfer?.files.length) {
-            this.filesUploaded.emit(event.dataTransfer.files);
+        const dropped = Array.from(event.dataTransfer?.files ?? []);
+        if (!dropped.length) return;
+
+        const accepted = dropped.filter((f) => this.isAccepted(f));
+        const rejected = dropped.filter((f) => !this.isAccepted(f));
+
+        if (rejected.length) this.filesRejected.emit();
+
+        if (accepted.length) {
+            const dt = new DataTransfer();
+            accepted.forEach((f) => dt.items.add(f));
+            this.filesUploaded.emit(dt.files);
         }
+    }
+
+    private isAccepted(file: File): boolean {
+        const acceptVal = this.accept().trim();
+        if (!acceptVal || acceptVal === '*') return true;
+        return acceptVal.split(',').some((token) => {
+            const t = token.trim();
+            if (t.startsWith('.')) return file.name.toLowerCase().endsWith(t.toLowerCase());
+            if (t.endsWith('/*')) return file.type.startsWith(t.slice(0, -1));
+            return file.type === t;
+        });
     }
 
     onFileSelect(event: Event): void {

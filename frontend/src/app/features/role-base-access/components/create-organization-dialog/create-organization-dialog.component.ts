@@ -70,8 +70,8 @@ export class CreateOrganizationDialogComponent implements OnInit {
     searchTerm = signal('');
     isUsersLoading = signal(true);
     isSubmitting = signal(false);
-    readonly selectedUsers = signal<TableRow[]>([]);
-    readonly initialSelectedUserIds = signal<number[]>([]);
+    selectedUsers = signal<TableRow[]>([]);
+    initialSelectedUserIds = signal<number[]>([]);
 
     readonly columns: AppTableColumnDef[] = [
         { key: 'user', label: 'User', width: '1fr' },
@@ -149,6 +149,8 @@ export class CreateOrganizationDialogComponent implements OnInit {
                     if (!ops.length) return of(org);
                     return forkJoin(ops);
                 }),
+                // Update current user memberships
+                switchMap(() => this.currentUserService.getCurrentUser()),
                 takeUntilDestroyed(this.destroyRef),
                 finalize(() => this.isSubmitting.set(false))
             )
@@ -198,6 +200,7 @@ export class CreateOrganizationDialogComponent implements OnInit {
         return {
             id: user.id,
             name: user.displayName,
+            avatar: user.avatarUrl,
             email: user.email,
             role: membership?.role.id ?? UserRole.MEMBER,
         };

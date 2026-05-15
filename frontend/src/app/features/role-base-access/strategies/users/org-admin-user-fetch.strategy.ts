@@ -54,6 +54,7 @@ export class OrgAdminUserFetchStrategy implements UserFetchStrategy {
                     userMap.set(user.id, {
                         id: user.id,
                         email: user.email,
+                        avatarUrl: user.avatar_url,
                         displayName: user.display_name,
                         isSuperadmin: user.is_superadmin,
                         isActive: user.is_active,

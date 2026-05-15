@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonComponent, LoadingSpinnerComponent } from '@shared/components';
-import { FullMembership, GetOrganizationResponse } from '@shared/models';
+import { FullMembership, Organization } from '@shared/models';
 import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
@@ -46,18 +46,21 @@ export class CreateUserDialogComponent implements OnInit {
     private organizationsStorage = inject(OrganizationsStorageService);
     private toast = inject(ToastService);
 
-    private readonly userDetailsStep = viewChild(StepUserDetailsComponent);
-    private readonly assignToOrgStep = viewChild(StepAssignToOrgComponent);
+    private userDetailsStep = viewChild(StepUserDetailsComponent);
+    private assignToOrgStep = viewChild(StepAssignToOrgComponent);
 
-    readonly isSuperAdmin = this.currentUserService.isMeSuperAdmin;
-    readonly editUser = signal<NormalizedUser | null>(this.dialogData?.user ?? null);
-    readonly availableOrganizations = signal<GetOrganizationResponse[]>([]);
-    readonly isSubmitting = signal<boolean>(false);
-    readonly loadingOrganizations = signal<boolean>(true);
+    isSuperAdmin = this.currentUserService.isMeSuperAdmin;
+    editUser = signal<NormalizedUser | null>(this.dialogData?.user ?? null);
+    availableOrganizations = signal<Organization[]>([]);
+    isSubmitting = signal<boolean>(false);
+    loadingOrganizations = signal<boolean>(true);
 
-    readonly editMode = computed(() => this.editUser() !== null);
-    readonly existingMemberships = computed<FullMembership[]>(() => this.editUser()?.memberships ?? []);
-    readonly submitDisabled = computed(() => !(this.userDetailsStep()?.isFormValid() ?? false) || this.isSubmitting());
+    editMode = computed(() => this.editUser() !== null);
+    existingMemberships = computed<FullMembership[]>(() => this.editUser()?.memberships ?? []);
+    submitDisabled = computed(() => {
+        if (!(this.userDetailsStep()?.isFormValid() ?? false) || this.isSubmitting()) return true;
+        return !this.isSuperAdmin() && (this.assignToOrgStep()?.selectedOrganizations().length ?? 0) === 0;
+    });
 
     ngOnInit(): void {
         this.loadOrganizations();
@@ -74,14 +77,19 @@ export class CreateUserDialogComponent implements OnInit {
         this.isSubmitting.set(true);
 
         const { email, password, superadmin } = detailsStep.form.getRawValue();
+        const assignments = this.assignToOrgStep()?.getAssignments() ?? [];
 
-        this.createOrGetUserId(email!, password!, superadmin ?? false)
+        // For org admin creation, createUser() already assigns to assignments[0],
+        // so only pass the rest to batchAssignToOrgs to avoid a duplicate call.
+        const isOrgAdminCreation = !this.isSuperAdmin() && !this.editMode();
+        const assignmentsForBatch = isOrgAdminCreation ? assignments.slice(1) : assignments;
+
+        this.createOrGetUserId(email!, password!, superadmin ?? false, assignments)
             .pipe(
                 switchMap((userId) => {
                     if (!userId) return of(false);
-                    const assignments = this.assignToOrgStep()?.getAssignments() ?? [];
                     const removals = this.computeOrgRemovals(userId, assignments);
-                    return this.batchAssignToOrgs(userId, assignments).pipe(
+                    return this.batchAssignToOrgs(userId, assignmentsForBatch).pipe(
                         switchMap(() => this.batchRemoveFromOrgs(removals)),
                         switchMap(() => this.handleSuperadminToggle(userId, superadmin ?? false))
                     );
@@ -102,7 +110,12 @@ export class CreateUserDialogComponent implements OnInit {
             });
     }
 
-    private createOrGetUserId(email: string, password: string, superadmin: boolean): Observable<number | null> {
+    private createOrGetUserId(
+        email: string,
+        password: string,
+        superadmin: boolean,
+        assignments: OrgAssignment[]
+    ): Observable<number | null> {
         if (this.editMode()) {
             return of(this.editUser()!.id);
         }
@@ -122,12 +135,11 @@ export class CreateUserDialogComponent implements OnInit {
             );
         }
 
-        const currentUser = this.currentUserService.currentUserSignal()!;
-        const firstOrg = currentUser.memberships[0];
-        if (!firstOrg) return of(null);
+        const firstAssignment = assignments[0];
+        if (!firstAssignment) return of(null);
 
         return this.userService
-            .createUser(firstOrg.organization.id, { email, password, role_id: firstOrg.role.id })
+            .createUser(firstAssignment.orgId, { email, password, role_id: firstAssignment.roleId })
             .pipe(
                 map((user) => user.id),
                 catchError((err: HttpErrorResponse) => {
@@ -225,10 +237,6 @@ export class CreateUserDialogComponent implements OnInit {
                 const adminOrgs = currentUser.memberships.map((m) => ({
                     id: m.organization.id,
                     name: m.organization.name,
-                    is_active: true,
-                    member_count: 0,
-                    created_at: '',
-                    updated_at: '',
                 }));
                 this.availableOrganizations.set(adminOrgs);
                 this.loadingOrganizations.set(false);

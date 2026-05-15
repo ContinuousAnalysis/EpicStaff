@@ -95,7 +95,7 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card roles-card">
                 <h3 class="title card-title">
                     <app-svg-icon
                         icon="shield"
@@ -132,24 +132,26 @@
                     />
                 </div>
 
-                <app-list [items]="sortedOrganizations()">
-                    <ng-template
-                        let-item
-                        let-i="index"
-                    >
-                        <app-list-row class="org-row">
-                            <div class="left">
-                                <app-org-avatar [name]="item.organization.name" />
-                                <span class="org-name">{{ item.organization.name }}</span>
-                            </div>
+                <div class="org-list-scroll">
+                    <app-list [items]="sortedOrganizations()">
+                        <ng-template
+                            let-item
+                            let-i="index"
+                        >
+                            <app-list-row class="org-row">
+                                <div class="left">
+                                    <app-org-avatar [name]="item.organization.name" />
+                                    <span class="org-name">{{ item.organization.name }}</span>
+                                </div>
 
-                            <div class="right">
-                                <span class="org-role">{{ roleLabel(item.role.id) }}</span>
-                                <!-- <app-icon-button icon="x" ariaLabel="Remove yourself" size="28px" /> -->
-                            </div>
-                        </app-list-row>
-                    </ng-template>
-                </app-list>
+                                <div class="right">
+                                    <span class="org-role">{{ roleLabel(item.role.id) }}</span>
+                                    <!-- <app-icon-button icon="x" ariaLabel="Remove yourself" size="28px" /> -->
+                                </div>
+                            </app-list-row>
+                        </ng-template>
+                    </app-list>
+                </div>
             </div>
         </div>
     }

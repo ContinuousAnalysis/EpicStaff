@@ -2,6 +2,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, output, signal } from '@angular/core';
 import { take } from 'rxjs';
 
+import { ToastService } from '../../../services/notifications';
 import { AppSvgIconComponent } from '../app-svg-icon/app-svg-icon.component';
 import { FileUploaderComponent } from '../file-uploader/file-uploader.component';
 import { ImageCropperDialogComponent } from './image-cropper-dialog/image-cropper-dialog.component';
@@ -16,14 +17,15 @@ import { ImageCropperDialogComponent } from './image-cropper-dialog/image-croppe
 export class AvatarUploadComponent {
     private dialog = inject(Dialog);
     private destroyRef = inject(DestroyRef);
+    private toast = inject(ToastService);
 
     initialUrl = input<string | null>(null);
 
-    readonly selectedFile = signal<File | null>(null);
-    readonly previewUrl = signal<string | null>(null);
-    readonly existingCleared = signal(false);
+    selectedFile = signal<File | null>(null);
+    previewUrl = signal<string | null>(null);
+    existingCleared = signal(false);
 
-    readonly fileSizeLabel = computed(() => {
+    fileSizeLabel = computed(() => {
         const size = this.selectedFile()?.size ?? 0;
         if (size >= 1024 * 1024) {
             return `${(size / 1024 / 1024).toFixed(1)} MB`;
@@ -31,7 +33,7 @@ export class AvatarUploadComponent {
         return `${Math.round(size / 1024)} KB`;
     });
 
-    readonly showExisting = computed(() => !!this.initialUrl() && !this.existingCleared() && !this.selectedFile());
+    showExisting = computed(() => !!this.initialUrl() && !this.existingCleared() && !this.selectedFile());
 
     imageChange = output<File | null>();
     existingRemoved = output<void>();
@@ -55,6 +57,10 @@ export class AvatarUploadComponent {
                     this.imageChange.emit(croppedFile);
                 }
             });
+    }
+
+    onFilesRejected(): void {
+        this.toast.error('Unsupported file type. Please use JPG or PNG.');
     }
 
     onClear(): void {

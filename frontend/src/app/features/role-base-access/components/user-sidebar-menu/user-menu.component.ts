@@ -23,27 +23,28 @@ export class UserMenuComponent {
     private router = inject(Router);
     protected currentUserService = inject(ProfileService);
 
-    public user = input.required<GetMeResponse>();
-    public organizations = computed<FullMembership[]>(() => this.user().memberships);
+    user = input.required<GetMeResponse>();
+    systemRole = this.currentUserService.systemRole;
+    organizations = computed<FullMembership[]>(() => this.user().memberships);
 
     isUserMenuOpen = model<boolean>(false);
 
-    public onOrgClick(id: number): void {
+    onOrgClick(id: number): void {
         void id;
         this.isUserMenuOpen.set(false);
     }
 
-    public onWorkspaceClick(): void {
+    onWorkspaceClick(): void {
         this.isUserMenuOpen.set(false);
         this.router.navigate(['/workspace']);
     }
 
-    public onProfileClick(): void {
+    onProfileClick(): void {
         this.isUserMenuOpen.set(false);
         this.router.navigate(['/profile']);
     }
 
-    public onSignOutClick(): void {
+    onSignOutClick(): void {
         this.isUserMenuOpen.set(false);
         this.authService
             .logout()
