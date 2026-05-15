@@ -1,3 +1,4 @@
+import textwrap
 from copy import deepcopy
 
 from tables.import_export.enums import EntityType, NodeType
@@ -345,6 +346,7 @@ class GraphVersioningManager:
         filtered_snapshot: dict,
         available_deps: dict,
         *,
+        graph_name: str,
         version_name: str,
     ) -> tuple[Graph, IDMapper]:
         """
@@ -352,10 +354,21 @@ class GraphVersioningManager:
         The new graph is independent — no GraphVersion rows, own id/uuid.
         """
         snapshot_copy = deepcopy(filtered_snapshot)
+
+        # make sure no extremely long name allowed
+        suggest_name = f"{graph_name} from {version_name}"
+        new_graph_name = (
+            suggest_name[:80] + "..." if len(suggest_name) > 80 else suggest_name
+        )
+
+        snapshot_copy["description"] = (
+            f'Flow created from "{version_name}" version of "{graph_name}" flow'
+        )
         snapshot_copy["name"] = ensure_unique_identifier(
-            base_name=version_name,
+            base_name=new_graph_name,
             existing_names=list(Graph.objects.values_list("name", flat=True)),
         )
+
         snapshot_copy.pop("id", None)
         snapshot_copy.pop("uuid", None)
 

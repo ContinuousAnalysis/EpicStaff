@@ -46,17 +46,12 @@ class GraphVersioningService:
             snapshot, deps_validation["missing"]
         )
 
-        # Set name and description for flow
         graph_name = snapshot.get("name", "Flow")
-        new_graph_name = f"{graph_name} from {version.name}"
-
-        filtered_snapshot["description"] = (
-            f'Flow created from "{version.name}" version of "{graph_name}" flow'
-        )
         new_graph, node_mapper = self._manager.create_graph_from_snapshot(
             filtered_snapshot,
             deps_validation["available"],
-            version_name=new_graph_name,
+            graph_name=graph_name,
+            version_name=version.name,
         )
 
         # Copy labels from source graph
