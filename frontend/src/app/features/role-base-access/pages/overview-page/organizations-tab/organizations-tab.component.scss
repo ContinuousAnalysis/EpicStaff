@@ -1,0 +1,55 @@
+@use '../tab-shared' as shared;
+
+@include shared.tab-base;
+
+.org-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.org-name {
+    font-size: 14px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.user-info {
+    min-width: 0;
+}
+
+.user-name {
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-role {
+    font-size: 10px;
+    color: var(--text-secondary-60);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cell-text {
+    font-size: 14px;
+    color: var(--text-secondary-60);
+}
+
+.action-btn {
+    &--muted {
+        color: var(--text-secondary-60);
+    }
+}

@@ -9,6 +9,7 @@ import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 import { ToastService } from '../../../../services/notifications';
 import { UpdateNaiveRagDocumentDtoRequest } from '../../models/naive-rag-document.model';
 import { RagConfiguration } from '../../models/rag-configuration';
+import { ChunkDeepLinkService } from '../../services/chunk-deep-link.service';
 import { NaiveRagService } from '../../services/naive-rag.service';
 import { NaiveRagDocumentsStorageService } from '../../services/naive-rag-documents-storage.service';
 import { DocumentChunksSectionComponent } from '../document-chunks-section/document-chunks-section.component';
@@ -36,9 +37,11 @@ export class NaiveRagConfigurationComponent implements OnInit, RagConfiguration 
     private destroyRef = inject(DestroyRef);
     private toastService = inject(ToastService);
     private documentsStorageService = inject(NaiveRagDocumentsStorageService);
+    private deepLinkService = inject(ChunkDeepLinkService);
     private dialog = inject(Dialog);
 
     naiveRagId = input.required<number>();
+    collectionId = input.required<number>();
 
     searchTerm = signal<string>('');
     bulkBtnActive = signal<boolean>(false);
@@ -56,7 +59,7 @@ export class NaiveRagConfigurationComponent implements OnInit, RagConfiguration 
             .fetchDocumentConfigs(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: () => {},
+                next: () => this.handleDeepLink(),
                 error: (e) => {
                     this.toastService.error('Failed to fetch documents');
                     console.error(e);
@@ -173,6 +176,7 @@ export class NaiveRagConfigurationComponent implements OnInit, RagConfiguration 
             height: 'calc(100vh - 2rem)',
             data: {
                 ragId: this.naiveRagId(),
+                collectionId: this.collectionId(),
                 ragDocumentId,
                 allDocumentIds,
             },
@@ -184,5 +188,22 @@ export class NaiveRagConfigurationComponent implements OnInit, RagConfiguration 
 
     getConfigurationData(): unknown {
         return true;
+    }
+
+    private handleDeepLink(): void {
+        const params = this.deepLinkService.pending();
+        if (!params || params.ragId !== this.naiveRagId()) return;
+
+        const documents = this.documentsStorageService.documents();
+        const doc = documents.find((d) => d.naive_rag_document_id === params.documentId);
+
+        if (!doc) {
+            this.toastService.error('Deep link: document not found');
+            this.deepLinkService.consume();
+            this.deepLinkService.clearUrl();
+            return;
+        }
+
+        this.selectedRagDocId.set(params.documentId);
     }
 }

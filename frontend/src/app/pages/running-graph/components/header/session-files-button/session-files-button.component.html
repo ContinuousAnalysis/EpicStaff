@@ -91,16 +91,18 @@
                                 >{{ node.name }}</span
                             >
 
-                            <button
-                                class="session-files-dropdown__link-btn"
-                                (click)="onDeepLink($event, node)"
-                                title="Open in storage"
-                            >
-                                <app-svg-icon
-                                    icon="external-link"
-                                    size="12px"
-                                ></app-svg-icon>
-                            </button>
+                            <div class="session-files-dropdown__hover-actions">
+                                <button
+                                    class="session-files-dropdown__link-btn"
+                                    (click)="onDeepLink($event, node)"
+                                    title="Open in storage"
+                                >
+                                    <app-svg-icon
+                                        icon="external-link"
+                                        size="12px"
+                                    ></app-svg-icon>
+                                </button>
+                            </div>
                         </div>
                     }
                 }

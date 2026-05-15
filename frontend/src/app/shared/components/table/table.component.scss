@@ -1,0 +1,110 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+.table-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--color-divider-subtle);
+    border-radius: 8px;
+}
+
+// ===== HEADER =====
+.table-header {
+    display: grid;
+    align-items: center;
+    min-height: 2.25rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--color-divider-subtle);
+}
+
+.table-header-cell {
+    display: flex;
+    align-items: center;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-secondary-60);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 0.5rem;
+
+    &.center {
+        justify-content: center;
+    }
+
+    &.end {
+        justify-content: flex-end;
+    }
+}
+
+.col-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-secondary-60);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+// ===== BODY =====
+.table-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+// ===== ROW =====
+.table-row {
+    display: grid;
+    align-items: center;
+    min-height: 3rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-bottom: 1px solid var(--color-divider-subtle);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &.selected {
+        background: var(--transparent-white-8, rgba(255, 255, 255, 0.08));
+    }
+
+    &:hover:not(.table-row--selected) {
+        background: var(--transparent-white-4, rgba(255, 255, 255, 0.04));
+    }
+}
+
+// ===== CELL =====
+.table-cell {
+    display: flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text);
+    min-width: 0;
+
+    > * {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    &.checkbox {
+        padding: 0;
+        justify-content: center;
+        width: 2rem;
+
+        > * {
+            flex: none;
+        }
+    }
+}

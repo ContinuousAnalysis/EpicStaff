@@ -98,6 +98,7 @@ class PythonNode(BaseNode):
     )
     python_code = models.ForeignKey("PythonCode", on_delete=models.CASCADE)
     stream_config = models.JSONField(default=dict, blank=True)
+    test_input = models.JSONField(default=dict, blank=True)
     use_storage = models.BooleanField(default=False)
 
     def generate_hash(self):
@@ -112,6 +113,7 @@ class PythonNode(BaseNode):
             "content_hash",
             "metadata",
             "python_code",
+            "test_input",
         ]
 
         data = {
@@ -180,9 +182,11 @@ class SubGraphNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="subgraph_node_list"
     )
     subgraph = models.ForeignKey(
-        "Graph", on_delete=models.CASCADE, related_name="as_subgraph"
+        "Graph",
+        on_delete=models.SET_NULL,
+        related_name="as_subgraph",
+        null=True,
     )
-    # TODO: maybe SET_NULL on delete?
 
 
 class CodeAgentNode(BaseNode):

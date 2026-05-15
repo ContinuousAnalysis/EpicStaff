@@ -142,11 +142,12 @@
         align-items: center;
         gap: 0.5rem;
         height: 36px;
-        padding-right: 0.75rem;
+        padding-right: 0;
         border-radius: 4px;
         cursor: pointer;
         flex-shrink: 0;
         min-width: max-content;
+        position: relative;
 
         &:hover:not(&--checked) {
             background-color: rgba(217, 217, 222, 0.04);
@@ -156,7 +157,7 @@
             background-color: rgba(104, 95, 255, 0.08);
         }
 
-        &:hover .session-files-dropdown__link-btn {
+        &:hover .session-files-dropdown__hover-actions {
             visibility: visible;
         }
     }
@@ -222,9 +223,32 @@
     }
 
     &__item-name {
+        flex: 1 1 auto;
+        min-width: 0;
         font-size: 0.875rem;
         color: var(--color-text-primary);
         white-space: nowrap;
+    }
+
+    &__hover-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        margin-left: auto;
+        position: sticky;
+        right: 0;
+        height: 36px;
+        padding: 0 0.75rem 0 2.5rem;
+        flex-shrink: 0;
+        z-index: 2;
+        visibility: hidden;
+        background: linear-gradient(
+            to right,
+            transparent 0%,
+            rgba(33, 35, 37, 0.95) 35%,
+            rgb(33, 35, 37) 55%,
+            rgb(33, 35, 37) 100%
+        );
     }
 
     &__link-btn {
@@ -241,7 +265,6 @@
         color: rgba(104, 95, 255, 1);
         border-radius: 4px;
         gap: 10px;
-        visibility: hidden;
 
         &:hover {
             background-color: rgba(104, 95, 255, 0.15);

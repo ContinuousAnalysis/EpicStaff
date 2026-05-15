@@ -43,8 +43,10 @@ export interface StartNodeModel extends BaseNodeModel {
 }
 export interface PythonNodeModel extends BaseNodeModel {
     type: NodeType.PYTHON;
+    python_code_id: number | null;
     data: CustomPythonCode;
     stream_config?: Record<string, boolean>;
+    test_input: Record<string, string | number | boolean>;
 }
 
 export interface ProjectNodeModel extends BaseNodeModel {
