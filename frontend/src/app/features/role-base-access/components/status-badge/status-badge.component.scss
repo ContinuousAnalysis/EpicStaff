@@ -1,0 +1,42 @@
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+
+    &.online {
+        background: var(--transparent-green-8);
+        color: var(--color-ks-status-new);
+    }
+
+    &.invited {
+        background: var(--transparent-orange-8);
+        color: var(--color-ks-status-processing);
+    }
+
+    &.offline {
+        background: var(--transparent-white-8);
+        color: var(--color-text-secondary);
+    }
+
+    &.active {
+        background: var(--transparent-green-8);
+        color: var(--color-ks-status-new);
+    }
+
+    &.deactivated {
+        background: var(--transparent-white-4);
+        color: var(--text-secondary-60);
+    }
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
