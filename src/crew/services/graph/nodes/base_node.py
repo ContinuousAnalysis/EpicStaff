@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Any, Literal
-import copy
 from langgraph.types import StreamWriter
 from src.crew.services.graph.events import StopEvent
 from src.crew.services.graph.custom_message_writer import CustomSessionMessageWriter
@@ -226,20 +225,21 @@ class BaseNode(ABC):
         the state at the time of execution.
         """
 
-        variables = state["variables"]
-        state_history = state["state_history"]
-        state_history.append(
-            {
-                "type": type,
-                "name": name,
-                "additional_data": copy.deepcopy(kwargs),
-                "input": copy.deepcopy(input),
-                "variables": variables.deep_dump(),
-                "output": copy.deepcopy(output),
-            }
-        )
+        # TODO: remove completely if nothing breaks
+        # variables = state["variables"]
+        # state_history = state["state_history"]
+        # state_history.append(
+        #     {
+        #         "type": type,
+        #         "name": name,
+        #         "additional_data": copy.deepcopy(kwargs),
+        #         "input": copy.deepcopy(input),
+        #         "variables": variables.deep_dump(),
+        #         "output": copy.deepcopy(output),
+        #     }
+        # )
 
-        counts = state.setdefault("execution_counts", {})
-        counts[name] = counts.get(name, 0) + 1
+        # counts = state.setdefault("execution_counts", {})
+        # counts[name] = counts.get(name, 0) + 1
 
     async def post_init(self, *args, **kwargs): ...
