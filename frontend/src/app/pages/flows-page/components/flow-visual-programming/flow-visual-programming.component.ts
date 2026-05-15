@@ -32,7 +32,8 @@ import {
 } from 'rxjs';
 
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
-import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
+import { FlowAssistantPanelComponent } from '../../../../features/flow-assistant/components/flow-assistant-panel/flow-assistant-panel.component';
+import { FlowAssistantService } from '../../../../features/flow-assistant/flow-assistant.service';
 import { FlowSessionsListComponent } from '../../../../features/flows/components/flow-sessions-dialog/flow-sessions-list.component';
 import {
     SaveVersionDialogComponent,
@@ -86,6 +87,7 @@ import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
         SpinnerComponent,
         ShortcutsModalComponent,
         FlowMessagesPanelComponent,
+        FlowAssistantPanelComponent,
     ],
     templateUrl: './flow-visual-programming.component.html',
     styleUrl: './flow-visual-programming.component.scss',
@@ -94,7 +96,7 @@ import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanComponentDeactivate {
     private readonly destroyRef = inject(DestroyRef);
 
-    public readonly isEpicChatEnabled: boolean;
+    public readonly flowAssistantService = inject(FlowAssistantService);
     public initialNodeId: string | null = null;
     public isLoaded = signal(false);
     private readonly graphState = signal<GraphDto | null>(null);
@@ -148,13 +150,11 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly overlay: Overlay,
         private readonly configService: ConfigService,
         private readonly elementRef: ElementRef,
-        private readonly epicChatService: EpicChatService,
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
         private readonly unsavedChangesDialog: UnsavedChangesDialogService,
         private readonly runSessionSSEService: RunSessionSSEService,
         private readonly sidePanelService: SidePanelService
     ) {
-        this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
         this.routeParamMap = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
         this.routeQueryParamMap = toSignal(this.route.queryParamMap, {
             initialValue: this.route.snapshot.queryParamMap,
@@ -453,38 +453,9 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
             );
     }
 
-    public connectToEpicChat(): void {
-        if (!this.graph?.id) {
-            this.toastService.error('Unable to connect chat: Missing flow ID');
-            return;
-        }
-
-        const flowUrl = this.normalizeApiUrl(this.configService.apiUrl);
-        if (!flowUrl) {
-            this.toastService.error('Unable to connect chat: Missing API URL');
-            return;
-        }
-
-        this.flowApiService.patchGraph(this.graph.id, { epicchat_enabled: true }).subscribe({
-            next: () => {
-                this.graph.epicchat_enabled = true;
-                this.epicChatService.requestCreateAgent({
-                    name: this.graph.name?.trim() || `Flow ${this.graph.id}`,
-                    description: this.graph.description?.trim(),
-                    flowId: this.graph.id,
-                    flowUrl,
-                    selectAfterCreate: true,
-                });
-                this.toastService.success('Flow connected to Epic Chat');
-            },
-            error: () => {
-                this.toastService.error('Failed to save EpicChat connection');
-            },
-        });
-    }
-
-    private normalizeApiUrl(apiUrl: string): string {
-        return (apiUrl || '').trim().replace(/\/+$/, '');
+    public onToggleAssistant(): void {
+        if (!this.graph?.id) return;
+        this.flowAssistantService.toggle(this.graph.id);
     }
 
     public closeMessagesPanel(): void {

@@ -71,18 +71,20 @@
         >
             <span class="btn-label">Get CURL</span>
         </button>
-        @if (isEpicChatEnabled) {
-            <button
-                class="connect-chat-button"
-                [appCollapseOnOverflow]="true"
-                collapseOnOverflowTarget=".btn-label"
-                collapseOnOverflowClass="btn--icon-only"
-                collapseOnOverflowRequireSelector="app-svg-icon"
-                (click)="onConnectChat()"
-            >
-                <span class="btn-label">Connect chat</span>
-            </button>
-        }
+        <button
+            class="open-chat-button"
+            [appCollapseOnOverflow]="true"
+            collapseOnOverflowTarget=".btn-label"
+            collapseOnOverflowClass="btn--icon-only"
+            collapseOnOverflowRequireSelector="app-svg-icon"
+            (click)="onToggleAssistant()"
+        >
+            <app-svg-icon
+                icon="message-circle"
+                size="1.25rem"
+            />
+            <span class="btn-label">{{ isAssistantOpen ? 'Close chat' : 'Open chat' }}</span>
+        </button>
         <div
             #saveSplitOrigin="cdkOverlayOrigin"
             cdkOverlayOrigin

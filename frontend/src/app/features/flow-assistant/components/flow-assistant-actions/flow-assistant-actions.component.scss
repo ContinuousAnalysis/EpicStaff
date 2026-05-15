@@ -1,0 +1,44 @@
+.actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-secondary-btn-background);
+    border: 1px solid var(--color-divider-regular);
+    border-radius: 6px;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    padding: 0.3rem 0.75rem;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+
+    &:hover {
+        background-color: var(--color-secondary-btn-background-hover);
+        border-color: var(--color-divider-subtle);
+    }
+}
+
+.action-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--accent-color);
+    font-size: 0.8125rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    padding: 0.3rem 0;
+    transition: color 0.15s ease;
+
+    &:hover {
+        color: var(--accent-color-hover);
+    }
+}

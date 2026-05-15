@@ -1,0 +1,157 @@
+<div
+    class="panel"
+    [style.width.px]="panelWidth()"
+>
+    <div
+        class="drag-handle"
+        (mousedown)="onDragHandleMousedown($event)"
+    ></div>
+
+    <div class="panel-header">
+        <span class="panel-title">Flow Assistant</span>
+        <div class="panel-header-actions">
+            <button
+                class="header-btn"
+                title="Sessions"
+                (click)="toggleSidebar()"
+            >
+                <app-svg-icon
+                    icon="list"
+                    size="1.1rem"
+                />
+            </button>
+            <button
+                class="header-btn"
+                title="Settings"
+                (click)="toggleSettings()"
+            >
+                <app-svg-icon
+                    icon="settings"
+                    size="1.1rem"
+                />
+            </button>
+            <button
+                class="header-btn"
+                title="Close"
+                (click)="close()"
+            >
+                <app-svg-icon
+                    icon="x"
+                    size="1.1rem"
+                />
+            </button>
+        </div>
+    </div>
+
+    @if (showSettings()) {
+        <app-flow-assistant-settings (closed)="showSettings.set(false)" />
+    }
+
+    <div class="panel-body">
+        @if (sidebarOpen()) {
+            <app-flow-assistant-sidebar
+                class="sidebar-overlay"
+                (selected)="closeSidebar()"
+            />
+        }
+
+        <div
+            class="chat-content"
+            (click)="onChatBodyClick()"
+        >
+            <div
+                #messagesContainer
+                class="messages-list"
+                (scroll)="onMessagesScroll()"
+            >
+                @for (message of messages(); track trackByIndex($index)) {
+                    @if (isUserMessage(message)) {
+                        <div class="message message--user">
+                            <div class="message__bubble">{{ message.content }}</div>
+                        </div>
+                    } @else if (isAssistantMessage(message)) {
+                        <div class="message message--assistant">
+                            @if (message.content) {
+                                <markdown
+                                    [data]="message.content"
+                                    [inline]="false"
+                                />
+                            }
+                            @if (message.ef_tables) {
+                                @for (table of message.ef_tables; track $index) {
+                                    <app-flow-assistant-table [table]="table" />
+                                }
+                            }
+                            @if (message.action_message?.length) {
+                                <app-flow-assistant-actions
+                                    [actions]="message.action_message!"
+                                    (executed)="onActionExecuted($event)"
+                                />
+                            }
+                        </div>
+                    } @else if (isToolMessage(message)) {
+                        <div class="message message--tool">
+                            <details class="tool-call">
+                                <summary class="tool-call__summary">
+                                    <app-svg-icon
+                                        icon="tool"
+                                        size="0.875rem"
+                                    />
+                                    <span>{{ message.name }}</span>
+                                </summary>
+                                @if (message.content) {
+                                    <div class="tool-call__result">{{ message.content }}</div>
+                                }
+                            </details>
+                        </div>
+                    }
+                }
+
+                @if (currentStatus(); as status) {
+                    <div class="status-line">
+                        <span class="status-pulse"></span>
+                        <span class="status-text">{{ status }}</span>
+                    </div>
+                }
+            </div>
+
+            <div class="input-area">
+                @if (displayChips().length > 0) {
+                    <div class="prompt-chips">
+                        @for (chip of displayChips(); track $index) {
+                            <button
+                                class="prompt-chip"
+                                (click)="assistantService.executeAction(chip)"
+                            >
+                                {{ chip.text }}
+                            </button>
+                        }
+                    </div>
+                }
+                <div class="input-area__row">
+                    <textarea
+                        #messageInput
+                        class="input-area__textarea"
+                        placeholder="Ask about this flow..."
+                        rows="1"
+                        [value]="inputText()"
+                        (input)="onInputChange($event)"
+                        (keydown)="onKeydown($event)"
+                        [disabled]="isStreaming()"
+                    ></textarea>
+                    <button
+                        class="input-area__send-btn"
+                        [disabled]="sendDisabled()"
+                        (click)="sendMessage()"
+                        title="Send (Enter)"
+                    >
+                        <app-svg-icon
+                            icon="send"
+                            size="1.1rem"
+                        />
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
