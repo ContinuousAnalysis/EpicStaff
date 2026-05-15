@@ -149,3 +149,8 @@ class LoginSerializer(TokenObtainPairSerializer):
         token["email"] = user.email
         token["is_superadmin"] = user.is_superadmin
         return token
+
+
+class LoginResponseSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+    access = serializers.CharField()
