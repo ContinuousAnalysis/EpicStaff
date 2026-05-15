@@ -88,6 +88,28 @@
                                     (executed)="onActionExecuted($event)"
                                 />
                             }
+                            @if (!isLastStreamingAssistant(message, $index)) {
+                                <button
+                                    type="button"
+                                    class="copy-btn"
+                                    [class.copy-btn--copied]="copiedMessageIndex() === $index"
+                                    (click)="copyAssistantMessage(message, $index)"
+                                    title="Copy message"
+                                    aria-label="Copy message"
+                                >
+                                    @if (copiedMessageIndex() === $index) {
+                                        <app-svg-icon
+                                            icon="check"
+                                            size="0.875rem"
+                                        />
+                                    } @else {
+                                        <app-svg-icon
+                                            icon="copy"
+                                            size="0.875rem"
+                                        />
+                                    }
+                                </button>
+                            }
                         </div>
                     } @else if (isToolMessage(message)) {
                         <div class="message message--tool">

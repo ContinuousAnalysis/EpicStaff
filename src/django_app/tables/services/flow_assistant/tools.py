@@ -16,6 +16,8 @@ import re
 
 from django.db.models import Prefetch
 
+from tables.models.session_models import Session
+from tables.models.python_models import PythonCode
 from tables.models.graph_models import (
     AudioTranscriptionNode,
     ClassificationDecisionTableNode,
@@ -73,31 +75,20 @@ def _redact(value: object, key: str = "") -> object:
 
 
 def _node_to_dict(node_type: str, node) -> dict:
-    """Convert a node ORM object to a sanitised dict."""
+    """Convert a node ORM object to a sanitised dict.
+
+    Relations (FK / OneToOne) are skipped generically — surface them
+    explicitly via the post-loop resolver blocks in `get_node` when needed.
+    """
     result: dict = {"type": node_type, "id": node.pk}
     if hasattr(node, "node_name"):
         result["name"] = node.node_name
 
-    # Collect config-like fields, skipping FK ids and internal fields
-    skip = {
-        "id",
-        "graph_id",
-        "graph",
-        "crew_id",
-        "crew",
-        "python_code_id",
-        "python_code",
-        "llm_config_id",
-        "llm_config",
-        "subgraph_id",
-        "subgraph",
-        "webhook_trigger_id",
-        "webhook_trigger",
-        "metadata",
-        "content_hash",
-    }
+    skip = {"id", "metadata", "content_hash"}
     config: dict = {}
     for field in node._meta.fields:
+        if field.is_relation:
+            continue
         fname = field.name
         if fname in skip:
             continue
@@ -178,11 +169,9 @@ def _serialize_classification_decision_table_rules(
         ...
       ]
     """
-    groups = (
-        ClassificationConditionGroup.objects.filter(
-            classification_decision_table_node=node
-        ).order_by("order")
-    )
+    groups = ClassificationConditionGroup.objects.filter(
+        classification_decision_table_node=node
+    ).order_by("order")
     rules: list[dict] = []
     for group in groups:
         rules.append(
@@ -313,6 +302,27 @@ def get_node(graph_id: int, node_id: str) -> dict:
         result["decision_rules"] = _serialize_decision_table_rules(node)
     elif node_type == "classification_decision_table":
         result["decision_rules"] = _serialize_classification_decision_table_rules(node)
+        result["pre_python_code_summary"] = _resolve_python_code_summary(
+            getattr(node, "pre_python_code_id", None)
+        )
+        result["post_python_code_summary"] = _resolve_python_code_summary(
+            getattr(node, "post_python_code_id", None)
+        )
+
+    # Phase C: attach LLM config summary for nodes that have an llm_config FK.
+    if node_type in ("llm", "code_agent"):
+        llm_config_id = getattr(node, "llm_config_id", None)
+        result["llm_config_summary"] = _resolve_llm_config_summary(llm_config_id)
+
+    # Phase D: attach crew summary for CrewNode.
+    if node_type == "crew":
+        crew_id = getattr(node, "crew_id", None)
+        result["crew_summary"] = _resolve_crew_summary(crew_id)
+
+    # Phase F (Fix 16): attach python_code summary for nodes that wrap user-authored Python.
+    if node_type in ("python", "webhook_trigger"):
+        python_code_id = getattr(node, "python_code_id", None)
+        result["python_code_summary"] = _resolve_python_code_summary(python_code_id)
 
     # Add connected edge IDs
     outgoing = list(
@@ -330,9 +340,13 @@ def get_node(graph_id: int, node_id: str) -> dict:
 
 
 def get_subflow(graph_id: int, subgraph_node_id: str) -> dict:
-    """Return the target subgraph's name and description only.
+    """Return the target subgraph's name, description, and subgraph_graph_id.
 
     subgraph_node_id is the PK of the SubGraphNode row (not the subgraph itself).
+
+    subgraph_graph_id is the PK of the referenced Graph — pass it to
+    get_flow_overview(subgraph_graph_id) and get_node(subgraph_graph_id, ...)
+    to introspect the subflow's internals recursively.
     """
     try:
         pk = int(subgraph_node_id)
@@ -355,6 +369,7 @@ def get_subflow(graph_id: int, subgraph_node_id: str) -> dict:
         "id": sn.subgraph.pk,
         "name": sn.subgraph.name,
         "description": sn.subgraph.description,
+        "subgraph_graph_id": sn.subgraph.pk,
     }
 
 
@@ -414,6 +429,136 @@ def get_edges_to(graph_id: int, node_id: str) -> list[dict]:
             }
         )
     return result
+
+
+def get_recent_sessions(graph_id: int, limit: int = 5) -> dict:
+    """Return the most recent execution sessions for this flow.
+
+    These are EXECUTION sessions of the flow itself — not Flow Assistant
+    conversations. Used to answer "have I run recently?", "did my last run
+    succeed?", "how often do I get called?".
+
+    limit is clamped to [1, 25] to prevent excessive result sets.
+    """
+    limit = max(1, min(25, int(limit)))
+    sessions = Session.objects.filter(graph_id=graph_id).order_by("-created_at")[:limit]
+    _error_statuses = {
+        Session.SessionStatus.ERROR,
+        Session.SessionStatus.EXPIRED,
+    }
+
+    result = []
+    for session in sessions:
+        if session.finished_at and session.created_at:
+            duration_seconds = int(
+                (session.finished_at - session.created_at).total_seconds()
+            )
+        else:
+            duration_seconds = None
+
+        result.append(
+            {
+                "id": session.pk,
+                "status": session.status,
+                "created_at": session.created_at.isoformat()
+                if session.created_at
+                else None,
+                "finished_at": session.finished_at.isoformat()
+                if session.finished_at
+                else None,
+                "duration_seconds": duration_seconds,
+                "has_error": session.status in _error_statuses,
+                "entrypoint": session.entrypoint,
+                "start_variables": session.variables,
+            }
+        )
+
+    return {"sessions": result}
+
+
+def get_session_detail(graph_id: int, session_id: int) -> dict:
+    """Return per-node execution trace metadata for one session of this flow.
+
+    Returns timings + status + error summary per node — NO message bodies.
+    Message text, agent thoughts, and task outputs are explicitly excluded.
+
+    Cross-graph guard: if session_id belongs to a different graph, returns an
+    error rather than leaking another flow's data.
+
+    node_trace is derived from AgentSessionMessage and TaskSessionMessage rows
+    (created_at, node_name, execution_order only — no body text).  If no
+    session-message rows exist, node_trace is an empty list.
+    """
+    from tables.models.session_models import AgentSessionMessage, TaskSessionMessage
+
+    session = Session.objects.filter(pk=session_id).first()
+    if session is None:
+        return {"error": "Session not found."}
+
+    # Defense in depth: reject sessions that belong to a different graph.
+    if session.graph_id != graph_id:
+        return {"error": "Session not found or belongs to a different flow."}
+
+    if session.finished_at and session.created_at:
+        duration_seconds = int(
+            (session.finished_at - session.created_at).total_seconds()
+        )
+    else:
+        duration_seconds = None
+
+    # Build node trace from message rows — timestamps and structural metadata only.
+    # We deliberately do NOT read any text/content fields.
+    agent_entries = list(
+        AgentSessionMessage.objects.filter(session_id=session_id)
+        .order_by("execution_order", "created_at")
+        .values("node_name", "execution_order", "created_at")
+    )
+    task_entries = list(
+        TaskSessionMessage.objects.filter(session_id=session_id)
+        .order_by("execution_order", "created_at")
+        .values("node_name", "execution_order", "created_at")
+    )
+
+    node_trace = []
+    for entry in agent_entries:
+        node_trace.append(
+            {
+                "kind": "agent",
+                "node_name": entry["node_name"],
+                "execution_order": entry["execution_order"],
+                "timestamp": entry["created_at"].isoformat()
+                if entry["created_at"]
+                else None,
+            }
+        )
+    for entry in task_entries:
+        node_trace.append(
+            {
+                "kind": "task",
+                "node_name": entry["node_name"],
+                "execution_order": entry["execution_order"],
+                "timestamp": entry["created_at"].isoformat()
+                if entry["created_at"]
+                else None,
+            }
+        )
+    node_trace.sort(key=lambda e: (e["execution_order"], e["timestamp"] or ""))
+
+    _error_statuses = {
+        Session.SessionStatus.ERROR,
+        Session.SessionStatus.EXPIRED,
+    }
+
+    return {
+        "session_id": session.pk,
+        "status": session.status,
+        "created_at": session.created_at.isoformat() if session.created_at else None,
+        "finished_at": session.finished_at.isoformat() if session.finished_at else None,
+        "duration_seconds": duration_seconds,
+        "has_error": session.status in _error_statuses,
+        "entrypoint": session.entrypoint,
+        "node_trace": node_trace,
+    }
 
 
 def list_node_types(graph_id: int) -> list[str]:
@@ -478,6 +623,126 @@ def load_skill(name: str) -> dict:
             "error": f"Unknown skill '{name}'. Call list_skills to see available skills."
         }
     return {"name": name, "content": body}
+
+
+# ── private enrichment helpers ───────────────────────────────────────────────
+
+
+def _resolve_llm_config_summary(llm_config_id: int | None) -> dict | None:
+    """Return a provider/model/temperature summary for an LLMConfig FK value.
+
+    Returns None when llm_config_id is None (the FK is nullable on CodeAgentNode).
+    Tolerates a missing LLMConfig row (returns None rather than raising).
+    """
+    if llm_config_id is None:
+        return None
+
+    from tables.models.llm_models import LLMConfig
+
+    try:
+        llm_config = LLMConfig.objects.select_related("model__llm_provider").get(
+            pk=llm_config_id
+        )
+    except LLMConfig.DoesNotExist:
+        return None
+
+    provider_name = None
+    model_name = None
+    if llm_config.model:
+        model_name = llm_config.model.name
+        if llm_config.model.llm_provider:
+            provider_name = llm_config.model.llm_provider.name
+
+    return {
+        "provider": provider_name,
+        "model": model_name,
+        "temperature": llm_config.temperature,
+    }
+
+
+def _resolve_knowledge_metadata(knowledge_collection_id: int | None) -> list[dict]:
+    """Return name and document count for a SourceCollection FK value.
+
+    Returns an empty list when knowledge_collection_id is None.
+    NEVER returns document content.
+    """
+    if knowledge_collection_id is None:
+        return []
+
+    from tables.models.knowledge_models.collection_models import SourceCollection
+
+    try:
+        collection = SourceCollection.objects.get(pk=knowledge_collection_id)
+    except SourceCollection.DoesNotExist:
+        return []
+
+    return [
+        {
+            "id": collection.pk,
+            "name": collection.collection_name,
+            "description": None,  # SourceCollection has no description field
+            "document_count": collection.documents.count(),
+        }
+    ]
+
+
+def _resolve_crew_summary(crew_id: int | None) -> dict | None:
+    """Return a structural summary of a Crew for a CrewNode.
+
+    Includes agent roles/goals and task names/descriptions at overview level.
+    Explicitly excludes agent backstories and task instructions (prompt text)
+    to avoid leaking proprietary persona content.
+
+    Returns None when crew_id is None or the Crew row does not exist.
+    """
+    if crew_id is None:
+        return None
+
+    from tables.models.crew_models import Crew, Task
+
+    try:
+        crew = Crew.objects.prefetch_related("agents").get(pk=crew_id)
+    except Crew.DoesNotExist:
+        return None
+
+    agents = [{"role": agent.role, "goal": agent.goal} for agent in crew.agents.all()]
+
+    tasks_qs = Task.objects.filter(crew=crew).order_by("order", "pk")
+    tasks = [
+        {
+            "name": task.name,
+            "description": task.instructions[:200] if task.instructions else None,
+        }
+        for task in tasks_qs
+    ]
+
+    return {
+        "id": crew.pk,
+        "name": crew.name,
+        "description": crew.description,
+        "process": crew.process,
+        "agent_count": len(agents),
+        "task_count": len(tasks),
+        "agents": agents,
+        "tasks": tasks,
+    }
+
+
+def _resolve_python_code_summary(python_code_id: int | None) -> dict | None:
+    """Return the user-authored Python for a node, or None if the FK is absent."""
+    if python_code_id is None:
+        return None
+    try:
+        pc = PythonCode.objects.only("code", "entrypoint", "libraries").get(
+            pk=python_code_id
+        )
+    except PythonCode.DoesNotExist:
+        return None
+    return {
+        "code": pc.code,
+        "entrypoint": pc.entrypoint,
+        "libraries": pc.get_libraries_list(),
+    }
 
 
 # ── internal helpers ──────────────────────────────────────────────────────────

@@ -76,6 +76,15 @@ TOOL_SPECS: list[ToolSpec] = [
         description=(
             "Returns the configuration and connectivity of a single node in the flow. "
             "Sensitive fields (api_key, secret, token) are redacted. "
+            "For decision_table and classification_decision_table nodes, the response "
+            "includes `decision_rules` with the full branching logic. "
+            "For llm and code_agent nodes, the response includes `llm_config_summary` "
+            "with provider, model, and temperature. "
+            "For crew nodes, the response includes `crew_summary` with agents and tasks. "
+            "For python and webhook_trigger nodes, the response includes "
+            "`python_code_summary` with the actual code body, entrypoint, and library "
+            "list — use it to answer questions about what the node does, which APIs it "
+            "calls, and what libraries it depends on. "
             "Provide the numeric node ID as a string."
         ),
         parameters={
@@ -92,8 +101,10 @@ TOOL_SPECS: list[ToolSpec] = [
     ToolSpec(
         name="get_subflow",
         description=(
-            "Returns the name and description of the target subgraph referenced by a "
-            "SubGraphNode. Does NOT reveal the subflow's internal nodes or edges. "
+            "Returns the name, description, and subgraph_graph_id of the target "
+            "subgraph referenced by a SubGraphNode. Use the returned subgraph_graph_id "
+            "with get_flow_overview(subgraph_graph_id) to introspect the subflow's nodes "
+            "recursively. Cite the subflow by name when discussing its internals. "
             "Provide the numeric SubGraphNode ID as a string."
         ),
         parameters={
@@ -179,6 +190,48 @@ TOOL_SPECS: list[ToolSpec] = [
             "additionalProperties": False,
         },
     ),
+    ToolSpec(
+        name="get_recent_sessions",
+        description=(
+            "Returns the most recent EXECUTION sessions for this flow (not Flow "
+            "Assistant chat conversations). Use this when asked whether the flow "
+            "has run recently, whether the last run succeeded, how often it runs, "
+            "or what errors occurred. Each entry has status, timestamps, duration, "
+            "has_error, entrypoint, and start_variables. "
+            "limit defaults to 5, maximum 25."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "description": "Number of recent sessions to return (1–25, default 5).",
+                    "default": 5,
+                }
+            },
+            "required": [],
+        },
+    ),
+    ToolSpec(
+        name="get_session_detail",
+        description=(
+            "Returns per-node execution trace metadata (timings and status) for one "
+            "EXECUTION session of this flow. Use this to investigate a specific failure "
+            "after calling get_recent_sessions. Returns node_name, execution order, "
+            "and timestamps per node — NO message bodies or content text. "
+            "Provide the numeric session ID (from get_recent_sessions output)."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "integer",
+                    "description": "The numeric ID of the session to inspect.",
+                }
+            },
+            "required": ["session_id"],
+        },
+    ),
 ]
 
 # Map tool name → callable(graph_id, **kwargs)
@@ -198,6 +251,13 @@ _TOOL_CALLABLES: dict[str, callable] = {
     # Skill tools are graph-independent; graph_id is accepted but ignored.
     "list_skills": lambda _graph_id, **__: _tools.list_skills(),
     "load_skill": lambda _graph_id, name, **__: _tools.load_skill(name),
+    # Session tools are org-scoped by graph_id inside the tool implementation.
+    "get_recent_sessions": lambda graph_id, limit=5, **_: _tools.get_recent_sessions(
+        graph_id, limit=int(limit)
+    ),
+    "get_session_detail": lambda graph_id, session_id, **_: _tools.get_session_detail(
+        graph_id, int(session_id)
+    ),
 }
 
 
@@ -279,7 +339,9 @@ def _messages_for_llm(messages: list[dict]) -> list[dict]:
             continue
 
         content = msg.get("content", "")
-        if isinstance(content, str) and content.startswith("[tool result from an earlier turn"):
+        if isinstance(content, str) and content.startswith(
+            "[tool result from an earlier turn"
+        ):
             # Already stubbed — idempotent pass-through.
             result.append(msg)
             continue
@@ -511,7 +573,10 @@ class FlowAssistantService:
             "- You are an AI assistant — be transparent about that when asked.\n"
             "- You can answer questions about the flow's purpose, its nodes, and its subflows.\n"
             "- When asked about a specific node by name or role, call the `get_flow_overview` tool to retrieve the current list of node IDs and names, then call `get_node(node_id)` for details.\n"
-            "- You do NOT have access to subflow internals — only their names and descriptions.\n"
+            "- You can introspect subflows recursively — call `get_subflow` first to get the subgraph_graph_id, then `get_flow_overview(subgraph_graph_id)` for its nodes. Cite the subflow by name when discussing its internals.\n"
+            "- When asked about a Crew node (sometimes called a Project), call `get_node` on the CrewNode — it returns `crew_summary` with the crew's purpose, agents, and tasks at description level. You can describe what the crew does without revealing internal prompts or backstories.\n"
+            "- For Python nodes and webhook triggers, the returned `python_code_summary` contains the actual code, entrypoint, and library list — use it to answer questions about what the node does, which APIs it calls, what libraries it depends on.\n"
+            "- When asked about whether you've run, errors, or recent activity, call `get_recent_sessions`. For a specific failure, follow up with `get_session_detail(session_id)`. Note: these are EXECUTION sessions, not Flow Assistant chat conversations.\n"
             "- This is a read-only assistant: you cannot modify the flow.\n"
             "\n"
             "You have direct read access to this flow via the tools listed below. "

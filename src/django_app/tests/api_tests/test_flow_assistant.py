@@ -928,7 +928,12 @@ def test_messages_for_llm_is_idempotent():
                 }
             ],
         },
-        {"role": "tool", "tool_call_id": "c", "name": "get_flow_overview", "content": "<big>"},
+        {
+            "role": "tool",
+            "tool_call_id": "c",
+            "name": "get_flow_overview",
+            "content": "<big>",
+        },
         {"role": "assistant", "content": "{}"},
         {"role": "user", "content": "b"},
     ]
@@ -1067,7 +1072,9 @@ def test_get_node_decision_table_includes_decision_rules(graph, db):
     result = get_node(graph.pk, str(node.pk))
 
     assert result.get("type") == "decision_table"
-    assert "decision_rules" in result, "decision_rules key missing from get_node response"
+    assert (
+        "decision_rules" in result
+    ), "decision_rules key missing from get_node response"
 
     rules = result["decision_rules"]
     assert isinstance(rules, list)
@@ -1130,7 +1137,9 @@ def test_get_node_classification_decision_table_includes_decision_rules(graph, d
     result = get_node(graph.pk, str(node.pk))
 
     assert result.get("type") == "classification_decision_table"
-    assert "decision_rules" in result, "decision_rules key missing from get_node response"
+    assert (
+        "decision_rules" in result
+    ), "decision_rules key missing from get_node response"
 
     rules = result["decision_rules"]
     assert isinstance(rules, list)
@@ -1159,3 +1168,498 @@ def test_get_node_non_decision_type_has_no_decision_rules(graph, db):
     )
     result = get_node(graph.pk, str(node.pk))
     assert "decision_rules" not in result
+
+
+# ── Phase A: subflow recursion tests ──────────────────────────────────────────
+
+
+@pytest.mark.django_db
+def test_get_subflow_includes_subgraph_graph_id(graph, db):
+    """get_subflow must return subgraph_graph_id so the LLM can introspect recursively."""
+    from tables.models.graph_models import SubGraphNode
+    from tables.services.flow_assistant import get_subflow
+
+    subgraph = Graph.objects.create(name="Child Flow", description="Does child things.")
+    sn = SubGraphNode.objects.create(
+        graph=graph, subgraph=subgraph, node_name="sg_node"
+    )
+
+    result = get_subflow(graph.pk, str(sn.pk))
+
+    assert result.get("name") == "Child Flow"
+    assert result.get("description") == "Does child things."
+    assert (
+        "subgraph_graph_id" in result
+    ), "subgraph_graph_id missing from get_subflow response"
+    assert result["subgraph_graph_id"] == subgraph.pk
+
+
+# ── Phase B: session tools tests ──────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+def test_get_recent_sessions_filters_by_graph_id(db):
+    """get_recent_sessions must return only sessions for the requested graph."""
+    from django.utils import timezone
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_recent_sessions
+
+    graph_1 = Graph.objects.create(name="Flow One", description="")
+    graph_2 = Graph.objects.create(name="Flow Two", description="")
+
+    now = timezone.now()
+    for i in range(2):
+        Session.objects.create(
+            graph=graph_1,
+            status=Session.SessionStatus.END,
+            status_updated_at=now,
+        )
+    for i in range(2):
+        Session.objects.create(
+            graph=graph_2,
+            status=Session.SessionStatus.ERROR,
+            status_updated_at=now,
+        )
+
+    result = get_recent_sessions(graph_1.pk)
+    assert "sessions" in result
+    sessions = result["sessions"]
+    assert len(sessions) == 2, f"Expected 2 sessions for graph_1, got {len(sessions)}"
+    for s in sessions:
+        # All returned sessions must match the queried graph (verified via DB query below)
+        assert s["status"] == Session.SessionStatus.END
+
+
+@pytest.mark.django_db
+def test_get_recent_sessions_caps_limit(db):
+    """Passing limit=100 must return at most 25 sessions."""
+    from django.utils import timezone
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_recent_sessions
+
+    graph_big = Graph.objects.create(name="Big Flow", description="")
+    now = timezone.now()
+    for _ in range(30):
+        Session.objects.create(
+            graph=graph_big,
+            status=Session.SessionStatus.END,
+            status_updated_at=now,
+        )
+
+    result = get_recent_sessions(graph_big.pk, limit=100)
+    assert len(result["sessions"]) <= 25
+
+
+@pytest.mark.django_db
+def test_get_session_detail_rejects_cross_graph_session(db):
+    """get_session_detail must return an error when session belongs to a different graph."""
+    from django.utils import timezone
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_session_detail
+
+    graph_a = Graph.objects.create(name="Graph A", description="")
+    graph_b = Graph.objects.create(name="Graph B", description="")
+    now = timezone.now()
+
+    session = Session.objects.create(
+        graph=graph_a,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+    )
+
+    result = get_session_detail(graph_b.pk, session.pk)
+    assert "error" in result, "Expected error when session belongs to a different graph"
+    # No session data must leak
+    assert "session_id" not in result
+    assert "status" not in result
+    assert "node_trace" not in result
+
+
+@pytest.mark.django_db
+def test_get_session_detail_redacts_message_bodies(db):
+    """get_session_detail must not include any message body text from session messages."""
+    from django.utils import timezone
+    from tables.models.session_models import (
+        Session,
+        AgentSessionMessage,
+        TaskSessionMessage,
+    )
+    from tables.services.flow_assistant.tools import get_session_detail
+
+    SECRET_AGENT_TEXT = "SUPERSECRET_AGENT_THOUGHT_12345"
+    SECRET_TASK_RAW = "SUPERSECRET_TASK_OUTPUT_99999"
+
+    graph_c = Graph.objects.create(name="Graph C", description="")
+    now = timezone.now()
+    session = Session.objects.create(
+        graph=graph_c,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+    )
+
+    AgentSessionMessage.objects.create(
+        session=session,
+        node_name="agent_node",
+        execution_order=0,
+        thought=SECRET_AGENT_TEXT,
+        text="some text",
+        result="some result",
+    )
+    TaskSessionMessage.objects.create(
+        session=session,
+        node_name="task_node",
+        execution_order=1,
+        raw=SECRET_TASK_RAW,
+        name="task",
+        description="a task",
+        expected_output="output",
+    )
+
+    result = get_session_detail(graph_c.pk, session.pk)
+    result_str = str(result)
+
+    assert (
+        SECRET_AGENT_TEXT not in result_str
+    ), "Agent thought body must not appear in detail response"
+    assert (
+        SECRET_TASK_RAW not in result_str
+    ), "Task raw output must not appear in detail response"
+    assert "node_trace" in result
+
+
+# ── Phase C: LLM config and knowledge metadata in get_node ────────────────────
+
+
+@pytest.mark.django_db
+def test_get_node_llm_includes_llm_config_summary(graph, llm_config, db):
+    """get_node for LLMNode must include llm_config_summary with provider/model/temperature."""
+    from tables.models.graph_models import LLMNode
+    from tables.services.flow_assistant import get_node
+
+    node = LLMNode.objects.create(
+        graph=graph,
+        node_name="llm_node",
+        llm_config=llm_config,
+    )
+
+    result = get_node(graph.pk, str(node.pk))
+    assert result.get("type") == "llm"
+    assert (
+        "llm_config_summary" in result
+    ), "llm_config_summary missing from LLMNode get_node response"
+
+    summary = result["llm_config_summary"]
+    assert summary is not None
+    assert summary["model"] == "gpt-4o"
+    assert summary["provider"] == "openai"
+    assert summary["temperature"] == 0.5
+
+
+@pytest.mark.django_db
+def test_get_node_knowledge_sources_metadata_only(graph, db):
+    """Agent's knowledge_collection must appear as metadata — no document content."""
+    from tables.models.crew_models import Agent
+    from tables.models.knowledge_models.collection_models import (
+        SourceCollection,
+        DocumentMetadata,
+    )
+    from tables.services.flow_assistant.tools import _resolve_knowledge_metadata
+
+    collection = SourceCollection.objects.create(
+        collection_name="test_collection",
+        user_id="test_user",
+    )
+    DocumentMetadata.objects.create(
+        file_name="secret_doc.pdf",
+        file_type="pdf",
+        file_size=1024,
+        source_collection=collection,
+    )
+
+    metadata = _resolve_knowledge_metadata(collection.pk)
+    assert isinstance(metadata, list)
+    assert len(metadata) == 1
+    entry = metadata[0]
+    assert entry["name"] == "test_collection"
+    assert entry["document_count"] == 1
+    # Must not contain any document content field
+    result_str = str(metadata)
+    assert "secret_doc" not in result_str
+    assert "content" not in result_str
+
+
+# ── Phase D: Crew summary in get_node ────────────────────────────────────────
+
+
+@pytest.mark.django_db
+def test_get_node_crew_includes_crew_summary(graph, db):
+    """get_node for CrewNode must return crew_summary with agents/tasks, no backstory."""
+    from tables.models.crew_models import Agent, Crew, Task
+    from tables.models.graph_models import CrewNode
+    from tables.services.flow_assistant import get_node
+
+    BACKSTORY_TEXT = "TOPSECRET_BACKSTORY_CONTENT_XYZ"
+
+    agent_1 = Agent.objects.create(
+        role="Data Analyst",
+        goal="Analyse data accurately",
+        backstory=BACKSTORY_TEXT,
+    )
+    agent_2 = Agent.objects.create(
+        role="Report Writer",
+        goal="Write clear reports",
+        backstory="Another backstory that should not leak",
+    )
+    crew = Crew.objects.create(name="Analytics Crew", description="Runs analytics jobs")
+    crew.agents.set([agent_1, agent_2])
+
+    Task.objects.create(
+        crew=crew,
+        name="data_ingestion",
+        instructions="Load the data from the source system",
+        expected_output="Clean dataframe",
+        order=0,
+    )
+
+    crew_node = CrewNode.objects.create(
+        graph=graph, node_name="analytics_crew", crew=crew
+    )
+
+    result = get_node(graph.pk, str(crew_node.pk))
+    assert result.get("type") == "crew"
+    assert (
+        "crew_summary" in result
+    ), "crew_summary missing from CrewNode get_node response"
+
+    summary = result["crew_summary"]
+    assert summary is not None
+    assert summary["name"] == "Analytics Crew"
+    assert summary["agent_count"] == 2
+    assert summary["task_count"] == 1
+
+    # Agents list must include role and goal, but NOT backstory.
+    agents = summary["agents"]
+    assert len(agents) == 2
+    agent_roles = [a["role"] for a in agents]
+    assert "Data Analyst" in agent_roles
+    assert "Report Writer" in agent_roles
+    for agent_entry in agents:
+        assert (
+            "backstory" not in agent_entry
+        ), "backstory must not appear in crew_summary agents"
+
+    # Backstory text must not appear anywhere in the result.
+    result_str = str(result)
+    assert (
+        BACKSTORY_TEXT not in result_str
+    ), "backstory content must not leak in get_node response"
+
+    # Tasks list must include name and description snippet.
+    tasks = summary["tasks"]
+    assert len(tasks) == 1
+    assert tasks[0]["name"] == "data_ingestion"
+
+
+# ── Phase F (Fix 16): python_code_summary in get_node ────────────────────────
+
+
+@pytest.mark.django_db
+def test_get_node_python_includes_python_code_summary(graph, db):
+    """get_node for PythonNode must include python_code_summary with code, entrypoint, libraries."""
+    from tables.models.graph_models import PythonNode
+    from tables.models.python_models import PythonCode
+    from tables.services.flow_assistant import get_node
+
+    python_code = PythonCode.objects.create(
+        code=(
+            "import requests\n\n"
+            "def main(args):\n"
+            "    r = requests.get('https://api.openweathermap.org/data/2.5/weather')\n"
+            "    return r.json()"
+        ),
+        entrypoint="main",
+        libraries="requests pandas",
+    )
+    node = PythonNode.objects.create(
+        graph=graph,
+        node_name="fetch_weather",
+        python_code=python_code,
+    )
+
+    result = get_node(graph.pk, str(node.pk))
+
+    assert result.get("type") == "python"
+    assert (
+        "python_code_summary" in result
+    ), "python_code_summary missing from PythonNode get_node response"
+
+    summary = result["python_code_summary"]
+    assert summary is not None
+    assert "openweathermap" in summary["code"], "code body must contain the API URL"
+    assert summary["entrypoint"] == "main"
+    assert summary["libraries"] == ["requests", "pandas"]
+
+
+@pytest.mark.django_db
+def test_get_node_webhook_trigger_includes_python_code_summary(graph, db):
+    """get_node for WebhookTriggerNode must include python_code_summary with code, entrypoint, libraries."""
+    from tables.models.graph_models import WebhookTriggerNode
+    from tables.models.python_models import PythonCode
+    from tables.services.flow_assistant import get_node
+
+    python_code = PythonCode.objects.create(
+        code=(
+            "import httpx\n\n"
+            "def handle(payload):\n"
+            "    resp = httpx.post('https://hooks.example.com/notify', json=payload)\n"
+            "    return resp.json()"
+        ),
+        entrypoint="handle",
+        libraries="httpx",
+    )
+    node = WebhookTriggerNode.objects.create(
+        graph=graph,
+        node_name="webhook_entry",
+        python_code=python_code,
+    )
+
+    result = get_node(graph.pk, str(node.pk))
+
+    assert result.get("type") == "webhook_trigger"
+    assert (
+        "python_code_summary" in result
+    ), "python_code_summary missing from WebhookTriggerNode get_node response"
+
+    summary = result["python_code_summary"]
+    assert summary is not None
+    assert (
+        "hooks.example.com" in summary["code"]
+    ), "code body must contain the webhook URL"
+    assert summary["entrypoint"] == "handle"
+    assert summary["libraries"] == ["httpx"]
+
+
+# ── Fix 17: CDT serialization + pre/post python summaries ────────────────────
+
+
+@pytest.mark.django_db
+def test_get_node_classification_decision_table_serializes_cleanly(graph, db):
+    """get_node on a CDT with pre/post FK must not raise during JSON serialization.
+
+    Asserts:
+    - json.dumps(result, cls=DjangoJSONEncoder) succeeds (no TypeError from FK
+      model instances).  The view layer uses DjangoJSONEncoder for datetimes, so
+      the test mirrors that encoding path.
+    - FK fields (pre_python_code_id etc.) are NOT in result["config"] — relations
+      are skipped generically by _node_to_dict's is_relation check.
+    """
+    import json
+
+    from django.core.serializers.json import DjangoJSONEncoder
+
+    from tables.models.graph_models import ClassificationDecisionTableNode
+    from tables.models.python_models import PythonCode
+    from tables.services.flow_assistant import get_node
+
+    pre_code = PythonCode.objects.create(
+        code="def pre(args):\n    args['pre_called'] = True",
+        entrypoint="pre",
+        libraries="",
+    )
+    post_code = PythonCode.objects.create(
+        code="def post(args):\n    args['post_called'] = True",
+        entrypoint="post",
+        libraries="",
+    )
+    node = ClassificationDecisionTableNode.objects.create(
+        graph=graph,
+        node_name="cdt_clean",
+        pre_python_code=pre_code,
+        post_python_code=post_code,
+        default_next_node_id=None,
+        next_error_node_id=None,
+    )
+
+    result = get_node(graph.pk, str(node.pk))
+
+    # Must be JSON-serializable via the same encoder the view uses.
+    serialized = json.dumps(result, cls=DjangoJSONEncoder)
+    assert serialized  # non-empty
+
+    # FK fields must NOT appear in config (they are relations, skipped generically).
+    config = result.get("config", {})
+    relation_keys = {
+        "pre_python_code",
+        "pre_python_code_id",
+        "post_python_code",
+        "post_python_code_id",
+        "default_llm_config",
+        "default_llm_config_id",
+        "graph",
+        "graph_id",
+    }
+    for key in relation_keys:
+        assert key not in config, f"Relation field '{key}' must not appear in config"
+
+
+@pytest.mark.django_db
+def test_get_node_classification_decision_table_includes_pre_post_python_summaries(
+    graph, db
+):
+    """get_node for CDT must include pre/post python_code_summary with correct code bodies.
+
+    Also verifies that when both FKs are None the keys are still present (value is None).
+    """
+    from tables.models.graph_models import ClassificationDecisionTableNode
+    from tables.models.python_models import PythonCode
+    from tables.services.flow_assistant import get_node
+
+    pre_code = PythonCode.objects.create(
+        code="def pre(args):\n    args['pre_called'] = True",
+        entrypoint="pre",
+        libraries="",
+    )
+    post_code = PythonCode.objects.create(
+        code="def post(args):\n    args['post_called'] = True",
+        entrypoint="post",
+        libraries="",
+    )
+    node = ClassificationDecisionTableNode.objects.create(
+        graph=graph,
+        node_name="cdt_with_hooks",
+        pre_python_code=pre_code,
+        post_python_code=post_code,
+        default_next_node_id=None,
+        next_error_node_id=None,
+    )
+
+    result = get_node(graph.pk, str(node.pk))
+
+    assert result.get("type") == "classification_decision_table"
+
+    # Pre-code summary must be present and contain the expected identifier.
+    assert "pre_python_code_summary" in result, "pre_python_code_summary key missing"
+    pre_summary = result["pre_python_code_summary"]
+    assert pre_summary is not None
+    assert "pre_called" in pre_summary["code"]
+
+    # Post-code summary must be present and contain the expected identifier.
+    assert "post_python_code_summary" in result, "post_python_code_summary key missing"
+    post_summary = result["post_python_code_summary"]
+    assert post_summary is not None
+    assert "post_called" in post_summary["code"]
+
+    # When FKs are None the keys still exist with value None.
+    node_no_hooks = ClassificationDecisionTableNode.objects.create(
+        graph=graph,
+        node_name="cdt_no_hooks",
+        pre_python_code=None,
+        post_python_code=None,
+        default_next_node_id=None,
+        next_error_node_id=None,
+    )
+    result_no_hooks = get_node(graph.pk, str(node_no_hooks.pk))
+    assert "pre_python_code_summary" in result_no_hooks
+    assert result_no_hooks["pre_python_code_summary"] is None
+    assert "post_python_code_summary" in result_no_hooks
+    assert result_no_hooks["post_python_code_summary"] is None

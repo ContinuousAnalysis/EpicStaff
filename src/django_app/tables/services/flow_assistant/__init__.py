@@ -11,6 +11,8 @@ from .tools import (
     get_node,
     get_subflow,
     get_flow_overview,
+    get_recent_sessions,
+    get_session_detail,
     list_node_types,
     _build_node_index,
     resolve_node_display_name,

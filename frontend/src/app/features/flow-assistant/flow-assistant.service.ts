@@ -56,6 +56,14 @@ function toolStatusFor(event: StreamToolCallEvent): string {
             return 'Browsing the knowledge base…';
         case 'load_skill':
             return typeof a['name'] === 'string' ? `Reading the "${a['name']}" skill…` : 'Reading a skill…';
+        case 'get_recent_sessions':
+            return 'Reviewing recent runs…';
+        case 'get_session_detail': {
+            const sid = a['session_id'];
+            return typeof sid === 'number' || (typeof sid === 'string' && sid !== '')
+                ? `Looking up session ${sid}…`
+                : 'Looking up a session…';
+        }
         default:
             return 'Working…';
     }

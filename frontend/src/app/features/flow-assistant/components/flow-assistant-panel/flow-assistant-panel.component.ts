@@ -52,6 +52,7 @@ export class FlowAssistantPanelComponent {
     readonly showSettings = signal(false);
     readonly inputText = signal('');
     readonly sidebarOpen = signal<boolean>(this.loadPersistedSidebarOpen());
+    readonly copiedMessageIndex = signal<number | null>(null);
 
     readonly messages = computed(() => this.assistantService.messages());
     readonly isStreaming = computed(() => this.assistantService.isStreaming());
@@ -102,6 +103,31 @@ export class FlowAssistantPanelComponent {
 
     isUserMessage(message: FlowAssistantMessage): message is { role: 'user'; content: string } {
         return message.role === 'user';
+    }
+
+    isLastStreamingAssistant(message: FlowAssistantMessage, index: number): boolean {
+        const msgs = this.messages();
+        return this.isStreaming() && index === msgs.length - 1 && this.isAssistantMessage(message);
+    }
+
+    copyAssistantMessage(message: FlowAssistantMessage, index: number): void {
+        if (!this.isAssistantMessage(message)) return;
+        const text = message.content ?? '';
+        if (!text) return;
+        navigator.clipboard
+            .writeText(text)
+            .then(() => {
+                this.copiedMessageIndex.set(index);
+                setTimeout(() => {
+                    if (this.copiedMessageIndex() === index) {
+                        this.copiedMessageIndex.set(null);
+                    }
+                }, 1500);
+            })
+            .catch(() => {
+                // Clipboard API can fail in non-secure contexts or denied permissions;
+                // fail silently — the user can still drag-select + Ctrl+C.
+            });
     }
 
     onActionExecuted(action: ActionItem): void {
