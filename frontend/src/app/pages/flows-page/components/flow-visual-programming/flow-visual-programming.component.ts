@@ -148,7 +148,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly overlay: Overlay,
         private readonly configService: ConfigService,
         private readonly elementRef: ElementRef,
-        private readonly epicChatService: EpicChatService,
+        public readonly epicChatService: EpicChatService,
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
         private readonly unsavedChangesDialog: UnsavedChangesDialogService,
         private readonly runSessionSSEService: RunSessionSSEService,
@@ -453,34 +453,41 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
             );
     }
 
-    public connectToEpicChat(): void {
+    public handleOpenAgent(): void {
         if (!this.graph?.id) {
-            this.toastService.error('Unable to connect chat: Missing flow ID');
+            this.toastService.error('Unable to open agent chat: Missing flow ID');
             return;
         }
 
         const flowUrl = this.normalizeApiUrl(this.configService.apiUrl);
         if (!flowUrl) {
-            this.toastService.error('Unable to connect chat: Missing API URL');
+            this.toastService.error('Unable to open agent chat: Missing API URL');
             return;
         }
 
-        this.flowApiService.patchGraph(this.graph.id, { epicchat_enabled: true }).subscribe({
-            next: () => {
-                this.graph.epicchat_enabled = true;
-                this.epicChatService.requestCreateAgent({
-                    name: this.graph.name?.trim() || `Flow ${this.graph.id}`,
-                    description: this.graph.description?.trim(),
-                    flowId: this.graph.id,
-                    flowUrl,
-                    selectAfterCreate: true,
-                });
-                this.toastService.success('Flow connected to Epic Chat');
-            },
-            error: () => {
-                this.toastService.error('Failed to save EpicChat connection');
-            },
+        this.epicChatService.setActiveFlow({
+            flowId: this.graph.id,
+            name: this.graph.name?.trim() || `Flow ${this.graph.id}`,
+            description: this.graph.description?.trim() ?? '',
+            flowUrl,
         });
+
+        if (this.epicChatService.isChatOpen()) {
+            this.epicChatService.requestCloseChat();
+        } else {
+            this.epicChatService.requestOpenChat();
+        }
+
+        if (!this.graph.epicchat_enabled) {
+            this.flowApiService.patchGraph(this.graph.id, { epicchat_enabled: true }).subscribe({
+                next: () => {
+                    this.graph.epicchat_enabled = true;
+                },
+                error: () => {
+                    this.toastService.error('Failed to save EpicChat connection');
+                },
+            });
+        }
     }
 
     private normalizeApiUrl(apiUrl: string): string {

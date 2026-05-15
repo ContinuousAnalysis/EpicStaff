@@ -3,6 +3,7 @@
         [graphName]="graph.name"
         [graphId]="graph.id"
         [isEpicChatEnabled]="isEpicChatEnabled"
+        [isChatOpen]="epicChatService.isChatOpen()"
         [graph]="graph"
         [isSaving]="isSaving()"
         [isRunning]="isRunning()"
@@ -13,7 +14,7 @@
         (viewSessions)="handleViewSessions()"
         (run)="handleRunFlow()"
         (getCurl)="handleGetCurl()"
-        (connectChat)="connectToEpicChat()"
+        (openAgent)="handleOpenAgent()"
         (flowEdited)="onFlowEdited($event)"
     ></app-flow-header>
 

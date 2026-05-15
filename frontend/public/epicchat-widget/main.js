@@ -84817,80 +84817,104 @@ var MessageService = _MessageService;
 })();
 
 // src/app/chat.component.ts
-function ChatComponent_Conditional_2_Template(rf, ctx) {
+function ChatComponent_Conditional_0_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 4);
-    \u0275\u0275listener("epClickOutside", function ChatComponent_Conditional_2_Template_div_epClickOutside_0_listener() {
+    \u0275\u0275elementStart(0, "div", 2);
+    \u0275\u0275listener("click", function ChatComponent_Conditional_0_Template_div_click_0_listener() {
       \u0275\u0275restoreView(_r1);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.toggleChat());
+    });
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(1, "ep-chat-toggle-button", 3);
+    \u0275\u0275listener("clicked", function ChatComponent_Conditional_0_Template_ep_chat_toggle_button_clicked_1_listener() {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.toggleChat());
+    });
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275property("iconPath", ctx_r1.iconPath())("chatIconSize", ctx_r1.chatIconSize)("unreadCount", ctx_r1.chatService.unreadCount());
+  }
+}
+function ChatComponent_Conditional_1_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r3 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 4);
+    \u0275\u0275listener("epClickOutside", function ChatComponent_Conditional_1_Template_div_epClickOutside_0_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onClickOutside());
     });
     \u0275\u0275elementStart(1, "ep-chat-header", 5);
-    \u0275\u0275listener("closed", function ChatComponent_Conditional_2_Template_ep_chat_header_closed_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    \u0275\u0275listener("closed", function ChatComponent_Conditional_1_Template_ep_chat_header_closed_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.closeChat());
-    })("infoClicked", function ChatComponent_Conditional_2_Template_ep_chat_header_infoClicked_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("infoClicked", function ChatComponent_Conditional_1_Template_ep_chat_header_infoClicked_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onInfoClick());
-    })("dragClicked", function ChatComponent_Conditional_2_Template_ep_chat_header_dragClicked_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("dragClicked", function ChatComponent_Conditional_1_Template_ep_chat_header_dragClicked_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onDragClick());
-    })("collapseClicked", function ChatComponent_Conditional_2_Template_ep_chat_header_collapseClicked_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("collapseClicked", function ChatComponent_Conditional_1_Template_ep_chat_header_collapseClicked_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onCollapseClick());
-    })("toggleFullHeightClicked", function ChatComponent_Conditional_2_Template_ep_chat_header_toggleFullHeightClicked_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("toggleFullHeightClicked", function ChatComponent_Conditional_1_Template_ep_chat_header_toggleFullHeightClicked_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onToggleFullHeight());
-    })("dockClicked", function ChatComponent_Conditional_2_Template_ep_chat_header_dockClicked_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("dockClicked", function ChatComponent_Conditional_1_Template_ep_chat_header_dockClicked_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onDockClick());
-    })("agentSelected", function ChatComponent_Conditional_2_Template_ep_chat_header_agentSelected_1_listener($event) {
-      \u0275\u0275restoreView(_r1);
+    })("agentSelected", function ChatComponent_Conditional_1_Template_ep_chat_header_agentSelected_1_listener($event) {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onAgentSelected($event));
-    })("clearChatHistory", function ChatComponent_Conditional_2_Template_ep_chat_header_clearChatHistory_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("clearChatHistory", function ChatComponent_Conditional_1_Template_ep_chat_header_clearChatHistory_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onClearChatHistory());
-    })("createAgent", function ChatComponent_Conditional_2_Template_ep_chat_header_createAgent_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("createAgent", function ChatComponent_Conditional_1_Template_ep_chat_header_createAgent_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onCreateAgent());
-    })("editAgent", function ChatComponent_Conditional_2_Template_ep_chat_header_editAgent_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("editAgent", function ChatComponent_Conditional_1_Template_ep_chat_header_editAgent_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onEditAgent());
-    })("removeAgent", function ChatComponent_Conditional_2_Template_ep_chat_header_removeAgent_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("removeAgent", function ChatComponent_Conditional_1_Template_ep_chat_header_removeAgent_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onRemoveAgent());
-    })("setDefaultPosition", function ChatComponent_Conditional_2_Template_ep_chat_header_setDefaultPosition_1_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("setDefaultPosition", function ChatComponent_Conditional_1_Template_ep_chat_header_setDefaultPosition_1_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onSetDefaultPosition());
     });
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(2, "ep-chat-body", 6);
-    \u0275\u0275listener("actionClick", function ChatComponent_Conditional_2_Template_ep_chat_body_actionClick_2_listener($event) {
-      \u0275\u0275restoreView(_r1);
+    \u0275\u0275listener("actionClick", function ChatComponent_Conditional_1_Template_ep_chat_body_actionClick_2_listener($event) {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onActionClick($event));
     });
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(3, "ep-chat-footer", 7);
-    \u0275\u0275listener("sendMessage", function ChatComponent_Conditional_2_Template_ep_chat_footer_sendMessage_3_listener($event) {
-      \u0275\u0275restoreView(_r1);
+    \u0275\u0275listener("sendMessage", function ChatComponent_Conditional_1_Template_ep_chat_footer_sendMessage_3_listener($event) {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onSendMessage($event));
-    })("stop", function ChatComponent_Conditional_2_Template_ep_chat_footer_stop_3_listener() {
-      \u0275\u0275restoreView(_r1);
+    })("stop", function ChatComponent_Conditional_1_Template_ep_chat_footer_stop_3_listener() {
+      \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onStopGenerating());
     });
@@ -84908,12 +84932,12 @@ function ChatComponent_Conditional_2_Template(rf, ctx) {
     \u0275\u0275property("isTyping", ctx_r1.isTyping())("messages", ctx_r1.chatService.messages())("currentAgent", ctx_r1.agentService.currentAgent())("fileAttachmentEnabled", !ctx_r1.fileAttachmentDisabled);
   }
 }
-function ChatComponent_Conditional_3_Template(rf, ctx) {
+function ChatComponent_Conditional_2_Template(rf, ctx) {
   if (rf & 1) {
-    const _r3 = \u0275\u0275getCurrentView();
+    const _r4 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "ep-epicstaff-agent-config", 8);
-    \u0275\u0275listener("closed", function ChatComponent_Conditional_3_Template_ep_epicstaff_agent_config_closed_0_listener() {
-      \u0275\u0275restoreView(_r3);
+    \u0275\u0275listener("closed", function ChatComponent_Conditional_2_Template_ep_epicstaff_agent_config_closed_0_listener() {
+      \u0275\u0275restoreView(_r4);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.onCloseAgentConfig());
     });
@@ -84940,7 +84964,7 @@ var _ChatComponent = class _ChatComponent {
   get themeAttr() {
     return this._themePreset;
   }
-  constructor(chatService, agentService, messageService, apiService, storageService, actionService, chatParentBridgeService, hostElementRef, authTokenService) {
+  constructor(chatService, agentService, messageService, apiService, storageService, actionService, chatParentBridgeService, hostElementRef, authTokenService, ngZone) {
     this.chatService = chatService;
     this.agentService = agentService;
     this.messageService = messageService;
@@ -84950,6 +84974,7 @@ var _ChatComponent = class _ChatComponent {
     this.chatParentBridgeService = chatParentBridgeService;
     this.hostElementRef = hostElementRef;
     this.authTokenService = authTokenService;
+    this.ngZone = ngZone;
     this.title = "EpicChat Agent";
     this.basePath = "";
     this.chatWidth = CHAT_CONSTANTS.DEFAULT_WIDTH;
@@ -84967,6 +84992,7 @@ var _ChatComponent = class _ChatComponent {
     this.defaultAgentDescription = "";
     this.defaultAgentFlowUrl = "";
     this.defaultAgentFlowId = null;
+    this.hideToggleButton = false;
     this.fileAttachmentDisabled = true;
     this.dockEnabled = false;
     this.isDockMode = false;
@@ -84994,6 +85020,10 @@ var _ChatComponent = class _ChatComponent {
     this.hasInitializedOpenState = false;
     this.apiSyncDone = false;
     this.apiSyncPending = false;
+    const host = this.hostElementRef.nativeElement;
+    host.toggleChat = () => this.ngZone.run(() => this.toggleChat());
+    host.openChat = () => this.ngZone.run(() => this.openChat());
+    host.closeChat = () => this.ngZone.run(() => this.closeChat());
     effect(() => {
       if (this.chatService.isOpen() && this.chatFooter) {
         setTimeout(() => this.chatFooter?.focus(), 100);
@@ -85103,6 +85133,12 @@ var _ChatComponent = class _ChatComponent {
         for (let i = 0; i < diff; i++) {
           this.chatService.incrementUnreadCount();
         }
+      }
+    }
+    if (this.isMonoAgent && this.hasInitializedOpenState) {
+      const monoAgentChanged = changes["defaultAgentFlowId"] || changes["defaultAgentFlowUrl"] || changes["defaultAgentName"] || changes["defaultAgentDescription"];
+      if (monoAgentChanged) {
+        this.initializeMonoAgent();
       }
     }
   }
@@ -85596,7 +85632,7 @@ var _ChatComponent = class _ChatComponent {
     }
   }
   hasDefaultAgentParams() {
-    return !!this.defaultAgentName && !!this.defaultAgentDescription && !!this.defaultAgentFlowUrl && this.defaultAgentFlowId !== null;
+    return !!this.defaultAgentName && !!this.defaultAgentFlowUrl && this.defaultAgentFlowId !== null;
   }
   createInternalDefaultAgent(agentId) {
     return {
@@ -85884,7 +85920,7 @@ var _ChatComponent = class _ChatComponent {
   }
 };
 _ChatComponent.\u0275fac = function ChatComponent_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _ChatComponent)(\u0275\u0275directiveInject(ChatService), \u0275\u0275directiveInject(EpicstaffAgentService), \u0275\u0275directiveInject(MessageService), \u0275\u0275directiveInject(ApiService), \u0275\u0275directiveInject(StorageService), \u0275\u0275directiveInject(ActionService), \u0275\u0275directiveInject(ChatParentBridgeService), \u0275\u0275directiveInject(ElementRef), \u0275\u0275directiveInject(AuthTokenService));
+  return new (__ngFactoryType__ || _ChatComponent)(\u0275\u0275directiveInject(ChatService), \u0275\u0275directiveInject(EpicstaffAgentService), \u0275\u0275directiveInject(MessageService), \u0275\u0275directiveInject(ApiService), \u0275\u0275directiveInject(StorageService), \u0275\u0275directiveInject(ActionService), \u0275\u0275directiveInject(ChatParentBridgeService), \u0275\u0275directiveInject(ElementRef), \u0275\u0275directiveInject(AuthTokenService), \u0275\u0275directiveInject(NgZone));
 };
 _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChatComponent, selectors: [["epic-chat"]], viewQuery: function ChatComponent_Query(rf, ctx) {
   if (rf & 1) {
@@ -85902,28 +85938,18 @@ _ChatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _
   if (rf & 2) {
     \u0275\u0275attribute("data-theme", ctx.themeAttr);
   }
-}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", fileAttachmentDisabled: "fileAttachmentDisabled", dockEnabled: "dockEnabled", isDockMode: "isDockMode", apiBaseUrl: "apiBaseUrl", accessToken: "accessToken", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand", messageTimeout: "messageTimeout", themeConfig: "themeConfig", themePreset: "themePreset", theme: "theme" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 4, vars: 5, consts: [["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "ep-popup--dock", "ngStyle", "config", "resizeDisabled"], [3, "popupState", "currentAgent", "newAgentParams"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config", "resizeDisabled"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "dockClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent", "dockEnabled", "isDockMode"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "stop", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], [3, "closed", "popupState", "currentAgent", "newAgentParams"]], template: function ChatComponent_Template(rf, ctx) {
+}, inputs: { uniqueUserId: "uniqueUserId", userData: "userData", title: "title", basePath: "basePath", chatWidth: "chatWidth", chatHeight: "chatHeight", chatTop: "chatTop", chatLeft: "chatLeft", chatRight: "chatRight", chatBottom: "chatBottom", chatIconPath: "chatIconPath", chatIconSize: "chatIconSize", dateLocale: "dateLocale", chatPosition: "chatPosition", isMonoAgent: "isMonoAgent", defaultAgentName: "defaultAgentName", defaultAgentDescription: "defaultAgentDescription", defaultAgentFlowUrl: "defaultAgentFlowUrl", defaultAgentFlowId: "defaultAgentFlowId", hideToggleButton: "hideToggleButton", fileAttachmentDisabled: "fileAttachmentDisabled", dockEnabled: "dockEnabled", isDockMode: "isDockMode", apiBaseUrl: "apiBaseUrl", accessToken: "accessToken", basicAuthLogin: "basicAuthLogin", basicAuthPassword: "basicAuthPassword", epChatCommand: "epChatCommand", messageTimeout: "messageTimeout", themeConfig: "themeConfig", themePreset: "themePreset", theme: "theme" }, outputs: { epChatCommandResult: "epChatCommandResult", epChatEvent: "epChatEvent" }, features: [\u0275\u0275ProvidersFeature([ChatParentBridgeService]), \u0275\u0275NgOnChangesFeature], decls: 3, vars: 3, consts: [["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "ep-popup--dock", "ngStyle", "config", "resizeDisabled"], [3, "popupState", "currentAgent", "newAgentParams"], ["aria-hidden", "true", 1, "ep-chat-click-area", 3, "click"], [3, "clicked", "iconPath", "chatIconSize", "unreadCount"], ["epClickOutside", "", "epResizableChat", "", 1, "ep-popup", 3, "epClickOutside", "ngStyle", "config", "resizeDisabled"], [3, "closed", "infoClicked", "dragClicked", "collapseClicked", "toggleFullHeightClicked", "dockClicked", "agentSelected", "clearChatHistory", "createAgent", "editAgent", "removeAgent", "setDefaultPosition", "currentAgent", "agents", "isMonoAgent", "dockEnabled", "isDockMode"], [3, "actionClick", "messages", "isTyping", "scrollMode"], [3, "sendMessage", "stop", "isTyping", "messages", "currentAgent", "fileAttachmentEnabled"], [3, "closed", "popupState", "currentAgent", "newAgentParams"]], template: function ChatComponent_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 0);
-    \u0275\u0275listener("click", function ChatComponent_Template_div_click_0_listener() {
-      return ctx.toggleChat();
-    });
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(1, "ep-chat-toggle-button", 1);
-    \u0275\u0275listener("clicked", function ChatComponent_Template_ep_chat_toggle_button_clicked_1_listener() {
-      return ctx.toggleChat();
-    });
-    \u0275\u0275elementEnd();
-    \u0275\u0275conditionalCreate(2, ChatComponent_Conditional_2_Template, 4, 17, "div", 2);
-    \u0275\u0275conditionalCreate(3, ChatComponent_Conditional_3_Template, 1, 3, "ep-epicstaff-agent-config", 3);
+    \u0275\u0275conditionalCreate(0, ChatComponent_Conditional_0_Template, 2, 3);
+    \u0275\u0275conditionalCreate(1, ChatComponent_Conditional_1_Template, 4, 17, "div", 0);
+    \u0275\u0275conditionalCreate(2, ChatComponent_Conditional_2_Template, 1, 3, "ep-epicstaff-agent-config", 1);
   }
   if (rf & 2) {
+    \u0275\u0275conditional(!ctx.hideToggleButton ? 0 : -1);
     \u0275\u0275advance();
-    \u0275\u0275property("iconPath", ctx.iconPath())("chatIconSize", ctx.chatIconSize)("unreadCount", ctx.chatService.unreadCount());
+    \u0275\u0275conditional(ctx.chatService.isOpen() ? 1 : -1);
     \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.chatService.isOpen() ? 2 : -1);
-    \u0275\u0275advance();
-    \u0275\u0275conditional(ctx.isAgentConfigOpen() && !ctx.isMonoAgent ? 3 : -1);
+    \u0275\u0275conditional(ctx.isAgentConfigOpen() && !ctx.isMonoAgent ? 2 : -1);
   }
 }, dependencies: [
   CommonModule,
@@ -85949,8 +85975,8 @@ var ChatComponent = _ChatComponent;
       EpicstaffAgentConfigComponent,
       ClickOutsideDirective,
       ResizableChatDirective
-    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '<div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n<ep-chat-toggle-button\n  [iconPath]="iconPath()"\n  [chatIconSize]="chatIconSize"\n  [unreadCount]="chatService.unreadCount()"\n  (clicked)="toggleChat()"\n/>\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [class.ep-popup--dock]="isDockMode"\n    [ngStyle]="chatStyle()"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    [resizeDisabled]="isDockMode"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="agentService.currentAgent()"\n      [agents]="agentService.visibleAgents()"\n      [isMonoAgent]="isMonoAgent"\n      [dockEnabled]="dockEnabled"\n      [isDockMode]="isDockMode"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (dockClicked)="onDockClick()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping()"\n      [scrollMode]="scrollMode()"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping()"\n      [messages]="chatService.messages()"\n      [currentAgent]="agentService.currentAgent()"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (stop)="onStopGenerating()"\n    />\n  </div>\n\n  <!-- <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div> -->\n}\n\n@if (isAgentConfigOpen() && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState()"\n    [currentAgent]="agentService.currentAgent()"\n    [newAgentParams]="newAgentParamsForConfig()"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  --ep-font-family:\n    "Inter",\n    "Inter var",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Arial,\n    sans-serif;\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-menu-panel-min-width: 170px;\n  --ep-menu-panel-radius: 8px;\n  --ep-menu-panel-bg: var(--ep-color-surface);\n  --ep-menu-panel-border: var(--ep-color-border);\n  --ep-menu-panel-divider: var(--ep-color-border);\n  --ep-menu-panel-item-text: var(--ep-color-text);\n  --ep-menu-panel-item-hover-bg: var(--ep-color-surface-alt);\n  --ep-menu-panel-item-padding: 10px 16px;\n  --ep-menu-panel-shadow: 0 2px 4px 0 var(--ep-color-shadow);\n  --ep-footer-select-open-bg: var(--ep-color-surface-alt);\n  --ep-footer-select-open-border: var(--ep-color-border);\n  --ep-footer-select-text: var(--ep-color-text);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-menu-panel-bg: #212325;\n  --ep-menu-panel-border: #2b2d30;\n  --ep-menu-panel-divider: #2b2d30;\n  --ep-menu-panel-item-text: #d9d9de;\n  --ep-menu-panel-item-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-menu-panel-shadow:\n    0 0 1px rgba(0, 0, 0, 0.04),\n    0 9px 18px rgba(0, 0, 0, 0.16),\n    0 6px 10px rgba(0, 0, 0, 0.12);\n  --ep-footer-select-open-bg: #2b2d30;\n  --ep-footer-select-open-border: #2b2d30;\n  --ep-footer-select-text: #d9d9de;\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-chat-bg-answer: #2b2d30;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
-  }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: ChatParentBridgeService }, { type: ElementRef }, { type: AuthTokenService }], { uniqueUserId: [{
+    ], encapsulation: ViewEncapsulation.ShadowDom, providers: [ChatParentBridgeService], template: '@if (!hideToggleButton) {\n  <div class="ep-chat-click-area" (click)="toggleChat()" aria-hidden="true"></div>\n\n  <ep-chat-toggle-button\n    [iconPath]="iconPath()"\n    [chatIconSize]="chatIconSize"\n    [unreadCount]="chatService.unreadCount()"\n    (clicked)="toggleChat()"\n  />\n}\n\n@if (chatService.isOpen()) {\n  <div\n    class="ep-popup"\n    [class.ep-popup--dock]="isDockMode"\n    [ngStyle]="chatStyle()"\n    epClickOutside\n    epResizableChat\n    [config]="getConfig()"\n    [resizeDisabled]="isDockMode"\n    (epClickOutside)="onClickOutside()"\n  >\n    <ep-chat-header\n      [currentAgent]="agentService.currentAgent()"\n      [agents]="agentService.visibleAgents()"\n      [isMonoAgent]="isMonoAgent"\n      [dockEnabled]="dockEnabled"\n      [isDockMode]="isDockMode"\n      (closed)="closeChat()"\n      (infoClicked)="onInfoClick()"\n      (dragClicked)="onDragClick()"\n      (collapseClicked)="onCollapseClick()"\n      (toggleFullHeightClicked)="onToggleFullHeight()"\n      (dockClicked)="onDockClick()"\n      (agentSelected)="onAgentSelected($event)"\n      (clearChatHistory)="onClearChatHistory()"\n      (createAgent)="onCreateAgent()"\n      (editAgent)="onEditAgent()"\n      (removeAgent)="onRemoveAgent()"\n      (setDefaultPosition)="onSetDefaultPosition()"\n    />\n\n    <ep-chat-body\n      [messages]="chatService.messages()"\n      [isTyping]="isTyping()"\n      [scrollMode]="scrollMode()"\n      (actionClick)="onActionClick($event)"\n    />\n\n    <ep-chat-footer\n      [isTyping]="isTyping()"\n      [messages]="chatService.messages()"\n      [currentAgent]="agentService.currentAgent()"\n      [fileAttachmentEnabled]="!fileAttachmentDisabled"\n      (sendMessage)="onSendMessage($event)"\n      (stop)="onStopGenerating()"\n    />\n  </div>\n\n  <!-- <div\n    class="ep-mat"\n    role="button"\n    tabindex="0"\n    (click)="closeChat()"\n    (keydown.enter)="closeChat()"\n    (keydown.space)="closeChat()"\n    aria-label="Close popup"\n  ></div> -->\n}\n\n@if (isAgentConfigOpen() && !isMonoAgent) {\n  <ep-epicstaff-agent-config\n    [popupState]="agentConfigState()"\n    [currentAgent]="agentService.currentAgent()"\n    [newAgentParams]="newAgentParamsForConfig()"\n    (closed)="onCloseAgentConfig()"\n  />\n}\n', styles: ['/* src/app/chat.component.scss */\n:host {\n  display: block !important;\n  position: relative;\n  width: 100%;\n  margin: 0;\n  padding: 0;\n  --ep-font-family:\n    "Inter",\n    "Inter var",\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    Arial,\n    sans-serif;\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-style: normal;\n  font-stretch: normal;\n  line-height: normal;\n  --ep-color-surface: #ffffff;\n  --ep-color-surface-alt: #fafafa;\n  --ep-color-text: #4a4a4a;\n  --ep-color-text-muted: #808080;\n  --ep-color-border: #dcdcdc;\n  --ep-color-border-muted: #b6b6b6;\n  --ep-color-border-subtle: #f5f5f5;\n  --ep-color-accent: #5774e7;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: #eef1fe;\n  --ep-color-danger: #d32f2f;\n  --ep-color-danger-soft: #ffebee;\n  --ep-color-danger-border: #ffcdd2;\n  --ep-color-disabled-bg: #f5f5f5;\n  --ep-color-disabled-text: #b6b6b6;\n  --ep-color-link: #337ab7;\n  --ep-color-link-hover: #23527c;\n  --ep-color-shadow: rgba(0, 0, 0, 0.08);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.2);\n  --ep-color-scrollbar: #d0d0d0;\n  --ep-color-popup-bg: #424242;\n  --ep-color-popup-border: #424242;\n  --ep-color-popup-shadow: rgba(76, 82, 105, 0.2);\n  --ep-color-overlay: rgba(0, 0, 0, 0.15);\n  --ep-menu-panel-min-width: 170px;\n  --ep-menu-panel-radius: 8px;\n  --ep-menu-panel-bg: var(--ep-color-surface);\n  --ep-menu-panel-border: var(--ep-color-border);\n  --ep-menu-panel-divider: var(--ep-color-border);\n  --ep-menu-panel-item-text: var(--ep-color-text);\n  --ep-menu-panel-item-hover-bg: var(--ep-color-surface-alt);\n  --ep-menu-panel-item-padding: 10px 16px;\n  --ep-menu-panel-shadow: 0 2px 4px 0 var(--ep-color-shadow);\n  --ep-footer-select-open-bg: var(--ep-color-surface-alt);\n  --ep-footer-select-open-border: var(--ep-color-border);\n  --ep-footer-select-text: var(--ep-color-text);\n  --ep-radius-sm: 4px;\n  --ep-radius-md: 6px;\n  --ep-radius-lg: 10px;\n  --ep-color-header-bg: var(--ep-color-accent);\n  --ep-color-header-text: var(--ep-color-accent-contrast);\n  --ep-color-header-icon: var(--ep-color-accent-contrast);\n  --ep-color-header-border: transparent;\n  --ep-table-header-bg: var(--ep-color-surface-alt);\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: color-mix(in srgb, var(--ep-color-surface-alt) 35%, transparent);\n  --ep-table-row-hover-bg: var(--ep-color-accent-soft);\n  --ep-table-border: var(--ep-color-border-subtle);\n  --ep-table-column-divider: var(--ep-color-border);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-radius: 12px;\n  --ep-button-height-sm: 26px;\n  --ep-button-height-md: 28px;\n  --ep-button-padding-sm: 3px 10px;\n  --ep-button-padding-md: 6px 12px;\n  --ep-button-font-size-sm: 12px;\n  --ep-button-font-size-md: 12px;\n  --ep-button-secondary-bg: transparent;\n  --ep-button-secondary-border: var(--ep-color-border);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-button-primary-bg: var(--ep-color-accent);\n  --ep-button-primary-border: transparent;\n  --ep-button-primary-text: var(--ep-color-accent-contrast);\n  --ep-button-primary-hover-bg: color-mix(in srgb, var(--ep-color-accent) 88%, black);\n  --ep-button-ghost-bg: transparent;\n  --ep-button-ghost-text: var(--ep-color-text);\n  --ep-button-ghost-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-chat-bg-answer: var(--ep-color-accent-soft);\n  --ep-chat-bg-question: var(--ep-color-surface-alt);\n  --ep-chat-text-question: var(--ep-color-text);\n  color: var(--ep-color-text);\n  text-align: initial !important;\n  text-transform: none !important;\n}\n:host([data-theme=epicstaff]) {\n  --ep-color-surface: #212325;\n  --ep-color-surface-alt: #2b2d30;\n  --ep-color-text: #d9d9de;\n  --ep-color-text-muted: rgba(217, 217, 222, 0.6);\n  --ep-color-border: rgba(217, 217, 222, 0.08);\n  --ep-color-border-muted: rgba(217, 217, 222, 0.15);\n  --ep-color-border-subtle: rgba(217, 217, 222, 0.04);\n  --ep-color-accent: #685fff;\n  --ep-color-accent-contrast: #ffffff;\n  --ep-color-accent-soft: rgba(104, 95, 255, 0.12);\n  --ep-color-danger: #f44336;\n  --ep-color-danger-soft: rgba(244, 67, 54, 0.12);\n  --ep-color-danger-border: rgba(244, 67, 54, 0.3);\n  --ep-color-disabled-bg: #2b2d30;\n  --ep-color-disabled-text: rgba(217, 217, 222, 0.3);\n  --ep-color-link: #685fff;\n  --ep-color-link-hover: #8b85ff;\n  --ep-color-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-shadow-strong: rgba(0, 0, 0, 0.6);\n  --ep-color-scrollbar: rgba(217, 217, 222, 0.2);\n  --ep-color-popup-bg: #2b2d30;\n  --ep-color-popup-border: rgba(217, 217, 222, 0.1);\n  --ep-color-popup-shadow: rgba(0, 0, 0, 0.4);\n  --ep-color-overlay: rgba(0, 0, 0, 0.5);\n  --ep-menu-panel-bg: #212325;\n  --ep-menu-panel-border: #2b2d30;\n  --ep-menu-panel-divider: #2b2d30;\n  --ep-menu-panel-item-text: #d9d9de;\n  --ep-menu-panel-item-hover-bg: rgba(255, 255, 255, 0.06);\n  --ep-menu-panel-shadow:\n    0 0 1px rgba(0, 0, 0, 0.04),\n    0 9px 18px rgba(0, 0, 0, 0.16),\n    0 6px 10px rgba(0, 0, 0, 0.12);\n  --ep-footer-select-open-bg: #2b2d30;\n  --ep-footer-select-open-border: #2b2d30;\n  --ep-footer-select-text: #d9d9de;\n  --ep-color-header-bg: var(--ep-color-surface);\n  --ep-color-header-text: var(--ep-color-text);\n  --ep-color-header-icon: var(--ep-color-accent);\n  --ep-color-header-border: var(--ep-color-border);\n  --ep-table-header-bg: transparent;\n  --ep-table-header-text: var(--ep-color-text-muted);\n  --ep-table-row-bg: transparent;\n  --ep-table-row-alt-bg: rgba(255, 255, 255, 0.03);\n  --ep-table-row-hover-bg: rgba(104, 95, 255, 0.12);\n  --ep-table-border: var(--ep-color-border);\n  --ep-table-column-divider: var(--ep-color-border-muted);\n  --ep-table-cell-text: var(--ep-color-text);\n  --ep-button-secondary-border: rgba(217, 217, 222, 0.15);\n  --ep-button-secondary-text: var(--ep-color-text);\n  --ep-button-secondary-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-button-primary-bg: #685fff;\n  --ep-button-primary-text: #ffffff;\n  --ep-button-primary-hover-bg: #5a52e6;\n  --ep-button-ghost-text: var(--ep-color-text-muted);\n  --ep-button-ghost-hover-bg: rgba(154, 115, 175, 0.1);\n  --ep-chat-bg-answer: #2b2d30;\n  --ep-chat-bg-question: #685fff;\n  --ep-chat-text-question: #ffffff;\n  color: var(--ep-color-text);\n}\n:host,\n:host *,\n:host *::before,\n:host *::after {\n  box-sizing: border-box;\n}\n:host input[type=text],\n:host input[type=number],\n:host input[type=date],\n:host input[type=email],\n:host input[type=password],\n:host input[type=search],\n:host input[type=url],\n:host textarea,\n:host select {\n  font-family: var(--ep-font-family);\n  font-size: 14px;\n  font-weight: 400;\n  color: var(--ep-color-text);\n  background: var(--ep-color-surface);\n  border: 1px solid var(--ep-color-border);\n  border-radius: 4px;\n  padding: 4px 8px;\n  outline: none;\n  transition: border-color 0.2s;\n}\n:host input[type=text]::placeholder,\n:host input[type=number]::placeholder,\n:host input[type=date]::placeholder,\n:host input[type=email]::placeholder,\n:host input[type=password]::placeholder,\n:host input[type=search]::placeholder,\n:host input[type=url]::placeholder,\n:host textarea::placeholder,\n:host select::placeholder {\n  font-family: var(--ep-font-family);\n  color: var(--ep-color-text-muted);\n  font-size: 14px;\n  font-weight: 400;\n  opacity: 1;\n}\n:host input[type=text]:focus,\n:host input[type=number]:focus,\n:host input[type=date]:focus,\n:host input[type=email]:focus,\n:host input[type=password]:focus,\n:host input[type=search]:focus,\n:host input[type=url]:focus,\n:host textarea:focus,\n:host select:focus {\n  border-color: var(--ep-color-accent);\n  outline: none;\n}\n:host input[type=text]:disabled,\n:host input[type=number]:disabled,\n:host input[type=date]:disabled,\n:host input[type=email]:disabled,\n:host input[type=password]:disabled,\n:host input[type=search]:disabled,\n:host input[type=url]:disabled,\n:host textarea:disabled,\n:host select:disabled {\n  background: var(--ep-color-disabled-bg);\n  cursor: not-allowed;\n  opacity: 0.6;\n}\n:host input[type=checkbox],\n:host input[type=radio] {\n  appearance: none;\n  width: 16px;\n  height: 16px;\n  border: 1px solid var(--ep-color-border-muted);\n  background: var(--ep-color-surface);\n  display: inline-block;\n  position: relative;\n  cursor: pointer;\n  margin: 0;\n  padding: 0;\n  transition:\n    border-color 0.15s ease,\n    background-color 0.15s ease,\n    box-shadow 0.15s ease;\n}\n:host input[type=checkbox]:hover:not(:disabled),\n:host input[type=radio]:hover:not(:disabled) {\n  border-color: var(--ep-color-accent);\n  background: var(--ep-color-accent-soft);\n  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ep-color-accent) 20%, transparent);\n}\n:host input[type=checkbox]:disabled,\n:host input[type=radio]:disabled {\n  opacity: 0.6;\n  cursor: default;\n  pointer-events: none;\n}\n:host input[type=checkbox] {\n  border-radius: 2px;\n}\n:host input[type=checkbox]:checked::after {\n  content: "";\n  position: absolute;\n  width: 5px;\n  height: 10px;\n  border: 2px solid var(--ep-color-text-muted);\n  border-top: 0;\n  border-left: 0;\n  transform: translate(-50%, -55%) rotate(45deg);\n  top: 50%;\n  left: 50%;\n}\n:host input[type=radio] {\n  border-radius: 50%;\n}\n:host input[type=radio]:checked::after {\n  content: "";\n  position: absolute;\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ep-color-text-muted);\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}\n:host textarea {\n  resize: vertical;\n  line-height: 20px;\n  min-height: 20px;\n}\n:host *::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n:host *::-webkit-scrollbar-track {\n  background: transparent;\n}\n:host *::-webkit-scrollbar-thumb {\n  background: transparent;\n  border-radius: 10px;\n  transition: background 0.2s ease;\n}\n:host *:hover::-webkit-scrollbar-thumb {\n  background: var(--ep-color-scrollbar);\n  opacity: 0.5;\n}\n:host *::-webkit-scrollbar-thumb:hover {\n  background: var(--ep-color-text-muted) !important;\n  width: 8px;\n}\n:host * {\n  scrollbar-width: thin;\n  scrollbar-color: transparent transparent;\n}\n:host *:hover {\n  scrollbar-color: var(--ep-color-scrollbar) transparent;\n}\n.ep-chat-click-area {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  background: transparent;\n  z-index: 1002;\n}\n.ep-popup {\n  position: fixed;\n  display: flex;\n  flex-direction: column;\n  z-index: 1002;\n  cursor: default;\n  overflow: hidden;\n  background-color: var(--ep-color-popup-bg);\n  border: 1px solid var(--ep-color-popup-border);\n  border-radius: var(--ep-radius-lg);\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  box-shadow:\n    0 0 18px 0 rgba(0, 0, 0, 0.16),\n    0 0 28px 0 rgba(0, 0, 0, 0.16),\n    0 0 52px 0 rgba(0, 0, 0, 0.16);\n}\n.ep-popup--dock {\n  box-shadow: none;\n}\n.ep-popup svg,\n.ep-popup img,\n.ep-popup button,\n.ep-popup [role=button] {\n  user-select: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n}\n.ep-popup p,\n.ep-popup span,\n.ep-popup div,\n.ep-popup h1,\n.ep-popup h2,\n.ep-popup h3,\n.ep-popup h4,\n.ep-popup h5,\n.ep-popup h6,\n.ep-popup label,\n.ep-popup input,\n.ep-popup textarea,\n.ep-popup [contenteditable=true],\n.ep-popup [contenteditable] {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n.ep-popup ep-chat-body {\n  user-select: text;\n  -webkit-user-select: text;\n  -moz-user-select: text;\n  -ms-user-select: text;\n}\n:host a {\n  color: var(--ep-color-link) !important;\n  text-decoration: none !important;\n}\n:host a:hover {\n  color: var(--ep-color-link-hover) !important;\n  text-decoration: underline !important;\n}\n.ep-mat {\n  position: fixed;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  right: 0;\n  z-index: 1001;\n  background: var(--ep-color-overlay);\n}\n/*# sourceMappingURL=chat.component.css.map */\n'] }]
+  }], () => [{ type: ChatService }, { type: EpicstaffAgentService }, { type: MessageService }, { type: ApiService }, { type: StorageService }, { type: ActionService }, { type: ChatParentBridgeService }, { type: ElementRef }, { type: AuthTokenService }, { type: NgZone }], { uniqueUserId: [{
     type: Input
   }], userData: [{
     type: Input
@@ -85987,6 +86013,8 @@ var ChatComponent = _ChatComponent;
   }], defaultAgentFlowUrl: [{
     type: Input
   }], defaultAgentFlowId: [{
+    type: Input
+  }], hideToggleButton: [{
     type: Input
   }], fileAttachmentDisabled: [{
     type: Input
@@ -86031,7 +86059,7 @@ var ChatComponent = _ChatComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 74 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChatComponent, { className: "ChatComponent", filePath: "src/app/chat.component.ts", lineNumber: 75 });
 })();
 
 // src/app/config/markdown.config.ts

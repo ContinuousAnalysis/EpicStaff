@@ -1,8 +1,8 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
 import { FlowsApiService } from 'src/app/features/flows/services/flows-api.service';
 import { FlowUnsavedStateService } from 'src/app/pages/flows-page/services/flow-unsaved-state.service';
-import { ConfigService } from 'src/app/services/config/config.service';
 import { environment } from 'src/environments/environment';
 
 import {
@@ -25,14 +25,23 @@ export class EpicChatService {
     private readonly epChatCommandSignal = signal<EpChatCommand | null>(null);
     private readonly isDockedSignal = signal(localStorage.getItem(EpicChatService.DOCK_STORAGE_KEY) === '1');
     private readonly dockWidthSignal = signal(420);
-    private readonly isChatOpenSignal = signal(localStorage.getItem(EpicChatService.CHAT_OPEN_STORAGE_KEY) !== '0');
+    private readonly isChatOpenSignal = signal(localStorage.getItem(EpicChatService.CHAT_OPEN_STORAGE_KEY) === '1');
+    private readonly currentMonoAgentSignal = signal<{
+        flowId: number;
+        name: string;
+        description: string;
+        flowUrl: string;
+    } | null>(null);
+    private readonly openRequestedSubject = new Subject<void>();
+    private readonly closeRequestedSubject = new Subject<void>();
 
     public readonly epChatCommand = this.epChatCommandSignal.asReadonly();
     public readonly isDocked = this.isDockedSignal.asReadonly();
     public readonly dockWidth = this.dockWidthSignal.asReadonly();
     public readonly isChatOpen = this.isChatOpenSignal.asReadonly();
-
-    private readonly configService = inject(ConfigService);
+    public readonly currentMonoAgent = this.currentMonoAgentSignal.asReadonly();
+    public readonly openRequested$ = this.openRequestedSubject.asObservable();
+    public readonly closeRequested$ = this.closeRequestedSubject.asObservable();
 
     constructor(
         private readonly router: Router,
@@ -40,6 +49,39 @@ export class EpicChatService {
         private readonly flowsApiService: FlowsApiService
     ) {}
 
+    public setActiveFlow(flow: { flowId: number; name: string; description: string; flowUrl: string }): void {
+        const normalizedUrl = this.normalizeApiUrl(flow.flowUrl);
+        const current = this.currentMonoAgentSignal();
+        if (
+            current &&
+            current.flowId === flow.flowId &&
+            current.name === flow.name &&
+            current.description === flow.description &&
+            current.flowUrl === normalizedUrl
+        ) {
+            return;
+        }
+        this.currentMonoAgentSignal.set({
+            flowId: flow.flowId,
+            name: flow.name,
+            description: flow.description,
+            flowUrl: normalizedUrl,
+        });
+    }
+
+    public clearActiveFlow(): void {
+        this.currentMonoAgentSignal.set(null);
+    }
+
+    public requestOpenChat(): void {
+        this.openRequestedSubject.next();
+    }
+
+    public requestCloseChat(): void {
+        this.closeRequestedSubject.next();
+    }
+
+    /** @deprecated Multi-agent flow. EpicChat now operates in mono-agent mode — use setActiveFlow + requestOpenChat instead. */
     public requestCreateAgent(payload: EpicChatCreateAgentPayload): void {
         this.epChatCommandSignal.set({
             requestId: this.generateRequestId(),
@@ -48,6 +90,7 @@ export class EpicChatService {
         });
     }
 
+    /** @deprecated Multi-agent flow. EpicChat now operates in mono-agent mode — use clearActiveFlow instead. */
     public requestRemoveAgent(flowId: number | string): void {
         this.epChatCommandSignal.set({
             requestId: this.generateRequestId(),
@@ -147,27 +190,15 @@ export class EpicChatService {
         return Number.isFinite(n) ? n : null;
     }
 
-    public toggleChat(host: HTMLElement | null | undefined): void {
-        if (!host) {
-            return;
-        }
-        const epicChatElement = host as {
-            toggleChat?: () => void;
-            shadowRoot?: ShadowRoot | null;
-            querySelector?: (selectors: string) => Element | null;
-        };
-        if (epicChatElement.toggleChat) {
-            epicChatElement.toggleChat();
-            return;
-        }
-        const root = epicChatElement.shadowRoot ?? epicChatElement;
-        const toggleButton =
-            root.querySelector?.('.ep-chat-toggle-button') ?? root.querySelector?.('ep-chat-toggle-button');
-        if (toggleButton instanceof HTMLElement) {
-            toggleButton.click();
-        }
+    public openChat(host: HTMLElement | null | undefined): void {
+        (host as { openChat?: () => void } | null | undefined)?.openChat?.();
     }
 
+    public closeChat(host: HTMLElement | null | undefined): void {
+        (host as { closeChat?: () => void } | null | undefined)?.closeChat?.();
+    }
+
+    /** @deprecated Multi-agent flow. EpicChat now operates in mono-agent mode and no longer syncs an agent list. */
     public reconnectAgents(): void {
         // const flowUrl = `${window.location.origin}/api`;
         const flowUrl = this.normalizeApiUrl(environment.apiUrl);

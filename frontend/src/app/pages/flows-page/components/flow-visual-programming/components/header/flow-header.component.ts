@@ -35,6 +35,7 @@ export class FlowHeaderComponent {
     @Input() graphName?: string;
     @Input() graphId?: number;
     @Input() isEpicChatEnabled = false;
+    @Input() isChatOpen = false;
     @Input() graph?: GraphDto;
     @Input() isSaving = false;
     @Input() isRunning = false;
@@ -44,7 +45,7 @@ export class FlowHeaderComponent {
     @Output() viewSessions = new EventEmitter<void>();
     @Output() run = new EventEmitter<void>();
     @Output() getCurl = new EventEmitter<void>();
-    @Output() connectChat = new EventEmitter<void>();
+    @Output() openAgent = new EventEmitter<void>();
     @Output() flowEdited = new EventEmitter<GraphDto>();
     @Output() saveVersion = new EventEmitter<void>();
     @Output() viewVersionHistory = new EventEmitter<void>();
@@ -84,8 +85,8 @@ export class FlowHeaderComponent {
         this.getCurl.emit();
     }
 
-    onConnectChat() {
-        this.connectChat.emit();
+    onAgent() {
+        this.openAgent.emit();
     }
 
     openRenameDialog(): void {
