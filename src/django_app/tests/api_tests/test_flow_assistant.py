@@ -1194,6 +1194,86 @@ def test_get_subflow_includes_subgraph_graph_id(graph, db):
     assert result["subgraph_graph_id"] == subgraph.pk
 
 
+@pytest.mark.django_db
+def test_get_subflow_accepts_subgraph_node_pk(graph, db):
+    """Strict path: passing the SubGraphNode's PK returns the correct subgraph."""
+    from tables.models.graph_models import SubGraphNode
+    from tables.services.flow_assistant import get_subflow
+
+    subgraph = Graph.objects.create(name="Strict Flow", description="Strict desc.")
+    sn = SubGraphNode.objects.create(
+        graph=graph, subgraph=subgraph, node_name="strict_sg"
+    )
+
+    result = get_subflow(graph.pk, str(sn.pk))
+
+    assert "error" not in result, f"Unexpected error: {result.get('error')}"
+    assert result["name"] == "Strict Flow"
+    assert result["description"] == "Strict desc."
+    assert result["subgraph_graph_id"] == subgraph.pk
+
+
+@pytest.mark.django_db
+def test_get_subflow_falls_back_to_target_graph_id(db):
+    """Fallback path: passing the target subgraph's Graph PK still resolves correctly.
+
+    This is the bug scenario from Fix 19: the LLM passes subgraph.pk (the target
+    Graph's PK) instead of sn.pk (the SubGraphNode's PK).  The fallback must
+    resolve it rather than returning an error.
+    """
+    from tables.models.graph_models import SubGraphNode
+    from tables.services.flow_assistant import get_subflow
+
+    graph_a = Graph.objects.create(name="Parent Flow", description="Has a subflow.")
+    graph_b = Graph.objects.create(name="Target Subflow", description="The target.")
+
+    sn = SubGraphNode.objects.create(
+        graph=graph_a, subgraph=graph_b, node_name="sg_fallback"
+    )
+
+    # The LLM mistakenly passes graph_b.pk instead of sn.pk.
+    result = get_subflow(graph_a.pk, str(graph_b.pk))
+
+    assert "error" not in result, (
+        f"Fallback failed — expected resolution, got error: {result.get('error')}"
+    )
+    assert result["name"] == "Target Subflow"
+    assert result["description"] == "The target."
+    assert result["subgraph_graph_id"] == graph_b.pk
+
+
+@pytest.mark.django_db
+def test_get_subflow_error_message_lists_available_pks(db):
+    """When neither interpretation matches, the error message names available SubGraphNode PKs
+    and includes the corrective nudge referencing get_flow_overview.
+    """
+    from tables.models.graph_models import SubGraphNode
+    from tables.services.flow_assistant import get_subflow
+
+    graph_parent = Graph.objects.create(name="Parent", description="")
+    graph_child = Graph.objects.create(name="Child", description="")
+
+    sn = SubGraphNode.objects.create(
+        graph=graph_parent, subgraph=graph_child, node_name="real_sg"
+    )
+
+    # Pass a bogus ID that is neither sn.pk nor graph_child.pk.
+    bogus_id = sn.pk + graph_child.pk + 9999
+    result = get_subflow(graph_parent.pk, str(bogus_id))
+
+    assert "error" in result, "Expected an error dict for a completely unknown id"
+    error_text = result["error"]
+
+    # Must name the corrective source tool.
+    assert "get_flow_overview" in error_text, (
+        f"Error message must reference get_flow_overview; got: {error_text}"
+    )
+    # Must list the real available SubGraphNode PK so the LLM can self-correct.
+    assert str(sn.pk) in error_text, (
+        f"Error message must include the real SubGraphNode PK ({sn.pk}); got: {error_text}"
+    )
+
+
 # ── Phase B: session tools tests ──────────────────────────────────────────────
 
 

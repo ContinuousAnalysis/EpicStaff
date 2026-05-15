@@ -102,10 +102,11 @@ TOOL_SPECS: list[ToolSpec] = [
         name="get_subflow",
         description=(
             "Returns the name, description, and subgraph_graph_id of the target "
-            "subgraph referenced by a SubGraphNode. Use the returned subgraph_graph_id "
-            "with get_flow_overview(subgraph_graph_id) to introspect the subflow's nodes "
-            "recursively. Cite the subflow by name when discussing its internals. "
-            "Provide the numeric SubGraphNode ID as a string."
+            "subflow referenced by a SubGraphNode. "
+            "Pass the SubGraphNode's PK (the 'id' field of a node with type=='subgraph' "
+            "from get_flow_overview) — NOT the target subflow's graph id. "
+            "The response's subgraph_graph_id is the target graph's PK; use that with "
+            "get_flow_overview(subgraph_graph_id) for recursive introspection."
         ),
         parameters={
             "type": "object",

@@ -342,7 +342,10 @@ def get_node(graph_id: int, node_id: str) -> dict:
 def get_subflow(graph_id: int, subgraph_node_id: str) -> dict:
     """Return the target subgraph's name, description, and subgraph_graph_id.
 
-    subgraph_node_id is the PK of the SubGraphNode row (not the subgraph itself).
+    Accepts either the SubGraphNode's PK (canonical) or the target
+    subgraph's Graph PK (fallback) — the two have non-overlapping
+    interpretations, so try strict first and fall back gracefully when
+    the LLM passes the wrong one.
 
     subgraph_graph_id is the PK of the referenced Graph — pass it to
     get_flow_overview(subgraph_graph_id) and get_node(subgraph_graph_id, ...)
@@ -353,17 +356,38 @@ def get_subflow(graph_id: int, subgraph_node_id: str) -> dict:
     except (ValueError, TypeError):
         return {"error": f"Invalid subgraph_node_id '{subgraph_node_id}'."}
 
-    try:
-        sn = SubGraphNode.objects.select_related("subgraph").get(
-            pk=pk, graph_id=graph_id
+    # Strict: SubGraphNode PK in this graph.
+    sn = (
+        SubGraphNode.objects.select_related("subgraph")
+        .filter(pk=pk, graph_id=graph_id)
+        .first()
+    )
+
+    # Fallback: maybe the LLM passed the target subgraph's Graph PK.
+    if sn is None:
+        sn = (
+            SubGraphNode.objects.select_related("subgraph")
+            .filter(graph_id=graph_id, subgraph_id=pk)
+            .first()
         )
-    except SubGraphNode.DoesNotExist:
+
+    if sn is None:
+        # Build a helpful error listing available SubGraphNode IDs in this graph.
+        available = list(
+            SubGraphNode.objects.filter(graph_id=graph_id).values_list("pk", flat=True)
+        )
         return {
-            "error": f"SubGraphNode {subgraph_node_id} not found in graph {graph_id}."
+            "error": (
+                f"No SubGraphNode matched id={pk} in graph {graph_id}. "
+                f"Pass the SubGraphNode's PK (from get_flow_overview, "
+                f"nodes where type=='subgraph'), not the target subflow's "
+                f"graph id. Available SubGraphNode PKs in this graph: "
+                f"{available if available else 'none'}."
+            )
         }
 
     if not sn.subgraph:
-        return {"error": "SubGraphNode has no linked subgraph."}
+        return {"error": f"SubGraphNode {sn.pk} has no linked subgraph."}
 
     return {
         "id": sn.subgraph.pk,
