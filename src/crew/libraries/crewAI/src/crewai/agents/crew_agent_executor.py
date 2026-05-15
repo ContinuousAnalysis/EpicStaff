@@ -658,6 +658,12 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
             )
             raise ValueError("Invalid response from LLM call - None or empty.")
 
-        formatted_answer = self._format_answer(answer)
-        # Return the formatted answer, regardless of its type
+        try:
+            formatted_answer = self._format_answer(answer)
+        except OutputParserException:
+            formatted_answer = AgentFinish(
+                thought="Max iterations exceeded, returning raw output.",
+                output=answer,
+                text=answer,
+            )
         return formatted_answer

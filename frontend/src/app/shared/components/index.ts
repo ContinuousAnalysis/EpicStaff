@@ -42,6 +42,7 @@ export * from './spinner/spinner.component';
 export * from './spinner-type2/spinner.component';
 export * from './status-badge/status-badge.component';
 export * from './tab-button/tab-button.component';
+export * from './table';
 export * from './textarea/textarea.component';
 export * from './tools-selector/tools-selector.component';
 export * from './tooltip/tooltip.component';

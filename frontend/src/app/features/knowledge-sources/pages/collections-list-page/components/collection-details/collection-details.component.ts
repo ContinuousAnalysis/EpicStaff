@@ -65,15 +65,23 @@ export class CollectionDetailsComponent implements OnInit, OnChanges {
     private fileListService = inject(FileListService);
     private toastService = inject(ToastService);
 
+    private lastInitializedCollectionId: number | null = null;
+
     constructor() {
         effect(() => {
+            const selectedId = this.selectedCollectionId();
             const collection = this.collectionsStorageService
                 .fullCollections()
-                .find((c) => c.collection_id === this.selectedCollectionId());
+                .find((c) => c.collection_id === selectedId);
 
             if (collection) {
                 this.fullCollection.set(collection);
-                this.collectionName.setValue(this.fullCollection()?.collection_name, { emitEvent: false });
+                if (this.lastInitializedCollectionId !== collection.collection_id) {
+                    this.collectionName.setValue(collection.collection_name, { emitEvent: false });
+                    this.lastInitializedCollectionId = collection.collection_id;
+                }
+            } else {
+                this.lastInitializedCollectionId = null;
             }
         });
 

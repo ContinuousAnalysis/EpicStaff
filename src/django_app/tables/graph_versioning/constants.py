@@ -8,6 +8,7 @@ from tables.models import (
 
 _EXCLUDED_GRAPH_SCALARS = (
     "id",
+    "uuid",
     "created_at",
     "updated_at",
 )

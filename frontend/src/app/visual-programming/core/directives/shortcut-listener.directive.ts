@@ -77,6 +77,11 @@ export class ShortcutListenerDirective implements OnInit, OnDestroy {
                             return false;
                         }
 
+                        // 3) bail on copy if the user has text selected — let the browser copy it
+                        if ((key === 'c' || key === 'с') && mod && window.getSelection()?.toString().length) {
+                            return false;
+                        }
+
                         return true;
                     })
                 )

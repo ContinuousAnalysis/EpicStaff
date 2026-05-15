@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,7 +5,7 @@ import { AppSvgIconComponent, ButtonComponent, CustomInputComponent } from '@sha
 
 @Component({
     selector: 'app-onboarding-page',
-    imports: [CommonModule, ReactiveFormsModule, ButtonComponent, CustomInputComponent, AppSvgIconComponent],
+    imports: [ReactiveFormsModule, ButtonComponent, CustomInputComponent, AppSvgIconComponent],
     templateUrl: './onboarding-page.component.html',
     styleUrls: ['./onboarding-page.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,

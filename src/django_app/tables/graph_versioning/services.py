@@ -72,6 +72,38 @@ class GraphVersioningService:
 
     @transaction.atomic
     def restore_version(self, version: GraphVersion, *, backup: bool = False) -> dict:
+        """
+        Restore a graph to the state captured in ``version``.
+
+        The entire operation runs inside a single ``@transaction.atomic`` block.
+        Any exception raised during restoration rolls back all database changes —
+        including the auto-backup row — and propagates to the caller; the dict is
+        never returned in that case.
+
+        Parameters
+        ----------
+        version:
+            The ``GraphVersion`` snapshot to restore from.
+        backup:
+            When ``True``, a named ``GraphVersion`` snapshot of the *current*
+            graph state is created before the restore takes place, so the
+            caller can undo the operation if needed.
+
+        Returns
+        -------
+        dict with keys:
+
+        - ``restored`` (bool): always ``True`` when returned.
+        - ``graph_id`` (int): primary key of the graph that was restored.
+        - ``warnings`` (list): dependency warnings produced during restoration
+          (e.g. nodes whose dependencies were not found and were therefore
+          skipped/fk nulled from the snapshot).
+        - ``auto_backup_version_id`` (int | None): primary key of the
+          auto-backup ``GraphVersion`` row created when ``backup=True``.
+          This key is ``None`` when ``backup=False``. Because the method is
+          atomic, if it is present and non-None the transaction has committed
+          successfully and the ID is a valid database row.
+        """
         graph = version.graph
         deps = version.dependencies or {}
 
