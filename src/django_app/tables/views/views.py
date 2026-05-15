@@ -28,7 +28,6 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
     OpenApiResponse,
-    OpenApiParameter,
     inline_serializer,
 )
 from rest_framework import serializers as drf_serializers
@@ -99,6 +98,7 @@ from tables.serializers.default_config_serializers import DefaultModelsSerialize
 from tables.models.default_models import DefaultModels
 from tables.filters import SessionFilter  # CollectionFilter,
 
+from tables.swagger_schemas.crews_schema import CREW_DELETE
 from tables.swagger_schemas.sessions_schema import (
     ANSWER_TO_LLM,
     GET_UPDATES_GET,
@@ -538,22 +538,7 @@ class AnswerToLLM(APIView):
 
 
 class CrewDeleteAPIView(APIView):
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="delete_sessions",
-                location=OpenApiParameter.QUERY,
-                type=drf_serializers.CharField(),
-                description="Delete all sessions associated (true/false). Default is false.",
-                required=False,
-            )
-        ],
-        responses={
-            200: OpenApiResponse(description="Crew deleted successfully"),
-            400: OpenApiResponse(description="Invalid value for delete_sessions"),
-            404: OpenApiResponse(description="Crew not found"),
-        },
-    )
+    @extend_schema(**CREW_DELETE)
     def delete(self, request, id):
         delete_sessions = request.query_params.get("delete_sessions", "false").lower()
         if delete_sessions not in {"true", "false"}:
