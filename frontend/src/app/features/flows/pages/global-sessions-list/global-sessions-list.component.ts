@@ -71,7 +71,7 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                     <app-action-dropdown-button
                         [label]="'Export (' + (selectedIds().size === 0 ? totalCount() : selectedIds().size) + ')'"
                         [items]="exportItems"
-                        [disabled]="isExporting()"
+                        [disabled]="isExporting() || (selectedIds().size === 0 && totalCount() === 0)"
                         (mainClick)="onExport('json')"
                         (itemClick)="onExportItemSelected($event)"
                     />
@@ -241,6 +241,9 @@ export class GlobalSessionsListComponent {
     }
 
     public onExport(format: ExportFormat): void {
+        if (this.selectedIds().size === 0 && this.totalCount() === 0) {
+            return;
+        }
         this.isExporting.set(true);
         let obs$: Observable<Blob>;
 

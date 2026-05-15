@@ -294,6 +294,9 @@ export class FlowSessionsListComponent implements OnInit {
     }
 
     public onExport(format: ExportFormat): void {
+        if (this.selectedIds().size === 0 && this.totalCount === 0) {
+            return;
+        }
         this.isExporting.set(true);
         const obs$ =
             this.selectedIds().size > 0
