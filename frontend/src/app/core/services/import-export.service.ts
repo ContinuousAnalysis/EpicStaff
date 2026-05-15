@@ -64,10 +64,10 @@ export class ImportExportService {
     }
 
     exportAll(filters: { graph?: number | null; status?: string[] }, format: ExportFormat = 'json'): Observable<Blob> {
-        const body: Record<string, unknown> = { export_format: format };
+        const body: Record<string, unknown> = {};
         if (filters.graph != null) body['graph_id'] = filters.graph;
         if (filters.status != null && filters.status.length > 0) body['status'] = filters.status;
-        return this.http.post<Blob>(`${this.sessionsApiUrl}export_all/`, body, {
+        return this.http.post<Blob>(`${this.sessionsApiUrl}export_all/?export_format=${format}`, body, {
             responseType: 'blob' as 'json',
         });
     }
