@@ -27,6 +27,26 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
+from tables.serializers.model_serializers.embedding_serializers import (
+    EmbeddingConfigSerializer,
+    EmbeddingModelSerializer,
+)
+from tables.serializers.model_serializers.llm_serializers import (
+    LLMConfigSerializer,
+    LLMModelSerializer,
+    RealtimeConfigSerializer,
+    RealtimeModelSerializer,
+    RealtimeTranscriptionConfigSerializer,
+    RealtimeTranscriptionModelSerializer,
+)
+from tables.serializers.model_serializers.provider_serializers import (
+    ProviderSerializer,
+)
+from tables.serializers.model_serializers.tag_serializers import (
+    AgentTagSerializer,
+    CrewTagSerializer,
+    GraphTagSerializer,
+)
 from tables.exceptions import (
     AgentSerializerError,
     BuiltInToolModificationError,
@@ -78,8 +98,10 @@ from tables.models.crew_models import (
     AgentMcpTools,
     AgentPythonCodeTools,
     AgentPythonCodeToolConfigs,
+    TaskConfiguredTools,
     TaskMcpTools,
     TaskPythonCodeToolConfigs,
+    TaskPythonCodeTools,
 )
 from tables.exceptions import (
     TaskSerializerError,
@@ -167,7 +189,6 @@ from tables.services.copy_services import (
 from tables.views.mixins import CopyActionMixin
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
-    AgentTagSerializer,
     AgentWriteSerializer,
     AudioTranscriptionNodeSerializer,
     CodeAgentNodeSerializer,
@@ -177,11 +198,8 @@ from tables.serializers.model_serializers import (
     ConditionSerializer,
     CrewNodeSerializer,
     CrewSerializer,
-    CrewTagSerializer,
     DecisionTableNodeSerializer,
     EdgeSerializer,
-    EmbeddingConfigSerializer,
-    EmbeddingModelSerializer,
     EndNodeSerializer,
     FileExtractorNodeSerializer,
     GraphLightSerializer,
@@ -189,16 +207,12 @@ from tables.serializers.model_serializers import (
     GraphOrganizationUserSerializer,
     GraphSerializer,
     GraphSessionMessageSerializer,
-    GraphTagSerializer,
     LabelSerializer,
-    LLMConfigSerializer,
-    LLMModelSerializer,
     LLMNodeSerializer,
     McpToolSerializer,
     MemorySerializer,
     NgrokWebhookConfigModelSerializer,
     OrganizationUserSerializer,
-    ProviderSerializer,
     PythonCodeResultSerializer,
     PythonCodeSerializer,
     PythonCodeToolConfigFieldSerializer,
@@ -207,15 +221,9 @@ from tables.serializers.model_serializers import (
     PythonNodeSerializer,
     RealtimeAgentChatSerializer,
     RealtimeAgentSerializer,
-    RealtimeConfigSerializer,
-    RealtimeModelSerializer,
     RealtimeSessionItemSerializer,
-    RealtimeTranscriptionConfigSerializer,
-    RealtimeTranscriptionModelSerializer,
     StartNodeSerializer,
     SubGraphNodeSerializer,
-    TaskConfiguredTools,
-    TaskPythonCodeTools,
     TaskReadSerializer,
     TaskWriteSerializer,
     TemplateAgentSerializer,
@@ -223,14 +231,12 @@ from tables.serializers.model_serializers import (
     VoiceSettingsSerializer,
     WebhookTriggerNodeSerializer,
     WebhookTriggerSerializer,
+    TelegramTriggerNodeSerializer,
+    TelegramTriggerNodeFieldSerializer,
 )
 from tables.serializers.serializers import (
     BulkExportSerializer,
     ImportRequestSerializer,
-)
-from tables.serializers.telegram_trigger_serializers import (
-    TelegramTriggerNodeFieldSerializer,
-    TelegramTriggerNodeSerializer,
 )
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService

@@ -11,11 +11,11 @@ from tests.fixtures import *
 
 
 @pytest.mark.django_db
-def test_field_viewset_list(api_client, tool_config_field_int):
+def test_field_viewset_list(auth_client, tool_config_field_int):
     """Test retrieving the list of config fields."""
     url = reverse("pythoncodetoolconfigfield-list")
 
-    response = api_client.get(url)
+    response = auth_client.get(url)
 
     assert response.status_code == 200
 
@@ -29,7 +29,7 @@ def test_field_viewset_list(api_client, tool_config_field_int):
 
 
 @pytest.mark.django_db
-def test_field_viewset_create(api_client, python_code_tool):
+def test_field_viewset_create(auth_client, python_code_tool):
     """Test creating a new configuration field definition."""
     url = reverse("pythoncodetoolconfigfield-list")
 
@@ -41,7 +41,7 @@ def test_field_viewset_create(api_client, python_code_tool):
         "description": "LLM Temperature",
     }
 
-    response = api_client.post(url, payload, format="json")
+    response = auth_client.post(url, payload, format="json")
 
     assert response.status_code == 201
     assert PythonCodeToolConfigField.objects.count() == 1
@@ -50,7 +50,7 @@ def test_field_viewset_create(api_client, python_code_tool):
 
 @pytest.mark.django_db
 def test_config_viewset_create_success(
-    api_client, python_code_tool, tool_config_field_int
+    auth_client, python_code_tool, tool_config_field_int
 ):
     """Happy Path: Create a config."""
     url = reverse("pythoncodetoolconfig-list")
@@ -61,7 +61,7 @@ def test_config_viewset_create_success(
         "configuration": {"batch_size": 100},
     }
 
-    response = api_client.post(url, payload, format="json")
+    response = auth_client.post(url, payload, format="json")
 
     assert response.status_code == 201
     assert response.data["configuration"]["batch_size"] == 100
@@ -70,7 +70,7 @@ def test_config_viewset_create_success(
 
 @pytest.mark.django_db
 def test_config_viewset_create_validation_missing_required(
-    api_client, python_code_tool
+    auth_client, python_code_tool
 ):
     PythonCodeToolConfigField.objects.create(
         tool=python_code_tool,
@@ -87,7 +87,7 @@ def test_config_viewset_create_validation_missing_required(
         "configuration": {"some_other_key": "irrelevant"},
     }
 
-    response = api_client.post(url, payload, format="json")
+    response = auth_client.post(url, payload, format="json")
 
     assert response.status_code == 400
     assert "required" in str(response.data) or "mandatory_field" in str(response.data)
@@ -95,7 +95,7 @@ def test_config_viewset_create_validation_missing_required(
 
 @pytest.mark.django_db
 def test_config_viewset_create_validation_type_casting(
-    api_client, python_code_tool, tool_config_field_int
+    auth_client, python_code_tool, tool_config_field_int
 ):
     """Happy Path with Casting: Send a string '500' for an Integer field."""
     url = reverse("pythoncodetoolconfig-list")
@@ -106,7 +106,7 @@ def test_config_viewset_create_validation_type_casting(
         "configuration": {"batch_size": "500"},
     }
 
-    response = api_client.post(url, payload, format="json")
+    response = auth_client.post(url, payload, format="json")
 
     assert response.status_code == 201
     config_obj = PythonCodeToolConfig.objects.get(name="string_input_settings")
@@ -116,7 +116,7 @@ def test_config_viewset_create_validation_type_casting(
 
 @pytest.mark.django_db
 def test_config_viewset_create_validation_type_error(
-    api_client, python_code_tool, tool_config_field_int
+    auth_client, python_code_tool, tool_config_field_int
 ):
     """Failure Path: Send a non-numeric string for an Integer field."""
     url = reverse("pythoncodetoolconfig-list")
@@ -127,14 +127,14 @@ def test_config_viewset_create_validation_type_error(
         "configuration": {"batch_size": "not_a_number"},
     }
 
-    response = api_client.post(url, payload, format="json")
+    response = auth_client.post(url, payload, format="json")
 
     assert response.status_code == 400
     assert "Error casting value" in str(response.data)
 
 
 @pytest.mark.django_db
-def test_config_viewset_filtering(api_client, python_code_tool, existing_config):
+def test_config_viewset_filtering(auth_client, python_code_tool, existing_config):
     """Test that the filter backend works (filtering by tool)."""
     other_code = PythonCode.objects.create(code="pass")
     other_tool = PythonCodeTool.objects.create(
@@ -146,7 +146,7 @@ def test_config_viewset_filtering(api_client, python_code_tool, existing_config)
 
     url = reverse("pythoncodetoolconfig-list")
 
-    response = api_client.get(f"{url}?tool={python_code_tool.id}")
+    response = auth_client.get(f"{url}?tool={python_code_tool.id}")
 
     assert response.status_code == 200
 

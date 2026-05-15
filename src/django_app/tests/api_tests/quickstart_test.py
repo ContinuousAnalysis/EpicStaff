@@ -67,8 +67,8 @@ def openai_provider_seeded(openai_provider):
 
 
 @pytest.mark.django_db
-def test_get_quickstart_no_history(api_client, quickstart_url):
-    response = api_client.get(quickstart_url)
+def test_get_quickstart_no_history(auth_client, quickstart_url):
+    response = auth_client.get(quickstart_url)
 
     assert response.status_code == status.HTTP_200_OK, response.content
     assert "openai" in response.data["supported_providers"]
@@ -78,13 +78,13 @@ def test_get_quickstart_no_history(api_client, quickstart_url):
 
 @pytest.mark.django_db
 def test_get_quickstart_shows_last_config_after_run(
-    api_client, quickstart_url, openai_provider_seeded
+    auth_client, quickstart_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
 
-    response = api_client.get(quickstart_url)
+    response = auth_client.get(quickstart_url)
 
     assert response.status_code == status.HTTP_200_OK, response.content
     last = response.data["last_config"]
@@ -98,27 +98,27 @@ def test_get_quickstart_shows_last_config_after_run(
 
 @pytest.mark.django_db
 def test_get_quickstart_is_synced_false_before_apply(
-    api_client, quickstart_url, openai_provider_seeded
+    auth_client, quickstart_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
 
-    response = api_client.get(quickstart_url)
+    response = auth_client.get(quickstart_url)
 
     assert response.data["is_synced"] is False
 
 
 @pytest.mark.django_db
 def test_get_quickstart_is_synced_true_after_apply(
-    api_client, quickstart_url, quickstart_apply_url, openai_provider_seeded
+    auth_client, quickstart_url, quickstart_apply_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
-    api_client.post(quickstart_apply_url, format="json")
+    auth_client.post(quickstart_apply_url, format="json")
 
-    response = api_client.get(quickstart_url)
+    response = auth_client.get(quickstart_url)
 
     assert response.data["is_synced"] is True
 
@@ -129,8 +129,8 @@ def test_get_quickstart_is_synced_true_after_apply(
 
 
 @pytest.mark.django_db
-def test_post_quickstart_success(api_client, quickstart_url, openai_provider_seeded):
-    response = api_client.post(
+def test_post_quickstart_success(auth_client, quickstart_url, openai_provider_seeded):
+    response = auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
 
@@ -144,9 +144,9 @@ def test_post_quickstart_success(api_client, quickstart_url, openai_provider_see
 
 @pytest.mark.django_db
 def test_post_quickstart_creates_configs_in_db(
-    api_client, quickstart_url, openai_provider_seeded
+    auth_client, quickstart_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
 
@@ -160,9 +160,9 @@ def test_post_quickstart_creates_configs_in_db(
 
 @pytest.mark.django_db
 def test_post_quickstart_applies_quickstart_tag(
-    api_client, quickstart_url, openai_provider_seeded
+    auth_client, quickstart_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
 
@@ -182,12 +182,12 @@ def test_post_quickstart_applies_quickstart_tag(
 
 @pytest.mark.django_db
 def test_post_quickstart_tag_moves_to_new_config_on_second_run(
-    api_client, quickstart_url, openai_provider_seeded
+    auth_client, quickstart_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test-2"}, format="json"
     )
 
@@ -203,12 +203,12 @@ def test_post_quickstart_tag_moves_to_new_config_on_second_run(
 
 @pytest.mark.django_db
 def test_post_quickstart_unique_name_on_second_run(
-    api_client, quickstart_url, openai_provider_seeded
+    auth_client, quickstart_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
-    response = api_client.post(
+    response = auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test-2"}, format="json"
     )
 
@@ -217,8 +217,8 @@ def test_post_quickstart_unique_name_on_second_run(
 
 
 @pytest.mark.django_db
-def test_post_quickstart_invalid_provider(api_client, quickstart_url):
-    response = api_client.post(
+def test_post_quickstart_invalid_provider(auth_client, quickstart_url):
+    response = auth_client.post(
         quickstart_url, {"provider": "nonexistent", "api_key": "sk-test"}, format="json"
     )
 
@@ -227,9 +227,9 @@ def test_post_quickstart_invalid_provider(api_client, quickstart_url):
 
 @pytest.mark.django_db
 def test_post_quickstart_does_not_auto_apply_to_default_models(
-    api_client, quickstart_url, openai_provider_seeded
+    auth_client, quickstart_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
 
@@ -245,13 +245,13 @@ def test_post_quickstart_does_not_auto_apply_to_default_models(
 
 @pytest.mark.django_db
 def test_post_apply_sets_default_models(
-    api_client, quickstart_url, quickstart_apply_url, openai_provider_seeded
+    auth_client, quickstart_url, quickstart_apply_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
 
-    response = api_client.post(quickstart_apply_url, format="json")
+    response = auth_client.post(quickstart_apply_url, format="json")
 
     assert response.status_code == status.HTTP_200_OK, response.content
 
@@ -273,21 +273,21 @@ def test_post_apply_sets_default_models(
 
 
 @pytest.mark.django_db
-def test_post_apply_returns_404_when_no_quickstart(api_client, quickstart_apply_url):
-    response = api_client.post(quickstart_apply_url, format="json")
+def test_post_apply_returns_404_when_no_quickstart(auth_client, quickstart_apply_url):
+    response = auth_client.post(quickstart_apply_url, format="json")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND, response.content
 
 
 @pytest.mark.django_db
 def test_post_apply_response_contains_default_models_shape(
-    api_client, quickstart_url, quickstart_apply_url, openai_provider_seeded
+    auth_client, quickstart_url, quickstart_apply_url, openai_provider_seeded
 ):
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
 
-    response = api_client.post(quickstart_apply_url, format="json")
+    response = auth_client.post(quickstart_apply_url, format="json")
 
     assert response.status_code == status.HTTP_200_OK, response.content
     for field in [
@@ -304,17 +304,17 @@ def test_post_apply_response_contains_default_models_shape(
 
 @pytest.mark.django_db
 def test_post_apply_uses_latest_tagged_config(
-    api_client, quickstart_url, quickstart_apply_url, openai_provider_seeded
+    auth_client, quickstart_url, quickstart_apply_url, openai_provider_seeded
 ):
     """Apply always uses the config carrying the quickstart:latest tag."""
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test"}, format="json"
     )
-    api_client.post(
+    auth_client.post(
         quickstart_url, {"provider": "openai", "api_key": "sk-test-2"}, format="json"
     )
 
-    api_client.post(quickstart_apply_url, format="json")
+    auth_client.post(quickstart_apply_url, format="json")
 
     dm = DefaultModels.load()
     latest_llm = LLMConfig.objects.filter(
