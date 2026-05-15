@@ -537,6 +537,10 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     public ngOnDestroy(): void {
         this.flowUnsavedStateService.unregister();
         this.runSessionSSEService.stopStream();
+        if (this.epicChatService.isChatOpen()) {
+            this.epicChatService.requestCloseChat();
+        }
+        this.epicChatService.clearActiveFlow();
     }
 
     private addStartNodeIfNeeded(flowModel: FlowModel): FlowModel {

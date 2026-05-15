@@ -182,6 +182,7 @@
                 height: 1.25rem;
                 flex-shrink: 0;
                 display: block;
+                transition: filter 0.2s ease-in-out;
             }
 
             &:hover {
@@ -191,6 +192,10 @@
             &--active {
                 background-color: var(--accent-color);
                 color: white;
+
+                .agent-button__icon {
+                    filter: brightness(0) invert(1);
+                }
             }
 
             &.btn--icon-only {
