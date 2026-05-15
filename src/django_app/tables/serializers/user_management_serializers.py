@@ -36,6 +36,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "id",
             "email",
             "display_name",
+            "avatar",
             "is_superadmin",
             "is_active",
             "created_at",
