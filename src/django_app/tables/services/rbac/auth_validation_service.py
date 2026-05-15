@@ -1,32 +1,7 @@
-from dataclasses import asdict, dataclass
-from typing import Any, Optional
-
-from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import validate_email
-
-from tables.services.rbac.rbac_exceptions import FormValidationError
+from tables.services.rbac.base_rbac_validator import BaseRBACValidator, FieldError
 
 
-REDACTED_FIELDS: frozenset[str] = frozenset(
-    {"password", "new_password", "refresh", "token", "access"}
-)
-REDACTED_PLACEHOLDER = "***"
-NON_FIELD_KEY = "non_field_errors"
-
-
-@dataclass
-class FieldError:
-    field: str
-    value: Any
-    reason: str
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-
-class AuthValidationService:
+class AuthValidationService(BaseRBACValidator):
     """
     Aggregating validator for the auth surface.
 
@@ -44,6 +19,10 @@ class AuthValidationService:
     reported per-field and are not the responsibility of this service —
     they remain a flat 401 to avoid user-enumeration leaks.
     """
+
+    _redacted_fields = frozenset(
+        {"password", "new_password", "current_password", "refresh", "token", "access"}
+    )
 
     def validate_first_setup(self, data: dict) -> dict:
         email = data.get("email")
@@ -64,6 +43,59 @@ class AuthValidationService:
         # confirmation field) lands in one obvious place.
         return self.validate_first_setup(data)
 
+    def validate_password_reset_request(self, data: dict) -> dict:
+        email = data.get("email")
+
+        errors: list[FieldError] = []
+        errors.extend(self._validate_email_field(email))
+
+        self._raise_if_any(errors)
+        return {"email": email}
+
+    def validate_password_reset_confirm(self, data: dict) -> dict:
+        token = data.get("token")
+        new_password = data.get("new_password")
+
+        errors: list[FieldError] = []
+        errors.extend(self._validate_uuid_field("token", token))
+        errors.extend(
+            self._validate_password_field(new_password, field_name="new_password")
+        )
+
+        self._raise_if_any(errors)
+        return {"token": self._coerce_uuid(token), "new_password": new_password}
+
+    def validate_admin_password_reset(self, data: dict) -> dict:
+        user_id = data.get("user_id")
+        new_password = data.get("new_password")
+
+        errors: list[FieldError] = []
+        errors.extend(self._validate_positive_int_field("user_id", user_id))
+        errors.extend(
+            self._validate_password_field(new_password, field_name="new_password")
+        )
+
+        self._raise_if_any(errors)
+        return {"user_id": int(user_id), "new_password": new_password}
+
+    def validate_password_change(self, data: dict) -> dict:
+        current_password = data.get("current_password")
+        new_password = data.get("new_password")
+
+        errors: list[FieldError] = []
+        errors.extend(
+            self._require_nonblank_string("current_password", current_password)
+        )
+        errors.extend(
+            self._validate_password_field(new_password, field_name="new_password")
+        )
+
+        self._raise_if_any(errors)
+        return {
+            "current_password": current_password,
+            "new_password": new_password,
+        }
+
     def validate_login(self, data: dict) -> dict:
         email = data.get("email")
         password = data.get("password")
@@ -74,60 +106,3 @@ class AuthValidationService:
 
         self._raise_if_any(errors)
         return {"email": email, "password": password}
-
-    # field-level checks
-
-    def _validate_email_field(self, value: Any) -> list[FieldError]:
-        required = self._require_nonblank_string("email", value)
-        if required:
-            return required
-        try:
-            validate_email(value)
-        except DjangoValidationError as exc:
-            return [
-                FieldError("email", self._echo("email", value), msg)
-                for msg in exc.messages
-            ]
-        return []
-
-    def _validate_password_field(
-        self, value: Any, user_hints: Optional[dict] = None
-    ) -> list[FieldError]:
-        required = self._require_nonblank_string("password", value)
-        if required:
-            return required
-        # `UserAttributeSimilarityValidator` only runs when `user=` is
-        # passed, and since Django 5.1 it calls `user._meta.get_field(...)`
-        # to render its error — so a plain namespace is not enough. An
-        # *unsaved* User instance gives us `_meta` without touching the DB.
-        user_stub = get_user_model()(**(user_hints or {}))
-        try:
-            validate_password(value, user=user_stub)
-        except DjangoValidationError as exc:
-            return [
-                FieldError("password", self._echo("password", value), msg)
-                for msg in exc.messages
-            ]
-        return []
-
-    # ---- primitives ----
-
-    def _require_nonblank_string(self, field: str, value: Any) -> list[FieldError]:
-        if value is None or value == "":
-            return [
-                FieldError(field, self._echo(field, value), "This field is required.")
-            ]
-        if not isinstance(value, str):
-            return [FieldError(field, self._echo(field, value), "Must be a string.")]
-        return []
-
-    @staticmethod
-    def _echo(field: str, value: Any) -> Any:
-        if field in REDACTED_FIELDS:
-            return REDACTED_PLACEHOLDER
-        return value
-
-    @staticmethod
-    def _raise_if_any(errors: list[FieldError]) -> None:
-        if errors:
-            raise FormValidationError([e.to_dict() for e in errors])

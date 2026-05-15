@@ -38,8 +38,8 @@ export class NaiveRagStrategy implements RagCreationStrategy {
     }
 
     getConfigurationInputs(): Record<string, unknown> {
-        const naiveRagId = this.naiveRag.naive_rag_id;
+        const { naive_rag_id, collection_id } = this.naiveRag;
 
-        return { naiveRagId: naiveRagId };
+        return { naiveRagId: naive_rag_id, collectionId: collection_id };
     }
 }

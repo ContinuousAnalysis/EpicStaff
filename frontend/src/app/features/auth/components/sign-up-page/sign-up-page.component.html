@@ -40,17 +40,17 @@
                     />
                     <app-password-strength [password]="password" />
                 </div>
-            </form>
 
-            <div class="terms-row">
-                <app-checkbox [formControl]="termsControl" />
-                <p class="terms-text">
-                    I agree to the
-                    <span class="terms-link">Terms of Service</span>
-                    and
-                    <span class="terms-link">Privacy Policy</span>
-                </p>
-            </div>
+                <div class="terms-row">
+                    <app-checkbox [formControl]="termsControl" />
+                    <p class="terms-text">
+                        I agree to the
+                        <span class="terms-link">Terms of Service</span>
+                        and
+                        <span class="terms-link">Privacy Policy</span>
+                    </p>
+                </div>
+            </form>
 
             <app-button
                 class="btn"

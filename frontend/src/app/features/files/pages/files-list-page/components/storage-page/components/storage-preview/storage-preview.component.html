@@ -107,6 +107,7 @@
     <div
         class="storage-preview__body"
         [class.storage-preview__body--no-content]="!item() || !hasFileSelected"
+        [class.storage-preview__body--pdf]="item() && hasFileSelected && previewType() === 'pdf'"
     >
         @if (!item() || !hasFileSelected) {
             <div class="storage-preview__empty-state">
@@ -124,7 +125,10 @@
                     <span class="storage-preview__badge-suffix">only view</span>
                 </div>
             }
-            <div class="storage-preview__scroll">
+            <div
+                class="storage-preview__scroll"
+                [class.storage-preview__scroll--pdf]="previewType() === 'pdf'"
+            >
                 @if (isLoadingPreview()) {
                     <div class="storage-preview__loading">Loading preview...</div>
                 } @else if (previewError()) {
@@ -163,6 +167,7 @@
                                     class="storage-preview__image"
                                     [src]="imageUrl()"
                                     [alt]="item()!.name"
+                                    draggable="false"
                                 />
                             }
                         }

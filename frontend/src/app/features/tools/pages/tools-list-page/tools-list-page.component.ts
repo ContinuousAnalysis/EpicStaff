@@ -1,5 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonComponent, TabButtonComponent } from '@shared/components';
@@ -31,7 +31,7 @@ import { ToolsSearchService } from '../../services/tools-search.service';
     styleUrls: ['./tools-list-page.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ToolsListPageComponent {
+export class ToolsListPageComponent implements OnDestroy {
     public tabs = [
         // { label: 'Built-in', link: 'built-in' },
         { label: 'Custom', link: 'custom' },
@@ -66,6 +66,10 @@ export class ToolsListPageComponent {
 
     public get createButtonIcon(): string {
         return 'plus';
+    }
+
+    public ngOnDestroy(): void {
+        this.toolsSearchService.clearSearch();
     }
 
     public onSearchTermChange(term: string): void {

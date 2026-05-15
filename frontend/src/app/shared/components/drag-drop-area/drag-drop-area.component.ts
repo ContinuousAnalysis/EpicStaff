@@ -18,8 +18,7 @@ export class DragDropAreaComponent {
     onDragOver(event: DragEvent): void {
         event.preventDefault();
         event.stopPropagation();
-        const hasFiles = event.dataTransfer?.types?.includes('Files') ?? false;
-        this.isDragging.set(hasFiles);
+        this.isDragging.set(this.isExternalFileDrag(event));
     }
 
     onDragLeave(event: DragEvent): void {
@@ -40,8 +39,25 @@ export class DragDropAreaComponent {
         event.stopPropagation();
         this.isDragging.set(false);
 
+        if (!this.isExternalFileDrag(event)) {
+            return;
+        }
+
         if (event.dataTransfer?.files.length) {
             this.filesDropped.emit(event.dataTransfer.files);
         }
+    }
+
+    private isExternalFileDrag(event: DragEvent): boolean {
+        const types = event.dataTransfer?.types;
+        if (!types || !Array.from(types).includes('Files')) {
+            return false;
+        }
+        for (const type of Array.from(types)) {
+            if (type !== 'Files' && type !== 'application/x-moz-file') {
+                return false;
+            }
+        }
+        return true;
     }
 }
