@@ -53,7 +53,21 @@ docker compose \
   --env-file .env \
   --env-file deploy.env \
   -f "$COMPOSE_FILE" \
-  up -d --wait --wait-timeout 300 --remove-orphans || FAILED=1
+  up -d --remove-orphans || FAILED=1
+
+sleep 60
+
+echo ">> checking for crashed containers"
+CRASHED=$(docker compose \
+  --env-file .env \
+  --env-file deploy.env \
+  -f "$COMPOSE_FILE" \
+  ps --status exited --format json \
+  | python3 -c "import sys,json; services=[c['Service'] for c in json.load(sys.stdin) if c['Service'] != 'minio-init']; print('\n'.join(services))" 2>/dev/null || true)
+if [ -n "$CRASHED" ]; then
+  echo "Crashed services: $CRASHED"
+  FAILED=1
+fi
 
 echo ">> last logs"
 docker compose \
