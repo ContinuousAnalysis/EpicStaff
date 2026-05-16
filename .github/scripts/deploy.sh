@@ -31,6 +31,9 @@ fi
 
 FAILED=0
 
+echo ">> ensure external volumes"
+docker volume inspect graph_data >/dev/null 2>&1 || docker volume create graph_data >/dev/null
+
 echo ">> docker compose build"
 docker compose \
   --env-file .env \
