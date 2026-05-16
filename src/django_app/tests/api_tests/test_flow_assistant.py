@@ -1234,9 +1234,9 @@ def test_get_subflow_falls_back_to_target_graph_id(db):
     # The LLM mistakenly passes graph_b.pk instead of sn.pk.
     result = get_subflow(graph_a.pk, str(graph_b.pk))
 
-    assert "error" not in result, (
-        f"Fallback failed — expected resolution, got error: {result.get('error')}"
-    )
+    assert (
+        "error" not in result
+    ), f"Fallback failed — expected resolution, got error: {result.get('error')}"
     assert result["name"] == "Target Subflow"
     assert result["description"] == "The target."
     assert result["subgraph_graph_id"] == graph_b.pk
@@ -1265,13 +1265,13 @@ def test_get_subflow_error_message_lists_available_pks(db):
     error_text = result["error"]
 
     # Must name the corrective source tool.
-    assert "get_flow_overview" in error_text, (
-        f"Error message must reference get_flow_overview; got: {error_text}"
-    )
+    assert (
+        "get_flow_overview" in error_text
+    ), f"Error message must reference get_flow_overview; got: {error_text}"
     # Must list the real available SubGraphNode PK so the LLM can self-correct.
-    assert str(sn.pk) in error_text, (
-        f"Error message must include the real SubGraphNode PK ({sn.pk}); got: {error_text}"
-    )
+    assert (
+        str(sn.pk) in error_text
+    ), f"Error message must include the real SubGraphNode PK ({sn.pk}); got: {error_text}"
 
 
 # ── Phase B: session tools tests ──────────────────────────────────────────────
@@ -1743,3 +1743,500 @@ def test_get_node_classification_decision_table_includes_pre_post_python_summari
     assert result_no_hooks["pre_python_code_summary"] is None
     assert "post_python_code_summary" in result_no_hooks
     assert result_no_hooks["post_python_code_summary"] is None
+
+
+# ── Fix 21: run-history introspection tests ───────────────────────────────────
+
+
+@pytest.mark.django_db
+def test_get_session_stats_counts_by_status_and_date_range(db):
+    """get_session_stats returns total, by_status, and respects date range filters."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_session_stats
+
+    graph_stats = Graph.objects.create(name="Stats Flow", description="")
+    now = timezone.now()
+    older = now - timedelta(days=5)
+
+    # 2 END sessions created "now", 1 ERROR created 5 days ago, 2 ERROR created "now"
+    for _ in range(2):
+        s = Session(
+            graph=graph_stats,
+            status=Session.SessionStatus.END,
+            status_updated_at=now,
+        )
+        s.save()
+        # Force created_at to "now" (default=timezone.now fires on insert, so no override needed)
+
+    # 2 ERROR sessions created now
+    for _ in range(2):
+        Session.objects.create(
+            graph=graph_stats,
+            status=Session.SessionStatus.ERROR,
+            status_updated_at=now,
+        )
+
+    # 1 ERROR session artificially set to older date
+    old_session = Session.objects.create(
+        graph=graph_stats,
+        status=Session.SessionStatus.ERROR,
+        status_updated_at=older,
+    )
+    Session.objects.filter(pk=old_session.pk).update(created_at=older)
+
+    # All 5 sessions: total should be 5
+    result = get_session_stats(graph_stats.pk)
+    assert "error" not in result
+    assert result["total"] == 5
+    assert result["by_status"][Session.SessionStatus.END] == 2
+    assert result["by_status"][Session.SessionStatus.ERROR] == 3
+
+    # Since yesterday: should exclude the old_session → 4 total
+    yesterday_iso = (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    result_since = get_session_stats(graph_stats.pk, since=yesterday_iso)
+    assert result_since["total"] == 4
+    assert result_since["by_status"].get(Session.SessionStatus.ERROR, 0) == 2
+
+    # Status filter: only ERROR
+    result_error = get_session_stats(graph_stats.pk, status=Session.SessionStatus.ERROR)
+    assert result_error["total"] == 3
+    assert Session.SessionStatus.END not in result_error["by_status"]
+
+    # Echoed timestamps and filter in response
+    result_ranged = get_session_stats(
+        graph_stats.pk, since=yesterday_iso, status=Session.SessionStatus.END
+    )
+    assert result_ranged["since"] is not None
+    assert result_ranged["status_filter"] == Session.SessionStatus.END
+
+
+@pytest.mark.django_db
+def test_get_session_stats_rejects_bad_iso(db):
+    """get_session_stats returns an error dict when since is not a valid ISO 8601 timestamp."""
+    from tables.services.flow_assistant.tools import get_session_stats
+
+    graph_bad = Graph.objects.create(name="Bad ISO Flow", description="")
+
+    result = get_session_stats(graph_bad.pk, since="yesterday")
+    assert "error" in result
+    assert "ISO 8601" in result["error"]
+    assert "yesterday" in result["error"]
+
+    result_until = get_session_stats(graph_bad.pk, until="last-week")
+    assert "error" in result_until
+    assert "ISO 8601" in result_until["error"]
+
+
+@pytest.mark.django_db
+def test_get_recent_sessions_where_filter(db):
+    """get_recent_sessions with where={} filters by variable values."""
+    from django.utils import timezone
+
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_recent_sessions
+
+    graph_where = Graph.objects.create(name="Where Flow", description="")
+    now = timezone.now()
+
+    berlin_session = Session.objects.create(
+        graph=graph_where,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+        variables={"city": "Berlin", "country": "DE"},
+    )
+    paris_session = Session.objects.create(
+        graph=graph_where,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+        variables={"city": "Paris", "country": "FR"},
+    )
+
+    result = get_recent_sessions(graph_where.pk, where={"city": "Berlin"})
+    assert "error" not in result
+    sessions = result["sessions"]
+    assert len(sessions) == 1, f"Expected 1 Berlin session, got {len(sessions)}"
+    assert sessions[0]["id"] == berlin_session.pk
+
+    # Paris filter
+    result_paris = get_recent_sessions(graph_where.pk, where={"city": "Paris"})
+    assert len(result_paris["sessions"]) == 1
+    assert result_paris["sessions"][0]["id"] == paris_session.pk
+
+    # No match
+    result_none = get_recent_sessions(graph_where.pk, where={"city": "Tokyo"})
+    assert len(result_none["sessions"]) == 0
+
+
+@pytest.mark.django_db
+def test_get_recent_sessions_include_full_variables(db):
+    """include_full_variables=True reads full_variables from status_data["variables"],
+    NOT from Session.variables. The two are set to different values here to ensure
+    the correct (runtime) path is taken."""
+    from django.utils import timezone
+
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_recent_sessions
+
+    graph_vars = Graph.objects.create(name="Vars Flow", description="")
+    now = timezone.now()
+    start_vars = {"city": "Amsterdam", "score": None}
+    runtime_vars = {"city": "Amsterdam", "score": 99, "nested": {"a": 1}}
+
+    Session.objects.create(
+        graph=graph_vars,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+        variables=start_vars,
+        status_data={"variables": runtime_vars},
+    )
+
+    # Without flag: no full_variables key
+    result_plain = get_recent_sessions(graph_vars.pk, include_full_variables=False)
+    for s in result_plain["sessions"]:
+        assert (
+            "full_variables" not in s
+        ), "full_variables must be absent when flag is False"
+
+    # With flag: full_variables comes from status_data["variables"], not session.variables
+    result_full = get_recent_sessions(graph_vars.pk, include_full_variables=True)
+    assert len(result_full["sessions"]) == 1
+    row = result_full["sessions"][0]
+    assert "full_variables" in row, "full_variables must be present when flag is True"
+    # Must be the runtime snapshot, not the start snapshot
+    assert row["full_variables"] == runtime_vars
+    assert row["start_variables"] == start_vars
+    # The two must differ to confirm we read the right path
+    assert row["full_variables"] != row["start_variables"]
+
+
+@pytest.mark.django_db
+def test_get_recent_sessions_full_variables_reads_status_data(db):
+    """full_variables is populated from status_data["variables"] (the runtime state),
+    which differs from Session.variables (the start snapshot)."""
+    from django.utils import timezone
+
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_recent_sessions
+
+    graph = Graph.objects.create(name="Status Data Flow", description="")
+    now = timezone.now()
+
+    session = Session.objects.create(
+        graph=graph,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+        variables={"request": {"city": "Berlin"}, "weather": None},
+        status_data={
+            "variables": {"request": {"city": "Berlin"}, "weather": {"temp": 22.5}}
+        },
+    )
+
+    result = get_recent_sessions(graph.pk, include_full_variables=True)
+    assert "sessions" in result
+    assert len(result["sessions"]) == 1
+    row = result["sessions"][0]
+
+    assert (
+        row["start_variables"]["weather"] is None
+    ), "start_variables must reflect initial snapshot (weather is None)"
+    assert row["full_variables"]["weather"] == {
+        "temp": 22.5
+    }, "full_variables must reflect runtime state from status_data"
+
+
+@pytest.mark.django_db
+def test_get_recent_sessions_full_variables_falls_back_to_variables(db):
+    """When status_data has no 'variables' key, full_variables falls back to Session.variables."""
+    from django.utils import timezone
+
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_recent_sessions
+
+    graph = Graph.objects.create(name="Fallback Flow", description="")
+    now = timezone.now()
+    start_vars = {"city": "Berlin", "result": "partial"}
+
+    # status_data exists but has no 'variables' key (abnormal termination scenario)
+    session = Session.objects.create(
+        graph=graph,
+        status=Session.SessionStatus.ERROR,
+        status_updated_at=now,
+        variables=start_vars,
+        status_data={"error": "timeout"},
+    )
+
+    result = get_recent_sessions(graph.pk, include_full_variables=True)
+    assert len(result["sessions"]) == 1
+    row = result["sessions"][0]
+
+    assert (
+        row["full_variables"] == start_vars
+    ), "full_variables must fall back to Session.variables when status_data has no 'variables' key"
+
+    # Also verify the empty dict case (status_data={}, no 'variables' key at all)
+    graph2 = Graph.objects.create(name="Fallback Flow Empty", description="")
+    Session.objects.create(
+        graph=graph2,
+        status=Session.SessionStatus.ERROR,
+        status_updated_at=now,
+        variables=start_vars,
+        # status_data defaults to {}, explicitly set for clarity
+        status_data={},
+    )
+
+    result2 = get_recent_sessions(graph2.pk, include_full_variables=True)
+    assert len(result2["sessions"]) == 1
+    assert result2["sessions"][0]["full_variables"] == start_vars
+
+
+@pytest.mark.django_db
+def test_get_recent_sessions_date_range(db):
+    """get_recent_sessions respects since/until filters."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_recent_sessions
+
+    graph_date = Graph.objects.create(name="Date Range Flow", description="")
+    now = timezone.now()
+    old_time = now - timedelta(days=10)
+
+    recent_session = Session.objects.create(
+        graph=graph_date,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+    )
+    old_session = Session.objects.create(
+        graph=graph_date,
+        status=Session.SessionStatus.END,
+        status_updated_at=old_time,
+    )
+    Session.objects.filter(pk=old_session.pk).update(created_at=old_time)
+
+    since_iso = (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    result = get_recent_sessions(graph_date.pk, since=since_iso, limit=25)
+    ids = [s["id"] for s in result["sessions"]]
+    assert recent_session.pk in ids
+    assert old_session.pk not in ids, "Old session must be excluded by since filter"
+
+    # Bad ISO rejected
+    result_bad = get_recent_sessions(graph_date.pk, since="not-a-date")
+    assert "error" in result_bad
+    assert "ISO 8601" in result_bad["error"]
+
+
+@pytest.mark.django_db
+def test_get_session_messages_returns_trace_content(db):
+    """get_session_messages surfaces thought/text/result for agents and raw for tasks."""
+    from django.utils import timezone
+
+    from tables.models.session_models import (
+        AgentSessionMessage,
+        Session,
+        TaskSessionMessage,
+    )
+    from tables.services.flow_assistant.tools import get_session_messages
+
+    graph_msgs = Graph.objects.create(name="Messages Flow", description="")
+    now = timezone.now()
+    session = Session.objects.create(
+        graph=graph_msgs,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+    )
+
+    AGENT_THOUGHT = "I concluded the city is Berlin."
+    TASK_RAW = "Final output: Berlin confirmed."
+
+    AgentSessionMessage.objects.create(
+        session=session,
+        node_name="my_agent",
+        execution_order=0,
+        thought=AGENT_THOUGHT,
+        text="some text",
+        result="some result",
+    )
+    TaskSessionMessage.objects.create(
+        session=session,
+        node_name="my_task",
+        execution_order=1,
+        raw=TASK_RAW,
+        name="task_1",
+        description="a task description",
+        expected_output="something",
+    )
+
+    result = get_session_messages(graph_msgs.pk, session.pk)
+    assert "error" not in result, f"Unexpected error: {result.get('error')}"
+    assert result["session_id"] == session.pk
+    messages = result["messages"]
+    assert len(messages) == 2
+
+    # Sort by execution_order to assert in order
+    messages_sorted = sorted(messages, key=lambda m: m["execution_order"])
+
+    agent_msg = messages_sorted[0]
+    assert agent_msg["kind"] == "agent"
+    assert agent_msg["node_name"] == "my_agent"
+    assert agent_msg["content"] == AGENT_THOUGHT
+
+    task_msg = messages_sorted[1]
+    assert task_msg["kind"] == "task"
+    assert task_msg["node_name"] == "my_task"
+    assert task_msg["content"] == TASK_RAW
+
+
+@pytest.mark.django_db
+def test_get_session_messages_rejects_cross_graph_session(db):
+    """get_session_messages returns an error when session belongs to a different graph."""
+    from django.utils import timezone
+
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_session_messages
+
+    graph_a = Graph.objects.create(name="Graph A", description="")
+    graph_b = Graph.objects.create(name="Graph B", description="")
+    now = timezone.now()
+
+    session = Session.objects.create(
+        graph=graph_a,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+    )
+
+    result = get_session_messages(graph_b.pk, session.pk)
+    assert "error" in result
+    assert "different flow" in result["error"] or "not found" in result["error"].lower()
+    assert "messages" not in result
+
+
+@pytest.mark.django_db
+def test_get_session_messages_respects_limit_clamp(db):
+    """get_session_messages clamps limit to 200; passing 500 returns at most 200."""
+    from django.utils import timezone
+
+    from tables.models.session_models import AgentSessionMessage, Session
+    from tables.services.flow_assistant.tools import get_session_messages
+
+    graph_limit = Graph.objects.create(name="Limit Flow", description="")
+    now = timezone.now()
+    session = Session.objects.create(
+        graph=graph_limit,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+    )
+
+    # Create 220 agent messages
+    AgentSessionMessage.objects.bulk_create(
+        [
+            AgentSessionMessage(
+                session=session,
+                node_name="agent",
+                execution_order=i,
+                thought=f"thought {i}",
+                text="",
+                result="",
+            )
+            for i in range(220)
+        ]
+    )
+
+    result = get_session_messages(graph_limit.pk, session.pk, limit=500)
+    assert "error" not in result
+    assert (
+        result["count"] <= 200
+    ), f"Expected at most 200 messages, got {result['count']}"
+
+
+# ── Fix 22: runtime variable path in get_session_detail ──────────────────────
+
+
+@pytest.mark.django_db
+def test_get_session_detail_includes_final_variables_from_status_data(db):
+    """get_session_detail must expose final_variables from status_data["variables"],
+    not from Session.variables, when the runtime snapshot is available."""
+    from django.utils import timezone
+
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_session_detail
+
+    graph = Graph.objects.create(name="Detail Vars Flow", description="")
+    now = timezone.now()
+    start_vars = {"city": "Berlin", "temperature": None, "recommendation": None}
+    runtime_vars = {
+        "city": "Berlin",
+        "temperature": 22.5,
+        "recommendation": {"message": "Wear light clothes"},
+    }
+
+    session = Session.objects.create(
+        graph=graph,
+        status=Session.SessionStatus.END,
+        status_updated_at=now,
+        variables=start_vars,
+        status_data={"variables": runtime_vars},
+    )
+
+    result = get_session_detail(graph.pk, session.pk)
+
+    assert "error" not in result, f"Unexpected error: {result.get('error')}"
+    assert (
+        "final_variables" in result
+    ), "final_variables key must be present in get_session_detail"
+
+    final = result["final_variables"]
+    assert (
+        final["temperature"] == 22.5
+    ), "final_variables must reflect runtime state from status_data (temperature was null at start)"
+    assert final["recommendation"] == {
+        "message": "Wear light clothes"
+    }, "final_variables must include output variables populated by the flow"
+
+
+@pytest.mark.django_db
+def test_get_session_detail_final_variables_falls_back_to_variables(db):
+    """When status_data has no 'variables' key, final_variables falls back to Session.variables."""
+    from django.utils import timezone
+
+    from tables.models.session_models import Session
+    from tables.services.flow_assistant.tools import get_session_detail
+
+    graph = Graph.objects.create(name="Detail Fallback Flow", description="")
+    now = timezone.now()
+    start_vars = {"city": "Paris", "result": None}
+
+    # No 'variables' key in status_data (abnormal termination)
+    session_no_vars_key = Session.objects.create(
+        graph=graph,
+        status=Session.SessionStatus.ERROR,
+        status_updated_at=now,
+        variables=start_vars,
+        status_data={"error": "agent timed out"},
+    )
+
+    result = get_session_detail(graph.pk, session_no_vars_key.pk)
+    assert "error" not in result
+    assert (
+        result["final_variables"] == start_vars
+    ), "final_variables must fall back to Session.variables when status_data has no 'variables' key"
+
+    # status_data is empty dict (default, no 'variables' key)
+    session_empty_status_data = Session.objects.create(
+        graph=graph,
+        status=Session.SessionStatus.ERROR,
+        status_updated_at=now,
+        variables=start_vars,
+        status_data={},
+    )
+
+    result2 = get_session_detail(graph.pk, session_empty_status_data.pk)
+    assert "error" not in result2
+    assert (
+        result2["final_variables"] == start_vars
+    ), "final_variables must fall back to Session.variables when status_data is an empty dict"

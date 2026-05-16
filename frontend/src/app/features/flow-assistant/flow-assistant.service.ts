@@ -64,6 +64,14 @@ function toolStatusFor(event: StreamToolCallEvent): string {
                 ? `Looking up session ${sid}…`
                 : 'Looking up a session…';
         }
+        case 'get_session_stats':
+            return 'Counting runs…';
+        case 'get_session_messages': {
+            const sid = a['session_id'];
+            return typeof sid === 'number' || (typeof sid === 'string' && sid !== '')
+                ? `Reading the session ${sid} trace…`
+                : 'Reading a session trace…';
+        }
         default:
             return 'Working…';
     }
@@ -546,10 +554,16 @@ export class FlowAssistantService {
                 break;
             }
             case 'openFlow': {
-                const flowId = String(action.params?.['flowId'] ?? '');
-                if (flowId) {
-                    void this.router.navigate(['/flows', flowId]);
-                }
+                const flowIdRaw = action.params?.['flowId'];
+                const newGraphId = Number(flowIdRaw);
+                if (!Number.isFinite(newGraphId)) break;
+
+                this.cancelActiveStream();
+                void this.router.navigate(['/flows', newGraphId]).then((navigated) => {
+                    if (navigated) {
+                        this.open(newGraphId);
+                    }
+                });
                 break;
             }
             case 'openNode': {
@@ -625,6 +639,12 @@ export class FlowAssistantService {
 
     private appendMessage(message: FlowAssistantMessage): void {
         this.messages.update((msgs) => [...msgs, message]);
+    }
+
+    private cancelActiveStream(): void {
+        this.closeEventSource();
+        this.isStreaming.set(false);
+        this.currentStatus.set(null);
     }
 
     private closeEventSource(): void {

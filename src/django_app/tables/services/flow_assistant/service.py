@@ -12,6 +12,7 @@ Responsibilities:
 
 import json
 import re
+from datetime import timedelta
 from typing import AsyncIterator
 
 from asgiref.sync import sync_to_async
@@ -192,13 +193,60 @@ TOOL_SPECS: list[ToolSpec] = [
         },
     ),
     ToolSpec(
+        name="get_session_stats",
+        description=(
+            "Returns aggregate execution counts for this flow. Use when the user asks "
+            "for counts of past runs — e.g. 'how many times did I run today?', "
+            "'how many failed last week?', 'how many are in error status?'. "
+            "All parameters are optional. since/until must be ISO 8601 timestamps "
+            "(e.g. '2026-05-15T00:00:00Z'). status must be one of: "
+            "pending, run, wait_for_user, error, end, stop, expired. "
+            "Response includes total count and by_status breakdown."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "since": {
+                    "type": "string",
+                    "description": (
+                        "ISO 8601 timestamp (inclusive lower bound on created_at). "
+                        "e.g. '2026-05-15T00:00:00Z'."
+                    ),
+                },
+                "until": {
+                    "type": "string",
+                    "description": (
+                        "ISO 8601 timestamp (exclusive upper bound on created_at). "
+                        "e.g. '2026-05-16T00:00:00Z'."
+                    ),
+                },
+                "status": {
+                    "type": "string",
+                    "description": (
+                        "Filter by session status. One of: "
+                        "pending, run, wait_for_user, error, end, stop, expired."
+                    ),
+                },
+            },
+            "required": [],
+        },
+    ),
+    ToolSpec(
         name="get_recent_sessions",
         description=(
             "Returns the most recent EXECUTION sessions for this flow (not Flow "
             "Assistant chat conversations). Use this when asked whether the flow "
             "has run recently, whether the last run succeeded, how often it runs, "
-            "or what errors occurred. Each entry has status, timestamps, duration, "
-            "has_error, entrypoint, and start_variables. "
+            "what errors occurred, or to search runs by input variable value. "
+            "Each entry has status, timestamps, duration, has_error, entrypoint, "
+            "and start_variables (initial inputs only). "
+            "Optional params: since/until (ISO 8601 timestamps) for date range; "
+            "where (flat dict of variable key→value) to filter by input value "
+            '(e.g. where={"city": "Berlin"} finds sessions whose variables.city=Berlin); '
+            "include_full_variables=true to also get full_variables per row — "
+            "the final variable namespace after the flow ran (inputs + outputs, "
+            "e.g. shows what the flow produced). "
+            "Can return large objects — combine with targeted where and low limit. "
             "limit defaults to 5, maximum 25."
         ),
         parameters={
@@ -208,7 +256,41 @@ TOOL_SPECS: list[ToolSpec] = [
                     "type": "integer",
                     "description": "Number of recent sessions to return (1–25, default 5).",
                     "default": 5,
-                }
+                },
+                "since": {
+                    "type": "string",
+                    "description": (
+                        "ISO 8601 timestamp (inclusive). Only sessions created at or "
+                        "after this time are returned. e.g. '2026-05-15T00:00:00Z'."
+                    ),
+                },
+                "until": {
+                    "type": "string",
+                    "description": (
+                        "ISO 8601 timestamp (exclusive). Only sessions created before "
+                        "this time are returned. e.g. '2026-05-16T00:00:00Z'."
+                    ),
+                },
+                "where": {
+                    "type": "object",
+                    "description": (
+                        "Flat key→value dict to filter sessions by input variable value. "
+                        'e.g. {"city": "Berlin"} returns only sessions whose '
+                        "variables[\"city\"] equals 'Berlin'."
+                    ),
+                    "additionalProperties": True,
+                },
+                "include_full_variables": {
+                    "type": "boolean",
+                    "description": (
+                        "When true, each result row includes a full_variables field "
+                        "containing the final variable namespace state after the flow ran "
+                        "(inputs + outputs). Use this to inspect what the flow produced. "
+                        "start_variables always holds the initial inputs only. "
+                        "Can be large — prefer targeted queries."
+                    ),
+                    "default": False,
+                },
             },
             "required": [],
         },
@@ -220,7 +302,8 @@ TOOL_SPECS: list[ToolSpec] = [
             "EXECUTION session of this flow. Use this to investigate a specific failure "
             "after calling get_recent_sessions. Returns node_name, execution order, "
             "and timestamps per node — NO message bodies or content text. "
-            "Provide the numeric session ID (from get_recent_sessions output)."
+            "Provide the numeric session ID (from get_recent_sessions output). "
+            "To see agent reasoning and task outputs, use get_session_messages instead."
         ),
         parameters={
             "type": "object",
@@ -229,6 +312,31 @@ TOOL_SPECS: list[ToolSpec] = [
                     "type": "integer",
                     "description": "The numeric ID of the session to inspect.",
                 }
+            },
+            "required": ["session_id"],
+        },
+    ),
+    ToolSpec(
+        name="get_session_messages",
+        description=(
+            "Returns the per-step execution trace for a session, including agent thoughts, "
+            "tool calls, and task outputs. Use after get_recent_sessions identifies the "
+            "target session_id, when the user asks how a specific run arrived at its answer "
+            "or wants to see the agent reasoning chain. "
+            "Bodies may be large — set a targeted limit (1–200, default 50)."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "integer",
+                    "description": "The numeric ID of the session (from get_recent_sessions).",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max trace entries to return (1–200, default 50).",
+                    "default": 50,
+                },
             },
             "required": ["session_id"],
         },
@@ -253,12 +361,32 @@ _TOOL_CALLABLES: dict[str, callable] = {
     "list_skills": lambda _graph_id, **__: _tools.list_skills(),
     "load_skill": lambda _graph_id, name, **__: _tools.load_skill(name),
     # Session tools are org-scoped by graph_id inside the tool implementation.
-    "get_recent_sessions": lambda graph_id, limit=5, **_: _tools.get_recent_sessions(
-        graph_id, limit=int(limit)
+    "get_session_stats": lambda graph_id,
+    since=None,
+    until=None,
+    status=None,
+    **_: _tools.get_session_stats(graph_id, since=since, until=until, status=status),
+    "get_recent_sessions": lambda graph_id,
+    limit=5,
+    since=None,
+    until=None,
+    where=None,
+    include_full_variables=False,
+    **_: _tools.get_recent_sessions(
+        graph_id,
+        limit=int(limit),
+        since=since,
+        until=until,
+        where=where,
+        include_full_variables=bool(include_full_variables),
     ),
     "get_session_detail": lambda graph_id, session_id, **_: _tools.get_session_detail(
         graph_id, int(session_id)
     ),
+    "get_session_messages": lambda graph_id,
+    session_id,
+    limit=50,
+    **_: _tools.get_session_messages(graph_id, int(session_id), limit=int(limit)),
 }
 
 
@@ -429,9 +557,21 @@ Interactive elements displayed with the message.
 | refreshCache             | Reloads the page to pick up flow/node changes. |
 
 ### Prompt suggestions
-Add 2–3 prompt chips when there are natural follow-up questions:
+Add 2–3 prompt chips when there are natural follow-up questions.
+
+**Prompt chip text is sent verbatim as the USER's next message.** Phrase it
+from the user's perspective — what the user might say or ask next — not as
+a question the assistant is asking the user.
+
+Wrong (assistant POV — reads backwards once clicked):
+  {"type": "prompt", "text": "What specific areas do you want to focus on?"}
+  {"type": "prompt", "text": "How can I help you implement these changes?"}
+  {"type": "prompt", "text": "Do you want to discuss any specific feature?"}
+
+Right (user POV — natural as a user message):
   {"type": "prompt", "text": "Show me the node config for customer_intake"}
   {"type": "prompt", "text": "What subflows does this flow depend on?"}
+  {"type": "prompt", "text": "Help me optimize the decision rules"}
 
 ### Combined example
 {
@@ -462,7 +602,7 @@ Add 2–3 prompt chips when there are natural follow-up questions:
   emit `ef_tables`. Pick one or the other.
 - Be concise. Keep `message` focused. Don't repeat data that's already in a table.
 - Use tables for structured data. Lists of nodes, edges — put them in `ef_tables`.
-- Offer prompts. After answering, suggest 2–3 natural follow-ups as prompt chips.
+- Offer prompts. After answering, suggest 2–3 natural follow-ups as prompt chips — phrased from the user's POV ("Show me X" / "Tell me about Y"), NOT as questions the assistant asks the user.
 - Minimal fields. Don't include `ef_tables` or `action_message` if you don't need them.
 """
 
@@ -562,8 +702,18 @@ class FlowAssistantService:
                 )
             nodes_section = "Nodes in this flow:\n" + "\n".join(lines)
 
+        now = timezone.now()
+        today_iso = now.date().isoformat()
+        yesterday_iso = (now - timedelta(days=1)).date().isoformat()
+        tomorrow_iso = (now + timedelta(days=1)).date().isoformat()
+
         return (
             f"You are the AI assistant for the '{graph.name}' flow.\n\n"
+            f"Today's date is {today_iso} (UTC). When the user asks about 'today', "
+            f"'yesterday', 'this week', 'N days ago', convert to ISO 8601 timestamps "
+            f"before calling `get_session_stats` or `get_recent_sessions`. "
+            f'For example: today → "{today_iso}T00:00:00Z" to "{tomorrow_iso}T00:00:00Z"; '
+            f'yesterday → "{yesterday_iso}T00:00:00Z" to "{today_iso}T00:00:00Z".\n\n'
             f"Flow description: {description}\n\n"
             f"This flow contains the following node types:\n{node_summary}\n\n"
             f"{nodes_section}\n\n"
@@ -579,6 +729,14 @@ class FlowAssistantService:
             "- For Python nodes and webhook triggers, the returned `python_code_summary` contains the actual code, entrypoint, and library list — use it to answer questions about what the node does, which APIs it calls, what libraries it depends on.\n"
             "- When asked about whether you've run, errors, or recent activity, call `get_recent_sessions`. For a specific failure, follow up with `get_session_detail(session_id)`. Note: these are EXECUTION sessions, not Flow Assistant chat conversations.\n"
             "- This is a read-only assistant: you cannot modify the flow.\n"
+            "\n"
+            "Session-tool routing rules:\n"
+            "- When asked for counts of past runs (today / this week / by status), call `get_session_stats`.\n"
+            "- When asked about specific runs by input value or filename (e.g. 'when did I process contract X' or 'what was the result for Berlin?'), call `get_recent_sessions(where={...}, include_full_variables=True, since=<iso>)`.\n"
+            "- When asked for the reasoning behind a specific run ('how did agent X arrive at this answer?'), call `get_session_messages(session_id=...)`.\n"
+            "\n"
+            "Discovery questions: When the user asks a question like 'what can I ask about runs / sessions / nodes / subflows?' or 'what do you know how to answer about X?', respond with a short bulleted list of capability categories grouped by topic — each bullet a single concrete example phrasing the user could try. Do NOT call tools for discovery questions; answer from your own knowledge of the tools available to you. "
+            "Example, for runs: '- Counts: How many runs today / failed last week? / - Search by input: When did I process city Berlin? / - Agent reasoning: Show me the trace for session 42.'\n"
             "\n"
             "You have direct read access to this flow via the tools listed below. "
             "When the user asks to 'inspect', 'QA', 'review', 'audit', 'check', 'lint', "

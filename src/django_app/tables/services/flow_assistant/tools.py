@@ -14,7 +14,8 @@ Secret redaction: any config key whose name contains 'api_key', 'secret', or
 
 import re
 
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch
+from django.utils.dateparse import parse_datetime
 
 from tables.models.session_models import Session
 from tables.models.python_models import PythonCode
@@ -455,17 +456,129 @@ def get_edges_to(graph_id: int, node_id: str) -> list[dict]:
     return result
 
 
-def get_recent_sessions(graph_id: int, limit: int = 5) -> dict:
+def get_session_stats(
+    graph_id: int,
+    since: str | None = None,
+    until: str | None = None,
+    status: str | None = None,
+) -> dict:
+    """Aggregate execution stats for this flow.
+
+    Args:
+        since: ISO 8601 timestamp (inclusive). e.g. "2026-05-15T00:00:00Z".
+        until: ISO 8601 timestamp (exclusive).
+        status: one of {pending, run, wait_for_user, error, end, stop, expired}.
+
+    Returns: {total, by_status: {...}, since, until, status_filter}.
+    """
+    since_dt = None
+    until_dt = None
+
+    if since is not None:
+        since_dt = parse_datetime(since)
+        if since_dt is None:
+            return {
+                "error": f"Invalid since: expected ISO 8601 timestamp, got '{since}'"
+            }
+
+    if until is not None:
+        until_dt = parse_datetime(until)
+        if until_dt is None:
+            return {
+                "error": f"Invalid until: expected ISO 8601 timestamp, got '{until}'"
+            }
+
+    if status is not None:
+        allowed_statuses = Session.SessionStatus.values
+        if status not in allowed_statuses:
+            return {
+                "error": (
+                    f"Invalid status '{status}'. " f"Allowed values: {allowed_statuses}"
+                )
+            }
+
+    qs = Session.objects.filter(graph_id=graph_id)
+    if since_dt is not None:
+        qs = qs.filter(created_at__gte=since_dt)
+    if until_dt is not None:
+        qs = qs.filter(created_at__lt=until_dt)
+    if status is not None:
+        qs = qs.filter(status=status)
+
+    total = qs.count()
+    by_status_rows = qs.values("status").annotate(n=Count("id"))
+    by_status = {row["status"]: row["n"] for row in by_status_rows}
+
+    return {
+        "total": total,
+        "by_status": by_status,
+        "since": since_dt.isoformat() if since_dt is not None else None,
+        "until": until_dt.isoformat() if until_dt is not None else None,
+        "status_filter": status,
+    }
+
+
+def get_recent_sessions(
+    graph_id: int,
+    limit: int = 5,
+    since: str | None = None,
+    until: str | None = None,
+    where: dict | None = None,
+    include_full_variables: bool = False,
+) -> dict:
     """Return the most recent execution sessions for this flow.
 
     These are EXECUTION sessions of the flow itself — not Flow Assistant
     conversations. Used to answer "have I run recently?", "did my last run
-    succeed?", "how often do I get called?".
+    succeed?", "how often do I get called?", or "when was city X processed?".
+
+    Args:
+        limit: Number of sessions to return (1–25, default 5).
+        since: ISO 8601 timestamp (inclusive). Filters sessions created at or after
+            this time. e.g. "2026-05-15T00:00:00Z".
+        until: ISO 8601 timestamp (exclusive). Filters sessions created before this time.
+        where: Flat dict of variable key→value pairs to filter on. For example,
+            {"city": "Berlin"} returns only sessions whose variables["city"] == "Berlin".
+            Uses Postgres JSONField path lookups natively.
+        include_full_variables: When True, each result row gains a `full_variables`
+            field containing the entire Session.variables dict. Can return large
+            objects — use targeted queries (where + limit) rather than broad scans.
 
     limit is clamped to [1, 25] to prevent excessive result sets.
     """
+    since_dt = None
+    until_dt = None
+
+    if since is not None:
+        since_dt = parse_datetime(since)
+        if since_dt is None:
+            return {
+                "error": f"Invalid since: expected ISO 8601 timestamp, got '{since}'"
+            }
+
+    if until is not None:
+        until_dt = parse_datetime(until)
+        if until_dt is None:
+            return {
+                "error": f"Invalid until: expected ISO 8601 timestamp, got '{until}'"
+            }
+
     limit = max(1, min(25, int(limit)))
-    sessions = Session.objects.filter(graph_id=graph_id).order_by("-created_at")[:limit]
+    qs = Session.objects.filter(graph_id=graph_id)
+
+    if since_dt is not None:
+        qs = qs.filter(created_at__gte=since_dt)
+    if until_dt is not None:
+        qs = qs.filter(created_at__lt=until_dt)
+
+    if where:
+        for key, value in where.items():
+            # Translate dot-notation to Django's __ nested lookup path.
+            django_key = key.replace(".", "__")
+            qs = qs.filter(**{f"variables__{django_key}": value})
+
+    sessions = qs.order_by("-created_at")[:limit]
+
     _error_statuses = {
         Session.SessionStatus.ERROR,
         Session.SessionStatus.EXPIRED,
@@ -480,24 +593,149 @@ def get_recent_sessions(graph_id: int, limit: int = 5) -> dict:
         else:
             duration_seconds = None
 
-        result.append(
+        row: dict = {
+            "id": session.pk,
+            "status": session.status,
+            "created_at": session.created_at.isoformat()
+            if session.created_at
+            else None,
+            "finished_at": session.finished_at.isoformat()
+            if session.finished_at
+            else None,
+            "duration_seconds": duration_seconds,
+            "has_error": session.status in _error_statuses,
+            "entrypoint": session.entrypoint,
+            "start_variables": session.variables,
+        }
+        if include_full_variables:
+            # Final / runtime variables (mutations made during execution) are stored
+            # at Session.status_data["variables"] when the crew publishes session-end
+            # status. Fall back to Session.variables if status_data has no entry
+            # (e.g. a session that ended abnormally before the publish completed).
+            runtime_variables = (session.status_data or {}).get("variables")
+            row["full_variables"] = (
+                runtime_variables
+                if runtime_variables is not None
+                else session.variables
+            )
+
+        result.append(row)
+
+    return {"sessions": result}
+
+
+def get_session_messages(
+    graph_id: int,
+    session_id: int,
+    limit: int = 50,
+) -> dict:
+    """Return the per-step execution trace for a session, including agent thoughts
+    and task outputs.
+
+    Use after get_recent_sessions identifies the target session_id.
+    Useful for explaining HOW a specific run reached its output — agent reasoning,
+    tool calls, and task completions are all surfaced here.
+
+    Bodies may be large — set a targeted limit (1–200, default 50).
+
+    Cross-graph guard: returns an error if session_id belongs to a different flow.
+    """
+    from tables.models.session_models import AgentSessionMessage, TaskSessionMessage
+
+    session = Session.objects.filter(graph_id=graph_id, pk=session_id).first()
+    if session is None:
+        return {"error": "Session not found or belongs to a different flow."}
+
+    limit = max(1, min(200, int(limit)))
+
+    agent_rows = list(
+        AgentSessionMessage.objects.filter(session_id=session_id)
+        .order_by("execution_order", "created_at")
+        .values(
+            "node_name",
+            "execution_order",
+            "created_at",
+            "thought",
+            "text",
+            "result",
+            "tool",
+            "tool_input",
+        )[:limit]
+    )
+    task_rows = list(
+        TaskSessionMessage.objects.filter(session_id=session_id)
+        .order_by("execution_order", "created_at")
+        .values(
+            "node_name",
+            "execution_order",
+            "created_at",
+            "name",
+            "description",
+            "expected_output",
+            "raw",
+            "agent",
+        )[:limit]
+    )
+
+    trace = []
+    for row in agent_rows:
+        extras: dict = {}
+        if row["text"]:
+            extras["text"] = row["text"]
+        if row["tool"]:
+            extras["tool"] = row["tool"]
+        if row["tool_input"]:
+            extras["tool_input"] = row["tool_input"]
+        if row["result"]:
+            extras["result"] = row["result"]
+
+        trace.append(
             {
-                "id": session.pk,
-                "status": session.status,
-                "created_at": session.created_at.isoformat()
-                if session.created_at
+                "kind": "agent",
+                "node_name": row["node_name"],
+                "execution_order": row["execution_order"],
+                "created_at": row["created_at"].isoformat()
+                if row["created_at"]
                 else None,
-                "finished_at": session.finished_at.isoformat()
-                if session.finished_at
-                else None,
-                "duration_seconds": duration_seconds,
-                "has_error": session.status in _error_statuses,
-                "entrypoint": session.entrypoint,
-                "start_variables": session.variables,
+                "content": row["thought"],
+                "extras": extras,
             }
         )
 
-    return {"sessions": result}
+    for row in task_rows:
+        extras = {}
+        if row["description"]:
+            extras["description"] = row["description"]
+        if row["expected_output"]:
+            extras["expected_output"] = row["expected_output"]
+        if row["agent"]:
+            extras["agent"] = row["agent"]
+
+        trace.append(
+            {
+                "kind": "task",
+                "node_name": row["node_name"],
+                "execution_order": row["execution_order"],
+                "created_at": row["created_at"].isoformat()
+                if row["created_at"]
+                else None,
+                "content": row["raw"],
+                "name": row["name"],
+                "extras": extras,
+            }
+        )
+
+    trace.sort(key=lambda e: (e["execution_order"], e["created_at"] or ""))
+
+    # Clamp to limit after merge (each per-kind query already limits, but the
+    # merged list could be up to 2×limit before this final clamp).
+    trace = trace[:limit]
+
+    return {
+        "session_id": session_id,
+        "messages": trace,
+        "count": len(trace),
+    }
 
 
 def get_session_detail(graph_id: int, session_id: int) -> dict:
@@ -573,6 +811,14 @@ def get_session_detail(graph_id: int, session_id: int) -> dict:
         Session.SessionStatus.EXPIRED,
     }
 
+    # Final / runtime variables are stored at Session.status_data["variables"] when
+    # the crew publishes session-end status. Fall back to Session.variables when that
+    # key is absent (abnormal termination before publish completed).
+    runtime_variables = (session.status_data or {}).get("variables")
+    final_variables = (
+        runtime_variables if runtime_variables is not None else session.variables
+    )
+
     return {
         "session_id": session.pk,
         "status": session.status,
@@ -581,6 +827,7 @@ def get_session_detail(graph_id: int, session_id: int) -> dict:
         "duration_seconds": duration_seconds,
         "has_error": session.status in _error_statuses,
         "entrypoint": session.entrypoint,
+        "final_variables": final_variables,
         "node_trace": node_trace,
     }
 
