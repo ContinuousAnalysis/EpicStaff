@@ -23,15 +23,14 @@ on:
         type: boolean
         default: false
 
-concurrency:
-  group: epicstaff-deploy
-  cancel-in-progress: false
-
 jobs:
   deploy_test_2:
     name: Deploy to test2
     if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.server == 'test2') }}
     runs-on: [self-hosted, test2]
+    concurrency:
+      group: epicstaff-deploy-test2
+      cancel-in-progress: false
 
     steps:
       - name: Deploy main to test2
@@ -50,6 +49,9 @@ jobs:
     name: Deploy to test3 (manual branch)
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.server == 'test3' }}
     runs-on: [self-hosted, test3]
+    concurrency:
+      group: epicstaff-deploy-test3
+      cancel-in-progress: false
 
     steps:
       - name: Deploy selected branch to test3
