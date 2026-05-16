@@ -51,7 +51,7 @@ export class MainTabComponent implements OnInit {
 
     private getOrganizations(): void {
         this.organizationStorage
-            .getOrganizations()
+            .getOrganizations(true)
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 finalize(() => this.isOrgsLoading.set(false))

@@ -87,7 +87,7 @@ export class OrganizationsTabComponent implements OnInit {
 
     ngOnInit(): void {
         this.organizationStorage
-            .getOrganizations()
+            .getOrganizations(true)
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 finalize(() => this.isLoading.set(false))

@@ -186,6 +186,7 @@ export class UsersTabComponent implements OnInit {
             name: user.displayName,
             email: user.email,
             avatar: user.avatarUrl,
+            isSuperadmin: user.isSuperadmin,
             roles,
             organization: orgs?.map((o) => o.id),
             organizationDetails: orgs,
