@@ -31,12 +31,19 @@ fi
 
 FAILED=0
 
+echo ">> docker compose build"
+docker compose \
+  --env-file .env \
+  --env-file deploy.env \
+  -f "$COMPOSE_FILE" \
+  build --no-parallel || FAILED=1
+
 echo ">> docker compose up"
 docker compose \
   --env-file .env \
   --env-file deploy.env \
   -f "$COMPOSE_FILE" \
-  up --build -d --remove-orphans || FAILED=1
+  up -d --remove-orphans || FAILED=1
 
 echo ">> last logs"
 docker compose \
