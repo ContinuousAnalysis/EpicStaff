@@ -46,7 +46,7 @@ docker compose \
   --env-file .env \
   --env-file deploy.env \
   -f "$COMPOSE_FILE" \
-  up -d --wait --remove-orphans || FAILED=1
+  up -d --wait --wait-timeout 300 --remove-orphans || FAILED=1
 
 echo ">> last logs"
 docker compose \
