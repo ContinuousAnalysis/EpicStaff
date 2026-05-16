@@ -34,12 +34,19 @@ FAILED=0
 echo ">> ensure external volumes"
 docker volume inspect graph_data >/dev/null 2>&1 || docker volume create graph_data >/dev/null
 
-echo ">> docker compose build"
-docker compose \
+echo ">> docker compose build (sequential)"
+while read -r service; do
+  echo ">> building $service"
+  docker compose \
+    --env-file .env \
+    --env-file deploy.env \
+    -f "$COMPOSE_FILE" \
+    build "$service" || { FAILED=1; break; }
+done < <(docker compose \
   --env-file .env \
   --env-file deploy.env \
   -f "$COMPOSE_FILE" \
-  build --no-parallel || FAILED=1
+  config --services)
 
 echo ">> docker compose up"
 docker compose \
