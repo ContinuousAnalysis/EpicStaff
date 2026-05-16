@@ -1,19 +1,27 @@
 name: Deploy on self-hosted
 
 on:
-  push:
-    branches: ["main"]
+  schedule:
+    - cron: "0 3 * * *"
 
   workflow_dispatch:
     inputs:
-      branch:
-        description: "Branch to deploy to test3"
+      server:
+        description: "Server to deploy to"
         required: true
+        default: "test2"
+        type: choice
+        options:
+          - test2
+          - test3
+      branch:
+        description: "Branch to deploy (test3 only, test2 always deploys main)"
+        required: false
         default: "main"
       nuke_db:
         description: "Reset database (Nuke DB)?"
         type: boolean
-        default: true
+        default: false
 
 concurrency:
   group: epicstaff-deploy
@@ -21,8 +29,8 @@ concurrency:
 
 jobs:
   deploy_test_2:
-    name: Deploy to test2 (auto from main)
-    if: ${{ github.event_name == 'push' }}
+    name: Deploy to test2
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.server == 'test2') }}
     runs-on: [self-hosted, test2]
 
     steps:
@@ -40,7 +48,7 @@ jobs:
 
   deploy_test_3:
     name: Deploy to test3 (manual branch)
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.server == 'test3' }}
     runs-on: [self-hosted, test3]
 
     steps:
@@ -54,6 +62,6 @@ jobs:
           git fetch --prune
           git checkout "$BRANCH"
           git pull --ff-only origin "$BRANCH"
-          
+
           export NUKE_DB="${{ github.event.inputs.nuke_db }}"
           bash .github/scripts/deploy.sh "$BRANCH"
