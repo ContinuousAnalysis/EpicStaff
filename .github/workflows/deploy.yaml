@@ -30,6 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git config --global --add safe.directory /home/developer/EpicStaff
           cd /home/developer/EpicStaff
           git fetch --prune
           git checkout main
@@ -48,6 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH="${{ github.event.inputs.branch }}"
+          git config --global --add safe.directory /home/developer/EpicStaff
           cd /home/developer/EpicStaff
           git fetch --prune
           git checkout "$BRANCH"
