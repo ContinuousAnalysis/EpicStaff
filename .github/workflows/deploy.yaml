@@ -19,7 +19,7 @@ on:
         required: false
         default: "main"
       nuke_db:
-        description: "Reset database (Nuke DB)?"
+        description: "Reset database (Nuke DB)? Only applies to test3, ignored for test2."
         type: boolean
         default: false
 
