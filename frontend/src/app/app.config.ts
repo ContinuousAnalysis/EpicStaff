@@ -9,6 +9,7 @@ import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { notFoundInterceptor } from './core/interceptors/not-found.interceptor';
+import { validationErrorsInterceptor } from './core/interceptors/validation-errors.interceptor';
 import { ConfigService } from './services/config/config.service';
 
 export function initializeApp(configService: ConfigService) {
@@ -21,7 +22,7 @@ export const appConfig: ApplicationConfig = {
         provideRouter(routes, withComponentInputBinding()),
         provideAnimationsAsync(),
 
-        provideHttpClient(withInterceptors([authInterceptor, notFoundInterceptor])),
+        provideHttpClient(withInterceptors([authInterceptor, validationErrorsInterceptor, notFoundInterceptor])),
         importProvidersFrom(MarkdownModule.forRoot({}), MonacoEditorModule.forRoot()),
 
         {

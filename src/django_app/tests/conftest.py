@@ -105,6 +105,20 @@ def auth_client(api_client, jwt_tokens) -> APIClient:
 
 
 @pytest.fixture
+def superadmin_jwt_tokens(superadmin_user):
+    refresh = RefreshToken.for_user(superadmin_user)
+    return {"access": str(refresh.access_token), "refresh": str(refresh)}
+
+
+@pytest.fixture
+def superadmin_client(api_client, superadmin_jwt_tokens) -> APIClient:
+    api_client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {superadmin_jwt_tokens['access']}"
+    )
+    return api_client
+
+
+@pytest.fixture
 def env_api_key(db):
     raw = ApiKey.generate_raw_key()
     key = ApiKey(name="env-system")

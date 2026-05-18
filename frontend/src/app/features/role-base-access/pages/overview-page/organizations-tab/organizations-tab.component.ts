@@ -1,4 +1,4 @@
-import { Dialog } from '@angular/cdk/dialog';
+import { Dialog, DialogRef } from '@angular/cdk/dialog';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -14,11 +14,15 @@ import {
     SelectItem,
     TableRow,
 } from '@shared/components';
-import { GetMeResponse, GetOrganizationResponse } from '@shared/models';
-import { finalize, forkJoin } from 'rxjs';
+import { GetOrganizationResponse } from '@shared/models';
+import { finalize } from 'rxjs';
 
-import { AuthService } from '../../../../../services/auth/auth.service';
 import { ToastService } from '../../../../../services/notifications';
+import {
+    OverflowBadgeDirective,
+    OverflowItemDirective,
+    OverflowItemsDirective,
+} from '../../../../../shared/directives/overflow-items.directive';
 import { CreateOrganizationDialogComponent } from '../../../components/create-organization-dialog/create-organization-dialog.component';
 import { OrgAvatarComponent } from '../../../components/org-avatar/org-avatar.component';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
@@ -44,6 +48,9 @@ const STATUS_ITEMS: SelectItem[] = [
         StatusBadgeComponent,
         OrgAvatarComponent,
         UserAvatarComponent,
+        OverflowItemsDirective,
+        OverflowItemDirective,
+        OverflowBadgeDirective,
         DatePipe,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,12 +60,10 @@ export class OrganizationsTabComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private confirmation = inject(ConfirmationDialogService);
     private organizationStorage = inject(OrganizationsStorageService);
-    private authService = inject(AuthService);
     private toast = inject(ToastService);
 
-    readonly searchTerm = signal('');
-    readonly isLoading = signal(true);
-    readonly currentUser = signal<GetMeResponse | null>(null);
+    searchTerm = signal('');
+    isLoading = signal(true);
 
     readonly columns: AppTableColumnDef[] = [
         { key: 'organization', label: 'Organization', width: '2fr' },
@@ -69,11 +74,11 @@ export class OrganizationsTabComponent implements OnInit {
         { key: 'actions', label: 'Actions', width: '1fr', align: 'center' },
     ];
 
-    readonly organizations = this.organizationStorage.organizations;
+    organizations = this.organizationStorage.organizations;
 
-    readonly tableData = computed<TableRow[]>(() => this.organizations().map((org) => this.orgToRow(org)));
+    tableData = computed<TableRow[]>(() => this.organizations().map((org) => this.orgToRow(org)));
 
-    readonly filteredOrgs = computed<TableRow[]>(() => {
+    filteredOrgs = computed<TableRow[]>(() => {
         const term = this.searchTerm().toLowerCase().trim();
         const rows = this.tableData();
         if (!term) return rows;
@@ -81,32 +86,41 @@ export class OrganizationsTabComponent implements OnInit {
     });
 
     ngOnInit(): void {
-        forkJoin([this.organizationStorage.getOrganizations(), this.authService.getCurrentUser()])
+        this.organizationStorage
+            .getOrganizations(true)
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 finalize(() => this.isLoading.set(false))
             )
-            .subscribe({
-                next: ([, user]) => this.currentUser.set(user),
-            });
+            .subscribe();
     }
 
     onCreateOrganization(): void {
-        this.dialog.open(CreateOrganizationDialogComponent, {
+        const ref = this.dialog.open(CreateOrganizationDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
             disableClose: true,
         });
+        this.refreshOnClose(ref);
     }
 
     onEditOrganization(row: TableRow): void {
         const org = this.organizations().find((o) => o.id === row['id']);
         if (!org) return;
-        this.dialog.open(CreateOrganizationDialogComponent, {
+        const ref = this.dialog.open(CreateOrganizationDialogComponent, {
             width: 'calc(100vw - 2rem)',
             height: 'calc(100vh - 2rem)',
             disableClose: true,
             data: org,
+        });
+        this.refreshOnClose(ref);
+    }
+
+    private refreshOnClose(ref: DialogRef<unknown, CreateOrganizationDialogComponent>): void {
+        ref.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
+            if (result) {
+                this.organizationStorage.getOrganizations(true).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+            }
         });
     }
 
@@ -143,6 +157,7 @@ export class OrganizationsTabComponent implements OnInit {
         return {
             id: org.id,
             name: org.name,
+            admins: org.admins,
             members: org.member_count,
             created: org.created_at,
             status: org.is_active ? 'active' : 'deactivated',

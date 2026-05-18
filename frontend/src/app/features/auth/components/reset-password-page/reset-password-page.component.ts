@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -10,8 +10,8 @@ import {
     PasswordStrengthComponent,
     ValidationErrorsComponent,
 } from '@shared/components';
+import { ServerErrorsDirective, ServerErrorsRef } from '@shared/directives';
 import { notNumericOnlyValidator } from '@shared/form-validators';
-import { ApiErrorItem } from '@shared/models';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
@@ -31,6 +31,7 @@ type PageState = 'invalid-token' | 'set-password' | 'success';
         ValidationErrorsComponent,
         MatIconModule,
         PasswordStrengthComponent,
+        ServerErrorsDirective,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -41,15 +42,22 @@ export class ResetPasswordPageComponent {
     private toast = inject(ToastService);
     private router = inject(Router);
 
-    private token = '';
-
     state = signal<PageState>('set-password');
     loading = signal(false);
-    passwordError = signal<string | null>(null);
 
-    readonly passwordControl = new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required, Validators.minLength(8), Validators.maxLength(40), notNumericOnlyValidator()],
+    private token = '';
+    readonly serverErrorsRef = new ServerErrorsRef();
+
+    readonly form = new FormGroup({
+        new_password: new FormControl('', {
+            nonNullable: true,
+            validators: [
+                Validators.required,
+                Validators.minLength(8),
+                Validators.maxLength(40),
+                notNumericOnlyValidator(),
+            ],
+        }),
     });
 
     constructor() {
@@ -59,13 +67,12 @@ export class ResetPasswordPageComponent {
     }
 
     get password(): string {
-        return this.passwordControl.getRawValue();
+        return this.form.get('new_password')?.getRawValue();
     }
 
-    onSetPassword(): void {
-        this.passwordError.set(null);
-        this.passwordControl.markAsTouched();
-        if (this.passwordControl.invalid) return;
+    onSubmit(): void {
+        this.form.markAllAsTouched();
+        if (this.form.invalid) return;
 
         const data = {
             token: this.token,
@@ -84,10 +91,9 @@ export class ResetPasswordPageComponent {
                     this.state.set('success');
                 },
                 error: (err) => {
-                    const errors: ApiErrorItem[] = err?.error?.errors ?? [];
-
-                    if (errors.length) {
-                        this.handleErrorResponse(errors);
+                    if (err.validationErrors?.length) {
+                        this.serverErrorsRef.setErrors(err.validationErrors);
+                        return;
                     } else {
                         this.toast.error(err?.error.message);
                     }
@@ -97,18 +103,5 @@ export class ResetPasswordPageComponent {
 
     navToLogin(): void {
         void this.router.navigateByUrl('/login');
-    }
-
-    private handleErrorResponse(errors: ApiErrorItem[]) {
-        const tokenError = errors.find((e) => e.field === 'token');
-        const passwordError = errors.find((e) => e.field === 'new_password');
-
-        if (tokenError) {
-            this.toast.error(`Token error: ${tokenError.reason}`);
-        }
-
-        if (passwordError) {
-            this.passwordError.set(passwordError.reason);
-        }
     }
 }

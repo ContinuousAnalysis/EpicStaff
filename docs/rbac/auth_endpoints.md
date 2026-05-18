@@ -19,14 +19,14 @@ Base URL in examples: `http://localhost:8000`.
 | POST | `/api/auth/refresh/` | public | Exchange refresh → new access + rotated refresh |
 | POST | `/api/auth/logout/` | Bearer JWT | Blacklist the caller's refresh token |
 | POST | `/api/auth/sse-ticket/` | Bearer JWT | Issue a single-use SSE ticket (30-second TTL) |
-| GET | `/api/auth/me/` | Bearer JWT (or user-owned ApiKey) | Current user + memberships |
+| ~~GET~~ | ~~`/api/auth/me/`~~ | — | **REMOVED in Story 6** → use `GET /api/profile/`, see [user_profile.md](user_profile.md) |
 | POST | `/api/auth/introspect/` | ApiKey | Validate a JWT, return claims |
 | GET | `/api/auth/api-key/validate/` | ApiKey | Metadata about the calling key |
 | POST | `/api/auth/swagger-token/` | public (throttled) | OAuth2 password flow for Swagger |
 | POST | `/api/auth/reset-user/` | Bearer JWT or ApiKey | Destructive: wipe users+keys, recreate superadmin |
 | POST | `/api/auth/password-reset/request/` | public (throttled) | Start password-recovery flow — see [password_recovery.md](password_recovery.md) |
 | POST | `/api/auth/password-reset/confirm/` | public | Consume reset token + set new password |
-| POST | `/api/auth/password-change/` | Bearer JWT | Authenticated self-service password change |
+| ~~POST~~ | ~~`/api/auth/password-change/`~~ | — | **REMOVED in Story 6** → use two-step `/api/profile/password-change/{request,confirm}/`, see [user_profile.md](user_profile.md) § "Two-step password change" |
 | POST | `/api/auth/admin/password-reset/` | Bearer JWT (superadmin) | Superadmin resets another user's password |
 
 **Login/Swagger-token throttle:** `LOGIN_THROTTLE_RATE` env (default `5/min`), bucketed per `<ip>|<email>`. 6th attempt inside the window returns `429` with `Retry-After`.
@@ -299,35 +299,13 @@ See the dedicated [`sse_auth.md`](./sse_auth.md) for the complete FE flow.
 
 ## Current user
 
-### GET `/api/auth/me/`
+### GET `/api/auth/me/` — REMOVED in Story 6
 
-- **Auth:** `IsAuthenticated`. JWT works. A user-owned ApiKey works. A null-owner
-  ApiKey (`AnonymousUser`) is rejected with 403 because `/me/` requires a
-  real user context.
-- **Response 200:**
-  ```json
-  {
-    "id": 1,
-    "email": "admin@acme.com",
-    "display_name": "Admin",
-    "avatar_url": "http://host/media/avatars/...",   // null if not set
-    "is_superadmin": true,
-    "memberships": [
-      {
-        "organization": { "id": 1, "name": "Acme Inc" },
-        "role":         { "id": 2, "name": "Superadmin" },
-        "joined_at":    "2026-04-17T18:00:00Z"
-      }
-    ]
-  }
-  ```
-- **403** when called with a null-owner ApiKey:
-  ```json
-  { "detail": "This endpoint requires a user context." }
-  ```
-
-Active-org resolution from the `X-Organization-Id` header is **not**
-implemented in Story 2 — that lands in Story 7.
+Replaced by `GET /api/profile/`. See [user_profile.md](user_profile.md).
+The new payload is a strict superset of the old `/me/` response
+(adds `is_active`, `created_at`, `updated_at`, `memberships[].id`, and
+`memberships[].organization.is_active`; only active-org memberships are
+returned).
 
 ---
 
@@ -555,8 +533,8 @@ ACCESS=$(curl -s -X POST http://localhost:8000/api/auth/login/ \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@acme.com","password":"StrongPass123!"}' | jq -r .access)
 
-# 3. Current user
-curl -s http://localhost:8000/api/auth/me/ -H "Authorization: Bearer $ACCESS" | jq .
+# 3. Current user — Story 6+ uses /api/profile/ (replaces /api/auth/me/)
+curl -s http://localhost:8000/api/profile/ -H "Authorization: Bearer $ACCESS" | jq .
 
 # 4. Use any protected endpoint
 curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | jq .
@@ -575,14 +553,14 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 | SSE streams | EventSource can no longer connect directly. Fetch a ticket via `POST /api/auth/sse-ticket/`, then connect with `?ticket=<value>`. On `onerror` / reconnect, fetch a **fresh** ticket first. Full migration guide: [`sse_auth.md`](./sse_auth.md). |
 | First-setup screen | Call `GET /api/auth/first-setup/` on boot; if `needs_setup: true`, show the setup form. POST payload is `{ email, password }` — the organization name is sourced from the `DEFAULT_ORGANIZATION_NAME` setting on the server, not the request body. Response returns `access` + `refresh` — persist them and skip the login screen on success. |
 | Idempotency | A repeated `POST /api/auth/first-setup/` returns **409** with `{"detail": "Setup has already been completed"}`. Handle this explicitly (e.g. redirect to login). |
-| `/me` response shape | Changed. New fields: `display_name`, `avatar_url`, `is_superadmin`, `memberships[]`. Removed: `username`. FE should render email (not username) in the profile menu, and use `memberships` to populate the org/role sidebar. |
-| JWT claims | Access token now carries `email` and `is_superadmin` in addition to `user_id`. FE may decode the access token locally to short-circuit UI gating without hitting `/me`. |
+| Current-user endpoint | `/api/auth/me/` is **removed**. Use `GET /api/profile/` instead. Response is a strict superset of the old `/me/` payload. See [user_profile.md](user_profile.md) § "Migrating from `/api/auth/me/`". |
+| JWT claims | Access token now carries `email` and `is_superadmin` in addition to `user_id`. FE may decode the access token locally to short-circuit UI gating without hitting `/api/profile/`. |
 | 401 handling | Unchanged in shape — `{status_code: 401, code: "not_authenticated", message: ...}`. On 401 during a session, prompt re-login. |
 | 409 on setup | New status code to handle on the setup flow. |
 | `reset_user` web call | Payload is `{ email, password }` (was `{ username, password, email }`). Response still returns `access`, `refresh`, `api_key`. Consider masking/displaying the API key only once — it cannot be retrieved again. |
 | Token introspection / API key validation | Only used by internal services; the FE typically does not call these. If it does, the endpoints require `X-Api-Key` now — JWT will get 403. |
 | Admin UI (`/admin/`) | **Removed.** `django.contrib.admin` was dropped because our custom `User` has no `is_staff` field. Anything that linked to `/admin/` must be removed or redirected. |
-| Active organization | Not wired up yet. `X-Organization-Id` header + `/me/` `active_org` block is Story 7. Until then, the FE can pick an org from `memberships[]` and display it, but there's no backend filtering by header. |
+| Active organization | Not wired up yet. `X-Organization-Id` header + active-org resolution on `/api/profile/` is Story 7. Until then, the FE can pick an org from `memberships[]` and display it, but there's no backend filtering by header. |
 | Permissions UI | All Story-2 endpoints effectively require `IsAuthenticated`; the bitmask permission checks land in later stories (9 / 13). Until then the FE gates UI actions purely on `is_superadmin` / role name. |
 | Env-seeded API key flows | If any FE flow uses `DJANGO_API_KEY` directly (unlikely — that's internal), those calls now need an owning user OR the FE must switch to JWT. |
 
@@ -605,7 +583,7 @@ curl -s http://localhost:8000/api/graphs/ -H "Authorization: Bearer $ACCESS" | j
 | `/api/auth/sse-ticket/` | *did not exist* | new — JWT-authed; returns `{ticket, expires_in}` |
 | `/api/auth/first-setup/` POST request | `{username, password, email?}` | `{email, password}` (org name comes from `DEFAULT_ORGANIZATION_NAME`) |
 | `/api/auth/first-setup/` POST response | `{access, refresh, api_key}` | `{user, organization, access, refresh}` |
-| `/api/auth/me/` response | `{id, username, email}` | `{id, email, display_name, avatar_url, is_superadmin, memberships[]}` |
+| ~~`/api/auth/me/`~~ | `{id, username, email}` | **Removed** — replaced by `GET /api/profile/`, see [user_profile.md](user_profile.md). |
 | `/api/auth/introspect/` response | `{active, user_id, username, scopes}` | `{active, user_id, email, scopes}` |
 | `/api/auth/api-key/validate/` response | `{active, name, prefix, scopes}` | `{active, name, prefix, scopes, owner_user_id}` |
 | `/api/auth/reset-user/` request | `{username, password, email?}` | `{email, password}` |
