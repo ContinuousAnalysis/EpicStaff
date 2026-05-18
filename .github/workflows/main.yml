@@ -18,7 +18,9 @@ on:
 
 permissions:
   contents: write
-  
+  packages: write
+
+
 jobs:
   integration-tests:
     name: Integration Tests

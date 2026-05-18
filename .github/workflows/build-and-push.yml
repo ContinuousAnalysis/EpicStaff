@@ -81,11 +81,11 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo ">> resolved ref=$REF tag=$TAG"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ steps.r.outputs.ref }}
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12.10'
 
@@ -121,7 +121,7 @@ jobs:
       max-parallel: 4
       matrix: ${{ fromJSON(needs.resolve.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.resolve.outputs.ref }}
 

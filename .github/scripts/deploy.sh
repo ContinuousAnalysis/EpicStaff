@@ -5,64 +5,49 @@ APP_DIR="/home/developer/EpicStaff"
 COMPOSE_DIR="$APP_DIR/src"
 COMPOSE_FILE="docker-compose.yaml"
 NUKE_DB=${NUKE_DB:-false}
+IMAGE_TAG=${IMAGE_TAG:-latest}
+
+export IMAGE_TAG
 
 echo ">> deploy from current checkout"
 echo ">> repo dir: $APP_DIR"
+echo ">> image tag: $IMAGE_TAG"
 echo ">> nuke database: $NUKE_DB"
 
 cd "$COMPOSE_DIR"
 
+DC="docker compose --env-file .env --env-file deploy.env -f $COMPOSE_FILE"
+
 echo ">> docker compose down"
-docker compose -f "$COMPOSE_FILE" down --remove-orphans
+$DC down --remove-orphans
 
 if [ "$NUKE_DB" = "true" ]; then
   echo "⚠️  NUKE_DB is set to true. Resetting database volumes..."
-  
   if [ -f "./nuke_db.sh" ]; then
     bash ./nuke_db.sh
   else
     docker volume rm crew_pgdata || true
     docker volume create crew_pgdata
-    # docker volume rm redis_data || true
   fi
 else
   echo ">> Skipping database reset (data preserved)."
 fi
 
-FAILED=0
-
 echo ">> ensure external volumes"
 docker volume inspect graph_data >/dev/null 2>&1 || docker volume create graph_data >/dev/null
 
-echo ">> docker compose build (sequential)"
-while read -r service; do
-  echo ">> building $service"
-  docker compose \
-    --env-file .env \
-    --env-file deploy.env \
-    -f "$COMPOSE_FILE" \
-    build "$service" || { FAILED=1; break; }
-done < <(docker compose \
-  --env-file .env \
-  --env-file deploy.env \
-  -f "$COMPOSE_FILE" \
-  config --services)
+echo ">> docker compose pull"
+$DC pull
+
+FAILED=0
 
 echo ">> docker compose up"
-docker compose \
-  --env-file .env \
-  --env-file deploy.env \
-  -f "$COMPOSE_FILE" \
-  up -d --remove-orphans || FAILED=1
+$DC up -d --remove-orphans || FAILED=1
 
 sleep 60
 
 echo ">> checking for crashed containers"
-CRASHED=$(docker compose \
-  --env-file .env \
-  --env-file deploy.env \
-  -f "$COMPOSE_FILE" \
-  ps --status exited --format json \
+CRASHED=$($DC ps --status exited --format json \
   | python3 -c "import sys,json; services=[c['Service'] for c in json.load(sys.stdin) if c['Service'] != 'minio-init']; print('\n'.join(services))" 2>/dev/null || true)
 if [ -n "$CRASHED" ]; then
   echo "Crashed services: $CRASHED"
@@ -70,18 +55,10 @@ if [ -n "$CRASHED" ]; then
 fi
 
 echo ">> last logs"
-docker compose \
-  --env-file .env \
-  --env-file deploy.env \
-  -f "$COMPOSE_FILE" \
-  logs --tail=50 --no-color || true
+$DC logs --tail=50 --no-color || true
 
 echo ">> docker compose ps"
-docker compose \
-  --env-file .env \
-  --env-file deploy.env \
-  -f "$COMPOSE_FILE" \
-  ps || true
+$DC ps || true
 
 if [ "$FAILED" = "1" ]; then
   echo "Deploy failed"

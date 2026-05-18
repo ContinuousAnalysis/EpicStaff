@@ -5,17 +5,66 @@ on:
 
 permissions:
   contents: write
-  
+  packages: write
+
 jobs:
-  publish-release:
-    runs-on: self-hosted
+  resolve:
+    name: Resolve release version
+    runs-on: ubuntu-latest
     if: startsWith(github.ref_name, 'release-')
+    outputs:
+      tag: ${{ steps.r.outputs.tag }}
+      ref: ${{ steps.r.outputs.ref }}
+    steps:
+      - id: r
+        shell: bash
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${BRANCH_NAME#release-}"
+          # ensure a single 'v' prefix on the image/git tag
+          VERSION="${VERSION#v}"
+          TAG="v${VERSION}"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Branch '$BRANCH_NAME' does not yield a strict-semver tag (got '$TAG')" >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "ref=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+          echo ">> release tag: $TAG (from branch $BRANCH_NAME)"
+
+  build:
+    name: Build & push release images
+    needs: resolve
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      ref: ${{ needs.resolve.outputs.ref }}
+      tag: ${{ needs.resolve.outputs.tag }}
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [resolve, build]
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ needs.resolve.outputs.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12.10"
+
+      - name: Install python deps
+        run: pip install ruamel.yaml
 
       - name: Download installer artifacts
         uses: actions/download-artifact@v4
@@ -24,7 +73,9 @@ jobs:
         continue-on-error: true
 
       - name: Archive installers if available
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p release-archives
 
           if [ -d "artifacts/macos-installer" ]; then
@@ -41,20 +92,33 @@ jobs:
 
           ls -la release-archives || echo "No archives found"
 
-      - name: Extract tag from branch name
-        id: extract_tag
+      - name: Generate customer docker-compose.yaml
+        shell: bash
         run: |
-            BRANCH_NAME="${GITHUB_REF_NAME}"
-            TAG_NAME="${BRANCH_NAME#release-}"
-            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-            echo "Extracted tag: $TAG_NAME"
+          set -euo pipefail
+          python ./.github/scripts/strip_build_blocks.py \
+            src/docker-compose.yaml \
+            release-archives/docker-compose.yaml
+
+      - name: Generate .env.example
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f src/.env ]; then
+            sed -E 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\1=/' src/.env > release-archives/.env.example
+            echo ">> wrote release-archives/.env.example"
+          else
+            echo "WARNING: src/.env not found, skipping .env.example generation" >&2
+          fi
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-            tag_name: ${{ steps.extract_tag.outputs.tag_name }}
-            name: "Release ${{ steps.extract_tag.outputs.tag_name }}"
-            body: ${{ github.event.inputs.release_notes }}
-            files: release-archives/*
+          tag_name: ${{ needs.resolve.outputs.tag }}
+          name: "Release ${{ needs.resolve.outputs.tag }}"
+          body: ${{ github.event.inputs.release_notes }}
+          files: |
+            release-archives/*
+            release-archives/.env.example
         env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
