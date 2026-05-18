@@ -212,6 +212,7 @@ def crew(
         memory=True,
         embedding_config=embedding_config,
         manager_llm_config=llm_config,
+        memory_llm_config=llm_config,
     )
 
     crew.save()
@@ -230,9 +231,11 @@ def graph() -> Graph:
 
 @pytest.fixture
 def session_data(crew: Crew, graph: Graph) -> dict:
-    CrewNode.objects.create(node_name="crew_node_1", crew=crew, graph=graph)
-    StartNode.objects.create(graph=graph, variables={})
-    Edge.objects.create(graph=graph, start_key="__start__", end_key="crew_node_1")
+    crew_node = CrewNode.objects.create(node_name="crew_node_1", crew=crew, graph=graph)
+    start_node = StartNode.objects.create(graph=graph, variables={})
+    Edge.objects.create(
+        graph=graph, start_node_id=start_node.id, end_node_id=crew_node.id
+    )
     return {
         "graph_id": graph.pk,
         "variables": {
@@ -253,6 +256,7 @@ def session(session_data) -> tuple[Session | dict]:
 def redis_client_mock() -> Generator[MagicMock, None, None]:
     redis_service = RedisService()
     mock_instance = MagicMock()
+    mock_instance.publish.return_value = 2  # required_listeners == 2 in run_session
     with patch.object(redis_service, "_redis_client", mock_instance):
         yield mock_instance
 

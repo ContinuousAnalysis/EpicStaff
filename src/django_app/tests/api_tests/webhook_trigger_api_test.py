@@ -7,7 +7,7 @@ from tables.models.webhook_models import WebhookTrigger
 
 @pytest.mark.django_db
 class TestWebhookTriggerAndNodeAPI:
-    def test_create_webhook_trigger(self, api_client):
+    def test_create_webhook_trigger(self, auth_client):
         """
         Basic smoke test for /api/webhook-triggers/ create endpoint.
         """
@@ -17,7 +17,7 @@ class TestWebhookTriggerAndNodeAPI:
             "ngrok_webhook_config": None,
         }
 
-        response = api_client.post(url, payload, format="json")
+        response = auth_client.post(url, payload, format="json")
 
         assert response.status_code == 201
         assert WebhookTrigger.objects.count() == 1
@@ -25,7 +25,9 @@ class TestWebhookTriggerAndNodeAPI:
         assert trigger.path == "myWebhook123"
         assert trigger.ngrok_webhook_config is None
 
-    def test_create_webhook_trigger_node_with_nested_trigger(self, api_client, graph: Graph):
+    def test_create_webhook_trigger_node_with_nested_trigger(
+        self, auth_client, graph: Graph
+    ):
         """
         Ensure /api/webhook-trigger-nodes/ accepts nested webhook_trigger payload
         and links node to the corresponding WebhookTrigger.
@@ -45,9 +47,10 @@ class TestWebhookTriggerAndNodeAPI:
                 "path": "myWebhookNested",
                 "ngrok_webhook_config": None,
             },
+            "metadata": {},
         }
 
-        response = api_client.post(url, payload, format="json")
+        response = auth_client.post(url, payload, format="json")
 
         assert response.status_code == 201
         data = response.json()
@@ -57,4 +60,3 @@ class TestWebhookTriggerAndNodeAPI:
         # WebhookTrigger should be created or updated with this path
         trigger = WebhookTrigger.objects.get(path="myWebhookNested")
         assert trigger.ngrok_webhook_config is None
-

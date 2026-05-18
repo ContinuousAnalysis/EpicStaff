@@ -34,12 +34,18 @@ import {
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
 import { FlowSessionsListComponent } from '../../../../features/flows/components/flow-sessions-dialog/flow-sessions-list.component';
+import { RestoreWarningsDialogComponent } from '../../../../features/flows/components/restore-warnings-dialog/restore-warnings-dialog.component';
 import {
     SaveVersionDialogComponent,
     SaveVersionDialogResult,
 } from '../../../../features/flows/components/save-version-dialog/save-version-dialog.component';
 import { VersionHistoryPanelComponent } from '../../../../features/flows/components/version-history-panel/version-history-panel.component';
-import { GetGraphLightRequest, GraphDto } from '../../../../features/flows/models/graph.model';
+import {
+    GetGraphLightRequest,
+    GraphDto,
+    GraphRestoreResponse,
+    RestoreWarning,
+} from '../../../../features/flows/models/graph.model';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { RunGraphService } from '../../../../features/flows/services/run-graph-session.service';
@@ -56,6 +62,7 @@ import { ScheduleTriggerNodeModel } from '../../../../visual-programming/core/mo
 import { NodeModel } from '../../../../visual-programming/core/models/node.model';
 import { FlowGraphComponent } from '../../../../visual-programming/flow-graph/flow-graph.component';
 import { FlowService } from '../../../../visual-programming/services/flow.service';
+import { UndoRedoService } from '../../../../visual-programming/services/undo-redo.service';
 import { SidePanelService } from '../../../../visual-programming/services/side-panel.service';
 import {
     createStartNode,
@@ -118,6 +125,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
     public isSaving = signal(false);
     public isRunning = signal(false);
+    public restoreWarnings = signal<RestoreWarning[]>([]);
 
     public isPanelOpen = signal(false);
     public isPanelCollapsed = signal(true);
@@ -153,6 +161,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly epicChatService: EpicChatService,
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
         private readonly unsavedChangesDialog: UnsavedChangesDialogService,
+        private readonly undoRedoService: UndoRedoService,
         private readonly runSessionSSEService: RunSessionSSEService,
         private readonly sidePanelService: SidePanelService
     ) {
@@ -330,6 +339,13 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
     }
 
     private saveGraphForRun(): Observable<void> {
+        if (!this.hasUnsavedChanges()) return of(void 0);
+        if (this.isSaving()) return EMPTY;
+
+        return this.saveFlowState(this.currentFlowState(), false);
+    }
+
+    public saveCurrentState(): Observable<void> {
         if (!this.hasUnsavedChanges()) return of(void 0);
         if (this.isSaving()) return EMPTY;
 
@@ -646,12 +662,47 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
         const positionStrategy = this.overlay.position().global().right('0').top('5rem');
 
-        this.dialog.open(VersionHistoryPanelComponent, {
+        const dialogRef = this.dialog.open<GraphRestoreResponse | undefined>(VersionHistoryPanelComponent, {
             positionStrategy,
             height: 'calc(100% - 5rem)',
             width: '380px',
-            data: { graphId: this.graph.id },
+            data: {
+                graphId: this.graph.id,
+                hasUnsavedChanges: () => this.hasUnsavedChanges(),
+                saveCurrentState: () => this.saveCurrentState(),
+            },
         });
+
+        dialogRef.closed
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                filter((result): result is GraphRestoreResponse => !!result?.restored)
+            )
+            .subscribe((response) => {
+                this.restoreWarnings.set(response.warnings);
+                this.undoRedoService.setUndoStack([]);
+                this.undoRedoService.setRedoStack([]);
+                this.refreshCurrentFlow();
+            });
+    }
+
+    public onShowRestoreWarnings(): void {
+        const dialogRef = this.dialog.open<number | undefined>(RestoreWarningsDialogComponent, {
+            width: '560px',
+            data: { warnings: this.restoreWarnings() },
+        });
+
+        dialogRef.closed
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                filter((nodeId): nodeId is number => nodeId != null)
+            )
+            .subscribe((backendNodeId) => {
+                const node = this.flowService.nodes().find((n) => n.backendId === backendNodeId);
+                if (node) {
+                    this.flowGraphComponent?.openNodePanel(node.id);
+                }
+            });
     }
 
     public onSaveVersion(): void {

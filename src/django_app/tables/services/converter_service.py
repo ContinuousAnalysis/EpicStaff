@@ -1,5 +1,8 @@
 from django.db.models import Prefetch
 
+from tables.serializers.model_serializers.crew_serializers import (
+    ToolConfigSerializer,
+)
 from src.shared.models import (
     AgentData,
     AudioTranscriptionNodeData,
@@ -87,7 +90,6 @@ from tables.models.mcp_models import McpTool
 from tables.models.python_models import PythonCodeToolConfig
 from tables.models.realtime_models import RealtimeAgentChat
 from tables.models.webhook_models import NgrokWebhookConfig
-from tables.serializers.model_serializers import ToolConfigSerializer
 from tables.validators.crew_memory_validator import CrewMemoryValidator
 from tables.validators.task_validator import TaskValidator
 from tables.validators.tool_config_validator import (
