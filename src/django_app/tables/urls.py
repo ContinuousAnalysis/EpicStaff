@@ -122,6 +122,15 @@ from tables.views.sse_views import (
     RunSessionSSEViewSwagger,
     FilteredRunSessionSSEView,
 )
+from tables.views.flow_assistant_views import (
+    FlowAssistantAuditView,
+    FlowAssistantCancelView,
+    FlowAssistantConfigView,
+    FlowAssistantConversationsView,
+    FlowAssistantConversationView,
+    FlowAssistantSendMessageView,
+    FlowAssistantStreamView,
+)
 
 from tables.views.organization_admin_views import OrganizationAdminViewSet
 
@@ -445,5 +454,41 @@ urlpatterns = [
         "twilio/configure-webhook/",
         TwilioConfigureWebhookView.as_view(),
         name="twilio-configure-webhook",
+    ),
+    # Flow Assistant endpoints
+    path(
+        "flow-assistants/audit/conversations/",
+        FlowAssistantAuditView.as_view(),
+        name="flow-assistant-audit-conversations",
+    ),
+    path(
+        "flow-assistants/<int:graph_id>/",
+        FlowAssistantConfigView.as_view(),
+        name="flow-assistant-config",
+    ),
+    path(
+        "flow-assistants/<int:graph_id>/conversations/",
+        FlowAssistantConversationsView.as_view(),
+        name="flow-assistant-conversations",
+    ),
+    path(
+        "flow-assistants/<int:graph_id>/conversations/<int:conversation_id>/",
+        FlowAssistantConversationView.as_view(),
+        name="flow-assistant-conversation",
+    ),
+    path(
+        "flow-assistants/<int:graph_id>/conversations/<int:conversation_id>/messages/",
+        FlowAssistantSendMessageView.as_view(),
+        name="flow-assistant-send-message",
+    ),
+    path(
+        "flow-assistants/<int:graph_id>/conversations/<int:conversation_id>/stream/",
+        FlowAssistantStreamView.as_view(),
+        name="flow-assistant-stream",
+    ),
+    path(
+        "flow-assistants/<int:graph_id>/conversations/<int:conversation_id>/cancel/",
+        FlowAssistantCancelView.as_view(),
+        name="flow-assistant-cancel",
     ),
 ]

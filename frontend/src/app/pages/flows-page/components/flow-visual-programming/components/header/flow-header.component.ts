@@ -36,6 +36,7 @@ export class FlowHeaderComponent {
     @Input() graphId?: number;
     @Input() isEpicChatEnabled = false;
     @Input() isChatOpen = false;
+    @Input() isAssistantOpen = false;
     @Input() graph?: GraphDto;
     @Input() isSaving = false;
     @Input() isRunning = false;
@@ -46,6 +47,7 @@ export class FlowHeaderComponent {
     @Output() run = new EventEmitter<void>();
     @Output() getCurl = new EventEmitter<void>();
     @Output() openAgent = new EventEmitter<void>();
+    @Output() toggleAssistant = new EventEmitter<void>();
     @Output() flowEdited = new EventEmitter<GraphDto>();
     @Output() saveVersion = new EventEmitter<void>();
     @Output() viewVersionHistory = new EventEmitter<void>();
@@ -87,6 +89,10 @@ export class FlowHeaderComponent {
 
     onAgent() {
         this.openAgent.emit();
+    }
+
+    onToggleAssistant() {
+        this.toggleAssistant.emit();
     }
 
     openRenameDialog(): void {

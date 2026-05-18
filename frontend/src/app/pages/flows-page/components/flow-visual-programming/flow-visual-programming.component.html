@@ -4,6 +4,7 @@
         [graphId]="graph.id"
         [isEpicChatEnabled]="isEpicChatEnabled"
         [isChatOpen]="epicChatService.isChatOpen()"
+        [isAssistantOpen]="flowAssistantService.isOpen()"
         [graph]="graph"
         [isSaving]="isSaving()"
         [isRunning]="isRunning()"
@@ -15,6 +16,7 @@
         (run)="handleRunFlow()"
         (getCurl)="handleGetCurl()"
         (openAgent)="handleOpenAgent()"
+        (toggleAssistant)="onToggleAssistant()"
         (flowEdited)="onFlowEdited($event)"
     ></app-flow-header>
 
@@ -66,6 +68,9 @@
             }
         }
     </div>
+    @if (flowAssistantService.isOpen()) {
+        <app-flow-assistant-panel />
+    }
 } @else {
     <app-spinner
         [text]="'Loading flow...'"

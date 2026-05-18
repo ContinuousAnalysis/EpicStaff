@@ -92,7 +92,7 @@ def cmd_edges(args):
     """
     graph = _get_graph(args.graph_id)
     id_to_name = build_id_to_name_map(graph)
-    all_edges = api_get(f"/edges/")
+    all_edges = api_get("/edges/")
     if isinstance(all_edges, dict):
         all_edges = all_edges.get("results", [])
     edges = [e for e in all_edges if e.get("graph") == args.graph_id]
@@ -516,7 +516,7 @@ def cmd_session_timings(args):
                 node_durations[name] = node_durations.get(name, 0) + dur
 
         if node_durations:
-            print(f"\n  Node durations:")
+            print("\n  Node durations:")
             for name, dur in sorted(node_durations.items(), key=lambda x: -x[1]):
                 pct = (dur / total_s * 100) if total_s > 0 else 0
                 bar = "█" * int(pct / 2)
@@ -764,7 +764,7 @@ def cmd_export_compare(args):
             print(f"  {status} {name}: {' | '.join(issues) if issues else 'identical'}")
 
     export_edges = export.get("edge_list", [])
-    current_edges = api_get(f"/edges/", {"graph": graph_id})
+    current_edges = api_get("/edges/", {"graph": graph_id})
     if isinstance(current_edges, dict):
         current_edges = current_edges.get("results", [])
     print(f"\nEdges: export={len(export_edges)} current={len(current_edges)}")
@@ -970,7 +970,7 @@ def _print_oc_session_from_oc(oc_sid, msgs, es_sid=None):
                         print(text[:1000])
                         print(f"  [...truncated, {len(text)} chars total]")
                     else:
-                        print(f"  📝 Answer:")
+                        print("  📝 Answer:")
                         print(text)
                 elif pt == "tool":
                     state = p.get("state", {}) or {}
@@ -1039,7 +1039,7 @@ def _print_oc_session_from_django(es_sid, oc_sid=None):
     # Print prompt
     if prompt:
         print(f"{'─' * 60}")
-        print(f"👤 PROMPT")
+        print("👤 PROMPT")
         print(f"{'─' * 60}")
         if len(prompt) > 500:
             print(f"{prompt[:500]}...")
@@ -1082,7 +1082,7 @@ def _print_oc_session_from_django(es_sid, oc_sid=None):
     # Print output metadata
     if output_data and isinstance(output_data, dict):
         print(f"{'─' * 60}")
-        print(f"📊 OUTPUT")
+        print("📊 OUTPUT")
         print(f"{'─' * 60}")
         for k, v in output_data.items():
             if k == "message":

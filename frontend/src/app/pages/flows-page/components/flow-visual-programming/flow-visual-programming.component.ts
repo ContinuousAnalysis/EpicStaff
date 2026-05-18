@@ -33,6 +33,8 @@ import {
 
 import { CanComponentDeactivate } from '../../../../core/guards/unsaved-changes.guard';
 import { EpicChatService } from '../../../../features/epic-chat/epic-chat.service';
+import { FlowAssistantPanelComponent } from '../../../../features/flow-assistant/components/flow-assistant-panel/flow-assistant-panel.component';
+import { FlowAssistantService } from '../../../../features/flow-assistant/flow-assistant.service';
 import { FlowSessionsListComponent } from '../../../../features/flows/components/flow-sessions-dialog/flow-sessions-list.component';
 import {
     SaveVersionDialogComponent,
@@ -86,6 +88,7 @@ import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
         SpinnerComponent,
         ShortcutsModalComponent,
         FlowMessagesPanelComponent,
+        FlowAssistantPanelComponent,
     ],
     templateUrl: './flow-visual-programming.component.html',
     styleUrl: './flow-visual-programming.component.scss',
@@ -94,6 +97,7 @@ import { FLOW_SHORTCUT_SECTIONS } from './flow-shortcuts.config';
 export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanComponentDeactivate {
     private readonly destroyRef = inject(DestroyRef);
 
+    public readonly flowAssistantService = inject(FlowAssistantService);
     public readonly isEpicChatEnabled: boolean;
     public initialNodeId: string | null = null;
     public isLoaded = signal(false);
@@ -167,6 +171,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         effect(() => {
             const graphId = Number(this.routeParamMap().get('id'));
             if (!isFinite(graphId)) return;
+            this.flowAssistantService.markFreshVisit(graphId);
             this.fetchGraph(graphId);
         });
 
@@ -488,6 +493,11 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
                 },
             });
         }
+    }
+
+    public onToggleAssistant(): void {
+        if (!this.graph?.id) return;
+        this.flowAssistantService.toggle(this.graph.id);
     }
 
     private normalizeApiUrl(apiUrl: string): string {

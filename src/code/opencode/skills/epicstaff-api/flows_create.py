@@ -1,9 +1,8 @@
 """Flow create operations — create new flows, nodes, edges, and metadata."""
 
 import sys
-import json
 
-from common import api_get, api_post, api_patch, api_delete, _get_graph, build_id_to_name_map, resolve_node_id
+from common import api_get, api_post, api_patch, api_delete, _get_graph, resolve_node_id
 
 # Vertical gap between stacked nodes
 _NODE_STACK_GAP = 60
@@ -104,7 +103,7 @@ def cmd_create_flow(args):
         "parentId": None,
     }
     api_patch(f"/startnodes/{start_id}/", {"metadata": start_meta})
-    print(f"  Node metadata initialized.")
+    print("  Node metadata initialized.")
     return result
 
 
@@ -134,7 +133,7 @@ def cmd_create_start_node(args):
     }
     api_patch(f"/startnodes/{start_id}/", {"metadata": start_meta})
     print(f"  Position: x={x}, y={y}")
-    print(f"  Node metadata set.")
+    print("  Node metadata set.")
     return result
 
 
