@@ -79,8 +79,8 @@ class BaseNode(BaseGraphEntity, BaseGlobalNode):
         if not self.node_name:
             super().save(*args, **kwargs)
             self.node_name = f"{self.__class__.__name__.lower()}_{self.pk}"
-            kwargs.pop("force_insert", None)  # Remove `force_insert` if present
-            kwargs["force_update"] = True  # Ensure only update happens
+            self.__class__.objects.filter(pk=self.pk).update(node_name=self.node_name)
+            return
         super().save(*args, **kwargs)
 
 
