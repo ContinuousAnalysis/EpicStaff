@@ -7,7 +7,6 @@ import json
 import urllib.request
 import urllib.error
 from pathlib import Path
-from datetime import datetime
 
 _SKILL_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = Path(__file__).resolve().parents[3]

@@ -189,7 +189,7 @@ def cmd_patch_cdt(args):
     cdt_id = matches[0]["id"]
     print(f"PATCHing CDT '{node_name}' (id={cdt_id}), field='{field}'")
     result = api_patch(f"/classification-decision-table-node/{cdt_id}/", {field: value})
-    print(f"  DB updated.")
+    print("  DB updated.")
 
 
 def cmd_patch_python(args):
@@ -211,10 +211,10 @@ def cmd_patch_python(args):
     libs = (db_node.get("python_code", {}) or {}).get("libraries", "")
     print(f"PATCHing Python node '{node_name}' (id={node_id})")
     if "def main(" not in value:
-        print(f"  ⚠️  WARNING: Code does not contain 'def main(...)'. Python nodes require a main() entrypoint.")
-        print(f"     The crew executor calls main() with the node's input_map keys as keyword arguments.")
+        print("  ⚠️  WARNING: Code does not contain 'def main(...)'. Python nodes require a main() entrypoint.")
+        print("     The crew executor calls main() with the node's input_map keys as keyword arguments.")
     api_patch(f"/pythonnodes/{node_id}/", {"python_code": {"code": value, "libraries": libs}})
-    print(f"  DB updated.")
+    print("  DB updated.")
 
 
 def cmd_patch_webhook(args):
@@ -236,9 +236,9 @@ def cmd_patch_webhook(args):
     libs = (db_node.get("python_code", {}) or {}).get("libraries", [])
     print(f"PATCHing Webhook node '{node_name}' (id={node_id})")
     if "def main(" not in value:
-        print(f"  ⚠️  WARNING: Code does not contain 'def main(...)'. Webhook nodes require a main() entrypoint.")
+        print("  ⚠️  WARNING: Code does not contain 'def main(...)'. Webhook nodes require a main() entrypoint.")
     api_patch(f"/webhook-trigger-nodes/{node_id}/", {"python_code": {"code": value, "libraries": libs}})
-    print(f"  DB updated.")
+    print("  DB updated.")
 
 
 def cmd_patch_code_agent(args):
@@ -291,7 +291,7 @@ def cmd_patch_code_agent(args):
         label = repr(v) if not isinstance(v, str) or len(v) < 80 else repr(v[:77] + "...")
         print(f"  {k} = {label}")
     api_patch(f"/code-agent-nodes/{node_id}/", db_payload)
-    print(f"  DB updated.")
+    print("  DB updated.")
 
 
 def cmd_patch_dt(args):
@@ -339,7 +339,7 @@ def cmd_patch_dt(args):
         print(f"  next_error_node: {db_payload['next_error_node']}")
 
     api_patch(f"/decision-table-node/{node_id}/", db_payload)
-    print(f"  DB updated.")
+    print("  DB updated.")
 
 
 def cmd_patch_libraries(args):
@@ -518,7 +518,7 @@ def cmd_run_session(args):
         try:
             variables = json.loads(var_json)
         except json.JSONDecodeError:
-            print(f"Error: --variables must be valid JSON", file=sys.stderr)
+            print("Error: --variables must be valid JSON", file=sys.stderr)
             sys.exit(1)
 
     print(f"Starting session for flow {gid}...")
