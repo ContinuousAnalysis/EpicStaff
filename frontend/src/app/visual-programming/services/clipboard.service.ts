@@ -40,7 +40,7 @@ export class ClipboardService {
         const allNodes: NodeModel[] = this.flowService.getFlowState().nodes;
 
         const selectedNodes: NodeModel[] = allNodes.filter(
-            (node) => selection.fNodeIds.includes(node.id) && node.type !== NodeType.START
+            (node) => selection.fNodeIds.includes(node.id) && node.type !== NodeType.START && node.type !== NodeType.END
         );
 
         if (selectedNodes.length === 0) {

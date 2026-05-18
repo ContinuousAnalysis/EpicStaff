@@ -1,5 +1,6 @@
 from .folder_tool import FolderTool
-from .interpreter_tool import CLITool
+
+# from .interpreter_tool import CLITool
 from .bs_tool import BSharpCodeTool
 from .file_append_tool import AppendFileTool
 from .file_count_lines import FileCountLinesTool

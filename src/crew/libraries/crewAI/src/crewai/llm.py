@@ -44,7 +44,8 @@ class FilteredStream(io.TextIOBase):
                 "give feedback / get help" in lower_s
                 or "litellm.info:" in lower_s
                 or "litellm" in lower_s
-                or "Consider using a smaller input or implementing a text splitting strategy" in lower_s
+                or "Consider using a smaller input or implementing a text splitting strategy"
+                in lower_s
             ):
                 return 0
 
@@ -455,14 +456,17 @@ class LLM:
             return False
 
     def supports_stop_words(self) -> bool:
-        # workaround
-        return False
-        # try:
-        #     params = get_supported_openai_params(model=self.model)
-        #     return "stop" in params
-        # except Exception as e:
-        #     logging.error(f"Failed to get supported params: {str(e)}")
-        #     return False
+        # GPT-5 models do not support 'stop' parameter
+        if self.model and "gpt-5" in self.model.lower():
+            return False
+        try:
+            from litellm import get_supported_openai_params
+
+            params = get_supported_openai_params(model=self.model)
+            return "stop" in params
+        except Exception as e:
+            logging.error(f"Failed to get supported params: {str(e)}")
+            return False
 
     def get_context_window_size(self) -> int:
         """

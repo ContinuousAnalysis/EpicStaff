@@ -1,6 +1,7 @@
 import ast
 import datetime
 import json
+import re
 import time
 from difflib import SequenceMatcher
 from json import JSONDecodeError
@@ -8,6 +9,7 @@ from textwrap import dedent
 from typing import Any, Dict, List, Optional, Union
 from json_repair import repair_json
 import json5
+import litellm
 import crewai.utilities.events as events
 from crewai.agents.tools_handler import ToolsHandler
 from crewai.task import Task
@@ -114,7 +116,10 @@ class ToolUsage:
                 self._printer.print(content=f"\n\n{error}\n", color="red")
             return error
 
-        if isinstance(tool, CrewStructuredTool) and tool.name == self._i18n.tools("add_image")["name"]:  # type: ignore
+        if (
+            isinstance(tool, CrewStructuredTool)
+            and tool.name == self._i18n.tools("add_image")["name"]
+        ):  # type: ignore
             try:
                 result = self._use(tool_string=tool_string, tool=tool, calling=calling)
                 return result
@@ -179,7 +184,9 @@ class ToolUsage:
 
                 if calling.arguments:
                     try:
-                        acceptable_args = tool.args_schema.model_json_schema()["properties"].keys()  # type: ignore
+                        acceptable_args = tool.args_schema.model_json_schema()[
+                            "properties"
+                        ].keys()  # type: ignore
                         arguments = {
                             k: v
                             for k, v in calling.arguments.items()
@@ -200,7 +207,7 @@ class ToolUsage:
                         error=e, tool=tool.name, tool_inputs=tool.description
                     )
                     error = ToolUsageErrorException(
-                        f'\n{error_message}.\nMoving on then. {self._i18n.slice("format").format(tool_names=self.tools_names)}'
+                        f"\n{error_message}.\nMoving on then. {self._i18n.slice('format').format(tool_names=self.tools_names)}"
                     ).message
                     self.task.increment_tools_errors()
                     if self.agent.verbose:
@@ -323,11 +330,82 @@ class ToolUsage:
         return "\n--\n".join(descriptions)
 
     def _function_calling(self, tool_string: str):
-        model = (
-            InstructorToolCalling
-            if self.function_calling_llm.supports_function_calling()
-            else ToolCalling
-        )
+        # EpicStaff: native litellm tool-calling — gives FCM the real args_schema instead of generic Optional[Dict] (was returning {} on gpt-4o/4.1).
+        if self.function_calling_llm.supports_function_calling():
+            sanitized_to_tool: Dict[str, Any] = {}
+            openai_tools = []
+
+            for tool in self.tools:
+                sanitized_name = re.sub(r"[^a-zA-Z0-9_-]", "_", tool.name)[:64]
+                sanitized_to_tool[sanitized_name] = tool
+
+                schema = tool.args_schema.model_json_schema()
+                if tool.args_schema.model_fields:
+                    parameters = schema
+                else:
+                    parameters = {"type": "object", "properties": {}, "additionalProperties": False}
+
+                openai_tools.append({
+                    "type": "function",
+                    "function": {
+                        "name": sanitized_name,
+                        "description": tool.description,
+                        "parameters": parameters,
+                    },
+                })
+
+            system_instructions = dedent(
+                """\
+        The schema should have the following structure, only two keys:
+        - tool_name: str
+        - arguments: dict (always a dictionary, with all arguments being passed)
+
+        Example:
+        {"tool_name": "tool name", "arguments": {"arg_name1": "value", "arg_name2": 2}}""",
+            )
+
+            call_kwargs: Dict[str, Any] = {
+                "model": self.function_calling_llm.model,
+                "messages": [
+                    {"role": "system", "content": system_instructions},
+                    {"role": "user", "content": tool_string},
+                ],
+                "tools": openai_tools,
+                "tool_choice": "required",
+                "stream": False,
+            }
+
+            if getattr(self.function_calling_llm, "api_key", None):
+                call_kwargs["api_key"] = self.function_calling_llm.api_key
+
+            if getattr(self.function_calling_llm, "api_base", None):
+                call_kwargs["api_base"] = self.function_calling_llm.api_base
+
+            if getattr(self.function_calling_llm, "base_url", None):
+                call_kwargs["base_url"] = self.function_calling_llm.base_url
+
+            response = litellm.completion(**call_kwargs)
+            tool_call = response.choices[0].message.tool_calls[0]  # type: ignore[union-attr]
+            sanitized_name = tool_call.function.name
+            if sanitized_name is None:
+                raise ValueError("FCM returned a tool_call with no function name")
+
+            parsed_args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
+
+            resolved_tool = sanitized_to_tool.get(sanitized_name)  # type: ignore[arg-type]
+            if resolved_tool is None:
+                raise ValueError(f"FCM returned unknown tool name: {sanitized_name!r}")
+
+            resolved_tool.args_schema.model_validate(parsed_args)
+
+            return ToolCalling(
+                tool_name=resolved_tool.name,
+                arguments=parsed_args,
+                log=tool_string,  # type: ignore[call-arg]
+            )
+
+        # Legacy path: Converter-based for FCMs that don't support function calling.
+        model = ToolCalling
         converter = Converter(
             text=f"Only tools available:\n###\n{self._render()}\n\nReturn a valid schema for the tool, the tool name must be exactly equal one of the options, use this text to inform the valid output schema:\n\n### TEXT \n{tool_string}",
             llm=self.function_calling_llm,
@@ -345,8 +423,8 @@ class ToolUsage:
         )
         tool_object = converter.to_pydantic()
         calling = ToolCalling(
-            tool_name=tool_object["tool_name"],
-            arguments=tool_object["arguments"],
+            tool_name=tool_object.tool_name,
+            arguments=tool_object.arguments or {},
             log=tool_string,  # type: ignore
         )
 
@@ -366,7 +444,7 @@ class ToolUsage:
                 raise
             else:
                 return ToolUsageErrorException(
-                    f'{self._i18n.errors("tool_arguments_error")}'
+                    f"{self._i18n.errors('tool_arguments_error')}"
                 )
 
         if not isinstance(arguments, dict):
@@ -374,7 +452,7 @@ class ToolUsage:
                 raise
             else:
                 return ToolUsageErrorException(
-                    f'{self._i18n.errors("tool_arguments_error")}'
+                    f"{self._i18n.errors('tool_arguments_error')}"
                 )
 
         return ToolCalling(
@@ -387,13 +465,19 @@ class ToolUsage:
         self, tool_string: str
     ) -> Union[ToolCalling, InstructorToolCalling]:
         try:
+            # EpicStaff patch: when FCM is configured, use it as the PRIMARY
+            # tool-call extractor (not just a fallback for malformed ReAct output).
+            # Falls back to original ReAct parser only if FCM raises, so a transient
+            # FCM error doesn't kill an otherwise valid action.
+            if self.function_calling_llm:
+                try:
+                    return self._function_calling(tool_string)
+                except Exception:
+                    return self._original_tool_calling(tool_string)
             try:
                 return self._original_tool_calling(tool_string, raise_error=True)
             except Exception:
-                if self.function_calling_llm:
-                    return self._function_calling(tool_string)
-                else:
-                    return self._original_tool_calling(tool_string)
+                return self._original_tool_calling(tool_string)
         except Exception as e:
             self._run_attempts += 1
             if self._run_attempts > self._max_parsing_attempts:
@@ -402,7 +486,7 @@ class ToolUsage:
                 if self.agent.verbose:
                     self._printer.print(content=f"\n\n{e}\n", color="red")
                 return ToolUsageErrorException(  # type: ignore # Incompatible return value type (got "ToolUsageErrorException", expected "ToolCalling | InstructorToolCalling")
-                    f'{self._i18n.errors("tool_usage_error").format(error=e)}\nMoving on then. {self._i18n.slice("format").format(tool_names=self.tools_names)}'
+                    f"{self._i18n.errors('tool_usage_error').format(error=e)}\nMoving on then. {self._i18n.slice('format').format(tool_names=self.tools_names)}"
                 )
             return self._tool_calling(tool_string)
 

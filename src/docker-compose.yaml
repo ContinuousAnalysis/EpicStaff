@@ -24,7 +24,7 @@ services:
     command: ./entrypoint.sh
     environment:
       <<: *common_env
-      DEBUG: ${DEBUG:-True}
+      DEBUG: ${DEBUG:-False}
       SECRET_KEY: ${SECRET_KEY:-unsafe-dev-key}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
       DB_USER: ${DB_USER:-postgres}
@@ -36,6 +36,8 @@ services:
       WEBHOOK_HOST_NAME: ${WEBHOOK_HOST_NAME}
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-1}
       GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
+      GUNICORN_MAX_REQUESTS: ${GUNICORN_MAX_REQUESTS:-1000}
+      GUNICORN_MAX_REQUESTS_JITTER: ${GUNICORN_MAX_REQUESTS_JITTER:-100}
       DJANGO_HOST: ${DJANGO_HOST:-localhost}
       DJANGO_PORT: ${DJANGO_PORT:-8000}
       LOAD_DEBUG_ENV: ${LOAD_DEBUG_ENV}
@@ -67,6 +69,8 @@ services:
       PASSWORD_CHANGE_TICKET_TTL_SECONDS: ${PASSWORD_CHANGE_TICKET_TTL_SECONDS:-300}
       AVATAR_MAX_BYTES: ${AVATAR_MAX_BYTES:-5242880}
       AVATAR_ALLOWED_FORMATS: ${AVATAR_ALLOWED_FORMATS:-JPEG,PNG}
+      MALLOC_ARENA_MAX: ${MALLOC_ARENA_MAX:-2}
+      MALLOC_TRIM_INTERVAL_SECONDS: ${MALLOC_TRIM_INTERVAL_SECONDS:-60}
     volumes:
       - media_data:/app/src/django_app/media
     networks:

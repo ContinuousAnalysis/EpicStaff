@@ -9,3 +9,11 @@
 .cdk-overlay-backdrop.settings-dialog-backdrop {
     z-index: 9950 !important;
 }
+
+// Pin the "All supported file formats" popover to 60px from the viewport left.
+.cdk-overlay-pane.create-folder-dialog__formats-pane {
+    position: fixed !important;
+    left: 60px !important;
+    bottom: 110px !important;
+    transform: none !important;
+}

@@ -16,7 +16,7 @@ from django_filters.rest_framework import (
     NumberFilter,
 )
 from rest_framework import filters as drf_filters
-from rest_framework import generics, mixins, status, viewsets
+from rest_framework import generics, mixins, status, viewsets, serializers
 from rest_framework.decorators import action
 from rest_framework.exceptions import (
     PermissionDenied,
@@ -27,6 +27,26 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
+from tables.serializers.model_serializers.embedding_serializers import (
+    EmbeddingConfigSerializer,
+    EmbeddingModelSerializer,
+)
+from tables.serializers.model_serializers.llm_serializers import (
+    LLMConfigSerializer,
+    LLMModelSerializer,
+    RealtimeConfigSerializer,
+    RealtimeModelSerializer,
+    RealtimeTranscriptionConfigSerializer,
+    RealtimeTranscriptionModelSerializer,
+)
+from tables.serializers.model_serializers.provider_serializers import (
+    ProviderSerializer,
+)
+from tables.serializers.model_serializers.tag_serializers import (
+    AgentTagSerializer,
+    CrewTagSerializer,
+    GraphTagSerializer,
+)
 from tables.exceptions import (
     AgentSerializerError,
     BuiltInToolModificationError,
@@ -78,8 +98,10 @@ from tables.models.crew_models import (
     AgentMcpTools,
     AgentPythonCodeTools,
     AgentPythonCodeToolConfigs,
+    TaskConfiguredTools,
     TaskMcpTools,
     TaskPythonCodeToolConfigs,
+    TaskPythonCodeTools,
 )
 from tables.exceptions import (
     TaskSerializerError,
@@ -90,7 +112,14 @@ from tables.models.llm_models import (
     RealtimeTranscriptionConfig,
     RealtimeTranscriptionModel,
 )
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    inline_serializer,
+    OpenApiParameter,
+    OpenApiResponse,
+)
+from drf_spectacular.types import OpenApiTypes
 from tables.swagger_schemas.graph_bulk_save_schema import (
     SAVE_FLOW_SWAGGER as _SAVE_FLOW_SWAGGER,
 )
@@ -160,7 +189,6 @@ from tables.services.copy_services import (
 from tables.views.mixins import CopyActionMixin
 from tables.serializers.model_serializers import (
     AgentReadSerializer,
-    AgentTagSerializer,
     AgentWriteSerializer,
     AudioTranscriptionNodeSerializer,
     CodeAgentNodeSerializer,
@@ -170,11 +198,8 @@ from tables.serializers.model_serializers import (
     ConditionSerializer,
     CrewNodeSerializer,
     CrewSerializer,
-    CrewTagSerializer,
     DecisionTableNodeSerializer,
     EdgeSerializer,
-    EmbeddingConfigSerializer,
-    EmbeddingModelSerializer,
     EndNodeSerializer,
     FileExtractorNodeSerializer,
     GraphLightSerializer,
@@ -182,10 +207,7 @@ from tables.serializers.model_serializers import (
     GraphOrganizationUserSerializer,
     GraphSerializer,
     GraphSessionMessageSerializer,
-    GraphTagSerializer,
     LabelSerializer,
-    LLMConfigSerializer,
-    LLMModelSerializer,
     LLMNodeSerializer,
     McpToolSerializer,
     MemorySerializer,
@@ -199,15 +221,9 @@ from tables.serializers.model_serializers import (
     PythonNodeSerializer,
     RealtimeAgentChatSerializer,
     RealtimeAgentSerializer,
-    RealtimeConfigSerializer,
-    RealtimeModelSerializer,
     RealtimeSessionItemSerializer,
-    RealtimeTranscriptionConfigSerializer,
-    RealtimeTranscriptionModelSerializer,
     StartNodeSerializer,
     SubGraphNodeSerializer,
-    TaskConfiguredTools,
-    TaskPythonCodeTools,
     TaskReadSerializer,
     TaskWriteSerializer,
     TemplateAgentSerializer,
@@ -215,14 +231,12 @@ from tables.serializers.model_serializers import (
     VoiceSettingsSerializer,
     WebhookTriggerNodeSerializer,
     WebhookTriggerSerializer,
+    TelegramTriggerNodeSerializer,
+    TelegramTriggerNodeFieldSerializer,
 )
 from tables.serializers.serializers import (
     BulkExportSerializer,
     ImportRequestSerializer,
-)
-from tables.serializers.telegram_trigger_serializers import (
-    TelegramTriggerNodeFieldSerializer,
-    TelegramTriggerNodeSerializer,
 )
 from tables.services.webhook_trigger_service import WebhookTriggerService
 from tables.services.import_export_service import ViewSetImportExportService
@@ -868,6 +882,30 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
 
+@extend_schema_view(
+    restore=extend_schema(
+        request=None,
+        responses={
+            200: inline_serializer(
+                name="RestoreResponse",
+                fields={
+                    "graph_id": serializers.IntegerField(),
+                    "warnings": serializers.ListField(child=serializers.DictField()),
+                    "auto_backup_version_id": serializers.IntegerField(allow_null=True),
+                },
+            )
+        },
+        parameters=[
+            OpenApiParameter(
+                name="backup",
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="If true, creates a backup version before restoring.",
+            )
+        ],
+    ),
+)
 class GraphVersionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["graph_id"]
@@ -907,6 +945,13 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="all")
     def all(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
+
+    @action(detail=True, methods=["post"], url_path="restore")
+    def restore(self, request, *args, **kwargs):
+        version = self.get_object()
+        backup = request.query_params.get("backup", "").lower() == "true"
+        result = GraphVersioningService().restore_version(version, backup=backup)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class IdempotentNodeCreateMixin:

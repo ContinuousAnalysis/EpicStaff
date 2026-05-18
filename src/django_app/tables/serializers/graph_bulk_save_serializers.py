@@ -15,8 +15,6 @@ from tables.serializers.model_serializers import (
     StartNodeSerializer,
     SubGraphNodeSerializer,
     WebhookTriggerNodeSerializer,
-)
-from tables.serializers.telegram_trigger_serializers import (
     TelegramTriggerNodeSerializer,
 )
 
