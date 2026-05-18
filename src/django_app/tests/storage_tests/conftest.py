@@ -4,9 +4,11 @@ from io import BytesIO
 from unittest.mock import MagicMock
 
 import pytest
+from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from tables.models import Organization, OrganizationUser
+from tables.models.rbac_models import Role
 from tables.services.storage_service.base import AbstractStorageBackend
 from tables.services.storage_service.local_backend import LocalStorageBackend
 from tables.services.storage_service.manager import StorageManager
@@ -30,8 +32,13 @@ def org(db):
 
 
 @pytest.fixture
-def org_user(org):
-    return OrganizationUser.objects.create(name="testuser", organization=org)
+def org_user(db, org):
+    role = Role.objects.get(name="Org Admin", is_built_in=True, org__isnull=True)
+    user = get_user_model().objects.create_user(
+        email="testuser@example.com",
+        password="TestPass123!",
+    )
+    return OrganizationUser.objects.create(user=user, org=org, role=role)
 
 
 @pytest.fixture
@@ -40,8 +47,13 @@ def second_org(db):
 
 
 @pytest.fixture
-def second_org_user(second_org):
-    return OrganizationUser.objects.create(name="testuser", organization=second_org)
+def second_org_user(db, second_org):
+    role = Role.objects.get(name="Org Admin", is_built_in=True, org__isnull=True)
+    user = get_user_model().objects.create_user(
+        email="testuser2@example.com",
+        password="TestPass123!",
+    )
+    return OrganizationUser.objects.create(user=user, org=second_org, role=role)
 
 
 @pytest.fixture

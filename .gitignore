@@ -277,3 +277,4 @@ pyrightconfig.json
 
 # Self — local gitignore tweaks should not be tracked
 .gitignore
+GoldenEnv.tar
