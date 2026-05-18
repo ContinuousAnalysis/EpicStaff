@@ -2,8 +2,6 @@
     <app-flow-header
         [graphName]="graph.name"
         [graphId]="graph.id"
-        [isEpicChatEnabled]="isEpicChatEnabled"
-        [isChatOpen]="epicChatService.isChatOpen()"
         [isAssistantOpen]="flowAssistantService.isOpen()"
         [graph]="graph"
         [isSaving]="isSaving()"
@@ -15,7 +13,6 @@
         (viewSessions)="handleViewSessions()"
         (run)="handleRunFlow()"
         (getCurl)="handleGetCurl()"
-        (openAgent)="handleOpenAgent()"
         (toggleAssistant)="onToggleAssistant()"
         (flowEdited)="onFlowEdited($event)"
     ></app-flow-header>
