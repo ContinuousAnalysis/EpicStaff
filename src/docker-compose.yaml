@@ -16,7 +16,7 @@ x-common-env: &common_env
 
 services:
   django_app:
-    image: django_app
+    image: ghcr.io/epicstaff/django_app:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: ./django_app/Dockerfile.dj
@@ -86,7 +86,7 @@ services:
       retries: 12
 
   realtime:
-    image: realtime
+    image: ghcr.io/epicstaff/realtime:${IMAGE_TAG:-latest}
     container_name: realtime
     build:
       context: .
@@ -125,7 +125,7 @@ services:
         condition: service_healthy
 
   manager:
-    image: manager
+    image: ghcr.io/epicstaff/manager:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: ./manager/Dockerfile.man
@@ -153,7 +153,7 @@ services:
         condition: service_healthy
 
   crewdb:
-    image: crewdb
+    image: ghcr.io/epicstaff/crewdb:${IMAGE_TAG:-latest}
     build:
       context: ./crewdb
       dockerfile: Dockerfile.crewdb
@@ -192,6 +192,7 @@ services:
   redis:
     image: redis
     container_name: redis
+    restart: unless-stopped
     networks:
       - backend-network
     volumes:
@@ -211,28 +212,30 @@ services:
       retries: 5
       start_period: 5s
 
-  redis-monitor:
-    image: redis-monitor
-    build:
-      context: .
-      dockerfile: redis-monitor/Dockerfile.redis-monitor
-    container_name: redis-monitor
-    environment:
-      <<: *common_env
-      CHECK_INTERVAL: ${REDIS_CHECK_INTERVAL:-5}
-      MAX_FAILURES: ${REDIS_MAX_FAILURES:-1}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./.env:/mount/.env
-    networks:
-      - backend-network
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
+  # redis-monitor: removed in favor of native Docker `restart: unless-stopped` on redis.
+  # Kept commented for reference; delete after ghcr migration is stable.
+  # redis-monitor:
+  #   image: ghcr.io/epicstaff/redis-monitor:${IMAGE_TAG:-latest}
+  #   build:
+  #     context: .
+  #     dockerfile: redis-monitor/Dockerfile.redis-monitor
+  #   container_name: redis-monitor
+  #   environment:
+  #     <<: *common_env
+  #     CHECK_INTERVAL: ${REDIS_CHECK_INTERVAL:-5}
+  #     MAX_FAILURES: ${REDIS_MAX_FAILURES:-1}
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ./.env:/mount/.env
+  #   networks:
+  #     - backend-network
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #   restart: unless-stopped
 
   crew:
-    image: crew
+    image: ghcr.io/epicstaff/crew:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: ./crew/Dockerfile.crew
@@ -267,7 +270,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   sandbox:
-    image: sandbox
+    image: ghcr.io/epicstaff/sandbox:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: ./sandbox/Dockerfile.sandbox
@@ -295,7 +298,7 @@ services:
       - redis
 
   code:
-    image: code
+    image: ghcr.io/epicstaff/code:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: ./code/Dockerfile.code
@@ -325,7 +328,7 @@ services:
       - redis
 
   knowledge:
-    image: knowledge
+    image: ghcr.io/epicstaff/knowledge:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: ./knowledge/Dockerfile.knowledge
@@ -385,7 +388,7 @@ services:
     restart: on-failure
 
   frontend:
-    image: frontend
+    image: ghcr.io/epicstaff/frontend:${IMAGE_TAG:-latest}
     build:
       context: ../frontend
       dockerfile: Dockerfile.fe
@@ -398,7 +401,7 @@ services:
       - frontend-network
 
   webhook:
-    image: webhook
+    image: ghcr.io/epicstaff/webhook:${IMAGE_TAG:-latest}
     container_name: webhook
     build:
       context: .
