@@ -23,18 +23,82 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
+  resolve:
+    name: Resolve target/ref/tag
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.r.outputs.server }}
+      ref: ${{ steps.r.outputs.ref }}
+      tag: ${{ steps.r.outputs.tag }}
+    steps:
+      - id: r
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_SERVER: ${{ github.event.inputs.server }}
+          INPUT_BRANCH: ${{ github.event.inputs.branch }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "schedule" ] || [ "$INPUT_SERVER" = "test2" ]; then
+            SERVER="test2"
+            REF="main"
+            TAG="latest"
+          elif [ "$INPUT_SERVER" = "test3" ]; then
+            SERVER="test3"
+            REF="$INPUT_BRANCH"
+            # slugify: lowercase, replace non-[a-z0-9.] with '-', collapse, trim
+            TAG=$(echo "$REF" \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed 's/[^a-z0-9.]/-/g; s/--*/-/g; s/^-//; s/-$//')
+          else
+            echo "Unsupported event/inputs (event=$EVENT_NAME server=$INPUT_SERVER)" >&2
+            exit 1
+          fi
+          echo "server=$SERVER" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo ">> resolved server=$SERVER ref=$REF tag=$TAG"
+
+  # Build only for test3 manual branch deploys. test2 deploys 'latest' which is
+  # already produced by build-and-push.yml on every push to main — no rebuild needed.
+  build:
+    name: Build & push images
+    needs: resolve
+    if: ${{ needs.resolve.outputs.server == 'test3' }}
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      ref: ${{ needs.resolve.outputs.ref }}
+      tag: ${{ needs.resolve.outputs.tag }}
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+
   deploy_test_2:
     name: Deploy to test2
-    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.server == 'test2') }}
+    needs: resolve
+    if: ${{ needs.resolve.outputs.server == 'test2' }}
     runs-on: [self-hosted, test2]
     concurrency:
       group: epicstaff-deploy-test2
       cancel-in-progress: false
-
     steps:
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Deploy main to test2
         shell: bash
+        env:
+          IMAGE_TAG: ${{ needs.resolve.outputs.tag }}
         run: |
           set -euo pipefail
           git config --global --add safe.directory /home/developer/EpicStaff
@@ -43,27 +107,38 @@ jobs:
           git checkout main
           git pull --ff-only origin main
           export NUKE_DB=false
+          export IMAGE_TAG
           bash .github/scripts/deploy.sh main
 
   deploy_test_3:
     name: Deploy to test3 (manual branch)
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.server == 'test3' }}
+    needs: [resolve, build]
+    if: ${{ needs.resolve.outputs.server == 'test3' }}
     runs-on: [self-hosted, test3]
     concurrency:
       group: epicstaff-deploy-test3
       cancel-in-progress: false
-
     steps:
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Deploy selected branch to test3
         shell: bash
+        env:
+          IMAGE_TAG: ${{ needs.resolve.outputs.tag }}
+          BRANCH: ${{ github.event.inputs.branch }}
+          NUKE_DB_INPUT: ${{ github.event.inputs.nuke_db }}
         run: |
           set -euo pipefail
-          BRANCH="${{ github.event.inputs.branch }}"
           git config --global --add safe.directory /home/developer/EpicStaff
           cd /home/developer/EpicStaff
           git fetch --prune
           git checkout "$BRANCH"
           git pull --ff-only origin "$BRANCH"
-
-          export NUKE_DB="${{ github.event.inputs.nuke_db }}"
+          export IMAGE_TAG
+          export NUKE_DB="$NUKE_DB_INPUT"
           bash .github/scripts/deploy.sh "$BRANCH"
