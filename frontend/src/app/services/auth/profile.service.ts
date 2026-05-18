@@ -35,8 +35,11 @@ export class ProfileService {
         const user = this.currentUser();
         if (!user) return '—';
         if (user.is_superadmin) return ROLE_LABELS[UserRole.SUPER_ADMIN];
-        const firstRole = user.memberships[0]?.role.id;
-        return firstRole != null ? (ROLE_LABELS[firstRole as UserRole] ?? '—') : '—';
+        const highestRole = user.memberships.reduce<UserRole | null>(
+            (best, m) => (best === null || m.role.id < best ? (m.role.id as UserRole) : best),
+            null
+        );
+        return highestRole !== null ? (ROLE_LABELS[highestRole] ?? '—') : '—';
     });
 
     // TODO will be replaced with directive with migration to permission-verify logic
@@ -52,6 +55,13 @@ export class ProfileService {
         if (!currentUser) return false;
 
         return currentUser.is_superadmin || currentUser.memberships.some(({ role }) => role.id === UserRole.ORG_ADMIN);
+    });
+
+    canManageRoles = computed(() => {
+        const currentUser = this.currentUserSignal();
+        if (!currentUser) return false;
+
+        return currentUser.is_superadmin;
     });
 
     getCurrentUser(): Observable<GetMeResponse> {
