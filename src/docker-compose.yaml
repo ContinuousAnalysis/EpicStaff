@@ -295,7 +295,8 @@ services:
     tty: true
     stdin_open: true
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   code:
     image: ghcr.io/epicstaff/code:${IMAGE_TAG:-latest}
@@ -325,7 +326,8 @@ services:
     tty: true
     stdin_open: true
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   knowledge:
     image: ghcr.io/epicstaff/knowledge:${IMAGE_TAG:-latest}
