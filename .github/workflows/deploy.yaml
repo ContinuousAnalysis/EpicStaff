@@ -1,8 +1,8 @@
 name: Deploy on self-hosted
 
 on:
-  schedule:
-    - cron: "0 3 * * *"
+  push:
+    branches: [main]
 
   workflow_dispatch:
     inputs:
@@ -44,7 +44,7 @@ jobs:
           INPUT_BRANCH: ${{ github.event.inputs.branch }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" = "schedule" ] || [ "$INPUT_SERVER" = "test2" ]; then
+          if [ "$EVENT_NAME" = "push" ] || [ "$INPUT_SERVER" = "test2" ]; then
             SERVER="test2"
             REF="main"
             TAG="latest"
@@ -64,12 +64,9 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo ">> resolved server=$SERVER ref=$REF tag=$TAG"
 
-  # Build only for test3 manual branch deploys. test2 deploys 'latest' which is
-  # already produced by build-and-push.yml on every push to main — no rebuild needed.
   build:
     name: Build & push images
     needs: resolve
-    if: ${{ needs.resolve.outputs.server == 'test3' }}
     uses: ./.github/workflows/build-and-push.yml
     with:
       ref: ${{ needs.resolve.outputs.ref }}
@@ -81,7 +78,7 @@ jobs:
 
   deploy_test_2:
     name: Deploy to test2
-    needs: resolve
+    needs: [resolve, build]
     if: ${{ needs.resolve.outputs.server == 'test2' }}
     runs-on: [self-hosted, test2]
     concurrency:
