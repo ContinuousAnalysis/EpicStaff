@@ -91,7 +91,7 @@ from tables.models.llm_models import (
     RealtimeTranscriptionModel,
 )
 from drf_spectacular.utils import extend_schema
-from tables.swagger_schemas.graph_bulk_save_schema import (
+from tables.swagger_schemas.knowledge_schemas.graph_bulk_save_schemas import (
     SAVE_FLOW_SWAGGER as _SAVE_FLOW_SWAGGER,
 )
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet

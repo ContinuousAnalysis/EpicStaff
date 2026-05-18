@@ -16,6 +16,13 @@ from tables.serializers.knowledge_serializers import (
 from tables.services.knowledge_services.document_management_service import (
     DocumentManagementService,
 )
+from tables.swagger_schemas.knowledge_schemas.document_management_schemas import (
+    DOCUMENTS_LIST_GET,
+    DOCUMENTS_RETRIEVE_GET,
+    DOCUMENTS_DESTROY_DELETE,
+    DOCUMENTS_UPLOAD_POST,
+    DOCUMENTS_BULK_DELETE_POST,
+)
 from tables.exceptions import (
     DocumentUploadException,
     FileSizeExceededException,
@@ -43,6 +50,7 @@ class DocumentManagementViewSet(viewsets.GenericViewSet):
             return DocumentBulkDeleteSerializer
         return DocumentMetadataSerializer
 
+    @extend_schema(**DOCUMENTS_UPLOAD_POST)
     @action(
         detail=False,
         methods=["post"],
@@ -50,19 +58,6 @@ class DocumentManagementViewSet(viewsets.GenericViewSet):
         parser_classes=[MultiPartParser, FormParser],
     )
     def upload_documents(self, request, collection_id=None):
-        """
-        Upload one or multiple files to a collection.
-        Request (multipart/form-data):
-            - files: List of files to upload
-
-        URL: POST /documents/source-collections/{collection_id}/upload/
-
-        Returns:
-        - 201: Successfully uploaded documents
-        - 400: Validation errors
-        - 404: Collection not found
-        """
-
         try:
             collection_id = int(collection_id)
         except (ValueError, TypeError):
@@ -106,27 +101,13 @@ class DocumentManagementViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**DOCUMENTS_BULK_DELETE_POST)
     @action(
         detail=False,
         methods=["post"],
         url_path="bulk-delete",
     )
     def bulk_delete(self, request):
-        """
-        Delete multiple documents at once.
-
-        URL: POST /documents/bulk-delete/
-
-        Request body (JSON):
-        {
-            "document_ids": [1, 2, 3, 4, 5]
-        }
-
-        Returns:
-        - 200: Successfully deleted documents
-        - 400: Validation errors
-        - 404: One or more documents not found
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -180,30 +161,8 @@ class DocumentViewSet(
             return DocumentDetailSerializer
         return DocumentMetadataSerializer
 
-    @extend_schema(
-        description="List all documents or filter by collection ID",
-        parameters=[
-            OpenApiParameter(
-                name="collection_id",
-                location=OpenApiParameter.QUERY,
-                description="Filter documents by collection ID",
-                type=drf_serializers.IntegerField(),
-                required=False,
-            )
-        ],
-        responses={
-            200: DocumentListSerializer(many=True),
-            400: OpenApiResponse(description="Invalid collection_id parameter"),
-            404: OpenApiResponse(description="Collection not found"),
-        },
-    )
+    @extend_schema(**DOCUMENTS_LIST_GET)
     def list(self, request, *args, **kwargs):
-        """
-        List all documents or filter by collection.
-
-        Query parameters:
-        - collection_id: Filter by collection ID
-        """
         collection_id = request.query_params.get("collection_id")
         queryset = DocumentManagementService.get_documents_list(
             collection_id=collection_id
@@ -212,6 +171,7 @@ class DocumentViewSet(
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    @extend_schema(**DOCUMENTS_RETRIEVE_GET)
     def retrieve(self, request, *args, **kwargs):
         """
         Retrieve a single document by ID.
@@ -220,6 +180,7 @@ class DocumentViewSet(
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    @extend_schema(**DOCUMENTS_DESTROY_DELETE)
     def destroy(self, request, *args, **kwargs):
         """
         Delete a single document.
