@@ -18,7 +18,12 @@ class OrganizationUser(models.Model):
 
     class Meta:
         db_table = "rbac_organization_user"
-        unique_together = (("user", "org"),)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "org"],
+                name="rbac_organization_user_user_org_uniq",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"user={self.user_id} org={self.org_id} role={self.role_id}"

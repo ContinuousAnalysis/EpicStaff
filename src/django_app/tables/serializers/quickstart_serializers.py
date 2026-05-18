@@ -1,12 +1,14 @@
 from rest_framework import serializers
 
-from tables.models.provider import Provider
-from tables.serializers.model_serializers import (
-    LLMConfigSerializer,
+from tables.serializers.model_serializers.embedding_serializers import (
     EmbeddingConfigSerializer,
+)
+from tables.serializers.model_serializers.llm_serializers import (
+    LLMConfigSerializer,
     RealtimeConfigSerializer,
     RealtimeTranscriptionConfigSerializer,
 )
+from tables.models.provider import Provider
 
 
 class QuickstartSerializer(serializers.Serializer):
