@@ -146,7 +146,7 @@ class ScheduleTriggerInputParser:
     def _validate_shape(raw_schedule) -> dict:
         # Lazy import: DTO lives in serializers; importing it eagerly would
         # form a cycle since the serializer imports this module.
-        from tables.serializers.model_serializers import (
+        from tables.serializers.model_serializers.node_serializers.trigger_serializers import (
             _ScheduleConfigInputSerializer,
         )
 
