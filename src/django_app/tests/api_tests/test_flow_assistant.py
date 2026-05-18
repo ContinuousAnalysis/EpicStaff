@@ -859,7 +859,7 @@ async def test_action_message_persisted(
 
 @pytest.mark.django_db
 def test_messages_for_llm_evicts_prior_turn_tool_results():
-    from tables.services.flow_assistant.service import _messages_for_llm
+    from tables.services.flow_assistant.helpers import _messages_for_llm
 
     messages = [
         {"role": "system", "content": "You are..."},
@@ -913,7 +913,7 @@ def test_messages_for_llm_evicts_prior_turn_tool_results():
 
 @pytest.mark.django_db
 def test_messages_for_llm_is_idempotent():
-    from tables.services.flow_assistant.service import _messages_for_llm
+    from tables.services.flow_assistant.helpers import _messages_for_llm
 
     messages = [
         {"role": "system", "content": "..."},
@@ -944,7 +944,7 @@ def test_messages_for_llm_is_idempotent():
 
 @pytest.mark.django_db
 def test_messages_for_llm_no_user_message_returns_copy():
-    from tables.services.flow_assistant.service import _messages_for_llm
+    from tables.services.flow_assistant.helpers import _messages_for_llm
 
     messages = [{"role": "system", "content": "..."}]
     result = _messages_for_llm(messages)
@@ -954,7 +954,7 @@ def test_messages_for_llm_no_user_message_returns_copy():
 
 @pytest.mark.django_db
 def test_messages_for_llm_truncates_long_args():
-    from tables.services.flow_assistant.service import _messages_for_llm
+    from tables.services.flow_assistant.helpers import _messages_for_llm
 
     long_args = '{"x": "' + ("a" * 500) + '"}'
     messages = [
@@ -2308,7 +2308,7 @@ async def test_stream_reply_bails_on_cancel_flag(
     from unittest.mock import patch
     from asgiref.sync import sync_to_async
     from tables.services.flow_assistant import FlowAssistantService
-    from tables.services.flow_assistant.service import _CANCEL_KEY
+    from tables.services.flow_assistant.constants import _CANCEL_KEY
     from tables.models.flow_assistant_models import FlowAssistant, FlowAssistantConversation
 
     user_message = "what does this flow do?"

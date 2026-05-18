@@ -17,6 +17,8 @@ import re
 from django.db.models import Count, Prefetch
 from django.utils.dateparse import parse_datetime
 
+from tables.services.llm_clients import ToolSpec
+
 from tables.models.session_models import Session
 from tables.models.python_models import PythonCode
 from tables.models.graph_models import (
@@ -1088,3 +1090,335 @@ def resolve_subgraph_display_name(graph_id: int, subgraph_node_id: int) -> str |
         return sn.subgraph.name if sn.subgraph else None
     except (SubGraphNode.DoesNotExist, ValueError, TypeError):
         return None
+
+
+# ── Tool specs ───────────────────────────────────────────────────────────────
+
+TOOL_SPECS: list[ToolSpec] = [
+    ToolSpec(
+        name="get_flow_overview",
+        description=(
+            "Returns a high-level overview of the current flow: its name, description, "
+            "node count by type, the full list of nodes (id + type + name only), "
+            "total edge count, and a list of direct subflows (name + description only, "
+            "no internal details). Use this when asked to enumerate or look up nodes."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    ),
+    ToolSpec(
+        name="get_node",
+        description=(
+            "Returns the configuration and connectivity of a single node in the flow. "
+            "Sensitive fields (api_key, secret, token) are redacted. "
+            "For decision_table and classification_decision_table nodes, the response "
+            "includes `decision_rules` with the full branching logic. "
+            "For llm and code_agent nodes, the response includes `llm_config_summary` "
+            "with provider, model, and temperature. "
+            "For crew nodes, the response includes `crew_summary` with agents and tasks. "
+            "For python and webhook_trigger nodes, the response includes "
+            "`python_code_summary` with the actual code body, entrypoint, and library "
+            "list — use it to answer questions about what the node does, which APIs it "
+            "calls, and what libraries it depends on. "
+            "Provide the numeric node ID as a string."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "node_id": {
+                    "type": "string",
+                    "description": "The numeric ID of the node (e.g. '42').",
+                }
+            },
+            "required": ["node_id"],
+        },
+    ),
+    ToolSpec(
+        name="get_subflow",
+        description=(
+            "Returns the name, description, and subgraph_graph_id of the target "
+            "subflow referenced by a SubGraphNode. "
+            "Pass the SubGraphNode's PK (the 'id' field of a node with type=='subgraph' "
+            "from get_flow_overview) — NOT the target subflow's graph id. "
+            "The response's subgraph_graph_id is the target graph's PK; use that with "
+            "get_flow_overview(subgraph_graph_id) for recursive introspection."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "subgraph_node_id": {
+                    "type": "string",
+                    "description": "The numeric ID of the SubGraphNode row.",
+                }
+            },
+            "required": ["subgraph_node_id"],
+        },
+    ),
+    ToolSpec(
+        name="get_edges_from",
+        description="Returns the outgoing edges from a node (what nodes it leads to).",
+        parameters={
+            "type": "object",
+            "properties": {
+                "node_id": {
+                    "type": "string",
+                    "description": "The numeric ID of the source node.",
+                }
+            },
+            "required": ["node_id"],
+        },
+    ),
+    ToolSpec(
+        name="get_edges_to",
+        description="Returns the incoming edges to a node (what nodes lead to it).",
+        parameters={
+            "type": "object",
+            "properties": {
+                "node_id": {
+                    "type": "string",
+                    "description": "The numeric ID of the target node.",
+                }
+            },
+            "required": ["node_id"],
+        },
+    ),
+    ToolSpec(
+        name="list_node_types",
+        description="Returns the distinct node type tokens used in this flow.",
+        parameters={
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    ),
+    ToolSpec(
+        name="list_skills",
+        description=(
+            "List available EpicStaff knowledge skills. Each entry has a slug and a "
+            "short description of when to use that skill. Call this when you need "
+            "deeper context about EpicStaff flow concepts, node types, debugging, "
+            "or design principles than the inline system prompt provides. "
+            "After deciding which skill applies, call load_skill(name=<slug>)."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {},
+            "additionalProperties": False,
+        },
+    ),
+    ToolSpec(
+        name="load_skill",
+        description=(
+            "Load the full content of one EpicStaff knowledge skill by its slug "
+            "(as returned by list_skills). The body is a self-contained markdown "
+            "document. Use this only after consulting list_skills — do not guess slugs. "
+            "Each skill is several thousand tokens, so load only the one you need."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Skill slug from list_skills",
+                },
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+    ),
+    ToolSpec(
+        name="get_session_stats",
+        description=(
+            "Returns aggregate execution counts for this flow. Use when the user asks "
+            "for counts of past runs — e.g. 'how many times did I run today?', "
+            "'how many failed last week?', 'how many are in error status?'. "
+            "All parameters are optional. since/until must be ISO 8601 timestamps "
+            "(e.g. '2026-05-15T00:00:00Z'). status must be one of: "
+            "pending, run, wait_for_user, error, end, stop, expired. "
+            "Response includes total count and by_status breakdown."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "since": {
+                    "type": "string",
+                    "description": (
+                        "ISO 8601 timestamp (inclusive lower bound on created_at). "
+                        "e.g. '2026-05-15T00:00:00Z'."
+                    ),
+                },
+                "until": {
+                    "type": "string",
+                    "description": (
+                        "ISO 8601 timestamp (exclusive upper bound on created_at). "
+                        "e.g. '2026-05-16T00:00:00Z'."
+                    ),
+                },
+                "status": {
+                    "type": "string",
+                    "description": (
+                        "Filter by session status. One of: "
+                        "pending, run, wait_for_user, error, end, stop, expired."
+                    ),
+                },
+            },
+            "required": [],
+        },
+    ),
+    ToolSpec(
+        name="get_recent_sessions",
+        description=(
+            "Returns the most recent EXECUTION sessions for this flow (not Flow "
+            "Assistant chat conversations). Use this when asked whether the flow "
+            "has run recently, whether the last run succeeded, how often it runs, "
+            "what errors occurred, or to search runs by input variable value. "
+            "Each entry has status, timestamps, duration, has_error, entrypoint, "
+            "and start_variables (initial inputs only). "
+            "Optional params: since/until (ISO 8601 timestamps) for date range; "
+            "where (flat dict of variable key→value) to filter by input value "
+            '(e.g. where={"city": "Berlin"} finds sessions whose variables.city=Berlin); '
+            "include_full_variables=true to also get full_variables per row — "
+            "the final variable namespace after the flow ran (inputs + outputs, "
+            "e.g. shows what the flow produced). "
+            "Can return large objects — combine with targeted where and low limit. "
+            "limit defaults to 5, maximum 25."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "description": "Number of recent sessions to return (1–25, default 5).",
+                    "default": 5,
+                },
+                "since": {
+                    "type": "string",
+                    "description": (
+                        "ISO 8601 timestamp (inclusive). Only sessions created at or "
+                        "after this time are returned. e.g. '2026-05-15T00:00:00Z'."
+                    ),
+                },
+                "until": {
+                    "type": "string",
+                    "description": (
+                        "ISO 8601 timestamp (exclusive). Only sessions created before "
+                        "this time are returned. e.g. '2026-05-16T00:00:00Z'."
+                    ),
+                },
+                "where": {
+                    "type": "object",
+                    "description": (
+                        "Flat key→value dict to filter sessions by input variable value. "
+                        'e.g. {"city": "Berlin"} returns only sessions whose '
+                        "variables[\"city\"] equals 'Berlin'."
+                    ),
+                    "additionalProperties": True,
+                },
+                "include_full_variables": {
+                    "type": "boolean",
+                    "description": (
+                        "When true, each result row includes a full_variables field "
+                        "containing the final variable namespace state after the flow ran "
+                        "(inputs + outputs). Use this to inspect what the flow produced. "
+                        "start_variables always holds the initial inputs only. "
+                        "Can be large — prefer targeted queries."
+                    ),
+                    "default": False,
+                },
+            },
+            "required": [],
+        },
+    ),
+    ToolSpec(
+        name="get_session_detail",
+        description=(
+            "Returns per-node execution trace metadata (timings and status) for one "
+            "EXECUTION session of this flow. Use this to investigate a specific failure "
+            "after calling get_recent_sessions. Returns node_name, execution order, "
+            "and timestamps per node — NO message bodies or content text. "
+            "Provide the numeric session ID (from get_recent_sessions output). "
+            "To see agent reasoning and task outputs, use get_session_messages instead."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "integer",
+                    "description": "The numeric ID of the session to inspect.",
+                }
+            },
+            "required": ["session_id"],
+        },
+    ),
+    ToolSpec(
+        name="get_session_messages",
+        description=(
+            "Returns the per-step execution trace for a session, including agent thoughts, "
+            "tool calls, and task outputs. Use after get_recent_sessions identifies the "
+            "target session_id, when the user asks how a specific run arrived at its answer "
+            "or wants to see the agent reasoning chain. "
+            "Bodies may be large — set a targeted limit (1–200, default 50)."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "integer",
+                    "description": "The numeric ID of the session (from get_recent_sessions).",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max trace entries to return (1–200, default 50).",
+                    "default": 50,
+                },
+            },
+            "required": ["session_id"],
+        },
+    ),
+]
+
+
+# ── Tool callable registry ────────────────────────────────────────────────────
+
+# Map tool name → callable(graph_id, **kwargs).
+# Kept here alongside the tool implementations it dispatches to.
+_TOOL_CALLABLES: dict[str, callable] = {
+    "get_flow_overview": lambda graph_id, **_: get_flow_overview(graph_id),
+    "get_node": lambda graph_id, node_id, **_: get_node(graph_id, node_id),
+    "get_subflow": lambda graph_id, subgraph_node_id, **_: get_subflow(
+        graph_id, subgraph_node_id
+    ),
+    "get_edges_from": lambda graph_id, node_id, **_: get_edges_from(
+        graph_id, node_id
+    ),
+    "get_edges_to": lambda graph_id, node_id, **_: get_edges_to(
+        graph_id, node_id
+    ),
+    "list_node_types": lambda graph_id, **_: list_node_types(graph_id),
+    # Skill tools are graph-independent; graph_id is accepted but ignored.
+    "list_skills": lambda _graph_id, **__: list_skills(),
+    "load_skill": lambda _graph_id, name, **__: load_skill(name),
+    # Session tools are org-scoped by graph_id inside the tool implementation.
+    "get_session_stats": lambda graph_id, since=None, until=None, status=None, **_: (
+        get_session_stats(graph_id, since=since, until=until, status=status)
+    ),
+    "get_recent_sessions": lambda graph_id, limit=5, since=None, until=None, where=None, include_full_variables=False, **_: (
+        get_recent_sessions(
+            graph_id,
+            limit=int(limit),
+            since=since,
+            until=until,
+            where=where,
+            include_full_variables=bool(include_full_variables),
+        )
+    ),
+    "get_session_detail": lambda graph_id, session_id, **_: get_session_detail(
+        graph_id, int(session_id)
+    ),
+    "get_session_messages": lambda graph_id, session_id, limit=50, **_: (
+        get_session_messages(graph_id, int(session_id), limit=int(limit))
+    ),
+}

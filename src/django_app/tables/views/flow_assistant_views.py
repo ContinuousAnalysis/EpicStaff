@@ -32,7 +32,7 @@ from tables.services.flow_assistant import (
     LLMConfigInvalidError,
     LLMConfigMissingError,
 )
-from tables.services.flow_assistant.service import _request_cancel
+from tables.services.flow_assistant.helpers import _request_cancel
 from tables.services.llm_clients.base import StructuredEvent
 from tables.services.rbac.organization_resolution import resolve_organization_user
 from tables.services.rbac.permissions import IsSuperadmin
