@@ -60,4 +60,8 @@ export class FlowAssistantApiService {
             message: text,
         });
     }
+
+    cancelConversation(graphId: number, conversationId: number): Observable<void> {
+        return this.http.post<void>(`${this.conversationUrl(graphId, conversationId)}cancel/`, {});
+    }
 }

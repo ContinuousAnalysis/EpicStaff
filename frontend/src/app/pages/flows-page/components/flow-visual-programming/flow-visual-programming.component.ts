@@ -167,6 +167,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         effect(() => {
             const graphId = Number(this.routeParamMap().get('id'));
             if (!isFinite(graphId)) return;
+            this.flowAssistantService.markFreshVisit(graphId);
             this.fetchGraph(graphId);
         });
 

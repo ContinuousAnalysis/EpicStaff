@@ -97,7 +97,13 @@ export class FlowAssistantPanelComponent {
 
     isAssistantMessage(
         message: FlowAssistantMessage
-    ): message is { role: 'assistant'; content: string; ef_tables?: EfTable[]; action_message?: ActionItem[] } {
+    ): message is {
+        role: 'assistant';
+        content: string;
+        ef_tables?: EfTable[];
+        action_message?: ActionItem[];
+        interrupted?: boolean;
+    } {
         return message.role === 'assistant';
     }
 

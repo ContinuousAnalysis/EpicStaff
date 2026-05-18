@@ -65,6 +65,7 @@ export type FlowAssistantMessage =
           tool_calls?: ToolCall[];
           ef_tables?: EfTable[];
           action_message?: ActionItem[];
+          interrupted?: boolean;
       }
     | { role: 'tool'; content: string; tool_call_id: string; name: string };
 
@@ -91,6 +92,7 @@ export interface StreamToolResultEvent {
 
 export interface StreamDoneEvent {
     type: 'done';
+    interrupted?: boolean;
 }
 
 export interface StreamStructuredEvent {

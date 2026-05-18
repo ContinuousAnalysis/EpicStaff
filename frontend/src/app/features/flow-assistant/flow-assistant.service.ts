@@ -10,6 +10,7 @@ import {
     FlowAssistantConfig,
     FlowAssistantMessage,
     SessionSummary,
+    StreamDoneEvent,
     StreamEvent,
     StreamStructuredEvent,
     StreamToolCallEvent,
@@ -197,20 +198,19 @@ export class FlowAssistantService {
 
     private activeEventSource: EventSource | null = null;
     private firstTokenOfTurn = false;
+    private hasOpenedOnCurrentVisit = false;
 
     open(graphId: number): void {
-        // Always reset — the service is providedIn: 'root', so signals survive
-        // SPA logout/login. Reusing prior state would leak across users (Fix 3).
-        this.closeEventSource();
+        // Re-opening on the same visit after close() — just unhide, don't disturb state.
+        if (this.hasOpenedOnCurrentVisit && this.currentGraphId() === graphId) {
+            this.isOpen.set(true);
+            return;
+        }
+        // First time on this flow visit (or a different graphId). Full reset.
+        this.reset();
         this.currentGraphId.set(graphId);
-        this.currentConversationId.set(null);
-        this.messages.set([]);
-        this.isStreaming.set(false);
-        this.config.set(null);
-        this.sessions.set([]);
-        this.currentStatus.set(null);
-        this.pendingPromptChips.set([]);
         this.isOpen.set(true);
+        this.hasOpenedOnCurrentVisit = true;
 
         this.api
             .getConfig(graphId)
@@ -220,7 +220,8 @@ export class FlowAssistantService {
                 error: () => this.toastService.error('Failed to load assistant config'),
             });
 
-        this.loadSessions(graphId);
+        // Populate sidebar but do NOT auto-select most recent — leave thread empty.
+        this.loadSessions(graphId, false);
     }
 
     close(): void {
@@ -230,7 +231,7 @@ export class FlowAssistantService {
 
     reset(): void {
         // Nuclear reset — clears every per-user signal plus isOpen.
-        // Intended for auth-layer logout hooks. Not wired up yet.
+        // Intended for auth-layer logout hooks and fresh-visit setup.
         this.closeEventSource();
         this.currentGraphId.set(null);
         this.currentConversationId.set(null);
@@ -241,6 +242,13 @@ export class FlowAssistantService {
         this.currentStatus.set(null);
         this.pendingPromptChips.set([]);
         this.isOpen.set(false);
+        this.hasOpenedOnCurrentVisit = false;
+    }
+
+    markFreshVisit(graphId: number): void {
+        this.hasOpenedOnCurrentVisit = false;
+        this.closeEventSource(); // defensive — kill any in-flight stream
+        this.currentGraphId.set(graphId);
     }
 
     toggle(graphId: number): void {
@@ -249,6 +257,23 @@ export class FlowAssistantService {
         } else {
             this.open(graphId);
         }
+    }
+
+    cancelStream(): void {
+        const graphId = this.currentGraphId();
+        const convId = this.currentConversationId();
+        if (graphId == null || convId == null || !this.isStreaming()) return;
+        // Optimistically tear down locally — backend cancel is best-effort.
+        this.closeEventSource();
+        this.isStreaming.set(false);
+        this.currentStatus.set(null);
+        // Fire-and-forget POST. If the backend hasn't responded yet, the Redis flag
+        // still gets set and the server-side loop bails on its next checkpoint.
+        this.api.cancelConversation(graphId, convId).subscribe({
+            error: () => {
+                /* silent — local teardown already happened */
+            },
+        });
     }
 
     loadSessions(graphId: number, autoSelect = true): void {
@@ -439,18 +464,8 @@ export class FlowAssistantService {
                 this.handleStructuredEvent(event);
             });
 
-            source.addEventListener('done', () => {
-                this.currentStatus.set(null);
-                this.closeEventSource();
-                this.isStreaming.set(false);
-
-                // Refresh sessions summary so the sidebar picks up updated
-                // message_count, title (if just auto-derived), and last_message_at order.
-                // autoSelect=false keeps the current conversation active.
-                const graphId = this.currentGraphId();
-                if (graphId !== null) {
-                    this.loadSessions(graphId, false);
-                }
+            source.addEventListener('done', (event: MessageEvent) => {
+                this.handleDoneEvent(event);
             });
 
             source.addEventListener('error', (event: MessageEvent) => {
@@ -529,6 +544,41 @@ export class FlowAssistantService {
             }
             return next;
         });
+    }
+
+    private handleDoneEvent(event: MessageEvent): void {
+        // The `done` SSE event data may be empty or carry `{"interrupted": true}`.
+        const parsed = this.parseEventData<StreamDoneEvent>(event.data);
+
+        if (parsed?.interrupted) {
+            this.messages.update((msgs) => {
+                for (let i = msgs.length - 1; i >= 0; i--) {
+                    const msg = msgs[i];
+                    if (msg.role === 'assistant') {
+                        const updated: Extract<FlowAssistantMessage, { role: 'assistant' }> = {
+                            ...msg,
+                            interrupted: true,
+                        };
+                        const next = [...msgs];
+                        next[i] = updated;
+                        return next;
+                    }
+                }
+                return msgs;
+            });
+        }
+
+        this.currentStatus.set(null);
+        this.closeEventSource();
+        this.isStreaming.set(false);
+
+        // Refresh sessions summary so the sidebar picks up updated
+        // message_count, title (if just auto-derived), and last_message_at order.
+        // autoSelect=false keeps the current conversation active.
+        const graphId = this.currentGraphId();
+        if (graphId !== null) {
+            this.loadSessions(graphId, false);
+        }
     }
 
     private handleErrorEvent(event: MessageEvent): void {

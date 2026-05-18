@@ -385,5 +385,20 @@
         &:not(:disabled):hover {
             opacity: 0.85;
         }
+
+        &--stop {
+            background-color: var(--color-error, #e05252);
+
+            &:hover {
+                opacity: 0.85;
+            }
+        }
     }
+}
+
+.message-interrupted {
+    margin-left: 0.5rem;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    font-style: italic;
 }

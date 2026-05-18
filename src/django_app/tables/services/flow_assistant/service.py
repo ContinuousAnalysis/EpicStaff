@@ -23,6 +23,7 @@ from django.utils import timezone
 from utils.logger import logger
 
 from tables.models.flow_assistant_models import FlowAssistant, FlowAssistantConversation
+from tables.services.redis_service import RedisService
 from .output_schema import FLOW_ASSISTANT_OUTPUT_SCHEMA
 from tables.services.llm_clients import (
     DoneEvent,
@@ -361,32 +362,25 @@ _TOOL_CALLABLES: dict[str, callable] = {
     "list_skills": lambda _graph_id, **__: _tools.list_skills(),
     "load_skill": lambda _graph_id, name, **__: _tools.load_skill(name),
     # Session tools are org-scoped by graph_id inside the tool implementation.
-    "get_session_stats": lambda graph_id,
-    since=None,
-    until=None,
-    status=None,
-    **_: _tools.get_session_stats(graph_id, since=since, until=until, status=status),
-    "get_recent_sessions": lambda graph_id,
-    limit=5,
-    since=None,
-    until=None,
-    where=None,
-    include_full_variables=False,
-    **_: _tools.get_recent_sessions(
-        graph_id,
-        limit=int(limit),
-        since=since,
-        until=until,
-        where=where,
-        include_full_variables=bool(include_full_variables),
+    "get_session_stats": lambda graph_id, since=None, until=None, status=None, **_: (
+        _tools.get_session_stats(graph_id, since=since, until=until, status=status)
+    ),
+    "get_recent_sessions": lambda graph_id, limit=5, since=None, until=None, where=None, include_full_variables=False, **_: (
+        _tools.get_recent_sessions(
+            graph_id,
+            limit=int(limit),
+            since=since,
+            until=until,
+            where=where,
+            include_full_variables=bool(include_full_variables),
+        )
     ),
     "get_session_detail": lambda graph_id, session_id, **_: _tools.get_session_detail(
         graph_id, int(session_id)
     ),
-    "get_session_messages": lambda graph_id,
-    session_id,
-    limit=50,
-    **_: _tools.get_session_messages(graph_id, int(session_id), limit=int(limit)),
+    "get_session_messages": lambda graph_id, session_id, limit=50, **_: (
+        _tools.get_session_messages(graph_id, int(session_id), limit=int(limit))
+    ),
 }
 
 
@@ -865,179 +859,301 @@ class FlowAssistantService:
         # forwarded as TokenEvents so we can emit only the delta each time.
         last_emitted_message_len: int = 0
 
-        # Tool-calling loop: keep looping until a DoneEvent with no tool calls
-        iteration_count = 0
-        while True:
-            iteration_count += 1
-            if iteration_count > _MAX_TOOL_ITERATIONS:
-                logger.warning(
-                    "Flow Assistant tool-call loop hit max iterations ({}) for conversation {}",
-                    _MAX_TOOL_ITERATIONS,
-                    conversation.pk,
-                )
-                yield TokenEvent(
-                    content=(
-                        "Stopped: too many tool calls in a single turn. The assistant "
-                        "seems to be looping — try rephrasing your question."
-                    )
-                )
-                yield DoneEvent()
-                return
+        # Defensive: clear any stale cancel flag left from a previous turn.
+        await _clear_cancel_flag(conversation.pk)
 
-            current_content: list[str] = []
-            current_tool_calls: list[dict] = []
-            is_final_turn = True  # assume final until we see tool calls
+        # Guards against double-persist: set to True once _persist_messages has
+        # been called so the finally block skips the disconnect-persist path.
+        persisted_already: bool = False
 
-            payload = _messages_for_llm(working_messages)
-            async for event in client.stream_completion(payload, TOOL_SPECS):
-                if isinstance(event, DoneEvent):
-                    break
-                elif isinstance(event, ToolCallEvent):
-                    is_final_turn = False
-                    current_tool_calls.append(
-                        {"id": event.id, "name": event.name, "args": event.args}
+        # True once working_messages has gained tool_call or tool entries during
+        # this turn — used by the finally block to decide whether a partial
+        # persist is worth issuing even when assistant_content_parts is empty.
+        working_messages_dirty: bool = False
+
+        # current_content accumulates tokens within one LLM iteration.  It is
+        # defined here so the finally block can observe in-flight content even
+        # when CancelledError interrupts the inner async-for before we reach the
+        # `text_chunk = "".join(current_content)` line.
+        current_content: list[str] = []
+
+        try:
+            # Tool-calling loop: keep looping until a DoneEvent with no tool calls
+            iteration_count = 0
+            while True:
+                iteration_count += 1
+                if iteration_count > _MAX_TOOL_ITERATIONS:
+                    logger.warning(
+                        "Flow Assistant tool-call loop hit max iterations ({}) for conversation {}",
+                        _MAX_TOOL_ITERATIONS,
+                        conversation.pk,
                     )
-                    yield event
-                else:
-                    # TokenEvent — the model is emitting content.
-                    # When structured output is active the content is raw JSON;
-                    # we extract and forward only the `message` field delta so
-                    # the frontend's existing token-append logic keeps working.
-                    current_content.append(event.content)
-                    if is_final_turn:
-                        json_buffer += event.content
-                        current_message = _partial_json.extract_message_field(
-                            json_buffer
+                    yield TokenEvent(
+                        content=(
+                            "Stopped: too many tool calls in a single turn. The assistant "
+                            "seems to be looping — try rephrasing your question."
                         )
-                        if len(current_message) > last_emitted_message_len:
-                            delta = current_message[last_emitted_message_len:]
-                            last_emitted_message_len = len(current_message)
-                            yield event.__class__(content=delta)
-                    else:
-                        # During tool-calling turns the model emits plain text
-                        # (its "thinking" content, if any) — forward as-is.
+                    )
+                    yield DoneEvent()
+                    return
+
+                # ── Outer-loop cancel checkpoint ─────────────────────────────
+                if await _is_cancel_requested(conversation.pk):
+                    partial_content = "".join(assistant_content_parts).strip()
+                    partial: dict = {
+                        "role": "assistant",
+                        "content": partial_content or "",
+                        "interrupted": True,
+                    }
+                    structured_payload = _partial_json.try_parse_full(json_buffer)
+                    if structured_payload is not None:
+                        partial["ef_tables"] = structured_payload.get("ef_tables") or []
+                        partial["action_message"] = (
+                            structured_payload.get("action_message") or []
+                        )
+                    if (
+                        partial_content
+                        or partial.get("ef_tables")
+                        or partial.get("action_message")
+                    ):
+                        working_messages.append(partial)
+                    await _persist_messages(conversation.pk, working_messages)
+                    persisted_already = True
+                    await _clear_cancel_flag(conversation.pk)
+                    yield DoneEvent(interrupted=True)
+                    return
+
+                current_content = []  # reset for each iteration
+                current_tool_calls: list[dict] = []
+                is_final_turn = True  # assume final until we see tool calls
+                cancel_inner: bool = False  # set when cancel detected mid-stream
+
+                payload = _messages_for_llm(working_messages)
+                async for event in client.stream_completion(payload, TOOL_SPECS):
+                    if isinstance(event, DoneEvent):
+                        break
+                    elif isinstance(event, ToolCallEvent):
+                        is_final_turn = False
+                        current_tool_calls.append(
+                            {"id": event.id, "name": event.name, "args": event.args}
+                        )
                         yield event
+                    else:
+                        # TokenEvent — the model is emitting content.
+                        # When structured output is active the content is raw JSON;
+                        # we extract and forward only the `message` field delta so
+                        # the frontend's existing token-append logic keeps working.
+                        current_content.append(event.content)
+                        if is_final_turn:
+                            json_buffer += event.content
+                            current_message = _partial_json.extract_message_field(
+                                json_buffer
+                            )
+                            if len(current_message) > last_emitted_message_len:
+                                delta = current_message[last_emitted_message_len:]
+                                last_emitted_message_len = len(current_message)
+                                yield event.__class__(content=delta)
+                        else:
+                            # During tool-calling turns the model emits plain text
+                            # (its "thinking" content, if any) — forward as-is.
+                            yield event
 
-            text_chunk = "".join(current_content)
-            assistant_content_parts.append(text_chunk)
+                    # ── Inner-loop cancel checkpoint ─────────────────────────
+                    if await _is_cancel_requested(conversation.pk):
+                        cancel_inner = True
+                        break
 
-            if not current_tool_calls:
-                # No tool calls — we're done with the loop
-                break
+                text_chunk = "".join(current_content)
+                assistant_content_parts.append(text_chunk)
 
-            # Reset per-turn json state for the next iteration (tool call turns
-            # don't produce the final JSON so the buffer is irrelevant there).
-            json_buffer = ""
-            last_emitted_message_len = 0
-
-            # Record the assistant turn with tool calls in the local working list
-            tool_calls_block = [
-                {
-                    "id": tc["id"],
-                    "type": "function",
-                    "function": {
-                        "name": tc["name"],
-                        "arguments": json.dumps(tc["args"]),
-                    },
-                }
-                for tc in current_tool_calls
-            ]
-            working_messages.append(
-                {
-                    "role": "assistant",
-                    "content": text_chunk or None,
-                    "tool_calls": tool_calls_block,
-                }
-            )
-
-            # Execute each tool and append results to the local working list
-            for tc in current_tool_calls:
-                tool_name = tc["name"]
-                tool_args = tc["args"]
-                tool_callable = _TOOL_CALLABLES.get(tool_name)
-
-                if tool_callable is None:
-                    tool_result_content = json.dumps(
-                        {"error": f"Unknown tool '{tool_name}'"}
-                    )
-                else:
-                    try:
-                        raw_result = await sync_to_async(tool_callable)(
-                            graph_id, **tool_args
+                if cancel_inner:
+                    partial_content = "".join(assistant_content_parts).strip()
+                    partial = {
+                        "role": "assistant",
+                        "content": partial_content or "",
+                        "interrupted": True,
+                    }
+                    structured_payload = _partial_json.try_parse_full(json_buffer)
+                    if structured_payload is not None:
+                        partial["ef_tables"] = structured_payload.get("ef_tables") or []
+                        partial["action_message"] = (
+                            structured_payload.get("action_message") or []
                         )
-                        tool_result_content = json.dumps(
-                            raw_result, cls=DjangoJSONEncoder
-                        )
-                    except Exception as exc:
-                        logger.warning(
-                            "Tool {} raised {}: {}", tool_name, type(exc).__name__, exc
-                        )
-                        tool_result_content = json.dumps(
-                            {"error": str(exc)}, cls=DjangoJSONEncoder
-                        )
+                    if (
+                        partial_content
+                        or partial.get("ef_tables")
+                        or partial.get("action_message")
+                    ):
+                        working_messages.append(partial)
+                    await _persist_messages(conversation.pk, working_messages)
+                    persisted_already = True
+                    await _clear_cancel_flag(conversation.pk)
+                    yield DoneEvent(interrupted=True)
+                    return
 
-                result_event = ToolResultEvent(
-                    id=tc["id"],
-                    name=tool_name,
-                    content=tool_result_content,
-                )
-                yield result_event
+                if not current_tool_calls:
+                    # No tool calls — we're done with the loop
+                    break
 
+                # Reset per-turn json state for the next iteration (tool call turns
+                # don't produce the final JSON so the buffer is irrelevant there).
+                json_buffer = ""
+                last_emitted_message_len = 0
+
+                # Record the assistant turn with tool calls in the local working list
+                tool_calls_block = [
+                    {
+                        "id": tc["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tc["name"],
+                            "arguments": json.dumps(tc["args"]),
+                        },
+                    }
+                    for tc in current_tool_calls
+                ]
                 working_messages.append(
                     {
-                        "role": "tool",
-                        "tool_call_id": tc["id"],
-                        "content": tool_result_content,
+                        "role": "assistant",
+                        "content": text_chunk or None,
+                        "tool_calls": tool_calls_block,
                     }
                 )
+                working_messages_dirty = True
 
-        # Parse the full JSON buffer to extract the structured payload.
-        # Gracefully degrade: if parsing fails (e.g. the model ignored the
-        # response_format schema), fall back to the raw streamed text.
-        structured_payload: dict | None = _partial_json.try_parse_full(json_buffer)
+                # Execute each tool and append results to the local working list
+                for tc in current_tool_calls:
+                    tool_name = tc["name"]
+                    tool_args = tc["args"]
+                    tool_callable = _TOOL_CALLABLES.get(tool_name)
 
-        if structured_payload is not None:
-            final_text = structured_payload.get("message", "").strip()
-            ef_tables: list = structured_payload.get("ef_tables") or []
-            action_message: list = structured_payload.get("action_message") or []
-            if ef_tables and final_text:
-                final_text = _strip_markdown_tables(final_text)
-            # Emit the structured event before DoneEvent so the frontend can
-            # render rich content (tables, action buttons, prompt chips).
-            yield StructuredEvent(
-                message=final_text,
-                ef_tables=ef_tables,
-                action_message=action_message,
-            )
-        else:
-            # Fallback: treat accumulated raw content as plain text.
-            if json_buffer:
-                logger.warning(
-                    "FlowAssistantService: could not parse LLM JSON buffer as "
-                    "structured output; falling back to raw text. "
-                    "Buffer length: {} chars.",
-                    len(json_buffer),
+                    if tool_callable is None:
+                        tool_result_content = json.dumps(
+                            {"error": f"Unknown tool '{tool_name}'"}
+                        )
+                    else:
+                        try:
+                            raw_result = await sync_to_async(tool_callable)(
+                                graph_id, **tool_args
+                            )
+                            tool_result_content = json.dumps(
+                                raw_result, cls=DjangoJSONEncoder
+                            )
+                        except Exception as exc:
+                            logger.warning(
+                                "Tool {} raised {}: {}",
+                                tool_name,
+                                type(exc).__name__,
+                                exc,
+                            )
+                            tool_result_content = json.dumps(
+                                {"error": str(exc)}, cls=DjangoJSONEncoder
+                            )
+
+                    result_event = ToolResultEvent(
+                        id=tc["id"],
+                        name=tool_name,
+                        content=tool_result_content,
+                    )
+                    yield result_event
+
+                    working_messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tc["id"],
+                            "content": tool_result_content,
+                        }
+                    )
+                    working_messages_dirty = True
+
+            # Parse the full JSON buffer to extract the structured payload.
+            # Gracefully degrade: if parsing fails (e.g. the model ignored the
+            # response_format schema), fall back to the raw streamed text.
+            structured_payload = _partial_json.try_parse_full(json_buffer)
+
+            if structured_payload is not None:
+                final_text = structured_payload.get("message", "").strip()
+                ef_tables: list = structured_payload.get("ef_tables") or []
+                action_message: list = structured_payload.get("action_message") or []
+                if ef_tables and final_text:
+                    final_text = _strip_markdown_tables(final_text)
+                # Emit the structured event before DoneEvent so the frontend can
+                # render rich content (tables, action buttons, prompt chips).
+                yield StructuredEvent(
+                    message=final_text,
+                    ef_tables=ef_tables,
+                    action_message=action_message,
                 )
-            final_text = "".join(assistant_content_parts).strip()
-            ef_tables = []
-            action_message = []
+            else:
+                # Fallback: treat accumulated raw content as plain text.
+                if json_buffer:
+                    logger.warning(
+                        "FlowAssistantService: could not parse LLM JSON buffer as "
+                        "structured output; falling back to raw text. "
+                        "Buffer length: {} chars.",
+                        len(json_buffer),
+                    )
+                final_text = "".join(assistant_content_parts).strip()
+                ef_tables = []
+                action_message = []
 
-        # Append final assistant reply to local working list.
-        # Include ef_tables / action_message when present so the persisted
-        # history faithfully reflects the structured response.
-        if final_text:
-            assistant_msg: dict = {"role": "assistant", "content": final_text}
-            if ef_tables:
-                assistant_msg["ef_tables"] = ef_tables
-            if action_message:
-                assistant_msg["action_message"] = action_message
-            working_messages.append(assistant_msg)
+            # Append final assistant reply to local working list.
+            # Include ef_tables / action_message when present so the persisted
+            # history faithfully reflects the structured response.
+            if final_text:
+                assistant_msg: dict = {"role": "assistant", "content": final_text}
+                if ef_tables:
+                    assistant_msg["ef_tables"] = ef_tables
+                if action_message:
+                    assistant_msg["action_message"] = action_message
+                working_messages.append(assistant_msg)
 
-        # Single atomic persist — write the completed history in one UPDATE.
-        # Never mutate conversation.messages in place before this point.
-        await _persist_messages(conversation.pk, working_messages)
+            # Single atomic persist — write the completed history in one UPDATE.
+            # Never mutate conversation.messages in place before this point.
+            await _persist_messages(conversation.pk, working_messages)
+            persisted_already = True
 
-        yield DoneEvent()
+            yield DoneEvent()
+
+        finally:
+            # Disconnect-persist: if the connection dropped before we naturally
+            # completed (browser refresh, tab close, network error), persist
+            # whatever partial state we have so the conversation is not lost.
+            if not persisted_already:
+                # assistant_content_parts holds text from completed iterations.
+                # current_content holds in-flight tokens from the current iteration
+                # that were never appended to assistant_content_parts (CancelledError
+                # exits the inner async-for before we reach that assignment).
+                partial_content = (
+                    "".join(assistant_content_parts) + "".join(current_content)
+                ).strip()
+                if partial_content or working_messages_dirty:
+                    partial = {
+                        "role": "assistant",
+                        "content": partial_content or "",
+                        "interrupted": True,
+                    }
+                    structured_payload = _partial_json.try_parse_full(json_buffer)
+                    if structured_payload is not None:
+                        partial["ef_tables"] = structured_payload.get("ef_tables") or []
+                        partial["action_message"] = (
+                            structured_payload.get("action_message") or []
+                        )
+                    if (
+                        partial_content
+                        or partial.get("ef_tables")
+                        or partial.get("action_message")
+                    ):
+                        working_messages.append(partial)
+                try:
+                    await _persist_messages(conversation.pk, working_messages)
+                except Exception as exc:
+                    logger.warning(
+                        "FA disconnect-persist failed for conv {}: {}",
+                        conversation.pk,
+                        exc,
+                    )
+                await _clear_cancel_flag(conversation.pk)
 
 
 @sync_to_async
@@ -1048,3 +1164,36 @@ def _persist_messages(conversation_id: int, messages: list[dict]) -> None:
             messages=messages,
             last_message_at=timezone.now(),
         )
+
+
+# ── Cancel-flag helpers ───────────────────────────────────────────────────────
+#
+# A short-lived Redis key is set when the user hits the stop button.
+# `stream_reply` checks this flag at iteration boundaries and inside the
+# per-chunk loop to interrupt generation early.
+
+_CANCEL_KEY = "fa:cancel:{conv_id}"
+_CANCEL_TTL_SECONDS = 300
+
+
+async def _request_cancel(conv_id: int) -> None:
+    """Set the cancel flag for a conversation (TTL: 300 s)."""
+    redis_service = RedisService()
+    key = _CANCEL_KEY.format(conv_id=conv_id)
+    await sync_to_async(redis_service.redis_client.set)(
+        key, "1", ex=_CANCEL_TTL_SECONDS
+    )
+
+
+async def _is_cancel_requested(conv_id: int) -> bool:
+    """Return True if a cancel flag is set for this conversation."""
+    redis_service = RedisService()
+    key = _CANCEL_KEY.format(conv_id=conv_id)
+    return bool(await sync_to_async(redis_service.redis_client.get)(key))
+
+
+async def _clear_cancel_flag(conv_id: int) -> None:
+    """Remove the cancel flag, if present."""
+    redis_service = RedisService()
+    key = _CANCEL_KEY.format(conv_id=conv_id)
+    await sync_to_async(redis_service.redis_client.delete)(key)

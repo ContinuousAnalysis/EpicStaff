@@ -46,6 +46,7 @@ class ToolResultEvent:
 
 @dataclass
 class DoneEvent:
+    interrupted: bool = False
     type: str = field(default="done", init=False)
 
 

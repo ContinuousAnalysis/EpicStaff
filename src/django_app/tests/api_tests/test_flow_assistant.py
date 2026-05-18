@@ -2240,3 +2240,202 @@ def test_get_session_detail_final_variables_falls_back_to_variables(db):
     assert (
         result2["final_variables"] == start_vars
     ), "final_variables must fall back to Session.variables when status_data is an empty dict"
+
+
+# ── Fix 23: Cancel mechanism tests ───────────────────────────────────────────
+
+
+@pytest.mark.django_db
+def test_cancel_endpoint_sets_redis_flag(
+    graph, flow_assistant, conversation_a, auth_client_a
+):
+    """POST /cancel/ sets the fa:cancel:<conv_id> key in Redis."""
+    import fakeredis
+    from unittest.mock import patch
+
+    fake_redis = fakeredis.FakeRedis(decode_responses=False)
+
+    with patch(
+        "tables.services.flow_assistant.service.RedisService",
+    ) as MockRedisService:
+        mock_instance = MagicMock()
+        mock_instance.redis_client = fake_redis
+        MockRedisService.return_value = mock_instance
+
+        url = reverse(
+            "flow-assistant-cancel",
+            kwargs={
+                "graph_id": graph.pk,
+                "conversation_id": conversation_a.pk,
+            },
+        )
+        response = auth_client_a.post(url)
+
+    assert response.status_code == 202, response.content
+    assert response.data == {"cancelled": True}
+    # The cancel flag must be present in fakeredis
+    expected_key = f"fa:cancel:{conversation_a.pk}".encode()
+    assert fake_redis.get(expected_key) == b"1"
+
+
+@pytest.mark.django_db
+def test_cancel_endpoint_org_scoped(
+    graph, flow_assistant, conversation_a, auth_client_b
+):
+    """User from a different org cannot cancel another user's conversation — returns 404."""
+    url = reverse(
+        "flow-assistant-cancel",
+        kwargs={
+            "graph_id": graph.pk,
+            "conversation_id": conversation_a.pk,
+        },
+    )
+    # auth_client_b belongs to org_a but is a different user; conversation_a
+    # is owned by org_user_a, so org_user_b's resolution will return no match.
+    response = auth_client_b.post(url)
+    assert response.status_code == 404, response.content
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_stream_reply_bails_on_cancel_flag(
+    graph, llm_config, user_a, org_a, default_role, db
+):
+    """stream_reply stops early and persists an interrupted partial when the cancel
+    flag is set before the LLM call completes."""
+    import asyncio
+    import fakeredis
+    from unittest.mock import patch
+    from asgiref.sync import sync_to_async
+    from tables.services.flow_assistant import FlowAssistantService
+    from tables.services.flow_assistant.service import _CANCEL_KEY
+    from tables.models.flow_assistant_models import FlowAssistant, FlowAssistantConversation
+
+    user_message = "what does this flow do?"
+
+    org_user = await sync_to_async(OrganizationUser.objects.create)(
+        user=user_a, org=org_a, role=default_role
+    )
+    assistant = await sync_to_async(FlowAssistant.objects.create)(
+        graph=graph, llm_config=llm_config
+    )
+    conversation = await sync_to_async(FlowAssistantConversation.objects.create)(
+        flow_assistant=assistant,
+        organization_user=org_user,
+        messages=[
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": user_message},
+        ],
+    )
+
+    fake_redis = fakeredis.FakeRedis(decode_responses=False)
+    cancel_key = _CANCEL_KEY.format(conv_id=conversation.pk).encode()
+
+    async def fake_stream(messages, tools):
+        # Yield the first token, then set the cancel flag so it is seen by the
+        # inner-loop checkpoint on the very next iteration.
+        yield TokenEvent(content="partial ")
+        fake_redis.set(cancel_key, b"1", ex=300)
+        yield TokenEvent(content="answer")
+        yield DoneEvent()
+
+    with patch(
+        "tables.services.flow_assistant.service.get_llm_client"
+    ) as mock_get_client, patch(
+        "tables.services.flow_assistant.service.RedisService",
+    ) as MockRedisService:
+        mock_client = MagicMock()
+        mock_client.stream_completion = fake_stream
+        mock_get_client.return_value = mock_client
+
+        mock_redis_instance = MagicMock()
+        mock_redis_instance.redis_client = fake_redis
+        MockRedisService.return_value = mock_redis_instance
+
+        service = FlowAssistantService()
+        events = []
+        async for event in service.stream_reply(conversation, user_message):
+            events.append(event)
+
+    # The last event must be a DoneEvent with interrupted=True.
+    assert events, "No events were yielded"
+    last = events[-1]
+    assert last.type == "done"
+    assert last.interrupted is True
+
+    # The cancel flag must have been cleared.
+    assert fake_redis.get(cancel_key) is None
+
+    # The conversation must be persisted with a partial assistant entry.
+    await sync_to_async(conversation.refresh_from_db)()
+    assistant_msgs = [m for m in conversation.messages if m.get("role") == "assistant"]
+    assert len(assistant_msgs) >= 1
+    partial = assistant_msgs[-1]
+    assert partial.get("interrupted") is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_stream_reply_disconnect_persists_partial(
+    graph, llm_config, user_a, org_a, default_role, db
+):
+    """When the LLM stream raises asyncio.CancelledError (simulated disconnect),
+    the finally block persists a partial assistant message with interrupted=True."""
+    import asyncio
+    import fakeredis
+    from unittest.mock import patch
+    from asgiref.sync import sync_to_async
+    from tables.services.flow_assistant import FlowAssistantService
+    from tables.models.flow_assistant_models import FlowAssistant, FlowAssistantConversation
+
+    user_message = "hello"
+
+    org_user = await sync_to_async(OrganizationUser.objects.create)(
+        user=user_a, org=org_a, role=default_role
+    )
+    assistant = await sync_to_async(FlowAssistant.objects.create)(
+        graph=graph, llm_config=llm_config
+    )
+    conversation = await sync_to_async(FlowAssistantConversation.objects.create)(
+        flow_assistant=assistant,
+        organization_user=org_user,
+        messages=[
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": user_message},
+        ],
+    )
+
+    fake_redis = fakeredis.FakeRedis(decode_responses=False)
+
+    async def fake_stream_then_cancel(messages, tools):
+        yield TokenEvent(content="hello ")
+        yield TokenEvent(content="world")
+        raise asyncio.CancelledError("simulated disconnect")
+
+    with patch(
+        "tables.services.flow_assistant.service.get_llm_client"
+    ) as mock_get_client, patch(
+        "tables.services.flow_assistant.service.RedisService",
+    ) as MockRedisService:
+        mock_client = MagicMock()
+        mock_client.stream_completion = fake_stream_then_cancel
+        mock_get_client.return_value = mock_client
+
+        mock_redis_instance = MagicMock()
+        mock_redis_instance.redis_client = fake_redis
+        MockRedisService.return_value = mock_redis_instance
+
+        service = FlowAssistantService()
+        # CancelledError propagates out of the generator after the finally block runs.
+        with pytest.raises(asyncio.CancelledError):
+            async for _event in service.stream_reply(conversation, user_message):
+                pass
+
+    # Despite the exception, the finally block must have persisted the partial.
+    await sync_to_async(conversation.refresh_from_db)()
+    assistant_msgs = [m for m in conversation.messages if m.get("role") == "assistant"]
+    assert len(assistant_msgs) >= 1, "No assistant message persisted on disconnect"
+    partial = assistant_msgs[-1]
+    assert partial.get("interrupted") is True
+    # The partial content should contain whatever tokens were streamed.
+    assert "hello" in partial.get("content", "")

@@ -110,6 +110,9 @@
                                     }
                                 </button>
                             }
+                            @if (isAssistantMessage(message) && message.interrupted) {
+                                <span class="message-interrupted">(stopped)</span>
+                            }
                         </div>
                     } @else if (isToolMessage(message)) {
                         <div class="message message--tool">
@@ -161,17 +164,32 @@
                         (keydown)="onKeydown($event)"
                         [disabled]="isStreaming()"
                     ></textarea>
-                    <button
-                        class="input-area__send-btn"
-                        [disabled]="sendDisabled()"
-                        (click)="sendMessage()"
-                        title="Send (Enter)"
-                    >
-                        <app-svg-icon
-                            icon="send"
-                            size="1.1rem"
-                        />
-                    </button>
+                    @if (isStreaming()) {
+                        <button
+                            type="button"
+                            class="input-area__send-btn input-area__send-btn--stop"
+                            (click)="assistantService.cancelStream()"
+                            title="Stop generating"
+                            aria-label="Stop generating"
+                        >
+                            <app-svg-icon
+                                icon="stop"
+                                size="1.1rem"
+                            />
+                        </button>
+                    } @else {
+                        <button
+                            class="input-area__send-btn"
+                            [disabled]="sendDisabled()"
+                            (click)="sendMessage()"
+                            title="Send (Enter)"
+                        >
+                            <app-svg-icon
+                                icon="send"
+                                size="1.1rem"
+                            />
+                        </button>
+                    }
                 </div>
             </div>
         </div>

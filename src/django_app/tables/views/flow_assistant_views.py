@@ -7,7 +7,7 @@ Non-streaming endpoints: DRF APIView.
 Streaming endpoint: SSEMixin (Django View) with ticket auth.
 """
 
-from asgiref.sync import sync_to_async
+from asgiref.sync import async_to_sync, sync_to_async
 from django.db.models import F, Func, IntegerField
 from django.utils import timezone
 from rest_framework import status
@@ -32,6 +32,7 @@ from tables.services.flow_assistant import (
     LLMConfigInvalidError,
     LLMConfigMissingError,
 )
+from tables.services.flow_assistant.service import _request_cancel
 from tables.services.llm_clients.base import StructuredEvent
 from tables.services.rbac.organization_resolution import resolve_organization_user
 from tables.services.rbac.permissions import IsSuperadmin
@@ -379,7 +380,10 @@ class FlowAssistantStreamView(SSEMixin):
                         },
                     }
                 elif event.type == "done":
-                    yield {"event": "done", "data": {"type": "done"}}
+                    payload = {"type": "done"}
+                    if getattr(event, "interrupted", False):
+                        payload["interrupted"] = True
+                    yield {"event": "done", "data": payload}
                     return
 
         except LLMConfigMissingError as exc:
@@ -484,3 +488,31 @@ class FlowAssistantAuditView(APIView):
         page = paginator.paginate_queryset(queryset, request, view=self)
         serializer = AuditConversationSerializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
+
+
+# ── Cancel endpoint ───────────────────────────────────────────────────────────
+
+
+class FlowAssistantCancelView(APIView):
+    """
+    POST /api/flow-assistants/<graph_id>/conversations/<conversation_id>/cancel/
+
+    Sets a short-lived Redis flag that causes the in-progress stream_reply
+    generator to interrupt at its next cancel checkpoint, persist any partial
+    assistant content, and return a done event with interrupted=True.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, graph_id: int, conversation_id: int):
+        organization_user = resolve_organization_user(request)
+        conv = FlowAssistantConversation.objects.filter(
+            pk=conversation_id,
+            organization_user=organization_user,
+            flow_assistant__graph_id=graph_id,
+            deleted_at__isnull=True,
+        ).first()
+        if conv is None:
+            return Response({"detail": "Conversation not found."}, status=404)
+        async_to_sync(_request_cancel)(conv.id)
+        return Response({"cancelled": True}, status=status.HTTP_202_ACCEPTED)

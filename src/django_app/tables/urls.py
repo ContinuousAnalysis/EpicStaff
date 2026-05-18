@@ -124,6 +124,7 @@ from tables.views.sse_views import (
 )
 from tables.views.flow_assistant_views import (
     FlowAssistantAuditView,
+    FlowAssistantCancelView,
     FlowAssistantConfigView,
     FlowAssistantConversationsView,
     FlowAssistantConversationView,
@@ -484,5 +485,10 @@ urlpatterns = [
         "flow-assistants/<int:graph_id>/conversations/<int:conversation_id>/stream/",
         FlowAssistantStreamView.as_view(),
         name="flow-assistant-stream",
+    ),
+    path(
+        "flow-assistants/<int:graph_id>/conversations/<int:conversation_id>/cancel/",
+        FlowAssistantCancelView.as_view(),
+        name="flow-assistant-cancel",
     ),
 ]
