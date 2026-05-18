@@ -5,6 +5,8 @@ import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { onboardingGuard } from './core/guards/onboarding.guard';
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
+import { superAdminGuard, workspaceGuard } from './core/guards/workspace.guard';
+import { currentUserResolver } from './core/resolvers/current-user.resolver';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { RoutedAuthShellComponent } from './layouts/routed-auth-shell/routed-auth-shell.component';
 import { LastVisitedTabService } from './services/last-visited-tab.service';
@@ -54,6 +56,7 @@ export const routes: Routes = [
             {
                 path: '',
                 component: MainLayoutComponent,
+                resolve: { currentUser: currentUserResolver },
                 children: [
                     {
                         path: '',
@@ -240,6 +243,7 @@ export const routes: Routes = [
                             import('./features/role-base-access/pages/overview-page/overview.component').then(
                                 (m) => m.OverviewComponent
                             ),
+                        canActivate: [workspaceGuard],
                         children: [
                             {
                                 path: '',
@@ -252,6 +256,7 @@ export const routes: Routes = [
                                     import('./features/role-base-access/pages/overview-page/main-tab/main-tab.component').then(
                                         (m) => m.MainTabComponent
                                     ),
+                                canActivate: [superAdminGuard],
                             },
                             {
                                 path: 'organizations',
@@ -259,8 +264,23 @@ export const routes: Routes = [
                                     import('./features/role-base-access/pages/overview-page/organizations-tab/organizations-tab.component').then(
                                         (m) => m.OrganizationsTabComponent
                                     ),
+                                canActivate: [superAdminGuard],
+                            },
+                            {
+                                path: 'users',
+                                loadComponent: () =>
+                                    import('./features/role-base-access/pages/overview-page/users-tab/users-tab.component').then(
+                                        (m) => m.UsersTabComponent
+                                    ),
                             },
                         ],
+                    },
+                    {
+                        path: 'profile',
+                        loadComponent: () =>
+                            import('./features/role-base-access/pages/profile-page/profile-page.component').then(
+                                (m) => m.ProfilePageComponent
+                            ),
                     },
                 ],
             },

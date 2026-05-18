@@ -15,6 +15,11 @@ export interface FirstSetupResponse {
     user: SetupUserResponse;
 }
 
+export interface TokenPair {
+    access: string;
+    refresh: string;
+}
+
 export interface SetupOrganizationResponse {
     id: number;
     is_active: boolean;
@@ -26,29 +31,4 @@ export interface SetupUserResponse {
     email: string;
     id: number;
     is_superadmin: boolean;
-}
-
-export interface GetMeResponse {
-    id: number;
-    email: string;
-    display_name: string;
-    avatar_url: string;
-    is_superadmin: boolean;
-    memberships: Membership[];
-}
-
-export interface Membership {
-    organization: Organization;
-    role: Role;
-    joined_at: string;
-}
-
-export interface Organization {
-    id: number;
-    name: string;
-}
-
-export interface Role {
-    id: number;
-    name: string;
 }
