@@ -36,7 +36,14 @@ def main() -> int:
     parser.add_argument("--compose-json", default="compose.json")
     parser.add_argument("--repo-root", default=".")
     parser.add_argument("--output-key", default="matrix")
+    parser.add_argument(
+        "--exclude",
+        default="",
+        help="Comma-separated service names to exclude from the matrix.",
+    )
     args = parser.parse_args()
+
+    excluded = {s.strip() for s in args.exclude.split(",") if s.strip()}
 
     repo_root = Path(args.repo_root).resolve()
     compose_json_path = Path(args.compose_json)
@@ -55,6 +62,10 @@ def main() -> int:
     include: list[dict[str, str]] = []
 
     for name, svc in services.items():
+        if name in excluded:
+            print(f"[{name}] excluded", file=sys.stderr)
+            continue
+
         build = svc.get("build")
         if not build:
             continue
