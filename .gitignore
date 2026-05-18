@@ -201,8 +201,6 @@ make_scripts/backups
 # Savefiles
 **/savefiles
 
-**/public/epicchat-widget/
-
 # Compiled output
 frontend/dist
 frontend/tmp
