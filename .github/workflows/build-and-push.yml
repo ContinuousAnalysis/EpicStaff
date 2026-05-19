@@ -1,12 +1,9 @@
 name: build-and-push
 
 on:
-  # Direct push:main trigger is gone — deploy.yaml now owns push:main and invokes
-  # this workflow inline via workflow_call. push:tags is retained as a safety net
-  # for manual tag pushes (the release flow uses workflow_call, not tag-push).
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  # No direct push triggers — this workflow is invoked exclusively via workflow_call
+  # (from deploy.yaml on push:main, and from publish_release.yml on push:tags) and
+  # workflow_dispatch (for ad-hoc manual branch builds).
   workflow_dispatch:
     inputs:
       branch:
