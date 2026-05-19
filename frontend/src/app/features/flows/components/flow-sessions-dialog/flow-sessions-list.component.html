@@ -11,11 +11,6 @@
 
     <div class="dialog-content">
         <div class="filter-controls">
-            <app-flow-session-status-filter-dropdown
-                [value]="statusFilter()"
-                (valueChange)="onStatusFilterChange($event)"
-            >
-            </app-flow-session-status-filter-dropdown>
             <app-flow-session-node-filter-dropdown
                 [nodeGroups]="availableNodeGroups()"
                 [value]="nodeFilter()"
