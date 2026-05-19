@@ -23,6 +23,7 @@
                     class="toggle-switch"
                     [class.active]="isErrorCauseFilter()"
                     (click)="onIsErrorCauseChange()"
+                    [class.disabled]="!nodeFilter()"
                 >
                     <div class="toggle-thumb"></div>
                 </div>

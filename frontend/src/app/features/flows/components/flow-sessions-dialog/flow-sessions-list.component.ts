@@ -261,6 +261,9 @@ export class FlowSessionsListComponent implements OnInit {
     onNodeFilterChange(value: string | null) {
         this.currentPage.set(1);
         this.nodeFilter.set(value);
+        if (!value) {
+            this.isErrorCauseFilter.set(false);
+        }
     }
 
     public onSelectedIdsChange(ids: Set<number>): void {
