@@ -101,17 +101,27 @@ jobs:
       - name: Generate build matrix
         id: gen
         shell: bash
+        env:
+          EXCLUDE_CSV: ${{ env.EXCLUDE_SERVICES }}
         run: |
           set -euo pipefail
-          python ./.github/scripts/compose_matrix.py \
+          # The script writes `matrix=...` to GITHUB_OUTPUT and also prints the
+          # JSON to stdout. Capture stdout, filter excluded services via jq,
+          # then write the filtered version to GITHUB_OUTPUT (last write wins).
+          RAW=$(python ./.github/scripts/compose_matrix.py \
             --compose-json compose.json \
             --repo-root . \
-            --exclude "$EXCLUDE_SERVICES"
+            | python -c "import sys,json; print(json.dumps(json.loads(sys.stdin.read())))")
+          # Note: --exclude not passed to script (older script versions at old
+          # release tags may not support it). Exclusion happens via jq below.
 
-      - name: Show matrix
-        shell: bash
-        run: |
-          echo '${{ steps.gen.outputs.matrix }}' | python -m json.tool
+          # Build a jq array from the CSV exclude list
+          EXCL_JSON=$(echo "$EXCLUDE_CSV" | jq -Rc 'split(",") | map(select(length>0))')
+          FILTERED=$(echo "$RAW" | jq -c --argjson excl "$EXCL_JSON" \
+            '.include |= map(select(.service as $s | $excl | index($s) | not))')
+
+          echo "matrix=$FILTERED" >> "$GITHUB_OUTPUT"
+          echo "$FILTERED" | python -m json.tool
 
   build:
     name: Build & push ${{ matrix.service }}
