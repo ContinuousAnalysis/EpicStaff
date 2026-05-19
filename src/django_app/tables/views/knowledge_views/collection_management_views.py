@@ -1,5 +1,10 @@
 from rest_framework import viewsets, status
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, inline_serializer
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiParameter,
+    inline_serializer,
+)
 from rest_framework import serializers as drf_serializers
 from utils.logger import logger
 from rest_framework.response import Response
@@ -19,7 +24,17 @@ from tables.services.redis_service import RedisService
 from tables.services.knowledge_services.collection_management_service import (
     CollectionManagementService,
 )
-
+from tables.swagger_schemas.knowledge_schemas.collection_management_schemas import (
+    SOURCE_COLLECTIONS_GET,
+    SOURCE_COLLECTION_GET,
+    SOURCE_COLLECTION_POST,
+    SOURCE_COLLECTION_PATCH,
+    SOURCE_COLLECTION_PUT,
+    SOURCE_COLLECTION_DELETE,
+    SOURCE_COLLECTION_BULK_DELETE_POST,
+    SOURCE_COLLECTION_COPY_POST,
+    SOURCE_COLLECTION_AVAILABLE_RAGS_GET,
+)
 from tables.exceptions import CollectionNotFoundException
 
 redis_service = RedisService()
@@ -37,6 +52,9 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
     - PATCH /source-collections/{id}/ - Update collection name
     - PUT /source-collections/{id}/ - Update collection name
     - DELETE /source-collections/{id}/ - Delete collection (cleans unreferenced content)
+    - POST /source-collections/bulk-delete/ - Bulk delete source collections
+    - GET /source-collections/{id}/available-rags/ - Get available RAG configurations for a collection
+
     """
 
     http_method_names = ["get", "post", "patch", "put", "delete"]
@@ -65,28 +83,20 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
 
         return SourceCollectionListSerializer
 
+    @extend_schema(**SOURCE_COLLECTIONS_GET)
     def list(self, request, *args, **kwargs):
-        """List all source collections for the user."""
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    @extend_schema(**SOURCE_COLLECTION_GET)
     def retrieve(self, request, *args, **kwargs):
-        """Retrieve a specific source collection by ID."""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    @extend_schema(**SOURCE_COLLECTION_POST)
     def create(self, request, *args, **kwargs):
-        """
-        Create a new empty source collection.
-
-        Body:
-        {
-            "collection_name": "My Collection",  # Optional
-            "user_id": "user123"  # Optional
-        }
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -106,19 +116,12 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**SOURCE_COLLECTION_PUT)
     def update(self, request, *args, **kwargs):
-        """Full update (same as partial_update)."""
         return self.partial_update(request, *args, **kwargs)
 
+    @extend_schema(**SOURCE_COLLECTION_PATCH)
     def partial_update(self, request, *args, **kwargs):
-        """
-        Update collection name.
-
-        Body:
-        {
-            "collection_name": "New Collection Name"
-        }
-        """
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -140,11 +143,8 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**SOURCE_COLLECTION_DELETE)
     def destroy(self, request, *args, **kwargs):
-        """
-        Delete collection and all its documents.
-        Cleans up unreferenced DocumentContent automatically.
-        """
         instance = self.get_object()
 
         try:
@@ -165,23 +165,9 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @extend_schema(
-        request=inline_serializer(
-            name="CollectionBulkDeleteRequest",
-            fields={
-                "collection_ids": drf_serializers.ListField(
-                    child=drf_serializers.IntegerField(),
-                ),
-            },
-        ),
-    )
+    @extend_schema(**SOURCE_COLLECTION_BULK_DELETE_POST)
     @action(detail=False, methods=["post"], url_path="bulk-delete")
     def bulk_delete(self, request):
-        """
-        Bulk delete collections with automatic unreferenced content cleanup.
-
-        URL: POST /source-collections/bulk-delete/
-        """
         collection_ids = request.data.get("collection_ids", [])
 
         if not collection_ids:
@@ -213,19 +199,9 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**SOURCE_COLLECTION_COPY_POST)
     @action(detail=True, methods=["post"])
     def copy(self, request, pk=None):
-        """
-        Copy collection without duplicating binary content.
-        New metadata records point to same DocumentContent.
-
-        URL: POST /source-collections/{id}/copy/
-
-        Body (optional):
-        {
-            "new_collection_name": "My Copy"
-        }
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -255,44 +231,9 @@ class SourceCollectionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @extend_schema(
-        description="Get all RAG configurations available for this collection",
-        parameters=[
-            OpenApiParameter(
-                name="status",
-                location=OpenApiParameter.QUERY,
-                description="Filter by RAG status (comma-separated). Example: 'completed,warning'",
-                type=drf_serializers.CharField(),
-                required=False,
-            )
-        ],
-        responses={
-            200: OpenApiResponse(description="List of available RAG configurations"),
-            404: OpenApiResponse(description="Collection not found"),
-        },
-    )
+    @extend_schema(**SOURCE_COLLECTION_AVAILABLE_RAGS_GET)
     @action(detail=True, methods=["get"], url_path="available-rags")
     def available_rags(self, request, pk=None):
-        """
-        Get all RAG configurations available for this collection.
-
-        URL: GET /source-collections/{id}/available-rags/
-        Query params:
-            - status: Filter by status (comma-separated). Example: ?status=completed,warning
-                     If not provided, defaults to 'completed,warning'
-
-        Response format:
-        [
-            {
-                "rag_id": 9,
-                "rag_type": "naive",
-                "rag_status": "completed",
-                "collection_id": 29,
-                "created_at": "2025-12-17T14:17:01.594229Z",
-                "indexed_at": "2025-12-17T15:30:00Z"
-            }
-        ]
-        """
         try:
             # Get all RAG configurations for this collection
             rag_configs = CollectionManagementService.get_rag_configurations(int(pk))

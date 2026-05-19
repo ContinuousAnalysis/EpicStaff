@@ -22,6 +22,7 @@ from tables.swagger_schemas.knowledge_schemas.document_management_schemas import
     DOCUMENTS_DESTROY_DELETE,
     DOCUMENTS_UPLOAD_POST,
     DOCUMENTS_BULK_DELETE_POST,
+    COLLECTION_DOCUMENTS_LIST_GET,
 )
 from tables.exceptions import (
     DocumentUploadException,
@@ -227,12 +228,8 @@ class CollectionDocumentsViewSet(viewsets.GenericViewSet):
     def get_serializer_class(self):
         return DocumentListSerializer
 
+    @extend_schema(**COLLECTION_DOCUMENTS_LIST_GET)
     def list(self, request, collection_id=None):
-        """
-        List all documents in a specific collection.
-
-        URL: GET /source-collections/{collection_id}/documents/
-        """
         try:
             collection_id = int(collection_id)
         except (ValueError, TypeError):

@@ -243,3 +243,65 @@ DOCUMENTS_BULK_DELETE_POST = dict(
         ),
     },
 )
+
+COLLECTION_DOCUMENTS_LIST_GET = dict(
+    summary="List all documents or filter by collection ID",
+    description="List all documents or filter by collection ID.\n\nURL: GET /source-collection/{id}/documents",
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.STR,
+            description="Documents listed successfully.",
+            examples=[
+                OpenApiExample(
+                    name="Documents listed",
+                    value={
+                        "collection_id": 3,
+                        "collection_name": "Research Papers",
+                        "document_count": 2,
+                        "documents": [
+                            {
+                                "document_id": 1,
+                                "file_name": "report.pdf",
+                                "file_type": "pdf",
+                                "file_size": 204800,
+                            },
+                            {
+                                "document_id": 2,
+                                "file_name": "notes.docx",
+                                "file_type": "docx",
+                                "file_size": 51200,
+                            },
+                        ],
+                    },
+                    response_only=True,
+                    status_codes=["200"],
+                )
+            ],
+        ),
+        400: OpenApiResponse(
+            response=OpenApiTypes.STR,
+            description="Invalid collection_id parameter.",
+            examples=[
+                OpenApiExample(
+                    name="Invalid collection_id",
+                    value={"error": "Invalid collection_id parameter."},
+                    response_only=True,
+                    status_codes=["400"],
+                )
+            ],
+        ),
+        401: UNAUTHORIZED_401_RESPONSE,
+        404: OpenApiResponse(
+            response=OpenApiTypes.STR,
+            description="Collection not found.",
+            examples=[
+                OpenApiExample(
+                    name="Collection not found",
+                    value={"error": "Collection not found."},
+                    response_only=True,
+                    status_codes=["404"],
+                )
+            ],
+        ),
+    },
+)
