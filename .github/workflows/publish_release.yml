@@ -1,7 +1,15 @@
 name: Publish Release
 
 on:
-  workflow_call
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release (e.g. v1.0.7). Must already exist in the repo.'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -9,37 +17,37 @@ permissions:
 
 jobs:
   resolve:
-    name: Resolve release version
+    name: Resolve release tag
     runs-on: ubuntu-latest
-    if: startsWith(github.ref_name, 'release-')
     outputs:
       tag: ${{ steps.r.outputs.tag }}
-      ref: ${{ steps.r.outputs.ref }}
     steps:
       - id: r
         shell: bash
         env:
-          BRANCH_NAME: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
           set -euo pipefail
-          VERSION="${BRANCH_NAME#release-}"
-          # ensure a single 'v' prefix on the image/git tag
-          VERSION="${VERSION#v}"
-          TAG="v${VERSION}"
+          if [ "$EVENT_NAME" = "push" ]; then
+            TAG="$REF_NAME"
+          else
+            TAG="$INPUT_TAG"
+          fi
           if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Branch '$BRANCH_NAME' does not yield a strict-semver tag (got '$TAG')" >&2
+            echo "Invalid release tag: '$TAG' (must match v[0-9]+.[0-9]+.[0-9]+)" >&2
             exit 1
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "ref=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
-          echo ">> release tag: $TAG (from branch $BRANCH_NAME)"
+          echo ">> release tag: $TAG"
 
-  build:
+  build-images:
     name: Build & push release images
     needs: resolve
     uses: ./.github/workflows/build-and-push.yml
     with:
-      ref: ${{ needs.resolve.outputs.ref }}
+      ref: ${{ needs.resolve.outputs.tag }}
       tag: ${{ needs.resolve.outputs.tag }}
     permissions:
       contents: read
@@ -48,7 +56,7 @@ jobs:
 
   publish-release:
     name: Publish GitHub Release
-    needs: [resolve, build]
+    needs: [resolve, build-images]
     runs-on: self-hosted
 
     steps:
@@ -56,7 +64,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          ref: ${{ needs.resolve.outputs.ref }}
+          ref: ${{ needs.resolve.outputs.tag }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -66,31 +74,9 @@ jobs:
       - name: Install python deps
         run: pip install ruamel.yaml
 
-      - name: Download installer artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts/
-        continue-on-error: true
-
-      - name: Archive installers if available
+      - name: Prepare release-archives dir
         shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p release-archives
-
-          if [ -d "artifacts/macos-installer" ]; then
-            tar -czf release-archives/macos-epicstaff.tar.gz -C artifacts/macos-installer .
-          fi
-
-          if [ -d "artifacts/windows-installer" ]; then
-            zip -r release-archives/windows-epicstaff.zip artifacts/windows-installer/*
-          fi
-
-          if [ -d "artifacts/linux-installer" ]; then
-            tar -czf release-archives/linux-epicstaff.tar.gz -C artifacts/linux-installer .
-          fi
-
-          ls -la release-archives || echo "No archives found"
+        run: mkdir -p release-archives
 
       - name: Generate customer docker-compose.yaml
         shell: bash
@@ -100,15 +86,16 @@ jobs:
             src/docker-compose.yaml \
             release-archives/docker-compose.yaml
 
-      - name: Generate .env.example
+      - name: Copy .env.example
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f src/.env ]; then
-            sed -E 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\1=/' src/.env > release-archives/.env.example
-            echo ">> wrote release-archives/.env.example"
+          if [ -f src/.env.example ]; then
+            cp src/.env.example release-archives/.env.example
+            echo ">> copied src/.env.example to release-archives/"
           else
-            echo "WARNING: src/.env not found, skipping .env.example generation" >&2
+            echo "ERROR: src/.env.example not found (it should be checked into the repo)" >&2
+            exit 1
           fi
 
       - name: Publish GitHub Release
@@ -116,7 +103,6 @@ jobs:
         with:
           tag_name: ${{ needs.resolve.outputs.tag }}
           name: "Release ${{ needs.resolve.outputs.tag }}"
-          body: ${{ github.event.inputs.release_notes }}
           files: |
             release-archives/*
             release-archives/.env.example
