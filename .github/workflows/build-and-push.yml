@@ -56,7 +56,10 @@ jobs:
           GH_REF: ${{ github.ref }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" = "workflow_call" ]; then
+          # When invoked via workflow_call, github.event_name is the CALLER's event
+          # (e.g. push, workflow_dispatch) — never 'workflow_call'. Detect the call
+          # path by presence of inputs.ref/inputs.tag instead.
+          if [ -n "$INPUT_REF" ] && [ -n "$INPUT_TAG" ]; then
             REF="$INPUT_REF"
             TAG="$INPUT_TAG"
           elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
@@ -73,7 +76,7 @@ jobs:
               TAG="latest"
             fi
           else
-            echo "Unsupported event: $EVENT_NAME" >&2
+            echo "Unsupported event/inputs: event=$EVENT_NAME input_ref=$INPUT_REF input_tag=$INPUT_TAG" >&2
             exit 1
           fi
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
