@@ -4,7 +4,12 @@ import uuid
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, inline_serializer
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+    OpenApiParameter,
+    inline_serializer,
+)
 from rest_framework import serializers as drf_serializers
 from django.http import Http404
 from rest_framework.exceptions import ValidationError
@@ -32,8 +37,6 @@ from tables.serializers.naive_rag_serializers import (
     DocumentConfigBulkDeleteSerializer,
     NaiveRagChunkSerializer,
     NaiveRagPreviewChunkSerializer,
-    ChunkingResponseSerializer,
-    ChunkPreviewResponseSerializer,
 )
 from tables.services.knowledge_services.naive_rag_service import NaiveRagService
 from tables.services.redis_service import RedisService
@@ -48,6 +51,21 @@ from tables.exceptions import (
     InvalidFieldType,
 )
 from tables.constants.knowledge_constants import CHUNKING_TIMEOUT
+from tables.swagger_schemas.knowledge_schemas.naive_rag_schemas import (
+    NAIVE_RAG_DOCUMENT_CONFIGS_GET,
+    NAIVE_RAG_DOCUMENT_CONFIGS_CHUNK_GET,
+    NAIVE_RAG_DOCUMENT_CONFIGS_PROCESS_CHUNKING_POST,
+    NAIVE_RAG_DOCUMENT_CONFIG_GET,
+    NAIVE_RAG_DOCUMENT_CONFIG_PUT,
+    NAIVE_RAG_DOCUMENT_CONFIG_DELETE,
+    NAIVE_RAG_DOCUMENT_CONFIGS_BULK_UPDATE_PUT,
+    NAIVE_RAG_DOCUMENT_CONFIGS_BULK_DELETE_POST,
+    NAIVE_RAG_DOCUMENT_CONFIGS_INITIALIZE_POST,
+    NAIVE_RAG_GET,
+    NAIVE_RAG_DELETE,
+    NAIVE_RAG_COLLECTIONS_GET,
+    NAIVE_RAG_COLLECTIONS_POST,
+)
 
 
 redis_service = RedisService()
@@ -79,24 +97,13 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
             return NaiveRagDetailSerializer
         return NaiveRagSerializer
 
+    @extend_schema(**NAIVE_RAG_COLLECTIONS_POST)
     @action(
         detail=False,
         methods=["post"],
         url_path="collections/(?P<collection_id>[^/.]+)/naive-rag",
     )
     def create_or_update(self, request, collection_id=None):
-        """
-        Create new NaiveRag or update existing one for a collection.
-        Creates BaseRagType + NaiveRag in one step.
-
-        URL: POST /naive-rag/collections/{collection_id}/naive-rag/
-
-        Body:
-        {
-            "embedder_id": 1
-        }
-        """
-
         try:
             collection_id = int(collection_id)
         except (ValueError, TypeError):
@@ -134,18 +141,13 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**NAIVE_RAG_COLLECTIONS_GET)
     @action(
         detail=False,
         methods=["get"],
         url_path="collections/(?P<collection_id>[^/.]+)/naive-rag",
     )
     def get_by_collection(self, request, collection_id=None):
-        """
-        Get NaiveRag for a collection.
-
-        URL: GET /naive-rag/collections/{collection_id}/naive-rag/
-        """
-
         try:
             collection_id = int(collection_id)
         except (ValueError, TypeError):
@@ -171,12 +173,8 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**NAIVE_RAG_GET)
     def retrieve(self, request, pk=None):
-        """
-        Get detailed NaiveRag info including all document configs.
-
-        URL: GET /naive-rag/{id}/
-        """
         try:
             naive_rag = NaiveRagService.get_naive_rag(int(pk))
 
@@ -191,12 +189,8 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**NAIVE_RAG_DELETE)
     def destroy(self, request, pk=None):
-        """
-        Delete NaiveRag and all its configurations.
-
-        URL: DELETE /naive-rag/{id}/
-        """
         try:
             result = NaiveRagService.delete_naive_rag(int(pk))
 
@@ -213,30 +207,8 @@ class NaiveRagViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @extend_schema(
-        request=inline_serializer(
-            name="InitializeConfigsRequest",
-            fields={},
-        ),
-        responses={
-            201: OpenApiResponse(description="Configs created successfully"),
-            200: OpenApiResponse(description="All documents already have configs"),
-            404: OpenApiResponse(description="NaiveRag not found"),
-            500: OpenApiResponse(description="Internal server error"),
-        },
-    )
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIGS_INITIALIZE_POST)
     def initialize_configs(self, request, naive_rag_id=None):
-        """
-        Manually initialize document configs for documents without configs.
-
-        Business Logic:
-        - Creates configs for documents that DON'T have configs yet
-        - Useful for:
-          1. Restoring accidentally deleted configs
-          2. Adding configs for new files added to collection after RAG creation
-        - Existing configs are NOT modified
-        - Idempotent: safe to call multiple times
-        """
         try:
             naive_rag = NaiveRagService.get_naive_rag(int(naive_rag_id))
 
@@ -349,21 +321,9 @@ class NaiveRagDocumentConfigViewSet(
                     }
                 )
 
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIGS_BULK_UPDATE_PUT)
     @action(detail=False, methods=["put"], url_path="bulk-update")
     def bulk_update(self, request, naive_rag_id=None):
-        """
-        Bulk update multiple document configs with partial success support.
-        Apply same parameters to selected configs by their config IDs.
-
-        Business Logic:
-        - Validates each config individually
-        - Updates configs that pass validation
-        - Returns errors for configs that fail validation
-        - Configs retain their current DB values when validation fails
-
-        URL: PUT /api/naive-rag/{naive_rag_id}/document-configs/bulk-update/
-
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -419,18 +379,9 @@ class NaiveRagDocumentConfigViewSet(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIGS_BULK_DELETE_POST)
     @action(detail=False, methods=["post"], url_path="bulk-delete")
     def bulk_delete(self, request, naive_rag_id=None):
-        """
-        Bulk delete multiple document configs by their config IDs.
-
-        URL: POST /api/naive-rag/{naive_rag_id}/document-configs/bulk-delete/
-
-        Body:
-        {
-            "config_ids": [1, 2, 3]  // Required: naive_rag_document_config IDs
-        }
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -461,13 +412,9 @@ class NaiveRagDocumentConfigViewSet(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIGS_GET)
     @action(detail=False, methods=["get"])
     def list_configs(self, request, naive_rag_id=None):
-        """
-        List all document configs for a NaiveRag.
-
-        URL: GET /api/naive-rag/{naive_rag_id}/document-configs/
-        """
         try:
             configs = NaiveRagService.get_document_configs_for_naive_rag(
                 int(naive_rag_id)
@@ -492,12 +439,8 @@ class NaiveRagDocumentConfigViewSet(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIG_GET)
     def retrieve(self, request, pk=None, naive_rag_id=None):
-        """
-        Get single document config.
-
-        URL: GET /api/naive-rag/{naive_rag_id}/document-configs/{pk}/
-        """
         try:
             config = self.get_object()
             serializer = DocumentConfigSerializer(config)
@@ -516,20 +459,8 @@ class NaiveRagDocumentConfigViewSet(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIG_PUT)
     def update(self, request, pk=None, naive_rag_id=None):
-        """
-        Update single document config.
-
-        URL: PUT /api/naive-rag/{naive_rag_id}/document-configs/{pk}/
-
-        Body (all fields optional):
-        {
-            "chunk_size": 1500,
-            "chunk_overlap": 200,
-            "chunk_strategy": "character",
-            "additional_params": {}
-        }
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -562,12 +493,8 @@ class NaiveRagDocumentConfigViewSet(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIG_DELETE)
     def destroy(self, request, pk=None, naive_rag_id=None):
-        """
-        Delete a single document config.
-
-        URL: DELETE /api/naive-rag/{naive_rag_id}/document-configs/{pk}/
-        """
         try:
             result = NaiveRagService.delete_document_config(
                 config_id=int(pk), naive_rag_id=int(naive_rag_id)
@@ -600,28 +527,7 @@ class NaiveRagChunkViewSet(ReadOnlyModelViewSet):
 
 
 class ProcessNaiveRagDocumentChunkingView(APIView):
-    """
-    Trigger document chunking and wait for completion.
-
-    URL: POST /naive-rag/{naive_rag_id}/document-configs/{document_config_id}/process-chunking/
-
-    Flow:
-    1. Validate document config exists and belongs to naive_rag
-    2. Generate chunking_job_id (UUID)
-    3. Update document config status to CHUNKING
-    4. Publish message to Redis and wait for response (50s timeout)
-    5. Return result (completed, failed, cancelled, or timeout)
-    """
-
-    @extend_schema(
-        description="Trigger document chunking and wait for completion",
-        responses={
-            200: ChunkingResponseSerializer,
-            202: OpenApiResponse(description="Chunking is still in progress (timeout)"),
-            404: OpenApiResponse(description="NaiveRag or DocumentConfig not found"),
-            500: OpenApiResponse(description="Internal server error"),
-        },
-    )
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIGS_PROCESS_CHUNKING_POST)
     def post(self, request, naive_rag_id: int, document_config_id: int):
         # Validate document config exists and belongs to naive_rag
         try:
@@ -730,27 +636,7 @@ class NaiveRagChunkPreviewView(APIView):
     DEFAULT_LIMIT = 50
     MAX_LIMIT = 500
 
-    @extend_schema(
-        description="Get chunks for a document config (preview or indexed)",
-        parameters=[
-            OpenApiParameter(
-                name="limit",
-                location=OpenApiParameter.QUERY,
-                description="Number of chunks to return (max 500)",
-                type=drf_serializers.IntegerField(),
-            ),
-            OpenApiParameter(
-                name="offset",
-                location=OpenApiParameter.QUERY,
-                description="Number of chunks to skip",
-                type=drf_serializers.IntegerField(),
-            ),
-        ],
-        responses={
-            200: ChunkPreviewResponseSerializer,
-            404: OpenApiResponse(description="NaiveRag or DocumentConfig not found"),
-        },
-    )
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIGS_CHUNK_GET)
     def get(self, request, naive_rag_id: int, document_config_id: int):
         # Validate document config exists and belongs to naive_rag
         try:

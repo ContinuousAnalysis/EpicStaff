@@ -99,6 +99,9 @@ from tables.models.default_models import DefaultModels
 from tables.filters import SessionFilter  # CollectionFilter,
 
 from tables.swagger_schemas.crews_schema import CREW_DELETE
+from tables.swagger_schemas.knowledge_schemas.naive_rag_schemas import (
+    PROCESS_RAG_INDEXING_POST,
+)
 from tables.swagger_schemas.sessions_schema import (
     ANSWER_TO_LLM,
     GET_UPDATES_GET,
@@ -818,16 +821,7 @@ class ProcessRagIndexingView(APIView):
     All business logic is handled by IndexingService.
     """
 
-    @extend_schema(
-        request=ProcessRagIndexingSerializer,
-        responses={
-            202: OpenApiResponse(description="Indexing process accepted and queued"),
-            400: OpenApiResponse(
-                description="Invalid request or RAG not ready for indexing"
-            ),
-            404: OpenApiResponse(description="RAG configuration not found"),
-        },
-    )
+    @extend_schema(**PROCESS_RAG_INDEXING_POST)
     def post(self, request):
         serializer = ProcessRagIndexingSerializer(data=request.data)
         if not serializer.is_valid():
