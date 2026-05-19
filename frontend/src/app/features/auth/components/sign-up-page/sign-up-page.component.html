@@ -13,7 +13,11 @@
 
             <form
                 [formGroup]="form"
+                [appServerErrors]="form"
+                [errorsRef]="serverErrorsRef"
+                #serverErrors="serverErrors"
                 class="form"
+                (keydown.enter)="onSubmit()"
             >
                 <div>
                     <app-custom-input
@@ -21,10 +25,7 @@
                         placeholder="example@email.com"
                         formControlName="email"
                     />
-                    <app-validation-errors
-                        [control]="form.get('email')!"
-                        [serverError]="fieldErrors()['email']"
-                    />
+                    <app-validation-errors [control]="form.get('email')!" />
                 </div>
 
                 <div>
@@ -34,10 +35,7 @@
                         placeholder="Enter password"
                         formControlName="password"
                     />
-                    <app-validation-errors
-                        [control]="form.get('password')!"
-                        [serverError]="fieldErrors()['password']"
-                    />
+                    <app-validation-errors [control]="form.get('password')!" />
                     <app-password-strength [password]="password" />
                 </div>
             </form>
@@ -51,6 +49,14 @@
                     <span class="terms-link">Privacy Policy</span>
                 </p>
             </div>
+
+            @if (serverErrors.formLevelErrors().length > 0) {
+                <div class="server-error">
+                    @for (msg of serverErrors.formLevelErrors(); track msg) {
+                        {{ msg }}
+                    }
+                </div>
+            }
 
             <app-button
                 class="btn"

@@ -8,7 +8,7 @@ from tables.models.webhook_models import WebhookTrigger
 @pytest.mark.django_db
 class TestTelegramTriggerViewSet:
     def test_create_telegram_trigger_node(
-        self, api_client, graph, mock_telegram_service
+        self, auth_client, graph, mock_telegram_service
     ):
         url = reverse("telegramtriggernode-list")
         data = {
@@ -24,7 +24,7 @@ class TestTelegramTriggerViewSet:
             ],
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == 201
         assert TelegramTriggerNode.objects.count() == 1
@@ -32,7 +32,7 @@ class TestTelegramTriggerViewSet:
         # Verify signal triggered the service at least once
         assert mock_telegram_service.call_count >= 1
 
-    def test_update_telegram_trigger_node(self, api_client, graph, mocker):
+    def test_update_telegram_trigger_node(self, auth_client, graph, mocker):
         # 1. Mock the specific method on the Singleton class
         # This prevents the real network call during .create() and .put()
         mock_register = mocker.patch.object(
@@ -63,7 +63,7 @@ class TestTelegramTriggerViewSet:
             ],
         }
 
-        response = api_client.put(url, data, format="json")
+        response = auth_client.put(url, data, format="json")
 
         # Assertions
         assert response.status_code == 200
@@ -75,7 +75,7 @@ class TestTelegramTriggerViewSet:
         assert mock_register.call_count == 2
 
     def test_create_telegram_trigger_node_with_webhook_trigger(
-        self, api_client, graph, mock_telegram_service
+        self, auth_client, graph, mock_telegram_service
     ):
         """
         Ensure that telegram-trigger-nodes endpoint accepts webhook_trigger FK
@@ -88,7 +88,7 @@ class TestTelegramTriggerViewSet:
             "node_name": "TelegramWithWebhook",
             "telegram_bot_api_key": "123456:ABC-DEF",
             "graph": graph.id,
-            "webhook_trigger": trigger.id,
+            "webhook_trigger": {"path": trigger.path, "ngrok_webhook_config": None},
             "fields": [
                 {
                     "parent": "message",
@@ -98,7 +98,7 @@ class TestTelegramTriggerViewSet:
             ],
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == 201
         node = TelegramTriggerNode.objects.get(node_name="TelegramWithWebhook")

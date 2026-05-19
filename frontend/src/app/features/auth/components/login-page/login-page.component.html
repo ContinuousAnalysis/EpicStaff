@@ -12,6 +12,9 @@
 
         <form
             [formGroup]="form"
+            [appServerErrors]="form"
+            [errorsRef]="serverErrorsRef"
+            #serverErrors="serverErrors"
             class="form"
             (keydown.enter)="onSubmit()"
         >
@@ -37,16 +40,22 @@
             <div class="remember-row">
                 <app-checkbox formControlName="rememberMe" />
                 <span class="remember-label">Remember me</span>
-                <span class="forgot-label">Forgot?</span>
+                <span
+                    class="forgot-label"
+                    (mousedown)="navToForgotPassword()"
+                    >Forgot?</span
+                >
             </div>
         </form>
 
-        @if (serverError() || throttleSecondsLeft() > 0) {
+        @if (serverErrors.formLevelErrors().length > 0 || throttleSecondsLeft() > 0) {
             <div class="server-error">
                 @if (throttleSecondsLeft() > 0) {
                     Too many login attempts. Please try again in {{ throttleSecondsLeft() }}s.
                 } @else {
-                    {{ serverError() }}
+                    @for (msg of serverErrors.formLevelErrors(); track msg) {
+                        {{ msg }}
+                    }
                 }
             </div>
         }
@@ -54,11 +63,11 @@
         <app-button
             class="btn"
             (click)="onSubmit()"
-            [disabled]="loading || form.invalid || throttleSecondsLeft() > 0"
+            [disabled]="loading() || form.invalid || throttleSecondsLeft() > 0"
         >
             Login
         </app-button>
     </div>
 
-    <p class="prompt">Don’t have an account yet? <span (click)="navToSignUp()">Sign Up</span></p>
+    <p class="prompt">Don't have an account yet? <span (click)="navToSignUp()">Sign Up</span></p>
 </div>

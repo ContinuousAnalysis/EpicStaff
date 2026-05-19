@@ -1,0 +1,168 @@
+name: build-and-push
+
+on:
+  # Direct push:main trigger is gone — deploy.yaml now owns push:main and invokes
+  # this workflow inline via workflow_call. push:tags is retained as a safety net
+  # for manual tag pushes (the release flow uses workflow_call, not tag-push).
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build (slugified into the image tag)'
+        required: false
+        default: 'main'
+        type: string
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref to check out and build'
+        required: true
+        type: string
+      tag:
+        description: 'Image tag to push (e.g. latest, branch-slug, vX.Y.Z)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: epicstaff
+  COMPOSE_FILE: src/docker-compose.yaml
+  EXCLUDE_SERVICES: tool,redis-monitor
+
+concurrency:
+  group: build-and-push-${{ github.event_name }}-${{ inputs.tag || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    name: Resolve ref/tag and generate matrix
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.r.outputs.ref }}
+      tag: ${{ steps.r.outputs.tag }}
+      matrix: ${{ steps.gen.outputs.matrix }}
+    steps:
+      - name: Resolve ref + tag
+        id: r
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_REF: ${{ inputs.ref }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_BRANCH: ${{ inputs.branch }}
+          GH_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_call" ]; then
+            REF="$INPUT_REF"
+            TAG="$INPUT_TAG"
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            REF="$INPUT_BRANCH"
+            # slugify: lowercase, replace non-[a-z0-9.] with '-', collapse dashes, trim
+            TAG=$(echo "$REF" \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed 's/[^a-z0-9.]/-/g; s/--*/-/g; s/^-//; s/-$//')
+          elif [ "$EVENT_NAME" = "push" ]; then
+            REF="$GH_REF"
+            if [[ "$REF" == refs/tags/v* ]]; then
+              TAG="${REF#refs/tags/}"
+            else
+              TAG="latest"
+            fi
+          else
+            echo "Unsupported event: $EVENT_NAME" >&2
+            exit 1
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo ">> resolved ref=$REF tag=$TAG"
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.r.outputs.ref }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.10'
+
+      - name: Generate compose config json
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose -f "$COMPOSE_FILE" config --format json > compose.json
+          ls -la compose.json
+
+      - name: Generate build matrix
+        id: gen
+        shell: bash
+        run: |
+          set -euo pipefail
+          python ./.github/scripts/compose_matrix.py \
+            --compose-json compose.json \
+            --repo-root . \
+            --exclude "$EXCLUDE_SERVICES"
+
+      - name: Show matrix
+        shell: bash
+        run: |
+          echo '${{ steps.gen.outputs.matrix }}' | python -m json.tool
+
+  build:
+    name: Build & push ${{ matrix.service }}
+    needs: resolve
+    if: ${{ contains(needs.resolve.outputs.matrix, '"service"') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.resolve.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: tags
+        shell: bash
+        env:
+          BASE: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.service }}
+          PRIMARY_TAG: ${{ needs.resolve.outputs.tag }}
+          GH_REF: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          GH_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          TAGS="${BASE}:${PRIMARY_TAG}"
+          if [[ "$EVENT_NAME" = "push" && "$GH_REF" == refs/tags/v* ]]; then
+            TAGS="${TAGS},${BASE}:latest"
+          fi
+          if [[ "$EVENT_NAME" = "push" && "$GH_REF" = "refs/heads/main" ]]; then
+            SHORT_SHA="${GH_SHA:0:7}"
+            TAGS="${TAGS},${BASE}:main-${SHORT_SHA}"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo ">> tags: ${TAGS}"
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}

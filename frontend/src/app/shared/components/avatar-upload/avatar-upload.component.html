@@ -1,0 +1,49 @@
+@if (selectedFile(); as file) {
+    <div class="filled">
+        <img
+            class="preview"
+            [src]="previewUrl()"
+            alt="Avatar preview"
+        />
+        <span class="name">{{ file.name }}</span>
+        <span class="size">{{ fileSizeLabel() }}</span>
+        <button
+            class="clear"
+            type="button"
+            (click)="onClear()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="14px"
+            />
+        </button>
+    </div>
+} @else if (showExisting()) {
+    <div class="filled">
+        <img
+            class="preview"
+            [src]="initialUrl()"
+            alt="Current avatar"
+        />
+        <span class="name">Current avatar</span>
+        <button
+            class="clear"
+            type="button"
+            (click)="onRemoveExisting()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="14px"
+            />
+        </button>
+    </div>
+} @else {
+    <app-file-uploader
+        accept="image/jpeg,image/png"
+        [multiple]="false"
+        hint="JPG, PNG · Image will be resized to 100x100 px"
+        mod="sm"
+        (filesUploaded)="onFilesUploaded($event)"
+        (filesRejected)="onFilesRejected()"
+    />
+}

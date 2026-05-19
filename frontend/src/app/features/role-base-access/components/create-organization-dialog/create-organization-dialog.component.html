@@ -1,0 +1,91 @@
+<div class="dialog">
+    <div class="header">
+        <span class="title">{{ isEditMode ? 'Edit Organization' : 'Create New Organization' }}</span>
+
+        <div class="actions">
+            <app-button
+                type="outline-primary"
+                (click)="onCancel()"
+            >
+                Cancel
+            </app-button>
+
+            <app-button
+                type="primary"
+                (click)="onSubmit()"
+                [disabled]="isSubmitting()"
+            >
+                {{ isEditMode ? 'Save' : 'Create' }}
+            </app-button>
+        </div>
+    </div>
+
+    <div class="subheader">
+        <div class="control">
+            <label class="label">Organization Name <span class="required">*</span></label>
+
+            <app-custom-input
+                placeholder="Enter organization name"
+                [formControl]="orgNameControl"
+            />
+        </div>
+
+        <app-validation-errors [control]="orgNameControl" />
+    </div>
+
+    <div class="content">
+        <div class="engage-bar">
+            <span class="label">
+                Assign users to the Organization:
+                <span class="count">({{ selectedUsers().length }})</span>
+            </span>
+            <app-search
+                placeholder="Search by name, email..."
+                [(searchTerm)]="searchTerm"
+            />
+        </div>
+
+        @if (isUsersLoading()) {
+            <app-loading-spinner
+                size="md"
+                message="Loading Users..."
+            />
+        } @else {
+            <app-table
+                [columns]="columns"
+                [data]="filteredUsers()"
+                [selectable]="true"
+                [initialSelectedIds]="initialSelectedUserIds()"
+                rowId="id"
+                (selectionChange)="onSelection($event)"
+            >
+                <ng-template
+                    appTableCell="user"
+                    let-row
+                >
+                    <div class="user-cell">
+                        <app-user-avatar
+                            [name]="row['name'] || row['email']"
+                            [avatarUrl]="row['avatar']"
+                        />
+                        <div class="user-info">
+                            <span class="user-name">{{ row['name'] }}</span>
+                            <span class="user-email">{{ row['email'] }}</span>
+                        </div>
+                    </div>
+                </ng-template>
+
+                <ng-template
+                    appTableCell="role"
+                    let-row
+                >
+                    <app-select
+                        [items]="USER_ROLES"
+                        [(selectedValue)]="row['role']"
+                        placeholder="Select role"
+                    />
+                </ng-template>
+            </app-table>
+        }
+    </div>
+</div>

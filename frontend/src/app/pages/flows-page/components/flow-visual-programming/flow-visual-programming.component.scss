@@ -18,10 +18,37 @@ app-flow-header {
     display: flex;
     flex-direction: row;
     overflow: hidden;
+    position: relative;
 
     app-flow-graph {
         flex: 1;
         min-width: 0;
+    }
+}
+
+.restore-warning-btn {
+    position: absolute;
+    bottom: 3.5rem;
+    left: 2rem;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #2a1a1a;
+    color: #f87171;
+    border: 1px solid #7f1d1d;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+
+    &:hover {
+        background: #3d1f1f;
+        border-color: #ef4444;
     }
 }
 

@@ -109,6 +109,9 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_THROTTLE_RATES": {
         "login": os.getenv("LOGIN_THROTTLE_RATE", "5/min"),
+        "password_reset_request": os.getenv(
+            "PASSWORD_RESET_REQUEST_THROTTLE_RATE", "5/hour"
+        ),
     },
 }
 
@@ -177,6 +180,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
+    {
+        "NAME": "tables.services.rbac.utils.printable_ascii_password_validator.PrintableAsciiPasswordValidator",
+    },
 ]
 
 TELEGRAM_TRIGGER_FIELDS_PATH = (
@@ -226,13 +232,66 @@ MEDIA_URL = "/media/"
 
 AUTH_USER_MODEL = "tables.User"
 
-PASSWORD_RESET_TOKEN_TTL = int(os.getenv("PASSWORD_RESET_TOKEN_TTL", "3600"))
+PASSWORD_RESET_TOKEN_TTL = int(os.getenv("PASSWORD_RESET_TOKEN_TTL", "900"))
+
+# Email / password-recovery delivery.
+#
+# Two independent knobs:
+#   * `EMAIL_HOST`         — "is SMTP delivery configured at all?" If set,
+#                            Django uses the SMTP backend; if blank, it
+#                            falls back to the console backend so the
+#                            reset link is still observable in stdout.
+#   * `EMAIL_HOST_USER` +  — "should Django authenticate?" Both blank =
+#     `EMAIL_HOST_PASSWORD`  unauthenticated relay (mailpit, local Postfix,
+#                            some corporate MTAs). Both set = plain SMTP
+#                            AUTH against the configured host.
+#
+# Setting a user/password against a server that does NOT implement SMTP
+# AUTH (mailpit is the common one) will raise `SMTPNotSupportedError` —
+# leave them blank for those servers.
+#
+# Business-layer code that needs to branch on "should we advertise email
+# delivery to the end user?" must ask `SmtpConfigService.is_configured()`
+# rather than inspecting `EMAIL_BACKEND`.
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes", "on")
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() in (
+    "true",
+    "1",
+    "yes",
+    "on",
+)
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@epicstaff.local")
+
+if EMAIL_HOST:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:4200").rstrip("/")
+FRONTEND_PASSWORD_RESET_PATH = os.getenv(
+    "FRONTEND_PASSWORD_RESET_PATH", "/reset-password"
+)
 
 SSE_TICKET_TTL_SECONDS = 30
 
 DEFAULT_ORGANIZATION_NAME = os.getenv(
     "DEFAULT_ORGANIZATION_NAME", "Default Organization"
 )
+
+# Story 6 — User profile
+PASSWORD_CHANGE_TICKET_TTL_SECONDS = int(
+    os.getenv("PASSWORD_CHANGE_TICKET_TTL_SECONDS", "300")
+)
+AVATAR_MAX_BYTES = int(os.getenv("AVATAR_MAX_BYTES", str(5 * 1024 * 1024)))
+AVATAR_ALLOWED_FORMATS = [
+    fmt.strip()
+    for fmt in os.getenv("AVATAR_ALLOWED_FORMATS", "JPEG,PNG").split(",")
+    if fmt.strip()
+]
 
 # Object storage
 STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "s3")

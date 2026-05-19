@@ -201,7 +201,6 @@ make_scripts/backups
 # Savefiles
 **/savefiles
 
-
 # Compiled output
 frontend/dist
 frontend/tmp
@@ -272,7 +271,5 @@ CLAUDE.local.md
 !prod/prod.env.manifest
 .claude/settings.local.json
 /personal_files
+/docs/superpowers/
 pyrightconfig.json
-
-# Self — local gitignore tweaks should not be tracked
-.gitignore

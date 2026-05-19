@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,8 +11,9 @@ import {
     PasswordStrengthComponent,
     ValidationErrorsComponent,
 } from '@shared/components';
+import { ServerErrorsDirective, ServerErrorsRef } from '@shared/directives';
 import { notNumericOnlyValidator, strictEmailValidator } from '@shared/form-validators';
-import { ApiErrorItem } from '@shared/models';
+import { HttpStatus } from '@shared/models';
 import { forkJoin, timer } from 'rxjs';
 
 import { AuthService } from '../../../../services/auth/auth.service';
@@ -30,9 +32,10 @@ type PageState = 'form' | 'loading' | 'success';
         ValidationErrorsComponent,
         CheckboxComponent,
         AppSvgIconComponent,
+        ServerErrorsDirective,
     ],
     templateUrl: './sign-up-page.component.html',
-    styleUrls: ['../login-page/login-page.component.scss', './sign-up-page.component.scss'],
+    styleUrls: ['./sign-up-page.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SignUpPageComponent {
@@ -40,9 +43,11 @@ export class SignUpPageComponent {
     private readonly router = inject(Router);
     private readonly toast = inject(ToastService);
 
-    termsControl = new FormControl(false);
+    readonly serverErrorsRef = new ServerErrorsRef();
 
-    form = new FormGroup({
+    readonly termsControl = new FormControl(false);
+
+    readonly form = new FormGroup({
         email: new FormControl('', { nonNullable: true, validators: [Validators.required, strictEmailValidator()] }),
         password: new FormControl('', {
             nonNullable: true,
@@ -55,22 +60,20 @@ export class SignUpPageComponent {
         }),
     });
 
-    state = signal<PageState>('form');
-    fieldErrors = signal<Record<string, string>>({});
+    readonly state = signal<PageState>('form');
 
     get password(): string {
         return this.form.get('password')!.value;
     }
 
     onSubmit(): void {
-        this.fieldErrors.set({});
+        this.serverErrorsRef.clear();
         this.form.markAllAsTouched();
         if (this.form.invalid) return;
 
         this.state.set('loading');
 
-        const email = this.form.getRawValue().email.toString();
-        const password = this.form.getRawValue().password.toString();
+        const { email, password } = this.form.getRawValue();
 
         forkJoin([this.authService.runSetup({ email, password }), timer(1000)]).subscribe({
             next: ([resp]) => {
@@ -81,24 +84,22 @@ export class SignUpPageComponent {
                     void this.router.navigate(['/onboarding']);
                 });
             },
-            error: (err) => {
+            error: (err: HttpErrorResponse) => {
                 this.state.set('form');
-                if (err.error.status_code === 409) {
-                    this.toast.error(err.error.message);
+                if (err.validationErrors?.length) {
+                    this.serverErrorsRef.setErrors(err.validationErrors);
                     return;
                 }
-
-                const errors: ApiErrorItem[] = err?.error?.errors ?? [];
-                this.setApiErrors(errors);
+                if (err.status === HttpStatus.Conflict) {
+                    this.toast.error(err.error?.message ?? 'Conflict');
+                    return;
+                }
+                this.toast.error('Something went wrong. Please try again.');
             },
         });
     }
 
-    private setApiErrors(errors: ApiErrorItem[]): void {
-        this.fieldErrors.set(Object.fromEntries(errors.map(({ field, reason }) => [field, reason])));
-    }
-
     navToLogin(): void {
-        this.router.navigate(['/login']);
+        void this.router.navigate(['/login']);
     }
 }

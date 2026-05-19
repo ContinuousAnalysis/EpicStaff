@@ -87,7 +87,7 @@ class TestAgentCreateWithRag:
     """Tests for creating agents with RAG assignment."""
 
     def test_create_agent_with_rag_and_search_configs(
-        self, api_client, source_collection, completed_naive_rag, agent_data
+        self, auth_client, source_collection, completed_naive_rag, agent_data
     ):
         """Test creating agent with RAG and custom search configs."""
         url = reverse("agent-list")
@@ -103,7 +103,7 @@ class TestAgentCreateWithRag:
             },
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         response_data = response.json()
@@ -128,7 +128,7 @@ class TestAgentCreateWithRag:
         assert float(search_config.similarity_threshold) == 0.85
 
     def test_create_agent_with_rag_without_search_configs(
-        self, api_client, source_collection, completed_naive_rag, agent_data
+        self, auth_client, source_collection, completed_naive_rag, agent_data
     ):
         """Test creating agent with RAG but no search configs (should use defaults)."""
         url = reverse("agent-list")
@@ -141,7 +141,7 @@ class TestAgentCreateWithRag:
             },
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         response_data = response.json()
@@ -151,12 +151,12 @@ class TestAgentCreateWithRag:
         assert response_data["search_configs"]["naive"]["search_limit"] == 3
         assert response_data["search_configs"]["naive"]["similarity_threshold"] == 0.2
 
-    def test_create_agent_without_collection_and_rag(self, api_client, agent_data):
+    def test_create_agent_without_collection_and_rag(self, auth_client, agent_data):
         """Test creating agent without knowledge collection (valid case)."""
         url = reverse("agent-list")
         data = agent_data
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         response_data = response.json()
@@ -167,7 +167,7 @@ class TestAgentCreateWithRag:
         assert response_data["knowledge_collection"] is None
 
     def test_create_agent_with_collection_but_no_rag_fails(
-        self, api_client, source_collection, agent_data
+        self, auth_client, source_collection, agent_data
     ):
         """Test creating agent with collection but no RAG (should fail)."""
         url = reverse("agent-list")
@@ -176,7 +176,7 @@ class TestAgentCreateWithRag:
             "knowledge_collection": source_collection.collection_id,
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         response_data = response.json()
@@ -184,7 +184,7 @@ class TestAgentCreateWithRag:
         assert "rag" in str(response_data).lower()
 
     def test_create_agent_with_rag_from_different_collection_fails(
-        self, api_client, source_collection, another_naive_rag, agent_data
+        self, auth_client, source_collection, another_naive_rag, agent_data
     ):
         """Test creating agent with RAG that doesn't belong to agent's collection."""
         url = reverse("agent-list")
@@ -197,13 +197,13 @@ class TestAgentCreateWithRag:
             },
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "RagCollectionMismatchException" in response.json()["message"]
 
     def test_create_agent_with_nonexistent_rag_fails(
-        self, api_client, source_collection, agent_data
+        self, auth_client, source_collection, agent_data
     ):
         """Test creating agent with non-existent RAG ID."""
         url = reverse("agent-list")
@@ -213,12 +213,12 @@ class TestAgentCreateWithRag:
             "rag": {"rag_type": "naive", "rag_id": 99999},
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_create_agent_with_unknown_rag_type_fails(
-        self, api_client, source_collection, completed_naive_rag, agent_data
+        self, auth_client, source_collection, completed_naive_rag, agent_data
     ):
         """Test creating agent with unknown RAG type."""
         url = reverse("agent-list")
@@ -231,7 +231,7 @@ class TestAgentCreateWithRag:
             },
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -263,25 +263,25 @@ class TestAgentUpdateRag:
         return agent
 
     def test_update_agent_change_collection_without_rag_fails(
-        self, api_client, agent_with_rag, another_collection
+        self, auth_client, agent_with_rag, another_collection
     ):
         """Test changing collection without providing new RAG (should fail)."""
         url = reverse("agent-detail", args=[agent_with_rag.id])
         data = {"knowledge_collection": another_collection.collection_id}
 
-        response = api_client.patch(url, data, format="json")
+        response = auth_client.patch(url, data, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         response_data = response.json()
         # Check that the error message mentions 'rag'
         assert "rag" in str(response_data).lower()
 
-    def test_update_agent_remove_collection(self, api_client, agent_with_rag):
+    def test_update_agent_remove_collection(self, auth_client, agent_with_rag):
         """Test removing collection from agent (should unassign RAG)."""
         url = reverse("agent-detail", args=[agent_with_rag.id])
         data = {"knowledge_collection": None}
 
-        response = api_client.patch(url, data, format="json")
+        response = auth_client.patch(url, data, format="json")
 
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
@@ -322,13 +322,13 @@ class TestAgentSearchConfigUpdate:
         return agent
 
     def test_update_search_config_partial_search_limit_only(
-        self, api_client, agent_with_search_config
+        self, auth_client, agent_with_search_config
     ):
         """Test updating only search_limit (partial update)."""
         url = reverse("agent-detail", args=[agent_with_search_config.id])
         data = {"search_configs": {"naive": {"search_limit": 15}}}
 
-        response = api_client.patch(url, data, format="json")
+        response = auth_client.patch(url, data, format="json")
 
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
@@ -340,13 +340,13 @@ class TestAgentSearchConfigUpdate:
         assert response_data["search_configs"]["naive"]["similarity_threshold"] == 0.7
 
     def test_update_search_config_partial_threshold_only(
-        self, api_client, agent_with_search_config
+        self, auth_client, agent_with_search_config
     ):
         """Test updating only similarity_threshold (partial update)."""
         url = reverse("agent-detail", args=[agent_with_search_config.id])
         data = {"search_configs": {"naive": {"similarity_threshold": 0.95}}}
 
-        response = api_client.patch(url, data, format="json")
+        response = auth_client.patch(url, data, format="json")
 
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
@@ -358,7 +358,7 @@ class TestAgentSearchConfigUpdate:
         assert response_data["search_configs"]["naive"]["search_limit"] == 5
 
     def test_update_search_config_both_params(
-        self, api_client, agent_with_search_config
+        self, auth_client, agent_with_search_config
     ):
         """Test updating both search config parameters."""
         url = reverse("agent-detail", args=[agent_with_search_config.id])
@@ -368,7 +368,7 @@ class TestAgentSearchConfigUpdate:
             }
         }
 
-        response = api_client.patch(url, data, format="json")
+        response = auth_client.patch(url, data, format="json")
 
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
@@ -377,7 +377,7 @@ class TestAgentSearchConfigUpdate:
         assert response_data["search_configs"]["naive"]["search_limit"] == 20
         assert response_data["search_configs"]["naive"]["similarity_threshold"] == 0.88
 
-    def test_update_search_config_without_rag_assigned(self, api_client, llm_config):
+    def test_update_search_config_without_rag_assigned(self, auth_client, llm_config):
         """Test updating search config for agent without RAG (should work)."""
         # Create agent without RAG
         agent = Agent.objects.create(
@@ -391,7 +391,7 @@ class TestAgentSearchConfigUpdate:
             }
         }
 
-        response = api_client.patch(url, data, format="json")
+        response = auth_client.patch(url, data, format="json")
 
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
@@ -414,14 +414,14 @@ class TestGetAvailableRags:
     """Tests for GET /source-collections/{id}/available-rags/ endpoint."""
 
     def test_get_available_rags_for_collection(
-        self, api_client, source_collection, completed_naive_rag
+        self, auth_client, source_collection, completed_naive_rag
     ):
         """Test getting available RAGs for a collection."""
         url = reverse(
             "sourcecollection-available-rags", args=[source_collection.collection_id]
         )
 
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -439,7 +439,7 @@ class TestGetAvailableRags:
         assert "updated_at" in rag_data
 
     def test_get_available_rags_default_status_filter(
-        self, api_client, source_collection, naive_rag
+        self, auth_client, source_collection, naive_rag
     ):
         """Test default status filter includes 'completed', 'warning', 'new'."""
         # Set status to NEW
@@ -450,7 +450,7 @@ class TestGetAvailableRags:
             "sourcecollection-available-rags", args=[source_collection.collection_id]
         )
 
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -459,7 +459,7 @@ class TestGetAvailableRags:
         assert len(data) >= 1
 
     def test_get_available_rags_custom_status_filter(
-        self, api_client, source_collection, naive_rag
+        self, auth_client, source_collection, naive_rag
     ):
         """Test filtering by specific status."""
         naive_rag.rag_status = NaiveRag.NaiveRagStatus.PROCESSING
@@ -470,7 +470,7 @@ class TestGetAvailableRags:
         )
 
         # Filter only 'processing' status
-        response = api_client.get(url, {"status": "processing"})
+        response = auth_client.get(url, {"status": "processing"})
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -478,13 +478,13 @@ class TestGetAvailableRags:
         assert len(data) >= 1
         assert data[0]["rag_status"] == NaiveRag.NaiveRagStatus.PROCESSING
 
-    def test_get_available_rags_empty_collection(self, api_client, empty_collection):
+    def test_get_available_rags_empty_collection(self, auth_client, empty_collection):
         """Test getting RAGs for collection without any RAGs."""
         url = reverse(
             "sourcecollection-available-rags", args=[empty_collection.collection_id]
         )
 
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -492,11 +492,11 @@ class TestGetAvailableRags:
         assert isinstance(data, list)
         assert len(data) == 0
 
-    def test_get_available_rags_nonexistent_collection(self, api_client):
+    def test_get_available_rags_nonexistent_collection(self, auth_client):
         """Test getting RAGs for non-existent collection."""
         url = reverse("sourcecollection-available-rags", args=[99999])
 
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -511,7 +511,7 @@ class TestGetAgentWithRag:
     """Tests for GET /agents/{id}/ with RAG information."""
 
     def test_get_agent_with_rag_returns_rag_info(
-        self, api_client, source_collection, completed_naive_rag
+        self, auth_client, source_collection, completed_naive_rag
     ):
         """Test getting agent returns RAG information."""
         agent = Agent.objects.create(
@@ -527,7 +527,7 @@ class TestGetAgentWithRag:
         )
 
         url = reverse("agent-detail", args=[agent.id])
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -538,12 +538,12 @@ class TestGetAgentWithRag:
         assert data["rag"]["rag_id"] == completed_naive_rag.naive_rag_id
         assert data["rag"]["rag_status"] == NaiveRag.NaiveRagStatus.COMPLETED
 
-    def test_get_agent_without_rag_returns_null(self, api_client):
+    def test_get_agent_without_rag_returns_null(self, auth_client):
         """Test getting agent without RAG returns null."""
         agent = Agent.objects.create(role="Agent", goal="Goal", backstory="Story")
 
         url = reverse("agent-detail", args=[agent.id])
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -563,7 +563,7 @@ class TestAgentRagEdgeCases:
     """Tests for edge cases and validation."""
 
     def test_agent_cannot_have_rag_without_collection(
-        self, api_client, completed_naive_rag, agent_data
+        self, auth_client, completed_naive_rag, agent_data
     ):
         """Test that RAG cannot be assigned without knowledge_collection."""
         url = reverse("agent-list")
@@ -575,13 +575,13 @@ class TestAgentRagEdgeCases:
             },
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         # Should fail because no knowledge_collection provided
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_invalid_search_limit_value(
-        self, api_client, source_collection, completed_naive_rag, agent_data
+        self, auth_client, source_collection, completed_naive_rag, agent_data
     ):
         """Test creating agent with invalid search_limit."""
         url = reverse("agent-list")
@@ -595,14 +595,14 @@ class TestAgentRagEdgeCases:
             "search_configs": {"naive": {"search_limit": -1}},  # Invalid negative value
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         # Should validate and reject negative search_limit
         # Note: Validation depends on serializer implementation
         # assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_invalid_similarity_threshold_value(
-        self, api_client, source_collection, completed_naive_rag, agent_data
+        self, auth_client, source_collection, completed_naive_rag, agent_data
     ):
         """Test creating agent with invalid similarity_threshold."""
         url = reverse("agent-list")
@@ -616,7 +616,7 @@ class TestAgentRagEdgeCases:
             "search_configs": {"naive": {"similarity_threshold": 1.5}},  # Invalid > 1.0
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         # Should validate and reject invalid threshold
         # Note: Validation depends on serializer implementation

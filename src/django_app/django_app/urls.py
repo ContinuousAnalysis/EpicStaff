@@ -18,15 +18,23 @@ Including another URLconf
 from django.urls import include, path
 from rest_framework_simplejwt.views import TokenRefreshView
 from tables.views.auth_views import (
+    AdminPasswordResetView,
     ApiKeyValidateView,
-    AuthMeView,
     FirstSetupView,
     LoginView,
     LogoutView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     ResetUserView,
     SseTicketView,
     SwaggerTokenView,
     TokenIntrospectView,
+)
+from tables.views.user_profile_views import (
+    PasswordChangeConfirmView,
+    PasswordChangeRequestView,
+    ProfileAvatarView,
+    ProfileView,
 )
 from .yasg import urlpatterns as doc_urls
 from django.conf import settings
@@ -37,7 +45,6 @@ urlpatterns = [
     path("api/auth/login/", LoginView.as_view(), name="login"),
     path("api/auth/logout/", LogoutView.as_view(), name="logout"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="refresh"),
-    path("api/auth/me/", AuthMeView.as_view(), name="auth_me"),
     path("api/auth/sse-ticket/", SseTicketView.as_view(), name="sse_ticket"),
     path(
         "api/auth/introspect/", TokenIntrospectView.as_view(), name="token_introspect"
@@ -49,7 +56,38 @@ urlpatterns = [
     ),
     path("api/auth/first-setup/", FirstSetupView.as_view(), name="first_setup"),
     path("api/auth/reset-user/", ResetUserView.as_view(), name="reset_user"),
+    path(
+        "api/auth/password-reset/request/",
+        PasswordResetRequestView.as_view(),
+        name="password_reset_request",
+    ),
+    path(
+        "api/auth/password-reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
+    path(
+        "api/auth/admin/password-reset/",
+        AdminPasswordResetView.as_view(),
+        name="admin_password_reset",
+    ),
     path("api/auth/swagger-token/", SwaggerTokenView.as_view(), name="swagger_token"),
+    path("api/profile/", ProfileView.as_view(), name="profile"),
+    path(
+        "api/profile/avatar/",
+        ProfileAvatarView.as_view(),
+        name="profile_avatar",
+    ),
+    path(
+        "api/profile/password-change/request/",
+        PasswordChangeRequestView.as_view(),
+        name="profile_password_change_request",
+    ),
+    path(
+        "api/profile/password-change/confirm/",
+        PasswordChangeConfirmView.as_view(),
+        name="profile_password_change_confirm",
+    ),
     path("api/", include("tables.urls")),
     path("ht/", include("health_check.urls")),
 ]

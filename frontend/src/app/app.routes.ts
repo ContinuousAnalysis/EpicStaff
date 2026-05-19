@@ -5,6 +5,8 @@ import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { onboardingGuard } from './core/guards/onboarding.guard';
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
+import { superAdminGuard, workspaceGuard } from './core/guards/workspace.guard';
+import { currentUserResolver } from './core/resolvers/current-user.resolver';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { RoutedAuthShellComponent } from './layouts/routed-auth-shell/routed-auth-shell.component';
 import { LastVisitedTabService } from './services/last-visited-tab.service';
@@ -23,6 +25,22 @@ export const routes: Routes = [
         canActivate: [guestGuard],
     },
     {
+        path: 'forgot-password',
+        loadComponent: () =>
+            import('./features/auth/components/forgot-pass-page/forgot-password-page.component').then(
+                (m) => m.ForgotPasswordPageComponent
+            ),
+        canActivate: [guestGuard],
+    },
+    {
+        path: 'reset-password',
+        loadComponent: () =>
+            import('./features/auth/components/reset-password-page/reset-password-page.component').then(
+                (m) => m.ResetPasswordPageComponent
+            ),
+        canActivate: [guestGuard],
+    },
+    {
         path: 'onboarding',
         loadComponent: () =>
             import('./features/auth/components/onboarding-page/onboarding-page.component').then(
@@ -38,6 +56,7 @@ export const routes: Routes = [
             {
                 path: '',
                 component: MainLayoutComponent,
+                resolve: { currentUser: currentUserResolver },
                 children: [
                     {
                         path: '',
@@ -216,6 +235,51 @@ export const routes: Routes = [
                         loadComponent: () =>
                             import('./features/flows/pages/global-sessions-list/global-sessions-list.component').then(
                                 (m) => m.GlobalSessionsListComponent
+                            ),
+                    },
+                    {
+                        path: 'workspace',
+                        loadComponent: () =>
+                            import('./features/role-base-access/pages/overview-page/overview.component').then(
+                                (m) => m.OverviewComponent
+                            ),
+                        canActivate: [workspaceGuard],
+                        children: [
+                            {
+                                path: '',
+                                redirectTo: 'main',
+                                pathMatch: 'full',
+                            },
+                            {
+                                path: 'main',
+                                loadComponent: () =>
+                                    import('./features/role-base-access/pages/overview-page/main-tab/main-tab.component').then(
+                                        (m) => m.MainTabComponent
+                                    ),
+                                canActivate: [superAdminGuard],
+                            },
+                            {
+                                path: 'organizations',
+                                loadComponent: () =>
+                                    import('./features/role-base-access/pages/overview-page/organizations-tab/organizations-tab.component').then(
+                                        (m) => m.OrganizationsTabComponent
+                                    ),
+                                canActivate: [superAdminGuard],
+                            },
+                            {
+                                path: 'users',
+                                loadComponent: () =>
+                                    import('./features/role-base-access/pages/overview-page/users-tab/users-tab.component').then(
+                                        (m) => m.UsersTabComponent
+                                    ),
+                            },
+                        ],
+                    },
+                    {
+                        path: 'profile',
+                        loadComponent: () =>
+                            import('./features/role-base-access/pages/profile-page/profile-page.component').then(
+                                (m) => m.ProfilePageComponent
                             ),
                     },
                 ],

@@ -5,17 +5,13 @@ import {
     ChangeDetectionStrategy,
     Component,
     CUSTOM_ELEMENTS_SCHEMA,
-    DestroyRef,
     ElementRef,
+    inject,
     signal,
     ViewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ClickOutsideDirective } from '@shared/directives';
-import { GetMeResponse } from '@shared/models';
-import { EMPTY } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { ConfigureModelsDialogService } from '../../../features/configure-models/services/configure-models-dialog.service';
@@ -23,6 +19,7 @@ import { EpicChatService } from '../../../features/epic-chat/epic-chat.service';
 import { UserAvatarComponent } from '../../../features/role-base-access/components/user-avatar/user-avatar.component';
 import { UserMenuComponent } from '../../../features/role-base-access/components/user-sidebar-menu/user-menu.component';
 import { AuthService } from '../../../services/auth/auth.service';
+import { ProfileService } from '../../../services/auth/profile.service';
 import { ConfigService } from '../../../services/config/config.service';
 import { AppSvgIconComponent } from '../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { TooltipComponent } from './tooltip/tooltip.component';
@@ -57,6 +54,8 @@ interface NavItem {
     schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class LeftSidebarComponent implements AfterViewInit {
+    private currentUserService = inject(ProfileService);
+
     public topNavItems: NavItem[];
     public bottomNavItems: NavItem[];
     public isEpicChatEnabled: boolean;
@@ -122,7 +121,7 @@ export class LeftSidebarComponent implements AfterViewInit {
         },
     };
 
-    public user = signal<GetMeResponse | null>(null);
+    public user = this.currentUserService.currentUserSignal;
     public isUserMenuOpen = signal<boolean>(false);
 
     @ViewChild('epicChat', { static: false })
@@ -132,8 +131,7 @@ export class LeftSidebarComponent implements AfterViewInit {
         public epicChatService: EpicChatService,
         private configService: ConfigService,
         private configureModelsDialogService: ConfigureModelsDialogService,
-        private authService: AuthService,
-        private destroyRef: DestroyRef
+        private authService: AuthService
     ) {
         this.isEpicChatEnabled = this.configService.isEpicChatEnabled;
         // COMMIT_COMMENTS: Derive apiBaseUrl from browser origin so the EpicChat widget's
@@ -199,16 +197,6 @@ export class LeftSidebarComponent implements AfterViewInit {
             action: () => this.onSettingsClick(),
             customClass: 'settings-tooltip',
         });
-    }
-
-    public ngOnInit() {
-        this.authService
-            .getCurrentUser()
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-                catchError(() => EMPTY)
-            )
-            .subscribe((user) => this.user.set(user));
     }
 
     public ngAfterViewInit(): void {

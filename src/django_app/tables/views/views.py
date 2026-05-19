@@ -1,19 +1,33 @@
 from datetime import datetime, timezone
 from collections import defaultdict
+from drf_yasg.utils import swagger_auto_schema
 import uuid
 import base64
-from tables.services.webhook_trigger_service import WebhookTriggerService
-from tables.models.graph_models import TelegramTriggerNode
-from tables.services.telegram_trigger_service import TelegramTriggerService
-from tables.serializers.telegram_trigger_serializers import (
-    TelegramTriggerNodeDataFieldsSerializer,
+from tables.serializers.model_serializers.crew_serializers import (
+    ToolSerializer,
 )
+from tables.serializers.model_serializers.embedding_serializers import (
+    DefaultEmbeddingConfigSerializer,
+)
+from tables.serializers.model_serializers.llm_serializers import (
+    DefaultLLMConfigSerializer,
+)
+from tables.services.webhook_trigger_service import WebhookTriggerService
+from tables.models.graph_models import (
+    TelegramTriggerNode,
+    PythonNode,
+    GraphSessionMessage,
+)
+from tables.services.telegram_trigger_service import TelegramTriggerService
 from tables.utils.telegram_fields import load_telegram_trigger_fields
 from tables.models import Tool
 from tables.models import Crew
 from tables.models.embedding_models import DefaultEmbeddingConfig
 from tables.models.llm_models import DefaultLLMConfig
 from tables.services.realtime_service import RealtimeService
+from tables.swagger_schemas.python_node_test_mode_schema import (
+    LAST_TEST_INPUT_SWAGGER as _LAST_TEST_INPUT_SWAGGER,
+)
 from utils.logger import logger
 
 from drf_spectacular.utils import (
@@ -53,8 +67,6 @@ from tables.enums import SessionWarningType
 
 from tables.models import (
     Session,
-    SourceCollection,
-    # DocumentMetadata,
     GraphOrganization,
     GraphOrganizationUser,
     OrganizationUser,
@@ -65,19 +77,17 @@ from tables.models import (
 from tables.serializers.model_serializers import (
     SessionSerializer,
     SessionLightSerializer,
-    DefaultLLMConfigSerializer,
-    DefaultEmbeddingConfigSerializer,
-    ToolSerializer,
+    TelegramTriggerNodeDataFieldsSerializer,
 )
 from tables.serializers.storage_serializers import SessionOutputFileSerializer
 from tables.serializers.serializers import (
     AnswerToLLMSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
-    ProcessCollectionEmbeddingSerializer,
     ProcessRagIndexingSerializer,
     RunSessionSerializer,
     RegisterTelegramTriggerSerializer,
+    RunPythonCodeSerializer,
 )
 
 from tables.serializers.quickstart_serializers import (
@@ -705,15 +715,7 @@ class ToolListRetrieveUpdateGenericViewSet(
 class RunPythonCodeAPIView(APIView):
     @extend_schema(
         summary="Run Python Code",
-        request=inline_serializer(
-            name="RunPythonCodeRequest",
-            fields={
-                "python_code_id": drf_serializers.IntegerField(),
-                "variables": drf_serializers.DictField(
-                    child=drf_serializers.CharField(), required=False
-                ),
-            },
-        ),
+        request=RunPythonCodeSerializer,
         responses={
             200: inline_serializer(
                 name="RunPythonCodeResponse",
@@ -725,16 +727,12 @@ class RunPythonCodeAPIView(APIView):
         },
     )
     def post(self, request):
-        python_code_id = request.data.get("python_code_id")
-        variables = request.data.get("variables", {})
+        serializer = RunPythonCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        python_code = serializer.validated_data["python_code"]
+        variables = serializer.validated_data["variables"]
 
-        if not python_code_id:
-            return Response(
-                {"error": "python_code_id is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        execution_id = run_python_code_service.run_code(python_code_id, variables)
+        execution_id = run_python_code_service.run_code(python_code.id, variables)
         return Response({"execution_id": execution_id}, status=status.HTTP_200_OK)
 
 
@@ -990,3 +988,42 @@ class RegisterWebhooksApiView(APIView):
         webhook_trigger_service = WebhookTriggerService()
         webhook_trigger_service.register_webhooks()
         return Response(status=status.HTTP_200_OK)
+
+
+class PythonNodeLastTestInputView(APIView):
+    @swagger_auto_schema(**_LAST_TEST_INPUT_SWAGGER)
+    def get(self, request, pk):
+        try:
+            python_node = PythonNode.objects.get(pk=pk)
+        except PythonNode.DoesNotExist:
+            raise NotFound(detail="PythonNode not found.")
+
+        python_node_name = f"{python_node.node_name} #{python_node.pk}"
+        found_input = (
+            GraphSessionMessage.objects.filter(
+                session__graph_id=python_node.graph_id,
+                session__status=Session.SessionStatus.END,
+                name=python_node_name,
+                message_data__message_type="start",
+            )
+            .order_by("-session__created_at", "-created_at")
+            .values_list("message_data__input", flat=True)
+            .first()
+        )
+
+        if found_input is None:
+            return Response(
+                {
+                    "detail": "No matching test input found for this node.",
+                    "input": None,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {
+                "detail": "Last test input retrieved successfully.",
+                "input": found_input,
+            },
+            status=status.HTTP_200_OK,
+        )

@@ -49,6 +49,49 @@ class InvalidSseTicketError(CustomAPIExeption):
     default_code = "invalid_sse_ticket"
 
 
+class InvalidOrExpiredTokenError(CustomAPIExeption):
+    """Raised by PasswordRecoveryService.confirm_reset when the submitted
+    token is unknown, already used, or past its TTL. The message is
+    intentionally generic so the caller cannot distinguish between those
+    cases and cannot probe token validity.
+    """
+
+    status_code = 400
+    default_detail = "Reset token is invalid, expired, or already used."
+    default_code = "invalid_or_expired_reset_token"
+
+
+class InvalidCurrentPasswordError(CustomAPIExeption):
+    """Raised by PasswordRecoveryService.change_password when the caller
+    submits a wrong `current_password`. Flat 400 (not per-field) to avoid
+    leaking whether the password was well-formed but wrong vs. malformed.
+    """
+
+    status_code = 400
+    default_detail = "Current password is incorrect."
+    default_code = "invalid_current_password"
+
+
+class SuperadminRequiredError(CustomAPIExeption):
+    """Raised when a non-superadmin attempts a superadmin-only action
+    (admin password reset)."""
+
+    status_code = 403
+    default_detail = "Superadmin privileges are required for this action."
+    default_code = "superadmin_required"
+
+
+class UserNotFoundError(CustomAPIExeption):
+    """Raised by admin-only flows (admin password reset, CLI reset) when
+    the target user does not exist. Never used on anonymous/self-service
+    flows — those always succeed silently to avoid enumeration.
+    """
+
+    status_code = 404
+    default_detail = "User not found."
+    default_code = "user_not_found"
+
+
 class DefaultOrganizationConflictError(CustomAPIExeption):
     """
     Raised when creating the default Organization during first-setup hits a
@@ -63,3 +106,143 @@ class DefaultOrganizationConflictError(CustomAPIExeption):
         "Remove it manually or change DEFAULT_ORGANIZATION_NAME before retrying."
     )
     default_code = "default_organization_conflict"
+
+
+class OrganizationNameConflictError(CustomAPIExeption):
+    """Raised when creating or renaming an organization to a name that
+    already exists (case-insensitive)."""
+
+    status_code = 400
+    default_detail = "An organization with this name already exists."
+    default_code = "organization_name_conflict"
+
+
+class LastActiveOrganizationError(CustomAPIExeption):
+    """Raised when deactivating an organization would leave zero active
+    organizations in the system. The system requires at least one active
+    organization."""
+
+    status_code = 400
+    default_detail = (
+        "Cannot deactivate the last active organization. At least one "
+        "organization must remain active."
+    )
+    default_code = "last_active_organization"
+
+
+class OrganizationNotFoundError(CustomAPIExeption):
+    """Raised by OrganizationManagementService when an org id does not match
+    any existing row. Surfaces as 404 with the project-standard envelope."""
+
+    status_code = 404
+    default_detail = "Organization not found."
+    default_code = "organization_not_found"
+
+
+class EmailAlreadyExistsError(CustomAPIExeption):
+    """Raised by UserManagementService.create_user / add_membership when the
+    submitted email already belongs to an existing user. Admin-gated endpoint
+    so enumeration is not a concern."""
+
+    status_code = 400
+    default_detail = "A user with this email already exists."
+    default_code = "email_already_exists"
+
+
+class MembershipAlreadyExistsError(CustomAPIExeption):
+    """Raised by UserManagementService.add_membership when a (user, org)
+    pair already has an OrganizationUser row. Caught from IntegrityError
+    fired by the DB-level UniqueConstraint."""
+
+    status_code = 400
+    default_detail = "This user is already a member of this organization."
+    default_code = "membership_already_exists"
+
+
+class LastSuperadminError(CustomAPIExeption):
+    """Raised by UserManagementService.revoke_superadmin when revoking
+    would leave zero (is_superadmin=True, is_active=True) users in the
+    system."""
+
+    status_code = 400
+    default_detail = (
+        "Cannot revoke superadmin from the last active superadmin. "
+        "At least one active superadmin must remain."
+    )
+    default_code = "last_superadmin"
+
+
+class LastOrgAdminError(CustomAPIExeption):
+    """Raised by UserManagementService.remove_membership /change_role when
+    the operation would leave the organization with zero Org Admins."""
+
+    status_code = 400
+    default_detail = (
+        "Cannot remove or demote the last Org Admin of this organization. "
+        "Promote another member to Org Admin first."
+    )
+    default_code = "last_org_admin"
+
+
+class InvalidRoleAssignmentError(CustomAPIExeption):
+    """Raised by UserManagementGuards.assert_role_is_assignable when the
+    target role cannot be assigned via membership — either because it is
+    the global Superadmin role (use grant-superadmin instead) or because
+    it is a custom role belonging to a different organization."""
+
+    status_code = 400
+    default_detail = "This role cannot be assigned via membership."
+    default_code = "invalid_role_assignment"
+
+
+class RoleNotFoundError(CustomAPIExeption):
+    """Raised by UserManagementService when a role_id does not match any
+    existing Role row."""
+
+    status_code = 404
+    default_detail = "Role not found."
+    default_code = "role_not_found"
+
+
+class CannotSelfAssignError(CustomAPIExeption):
+    """Raised by UserManagementService.assign_users when a non-superadmin
+    caller includes their own user_id in the batch. Superadmins bypass
+    this rule. Caller-relationship UX safety, not a system-integrity
+    invariant — the single-row PATCH endpoint exists for deliberate
+    self-modification."""
+
+    status_code = 400
+    default_detail = "You cannot include yourself in the assignment batch."
+    default_code = "cannot_self_assign"
+
+
+class InvalidPasswordChangeTicketError(CustomAPIExeption):
+    """Raised by UserProfileService.password_change_confirm when the
+    submitted ticket is unknown, already used, expired, or does not belong
+    to the calling user. Generic message — does not distinguish the cases
+    so a third party cannot probe whether a ticket exists."""
+
+    status_code = 400
+    default_detail = "Password-change ticket is invalid, expired, or already used."
+    default_code = "invalid_password_change_ticket"
+
+
+class InvalidAvatarError(CustomAPIExeption):
+    """Raised by UserAvatarStorageService when Pillow verification fails
+    or the decoded image format is outside settings.AVATAR_ALLOWED_FORMATS.
+    Generic message — does not expose Pillow's internal reason."""
+
+    status_code = 400
+    default_detail = "Uploaded file is not a valid JPEG or PNG image."
+    default_code = "invalid_avatar"
+
+
+class AvatarTooLargeError(CustomAPIExeption):
+    """Raised by UserAvatarStorageService when an avatar upload exceeds
+    settings.AVATAR_MAX_BYTES. The default_detail is overridden at
+    raise-site with the actual maximum so the FE can render it without
+    hardcoding the number."""
+
+    status_code = 400
+    default_detail = "Avatar file exceeds the maximum allowed size."
+    default_code = "avatar_too_large"

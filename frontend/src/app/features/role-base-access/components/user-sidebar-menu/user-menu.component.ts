@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, model } from '@angular/core';
+import { Router } from '@angular/router';
 import { AppSvgIconComponent } from '@shared/components';
-import { GetMeResponse, Membership } from '@shared/models';
+import { FullMembership, GetMeResponse } from '@shared/models';
 import { EMPTY } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { AuthService } from '../../../../services/auth/auth.service';
+import { ProfileService } from '../../../../services/auth/profile.service';
 import { OrgAvatarComponent } from '../org-avatar/org-avatar.component';
 import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
 
@@ -18,13 +20,31 @@ import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
 })
 export class UserMenuComponent {
     private authService = inject(AuthService);
+    private router = inject(Router);
+    protected currentUserService = inject(ProfileService);
 
-    public user = input.required<GetMeResponse>();
-    public organizations = computed<Membership[]>(() => this.user().memberships);
+    user = input.required<GetMeResponse>();
+    systemRole = this.currentUserService.systemRole;
+    organizations = computed<FullMembership[]>(() => this.user().memberships);
 
     isUserMenuOpen = model<boolean>(false);
 
-    public onSignOutClick(): void {
+    onOrgClick(id: number): void {
+        void id;
+        this.isUserMenuOpen.set(false);
+    }
+
+    onWorkspaceClick(): void {
+        this.isUserMenuOpen.set(false);
+        this.router.navigate(['/workspace']);
+    }
+
+    onProfileClick(): void {
+        this.isUserMenuOpen.set(false);
+        this.router.navigate(['/profile']);
+    }
+
+    onSignOutClick(): void {
         this.isUserMenuOpen.set(false);
         this.authService
             .logout()
