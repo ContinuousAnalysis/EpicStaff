@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { map, Observable, Subject } from 'rxjs';
 
 import { ApiGetRequest } from '../../../core/models/api-request.model';
+import { GraphMessage } from '../../../pages/running-graph/models/graph-session-message.model';
 import { WarningMessages } from '../../../pages/running-graph/models/warning-messages.model';
 import { ConfigService } from '../../../services/config/config.service';
 
@@ -186,6 +187,20 @@ export class GraphSessionService {
 
     getSessionWarnings(sessionId: string): Observable<WarningMessages> {
         return this.http.get<WarningMessages>(`${this.apiUrl}${sessionId}/warnings/`);
+    }
+
+    getSessionMessages(
+        sessionId: number | string,
+        limit: number,
+        offset: number
+    ): Observable<ApiGetRequest<GraphMessage>> {
+        const params = new HttpParams()
+            .set('session_id', sessionId.toString())
+            .set('limit', limit.toString())
+            .set('offset', offset.toString());
+        return this.http.get<ApiGetRequest<GraphMessage>>(this.configService.apiUrl + 'graph-session-messages/', {
+            params,
+        });
     }
 
     getGlobalSessions(

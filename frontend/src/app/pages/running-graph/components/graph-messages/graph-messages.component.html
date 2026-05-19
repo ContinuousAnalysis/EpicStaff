@@ -9,7 +9,7 @@
     <!-- Connection status indicator -->
     <div
         class="connection-status"
-        *ngIf="connectionStatus === 'reconnecting' || connectionStatus === 'disconnected'"
+        *ngIf="sseEnabled && (connectionStatus === 'reconnecting' || connectionStatus === 'disconnected')"
     >
         <div
             class="status-indicator"
@@ -307,9 +307,16 @@
 
     <div
         class="empty-list"
-        *ngIf="messages.length === 0"
+        *ngIf="messages.length === 0 && !isLoadingMore"
     >
         No messages to show
+    </div>
+
+    <div
+        *ngIf="isLoadingMore"
+        class="loading-more-indicator"
+    >
+        <app-loading-dots></app-loading-dots>
     </div>
 
     <!-- Loading dots for running session -->

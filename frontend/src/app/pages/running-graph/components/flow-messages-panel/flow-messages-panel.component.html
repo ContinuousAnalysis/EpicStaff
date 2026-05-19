@@ -110,13 +110,13 @@
 </div>
 
 <div class="panel-body">
-    @if (selectedSessionId && graphId) {
+    @if (selectedSessionId && graphId && sessionsLoaded) {
         <app-graph-messages
             [graphId]="graphId"
             [sessionId]="selectedSessionId"
             class="graph-messages-list"
         ></app-graph-messages>
-    } @else if (sessions.length === 0) {
+    } @else if (sessionsLoaded && sessions.length === 0) {
         <div class="panel-body__empty">
             Click
             <span class="panel-body__run-badge">

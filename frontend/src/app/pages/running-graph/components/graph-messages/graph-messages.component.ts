@@ -95,6 +95,13 @@ interface RootDrilldownView {
     isClosing: boolean;
 }
 
+const TERMINAL_STATUSES = new Set<GraphSessionStatus>([
+    GraphSessionStatus.ENDED,
+    GraphSessionStatus.ERROR,
+    GraphSessionStatus.STOP,
+    GraphSessionStatus.EXPIRED,
+]);
+
 @Component({
     selector: 'app-graph-messages',
     standalone: true,
@@ -156,6 +163,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
     public connectionStatus: 'connected' | 'connecting' | 'disconnected' | 'reconnecting' | 'manually_disconnected' =
         'disconnected';
     public reconnectAttempts: number = 0;
+    public sseEnabled = false;
 
     // Lookup maps for quick reference
     private agentMap: Map<number, GetAgentRequest> = new Map();
@@ -163,6 +171,12 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
 
     public messages: GraphMessage[] = [];
     public visibleMessageEntries: MessageViewEntry[] = [];
+
+    private readonly PAGE_SIZE = 20;
+    private seenKeys = new Set<string>();
+    private currentOffset = 0;
+    public isLoadingMore = false;
+    public hasMore = true;
 
     private isFinishing = false;
     private finishTimer: ReturnType<typeof setTimeout> | null = null;
@@ -213,21 +227,21 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
         private graphSessionService: GraphSessionService
     ) {
         effect(() => {
-            const messages = this.sseService.messages();
-            this.messages = messages;
-            this.messagesChanged.emit(messages);
-            this.rebuildMessageState(messages);
+            const sseMessages = this.sseService.messages();
+            this.mergeMessages(sseMessages);
+            this.messagesChanged.emit(this.messages);
+            this.rebuildMessageState(this.messages);
             this.processMessages();
             this.checkIfFinish();
             this.cdr.markForCheck();
 
             if (this.autoScrollEnabled) {
                 this.unseenMessageCount = 0;
-                if (messages.length > 0) {
+                if (this.messages.length > 0) {
                     requestAnimationFrame(() => this.scrollToBottom());
                 }
             } else {
-                this.unseenMessageCount = Math.max(0, messages.length - this.seenMessageCount);
+                this.unseenMessageCount = Math.max(0, this.messages.length - this.seenMessageCount);
             }
         });
 
@@ -290,8 +304,11 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             this.unseenMessageCount = 0;
         }
 
-        this.updateScrollButtonsVisibility();
+        if (distanceFromBottom < 200 && this.hasMore && !this.isLoadingMore) {
+            this.loadMoreMessages();
+        }
 
+        this.updateScrollButtonsVisibility();
         this.cdr.markForCheck();
     }
 
@@ -359,6 +376,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
                 this.finishTimer = null;
             }
             this.isLoading = true;
+            this.sseEnabled = false;
             this.session = null;
             this.animatedIndices = {};
             this.updateSessionStatusData = null;
@@ -369,6 +387,10 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
             this.autoScrollEnabled = true;
             this.messages = [];
             this.visibleMessageEntries = [];
+            this.seenKeys = new Set<string>();
+            this.currentOffset = 0;
+            this.isLoadingMore = false;
+            this.hasMore = true;
             this.drillPaths.clear();
             this.breadcrumbsByRoot.clear();
             this.filteredBreadcrumbsByRoot.clear();
@@ -396,7 +418,23 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
         const graphId = this.graphId;
         if (!this.sessionId || graphId == null || !isFinite(graphId)) return;
 
-        this.sseService.startStream(this.sessionId!);
+        this.graphSessionService
+            .getSessionById(+this.sessionId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (session) => {
+                    if (!TERMINAL_STATUSES.has(session.status)) {
+                        this.sseEnabled = true;
+                        this.sseService.startStream(this.sessionId!);
+                    }
+                    this.loadMoreMessages();
+                },
+                error: () => {
+                    this.sseEnabled = true;
+                    this.sseService.startStream(this.sessionId!);
+                    this.loadMoreMessages();
+                },
+            });
 
         // Load warning messages
         this.graphSessionService
@@ -448,7 +486,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
                             this.graphNameById.set(rootGraph.id, rootGraph.name);
                         }
                     }
-                    this.rebuildMessageState(this.sseService.messages());
+                    this.rebuildMessageState(this.messages);
                     this.isLoading = false;
                     this.cdr.markForCheck();
                 },
@@ -561,7 +599,7 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
                 next: (graph) => {
                     this.graphCache.set(graph.id, graph);
                     this.graphLoadInFlight.delete(graphId);
-                    this.rebuildMessageState(this.sseService.messages());
+                    this.rebuildMessageState(this.messages);
                     this.cdr.markForCheck();
                 },
                 error: (err) => {
@@ -867,6 +905,41 @@ export class GraphMessagesComponent implements OnInit, OnDestroy, OnChanges, Aft
                 console.error('Error sending answer to LLM:', error);
             },
         });
+    }
+
+    private mergeMessages(incoming: GraphMessage[]): void {
+        const toAdd = incoming.filter((m) => {
+            const key = this.getMessageKey(m);
+            if (this.seenKeys.has(key)) return false;
+            this.seenKeys.add(key);
+            return true;
+        });
+        if (toAdd.length === 0) return;
+        this.messages = [...this.messages, ...toAdd].sort((a, b) => a.execution_order - b.execution_order);
+    }
+
+    public loadMoreMessages(): void {
+        if (this.isLoadingMore || !this.hasMore || !this.sessionId) return;
+        this.isLoadingMore = true;
+        this.cdr.markForCheck();
+
+        this.graphSessionService
+            .getSessionMessages(+this.sessionId, this.PAGE_SIZE, this.currentOffset)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (response) => {
+                    this.currentOffset += this.PAGE_SIZE;
+                    this.mergeMessages(response.results);
+                    this.rebuildMessageState(this.messages);
+                    this.hasMore = response.next !== null;
+                    this.isLoadingMore = false;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.isLoadingMore = false;
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     private rebuildMessageState(messages: GraphMessage[]): void {
