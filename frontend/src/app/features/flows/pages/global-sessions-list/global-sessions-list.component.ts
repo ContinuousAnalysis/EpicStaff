@@ -71,7 +71,7 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                     <app-action-dropdown-button
                         [label]="'Export (' + (selectedIds().size === 0 ? totalCount() : selectedIds().size) + ')'"
                         [items]="exportItems"
-                        [disabled]="isExporting() || (selectedIds().size === 0 && totalCount() === 0)"
+                        [disabled]="isDeleting() || isExporting() || (selectedIds().size === 0 && totalCount() === 0)"
                         (mainClick)="onExport('json')"
                         (itemClick)="onExportItemSelected($event)"
                     />
@@ -126,6 +126,7 @@ export class GlobalSessionsListComponent {
     public availableFlows = signal<GetGraphLightRequest[]>([]);
     public totalCount = signal(0);
     public isExporting = signal(false);
+    public isDeleting = signal(false);
     private reloadTrigger = signal(0);
     private cancelLoad$ = new Subject<void>();
     private destroyRef = inject(DestroyRef);
@@ -186,7 +187,6 @@ export class GlobalSessionsListComponent {
 
     public onBulkDelete(): void {
         this.onDeleteSelected(Array.from(this.selectedIds()));
-        this.selectedIds.set(new Set());
     }
 
     public onStatusFilterChange(values: string[]): void {
@@ -222,11 +222,20 @@ export class GlobalSessionsListComponent {
     public onDeleteSelected(ids: number[]): void {
         if (ids.length === 0) return;
 
+        this.isDeleting.set(true);
         this.graphSessionService
             .bulkDeleteSessions(ids)
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(
+                finalize(() => this.isDeleting.set(false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
             .subscribe({
                 next: () => {
+                    this.selectedIds.update((prev) => {
+                        const next = new Set(prev);
+                        ids.forEach((id) => next.delete(id));
+                        return next;
+                    });
                     const remaining = this.sessions().filter((s) => !ids.includes(s.id));
                     if (remaining.length === 0 && this.currentPage() > 1) {
                         this.currentPage.set(this.currentPage() - 1);
@@ -251,11 +260,17 @@ export class GlobalSessionsListComponent {
             obs$ = this.importExportService.bulkExportSessions(Array.from(this.selectedIds()), format);
         } else {
             const activeStatuses = this.statusFilter().filter((s) => s !== 'all');
-            const filters: { status?: string[] } = {};
-            if (activeStatuses.length > 0) {
-                filters.status = activeStatuses;
-            }
-            obs$ = this.importExportService.exportAll(filters, format);
+            const selectedFlow = this.flowFilter()
+                ? this.availableFlows().find((f) => f.name === this.flowFilter())
+                : null;
+            obs$ = this.importExportService.exportAll(
+                {
+                    graph: selectedFlow?.id,
+                    status: activeStatuses.length > 0 ? activeStatuses : undefined,
+                    is_error_cause: this.isErrorCauseFilter() || undefined,
+                },
+                format
+            );
         }
 
         obs$.pipe(

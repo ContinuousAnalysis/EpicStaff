@@ -64,6 +64,7 @@ export class FlowSessionsListComponent implements OnInit {
     public availableNodeGroups = signal<NodeGroup[]>([]);
     public selectedIds = signal<Set<number>>(new Set());
     public isExporting = signal(false);
+    public isDeleting = signal(false);
     private cancelLoad$ = new Subject<void>();
     private readonly destroyRef = inject(DestroyRef);
     private readonly importExportService = inject(ImportExportService);
@@ -221,14 +222,26 @@ export class FlowSessionsListComponent implements OnInit {
     public onDeleteSelected(ids: number[]): void {
         if (ids.length === 0) return;
 
-        this.graphSessionService.bulkDeleteSessions(ids).subscribe({
-            next: () => {
-                this.reloadAfterDeletion(ids);
-            },
-            error: (err) => {
-                console.error('Failed to bulk delete sessions', err);
-            },
-        });
+        this.isDeleting.set(true);
+        this.graphSessionService
+            .bulkDeleteSessions(ids)
+            .pipe(
+                finalize(() => this.isDeleting.set(false)),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe({
+                next: () => {
+                    this.selectedIds.update((prev) => {
+                        const next = new Set(prev);
+                        ids.forEach((id) => next.delete(id));
+                        return next;
+                    });
+                    this.reloadAfterDeletion(ids);
+                },
+                error: (err) => {
+                    console.error('Failed to bulk delete sessions', err);
+                },
+            });
     }
 
     private reloadAfterDeletion(deletedIds: number[]): void {
@@ -290,7 +303,6 @@ export class FlowSessionsListComponent implements OnInit {
 
     public onBulkDelete(): void {
         this.onDeleteSelected(Array.from(this.selectedIds()));
-        this.selectedIds.set(new Set());
     }
 
     public onExport(format: ExportFormat): void {
@@ -298,10 +310,19 @@ export class FlowSessionsListComponent implements OnInit {
             return;
         }
         this.isExporting.set(true);
+        const activeStatuses = this.statusFilter().filter((s) => s !== 'all');
         const obs$ =
             this.selectedIds().size > 0
                 ? this.importExportService.bulkExportSessions(Array.from(this.selectedIds()), format)
-                : this.importExportService.exportAll({ graph: this.flow.id }, format);
+                : this.importExportService.exportAll(
+                      {
+                          graph: this.flow.id,
+                          status: activeStatuses.length > 0 ? activeStatuses : undefined,
+                          node_name: this.nodeFilter() ?? undefined,
+                          is_error_cause: this.isErrorCauseFilter() || undefined,
+                      },
+                      format
+                  );
 
         obs$.pipe(
             finalize(() => this.isExporting.set(false)),

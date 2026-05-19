@@ -63,10 +63,20 @@ export class ImportExportService {
         );
     }
 
-    exportAll(filters: { graph?: number | null; status?: string[] }, format: ExportFormat = 'json'): Observable<Blob> {
+    exportAll(
+        filters: {
+            graph?: number | null;
+            status?: string[] | null;
+            node_name?: string | null;
+            is_error_cause?: boolean;
+        },
+        format: ExportFormat = 'json'
+    ): Observable<Blob> {
         const body: Record<string, unknown> = {};
         if (filters.graph != null) body['graph_id'] = filters.graph;
         if (filters.status != null && filters.status.length > 0) body['status'] = filters.status;
+        if (filters.node_name != null) body['node_name'] = filters.node_name;
+        if (filters.is_error_cause === true) body['is_error_cause'] = true;
         return this.http.post<Blob>(`${this.sessionsApiUrl}export_all/?export_format=${format}`, body, {
             responseType: 'blob' as 'json',
         });
