@@ -110,10 +110,13 @@ class BulkExportSerializer(serializers.Serializer):
 
 class SessionExportAllSerializer(serializers.Serializer):
     graph_id = serializers.IntegerField(required=False, min_value=1)
+    graph_name = serializers.CharField(required=False)
     status = serializers.ListField(
         child=serializers.ChoiceField(choices=Session.SessionStatus.choices),
         required=False,
     )
+    node_name = serializers.CharField(required=False)
+    is_error_cause = serializers.BooleanField(required=False)
     created_at_after = serializers.DateTimeField(required=False)
     created_at_before = serializers.DateTimeField(required=False)
     finished_at_after = serializers.DateTimeField(required=False)

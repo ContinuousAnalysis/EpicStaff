@@ -282,6 +282,8 @@ class SessionViewSet(
 
         if "graph_id" in data:
             qs = qs.filter(graph_id=data["graph_id"])
+        if "graph_name" in data:
+            qs = qs.filter(graph__name__iexact=data["graph_name"])
         if "status" in data:
             qs = qs.filter(status__in=data["status"])
         if "created_at_after" in data:
@@ -292,6 +294,18 @@ class SessionViewSet(
             qs = qs.filter(finished_at__gte=data["finished_at_after"])
         if "finished_at_before" in data:
             qs = qs.filter(finished_at__lte=data["finished_at_before"])
+
+        node_name = data.get("node_name")
+        if node_name:
+            qs = qs.filter(graphsessionmessage__name=node_name).distinct()
+
+        if data.get("is_error_cause"):
+            error_messages = GraphSessionMessage.objects.filter(
+                session=OuterRef("pk"), message_data__message_type="error"
+            )
+            if node_name:
+                error_messages = error_messages.filter(name=node_name)
+            qs = qs.filter(Exists(error_messages)).distinct()
 
         session_ids = list(qs.values_list("id", flat=True))
 
