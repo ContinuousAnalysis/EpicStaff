@@ -259,16 +259,6 @@ class AgentReadSerializer(serializers.ModelSerializer):
         return tools
 
     def get_rag(self, agent: Agent) -> dict | None:
-        if hasattr(agent, "prefetched_agent_naive_rags"):
-            naive_rag_links = agent.prefetched_agent_naive_rags
-            if naive_rag_links:
-                link = naive_rag_links[0]
-                return {
-                    "rag_type": "naive",
-                    "rag_id": link.naive_rag_id,
-                    "rag_status": link.naive_rag.rag_status,
-                }
-            return None
         return RagAssignmentService.get_assigned_rag_info(agent)
 
     def get_search_configs(self, agent: Agent) -> dict | None:
