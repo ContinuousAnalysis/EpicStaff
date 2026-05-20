@@ -19,7 +19,12 @@ import { GraphMessagesComponent } from 'src/app/pages/running-graph/components/g
 import { FlowSessionsTableComponent } from '../../components/flow-sessions-dialog/flow-sessions-table.component';
 import { GetGraphLightRequest } from '../../models/graph.model';
 import { FlowsApiService } from '../../services/flows-api.service';
-import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../../services/flows-sessions.service';
+import {
+    DurationFilter,
+    GraphSessionLight,
+    GraphSessionService,
+    GraphSessionStatus,
+} from '../../services/flows-sessions.service';
 
 @Component({
     selector: 'app-global-sessions-list',
@@ -76,6 +81,8 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                         [flows]="availableFlows()"
                         [flowNameFilter]="flowFilter()"
                         (flowNameFilterChange)="onFlowFilterChange($event)"
+                        [durationFilter]="durationFilter()"
+                        (durationFilterChange)="onDurationFilterChange($event)"
                         [isLoading]="!isLoaded()"
                         [showEmptyState]="isLoaded() && sessions().length === 0"
                         [externalPreview]="true"
@@ -179,6 +186,7 @@ export class GlobalSessionsListComponent {
     public sortOrder = signal<'asc' | 'desc'>('desc');
     public flowFilter = signal<string | null>(null);
     public isErrorCauseFilter = signal<boolean>(false);
+    public durationFilter = signal<DurationFilter | null>(null);
     public selectedIds = signal<Set<number>>(new Set());
     public availableFlows = signal<GetGraphLightRequest[]>([]);
     public totalCount = signal(0);
@@ -204,8 +212,9 @@ export class GlobalSessionsListComponent {
             const sort = this.sortOrder();
             const flowName = this.flowFilter();
             const isErrorCause = this.isErrorCauseFilter();
+            const durationFilter = this.durationFilter();
             this.reloadTrigger();
-            this.loadGlobalSessions(size, (page - 1) * size, status, sort, flowName, isErrorCause);
+            this.loadGlobalSessions(size, (page - 1) * size, status, sort, flowName, isErrorCause, durationFilter);
         });
 
         this.flowsApiService
@@ -334,19 +343,25 @@ export class GlobalSessionsListComponent {
             });
     }
 
+    public onDurationFilterChange(filter: DurationFilter | null): void {
+        this.durationFilter.set(filter);
+        this.currentPage.set(1);
+    }
+
     private loadGlobalSessions(
         limit: number,
         offset: number,
         status: string[],
         sort: 'asc' | 'desc' = 'desc',
         graphName?: string | null,
-        isErrorCause?: boolean
+        isErrorCause?: boolean,
+        durationFilter?: DurationFilter | null
     ): void {
         this.cancelLoad$.next();
         this.isLoaded.set(false);
         const ordering = sort === 'asc' ? 'created_at' : '-created_at';
         this.graphSessionService
-            .getGlobalSessions(limit, offset, status, ordering, graphName, isErrorCause)
+            .getGlobalSessions(limit, offset, status, ordering, graphName, isErrorCause, durationFilter)
             .pipe(takeUntil(this.cancelLoad$), takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (response) => {

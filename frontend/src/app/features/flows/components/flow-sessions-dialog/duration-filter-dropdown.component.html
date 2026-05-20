@@ -1,0 +1,86 @@
+<div
+    class="dur-dropdown"
+    (appClickOutside)="close()"
+>
+    <button
+        class="toggle-btn"
+        (click)="toggle($event)"
+    >
+        <app-svg-icon
+            icon="clock"
+            size="16px"
+        ></app-svg-icon>
+        <span>{{ label }}</span>
+        <svg
+            class="arrow"
+            [class.arrow--open]="open"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+        >
+            <path
+                d="M7 10l5 5 5-5"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+            />
+        </svg>
+    </button>
+
+    @if (open) {
+        <div class="dur-panel">
+            <div class="op-row">
+                @for (op of operators; track op.value) {
+                    <button
+                        class="op-btn"
+                        [class.op-btn--active]="selectedOperator === op.value"
+                        (click)="selectOperator(op.value)"
+                    >
+                        {{ op.label }}
+                    </button>
+                }
+            </div>
+
+            <div class="input-row">
+                <input
+                    class="dur-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="sec"
+                    [(ngModel)]="val1"
+                    (keydown.enter)="apply()"
+                />
+                @if (selectedOperator === 'between') {
+                    <span class="sep">—</span>
+                    <input
+                        class="dur-input"
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="sec"
+                        [(ngModel)]="val2"
+                        (keydown.enter)="apply()"
+                    />
+                }
+            </div>
+
+            <div class="action-row">
+                <button
+                    class="apply-btn"
+                    (click)="apply()"
+                >
+                    Apply
+                </button>
+                @if (value !== null) {
+                    <button
+                        class="clear-btn"
+                        (click)="clear()"
+                    >
+                        Clear
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</div>

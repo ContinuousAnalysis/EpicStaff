@@ -15,7 +15,8 @@ import { CheckboxComponent, IconButtonComponent, LoadingSpinnerComponent } from 
 import { GraphMessagesComponent } from 'src/app/pages/running-graph/components/graph-messages/graph-messages.component';
 
 import { GraphDto } from '../../models/graph.model';
-import { GraphSessionLight, GraphSessionStatus } from '../../services/flows-sessions.service';
+import { DurationFilter, GraphSessionLight, GraphSessionStatus } from '../../services/flows-sessions.service';
+import { DurationFilterDropdownComponent } from './duration-filter-dropdown.component';
 import { FlowNameFilterDropdownComponent } from './flow-name-filter-dropdown.component';
 import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.component';
 import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-filter-dropdown.component';
@@ -31,6 +32,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
         GraphMessagesComponent,
         FlowSessionStatusFilterDropdownComponent,
         FlowNameFilterDropdownComponent,
+        DurationFilterDropdownComponent,
     ],
     template: `
         <div class="sessions-table-wrapper">
@@ -70,7 +72,14 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                             }
                         </th>
                         <th>
-                            {{ showDuration ? 'Duration' : 'Finished At' }}
+                            @if (showDuration) {
+                                <app-duration-filter-dropdown
+                                    [value]="durationFilter"
+                                    (valueChange)="durationFilterChange.emit($event)"
+                                ></app-duration-filter-dropdown>
+                            } @else {
+                                Finished At
+                            }
                         </th>
                         <th
                             style="text-align: center"
@@ -213,6 +222,7 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     @Input() statusFilter: string[] = ['all'];
     @Input() flows: { id: number; name: string }[] = [];
     @Input() flowNameFilter: string | null = null;
+    @Input() durationFilter: DurationFilter | null = null;
 
     @Input() externalPreview: boolean = false;
 
@@ -222,6 +232,7 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     @Output() sortChange = new EventEmitter<'asc' | 'desc'>();
     @Output() statusFilterChange = new EventEmitter<string[]>();
     @Output() flowNameFilterChange = new EventEmitter<string | null>();
+    @Output() durationFilterChange = new EventEmitter<DurationFilter | null>();
     @Output() selectedIdsChange = new EventEmitter<Set<number>>();
     @Output() previewSession = new EventEmitter<number | null>();
 
