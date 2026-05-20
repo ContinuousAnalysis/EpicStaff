@@ -7,6 +7,7 @@ import { ApiGetRequest } from '../../../core/models/api-request.model';
 import { ConfigService } from '../../../services/config/config.service';
 import {
     CreateGraphDtoRequest,
+    CreateGraphFromVersionResponse,
     GetGraphLightRequest,
     GraphDto,
     GraphRestoreResponse,
@@ -136,5 +137,13 @@ export class FlowsApiService {
 
     deleteGraphVersion(id: number): Observable<void> {
         return this.http.delete<void>(`${this.configService.apiUrl}graph-versions/${id}/`);
+    }
+
+    createGraphFromVersion(versionId: number): Observable<CreateGraphFromVersionResponse> {
+        return this.http.post<CreateGraphFromVersionResponse>(
+            `${this.configService.apiUrl}graph-versions/${versionId}/create-graph/`,
+            {},
+            { headers: this.httpHeaders }
+        );
     }
 }

@@ -1,12 +1,9 @@
 name: build-and-push
 
 on:
-  # Direct push:main trigger is gone — deploy.yaml now owns push:main and invokes
-  # this workflow inline via workflow_call. push:tags is retained as a safety net
-  # for manual tag pushes (the release flow uses workflow_call, not tag-push).
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  # No direct push triggers — this workflow is invoked exclusively via workflow_call
+  # (from deploy.yaml on push:main, and from publish_release.yml on push:tags) and
+  # workflow_dispatch (for ad-hoc manual branch builds).
   workflow_dispatch:
     inputs:
       branch:
@@ -59,7 +56,10 @@ jobs:
           GH_REF: ${{ github.ref }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" = "workflow_call" ]; then
+          # When invoked via workflow_call, github.event_name is the CALLER's event
+          # (e.g. push, workflow_dispatch) — never 'workflow_call'. Detect the call
+          # path by presence of inputs.ref/inputs.tag instead.
+          if [ -n "$INPUT_REF" ] && [ -n "$INPUT_TAG" ]; then
             REF="$INPUT_REF"
             TAG="$INPUT_TAG"
           elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
@@ -76,7 +76,7 @@ jobs:
               TAG="latest"
             fi
           else
-            echo "Unsupported event: $EVENT_NAME" >&2
+            echo "Unsupported event/inputs: event=$EVENT_NAME input_ref=$INPUT_REF input_tag=$INPUT_TAG" >&2
             exit 1
           fi
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
@@ -101,17 +101,27 @@ jobs:
       - name: Generate build matrix
         id: gen
         shell: bash
+        env:
+          EXCLUDE_CSV: ${{ env.EXCLUDE_SERVICES }}
         run: |
           set -euo pipefail
-          python ./.github/scripts/compose_matrix.py \
+          # The script writes `matrix=...` to GITHUB_OUTPUT and also prints the
+          # JSON to stdout. Capture stdout, filter excluded services via jq,
+          # then write the filtered version to GITHUB_OUTPUT (last write wins).
+          RAW=$(python ./.github/scripts/compose_matrix.py \
             --compose-json compose.json \
             --repo-root . \
-            --exclude "$EXCLUDE_SERVICES"
+            | python -c "import sys,json; print(json.dumps(json.loads(sys.stdin.read())))")
+          # Note: --exclude not passed to script (older script versions at old
+          # release tags may not support it). Exclusion happens via jq below.
 
-      - name: Show matrix
-        shell: bash
-        run: |
-          echo '${{ steps.gen.outputs.matrix }}' | python -m json.tool
+          # Build a jq array from the CSV exclude list
+          EXCL_JSON=$(echo "$EXCLUDE_CSV" | jq -Rc 'split(",") | map(select(length>0))')
+          FILTERED=$(echo "$RAW" | jq -c --argjson excl "$EXCL_JSON" \
+            '.include |= map(select(.service as $s | $excl | index($s) | not))')
+
+          echo "matrix=$FILTERED" >> "$GITHUB_OUTPUT"
+          echo "$FILTERED" | python -m json.tool
 
   build:
     name: Build & push ${{ matrix.service }}

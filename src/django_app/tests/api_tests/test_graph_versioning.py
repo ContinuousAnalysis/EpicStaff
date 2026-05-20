@@ -220,3 +220,84 @@ def test_detail_nonexistent_version_returns_404(auth_client):
     response = auth_client.get(detail_url)
 
     assert response.status_code == status.HTTP_404_NOT_FOUND, response.content
+
+
+# ---------------------------------------------------------------------------
+# Group E: create-graph action
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_create_graph_returns_201_with_response_dict_structure(
+    auth_client, graph, make_graph_version
+):
+    version = make_graph_version(name="snap-for-create")
+    version_id = version["id"]
+
+    url = reverse("graph-versions-create-graph", args=[version_id])
+    response = auth_client.post(url, format="json")
+
+    assert response.status_code == status.HTTP_201_CREATED, response.content
+    assert response.data["created"] is True
+    assert "graph_id" in response.data
+    assert isinstance(response.data["warnings"], list)
+
+
+@pytest.mark.django_db
+def test_create_graph_creates_new_graph_with_version_name(
+    auth_client, graph, make_graph_version
+):
+    version_name = "unique-version-xyz"
+    version = make_graph_version(name=version_name)
+    version_id = version["id"]
+
+    url = reverse("graph-versions-create-graph", args=[version_id])
+    response = auth_client.post(url, format="json")
+
+    expected_name = f"{graph.name} from {version_name}"
+
+    assert response.status_code == status.HTTP_201_CREATED, response.content
+    new_graph = Graph.objects.get(id=response.data["graph_id"])
+    assert new_graph.name == expected_name
+
+
+@pytest.mark.django_db
+def test_create_graph_unique_name_collision_appends_suffix(
+    auth_client, graph, make_graph_version
+):
+    # Version name collides with the source graph name
+    version = make_graph_version(name=graph.name)
+    version_id = version["id"]
+
+    url = reverse("graph-versions-create-graph", args=[version_id])
+    response = auth_client.post(url, format="json")
+
+    assert response.status_code == status.HTTP_201_CREATED, response.content
+    new_graph = Graph.objects.get(id=response.data["graph_id"])
+    # Name must be unique — not equal to the source graph's name
+    assert new_graph.name != graph.name
+    assert graph.name in new_graph.name
+
+
+@pytest.mark.django_db
+def test_create_graph_nonexistent_version_returns_404(auth_client):
+    url = reverse("graph-versions-create-graph", args=[99999])
+
+    response = auth_client.post(url, format="json")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND, response.content
+
+
+@pytest.mark.django_db
+def test_create_graph_response_contains_warnings_list(
+    auth_client, graph, make_graph_version
+):
+    version = make_graph_version(name="warnings-check")
+    version_id = version["id"]
+
+    url = reverse("graph-versions-create-graph", args=[version_id])
+    response = auth_client.post(url, format="json")
+
+    assert response.status_code == status.HTTP_201_CREATED, response.content
+    assert "warnings" in response.data
+    assert isinstance(response.data["warnings"], list)
