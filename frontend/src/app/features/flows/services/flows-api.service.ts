@@ -147,4 +147,10 @@ export class FlowsApiService {
             { headers: this.httpHeaders }
         );
     }
+
+    getScheduleTriggerNode(id: number): Observable<GetScheduleTriggerNodeRequest> {
+        return this.http.get<GetScheduleTriggerNodeRequest>(
+            `${this.configService.apiUrl}schedule-trigger-nodes/${id}/`
+        );
+    }
 }
