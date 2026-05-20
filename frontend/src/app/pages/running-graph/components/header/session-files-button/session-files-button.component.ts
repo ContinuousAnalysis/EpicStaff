@@ -8,6 +8,7 @@ import {
     HostListener,
     inject,
     input,
+    OnDestroy,
     OnInit,
     signal,
     ViewChild,
@@ -31,6 +32,10 @@ const TERMINAL_STATUSES = new Set([
     GraphSessionStatus.EXPIRED,
 ]);
 
+// Backend may finish indexing output files slightly after the session status
+// becomes terminal. Poll with backoff until files appear or we give up.
+const POST_TERMINAL_RETRY_DELAYS_MS = [1000, 2000, 4000];
+
 interface TreeNode {
     name: string;
     path: string;
@@ -49,9 +54,11 @@ interface TreeNode {
     styleUrls: ['./session-files-button.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SessionFilesButtonComponent implements OnInit {
+export class SessionFilesButtonComponent implements OnInit, OnDestroy {
     readonly sessionId = input.required<string>();
     readonly sessionStatus = input<GraphSessionStatus | null>(null);
+
+    private retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
     private readonly storageApiService = inject(StorageApiService);
     private readonly router = inject(Router);
@@ -89,16 +96,30 @@ export class SessionFilesButtonComponent implements OnInit {
         effect(() => {
             const status = this.sessionStatus();
             if (status && TERMINAL_STATUSES.has(status)) {
-                this.loadFiles();
+                // Status just turned terminal — restart the retry sequence from attempt 0,
+                // because output files may still be getting indexed on the backend.
+                this.loadFiles(0);
             }
         });
     }
 
     ngOnInit(): void {
-        this.loadFiles();
+        this.loadFiles(0);
     }
 
-    private loadFiles(): void {
+    ngOnDestroy(): void {
+        this.cancelPendingRetry();
+    }
+
+    private cancelPendingRetry(): void {
+        if (this.retryTimeoutId !== null) {
+            clearTimeout(this.retryTimeoutId);
+            this.retryTimeoutId = null;
+        }
+    }
+
+    private loadFiles(attempt: number): void {
+        this.cancelPendingRetry();
         this.storageApiService
             .getSessionOutputFiles(this.sessionId())
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -107,12 +128,26 @@ export class SessionFilesButtonComponent implements OnInit {
                     this.outputFiles.set(files);
                     this.rootNodes.set(this.buildTreeFromPaths(files));
                     this.isLoaded.set(true);
+                    this.maybeScheduleRetry(files.length, attempt);
                 },
                 error: () => {
                     this.outputFiles.set([]);
                     this.isLoaded.set(true);
                 },
             });
+    }
+
+    private maybeScheduleRetry(fileCount: number, attempt: number): void {
+        if (fileCount > 0) return;
+        const status = this.sessionStatus();
+        if (!status || !TERMINAL_STATUSES.has(status)) return;
+        if (attempt >= POST_TERMINAL_RETRY_DELAYS_MS.length) return;
+
+        const delay = POST_TERMINAL_RETRY_DELAYS_MS[attempt];
+        this.retryTimeoutId = setTimeout(() => {
+            this.retryTimeoutId = null;
+            this.loadFiles(attempt + 1);
+        }, delay);
     }
 
     @HostListener('document:click')
