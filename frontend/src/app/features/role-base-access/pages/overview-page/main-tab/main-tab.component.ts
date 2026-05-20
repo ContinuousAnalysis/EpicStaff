@@ -4,10 +4,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppSvgIconComponent, ButtonComponent, LoadingSpinnerComponent } from '@shared/components';
 import { finalize } from 'rxjs';
 
+import { ToastService } from '../../../../../services/notifications';
 import { CreateOrganizationDialogComponent } from '../../../components/create-organization-dialog/create-organization-dialog.component';
 import { OrgCardComponent } from '../../../components/org-card/org-card.component';
 import { StatCardComponent } from '../../../components/stat-card/stat-card.component';
 import { StatCardData } from '../../../components/stat-card/stat-card.interface';
+import { AdminUserService } from '../../../services/admin/admin-user.service';
 import { OrganizationsStorageService } from '../../../services/admin/organizations-storage.service';
 
 @Component({
@@ -18,14 +20,18 @@ import { OrganizationsStorageService } from '../../../services/admin/organizatio
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainTabComponent implements OnInit {
-    private readonly dialog = inject(Dialog);
-    private readonly destroyRef = inject(DestroyRef);
-    private readonly organizationStorage = inject(OrganizationsStorageService);
+    private dialog = inject(Dialog);
+    private destroyRef = inject(DestroyRef);
+    private organizationStorage = inject(OrganizationsStorageService);
+    private adminUserService = inject(AdminUserService);
+    private toast = inject(ToastService);
 
-    public organizations = this.organizationStorage.organizations;
-    public isOrgsLoading = signal(true);
+    organizations = this.organizationStorage.organizations;
+    isOrgsLoading = signal(true);
+    isUsersLoading = signal(true);
+    usersCount = signal(0);
 
-    public stats = computed<StatCardData[]>(() => [
+    stats = computed<StatCardData[]>(() => [
         {
             label: 'TOTAL ORGANIZATIONS',
             icon: 'buildings',
@@ -34,22 +40,36 @@ export class MainTabComponent implements OnInit {
         {
             label: 'TOTAL USERS',
             icon: 'profile',
-            value: 1,
+            value: this.usersCount(),
         },
     ]);
 
     ngOnInit(): void {
         this.getOrganizations();
+        this.getUsers();
     }
 
     private getOrganizations(): void {
         this.organizationStorage
-            .getOrganizations()
+            .getOrganizations(true)
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
                 finalize(() => this.isOrgsLoading.set(false))
             )
             .subscribe();
+    }
+
+    private getUsers(): void {
+        this.adminUserService
+            .getUsers()
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => this.isUsersLoading.set(false))
+            )
+            .subscribe({
+                next: ({ count }) => this.usersCount.set(count),
+                error: () => this.toast.error('Failed to fetch users count.'),
+            });
     }
 
     onCreateOrganization(): void {

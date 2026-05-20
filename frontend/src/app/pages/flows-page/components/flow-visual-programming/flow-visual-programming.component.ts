@@ -15,7 +15,7 @@ import {
     signal,
     ViewChild,
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
     catchError,
@@ -28,6 +28,7 @@ import {
     Observable,
     of,
     switchMap,
+    take,
     tap,
 } from 'rxjs';
 
@@ -46,6 +47,7 @@ import {
     GraphRestoreResponse,
     RestoreWarning,
 } from '../../../../features/flows/models/graph.model';
+import { CreateGraphWarningsService } from '../../../../features/flows/services/create-graph-warnings.service';
 import { FlowsApiService } from '../../../../features/flows/services/flows-api.service';
 import { FlowsStorageService } from '../../../../features/flows/services/flows-storage.service';
 import { RunGraphService } from '../../../../features/flows/services/run-graph-session.service';
@@ -160,6 +162,7 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         private readonly flowUnsavedStateService: FlowUnsavedStateService,
         private readonly unsavedChangesDialog: UnsavedChangesDialogService,
         private readonly undoRedoService: UndoRedoService,
+        private readonly createGraphWarningService: CreateGraphWarningsService,
         private readonly runSessionSSEService: RunSessionSSEService,
         private readonly sidePanelService: SidePanelService
     ) {
@@ -176,6 +179,10 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
         effect(() => {
             const graphId = Number(this.routeParamMap().get('id'));
             if (!isFinite(graphId)) return;
+            this.undoRedoService.setUndoStack([]);
+            this.undoRedoService.setRedoStack([]);
+            const warnings = this.createGraphWarningService.readPending();
+            if (warnings.length) this.restoreWarnings.set(warnings);
             this.fetchGraph(graphId);
         });
 
@@ -334,9 +341,11 @@ export class FlowVisualProgrammingComponent implements OnInit, OnDestroy, CanCom
 
     public saveCurrentState(): Observable<void> {
         if (!this.hasUnsavedChanges()) return of(void 0);
-        if (this.isSaving()) return EMPTY;
-
-        return this.saveFlowState(this.currentFlowState(), false);
+        return toObservable(this.isSaving).pipe(
+            filter((saving) => !saving),
+            take(1),
+            switchMap(() => this.saveFlowState(this.currentFlowState(), false))
+        );
     }
 
     public handleRunFlow(): void {

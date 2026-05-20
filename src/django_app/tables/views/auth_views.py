@@ -13,15 +13,12 @@ from tables.models.rbac_models import ApiKey
 from tables.serializers.rbac_serializers import (
     AdminPasswordResetSerializer,
     ApiKeyValidateResponseSerializer,
-    AuthMeResponseSerializer,
     LoginSerializer,
     LogoutRequestSerializer,
     LogoutResponseSerializer,
     FirstSetupRequestSerializer,
     FirstSetupResponseSerializer,
     FirstSetupStatusSerializer,
-    PasswordChangeResponseSerializer,
-    PasswordChangeSerializer,
     PasswordResetConfirmResponseSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestResponseSerializer,
@@ -34,7 +31,7 @@ from tables.serializers.rbac_serializers import (
     TokenIntrospectRequestSerializer,
     TokenIntrospectResponseSerializer,
 )
-from tables.services.rbac.auth_service import AuthService, TokenPair
+from tables.services.rbac.auth_service import TokenPair
 from tables.services.rbac.auth_validation_service import AuthValidationService
 from tables.services.rbac.first_setup_service import FirstSetupService
 from tables.services.rbac.password_recovery_service import PasswordRecoveryService
@@ -192,34 +189,6 @@ class FirstSetupView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
-
-
-class AuthMeView(APIView):
-    authentication_classes = [JwtOrApiKeyAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    _service = AuthService()
-
-    @extend_schema(
-        summary="Get current user",
-        description=(
-            "Returns the authenticated user's profile and list of org "
-            "memberships (each with the role). Active-org resolution from "
-            "`X-Organization-Id` is added in Story 7."
-        ),
-        responses={200: AuthMeResponseSerializer},
-    )
-    def get(self, request):
-        if not getattr(request.user, "is_authenticated", False) or not hasattr(
-            request.user, "email"
-        ):
-            # API keys with no `created_by` resolve to AnonymousUser.
-            return Response(
-                {"detail": "This endpoint requires a user context."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        return Response(self._service.build_me_payload(request.user, request=request))
 
 
 class TokenIntrospectView(APIView):
@@ -398,50 +367,6 @@ class PasswordResetConfirmView(APIView):
         self._service.confirm_reset(cleaned["token"], cleaned["new_password"])
         return Response(
             {"detail": "Password has been reset."},
-            status=status.HTTP_200_OK,
-        )
-
-
-class PasswordChangeView(APIView):
-    """Authenticated self-service password change.
-
-    Verifies `current_password`, writes the new one, blacklists every
-    outstanding refresh token for the caller, and returns a fresh pair
-    so the calling device stays logged in without a round-trip.
-    """
-
-    authentication_classes = [JwtOrApiKeyAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    _validator = AuthValidationService()
-    _service = PasswordRecoveryService()
-
-    @extend_schema(
-        summary="Change your own password",
-        request=PasswordChangeSerializer,
-        responses={
-            200: PasswordChangeResponseSerializer,
-            400: OpenApiResponse(
-                description="Wrong current password or weak new password"
-            ),
-        },
-    )
-    def post(self, request):
-        if not getattr(request.user, "is_authenticated", False) or not hasattr(
-            request.user, "email"
-        ):
-            return Response(
-                {"detail": "This endpoint requires a user context."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        cleaned = self._validator.validate_password_change(request.data)
-        tokens = self._service.change_password(
-            request.user,
-            cleaned["current_password"],
-            cleaned["new_password"],
-        )
-        return Response(
-            {"access": tokens.access, "refresh": tokens.refresh},
             status=status.HTTP_200_OK,
         )
 

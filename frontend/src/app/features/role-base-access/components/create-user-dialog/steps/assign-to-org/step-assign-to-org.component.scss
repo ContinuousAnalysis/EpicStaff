@@ -1,0 +1,47 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.content {
+    flex-grow: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 40px;
+    gap: 12px;
+
+    .engage-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        justify-content: space-between;
+        flex-shrink: 0;
+
+        .label {
+            white-space: nowrap;
+            font-size: 0.875rem;
+            color: var(--text-secondary-60);
+
+            .count {
+                color: var(--purple-primary);
+                font-weight: 600;
+            }
+        }
+    }
+}
+
+.org-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .org-name {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text);
+    }
+}

@@ -1,0 +1,41 @@
+<div class="dialog">
+    <div class="header">
+        <span class="title">Crop New Profile Photo</span>
+        <button
+            class="close"
+            type="button"
+            (click)="onCancel()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="18px"
+            />
+        </button>
+    </div>
+
+    <div class="body">
+        <image-cropper
+            [imageFile]="data.file"
+            [aspectRatio]="1"
+            [resizeToWidth]="100"
+            [roundCropper]="true"
+            format="jpeg"
+            (imageCropped)="onImageCropped($event)"
+        />
+    </div>
+
+    <div class="footer">
+        <app-button
+            type="outline-primary"
+            (click)="onCancel()"
+            >Cancel</app-button
+        >
+        <app-button
+            type="primary"
+            [disabled]="!croppedBlob()"
+            (click)="onConfirm()"
+        >
+            Update Profile Photo
+        </app-button>
+    </div>
+</div>

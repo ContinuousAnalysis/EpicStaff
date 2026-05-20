@@ -16,7 +16,7 @@ import { CheckboxComponent, IconButtonComponent, LoadingSpinnerComponent } from 
 import { GraphMessagesComponent } from 'src/app/pages/running-graph/components/graph-messages/graph-messages.component';
 
 import { GraphDto } from '../../models/graph.model';
-import { GraphSessionLight, GraphSessionStatus } from '../../services/flows-sessions.service';
+import { GraphSessionLight, GraphSessionStatus, isTerminalSessionStatus } from '../../services/flows-sessions.service';
 import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.component';
 import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-filter-dropdown.component';
 @Component({
@@ -292,9 +292,7 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     }
 
     canStop(status: GraphSessionStatus) {
-        return [GraphSessionStatus.RUNNING, GraphSessionStatus.WAITING_FOR_USER, GraphSessionStatus.PENDING].includes(
-            status
-        );
+        return !isTerminalSessionStatus(status);
     }
 
     trackById(_: number, item: GraphSessionLight) {

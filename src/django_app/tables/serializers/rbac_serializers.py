@@ -37,34 +37,6 @@ class FirstSetupResponseSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
 
-# ---- AuthMe ----
-
-
-class _MembershipOrgPayload(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-
-
-class _MembershipRolePayload(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-
-
-class _MembershipPayload(serializers.Serializer):
-    organization = _MembershipOrgPayload()
-    role = _MembershipRolePayload()
-    joined_at = serializers.DateTimeField()
-
-
-class AuthMeResponseSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    email = serializers.EmailField()
-    display_name = serializers.CharField(allow_null=True)
-    avatar_url = serializers.CharField(allow_null=True)
-    is_superadmin = serializers.BooleanField()
-    memberships = _MembershipPayload(many=True)
-
-
 # ---- Token introspect ----
 
 
@@ -162,16 +134,6 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class PasswordResetConfirmResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
-
-
-class PasswordChangeSerializer(serializers.Serializer):
-    current_password = serializers.CharField(write_only=True)
-    new_password = serializers.CharField(write_only=True)
-
-
-class PasswordChangeResponseSerializer(serializers.Serializer):
-    access = serializers.CharField()
-    refresh = serializers.CharField()
 
 
 class AdminPasswordResetSerializer(serializers.Serializer):

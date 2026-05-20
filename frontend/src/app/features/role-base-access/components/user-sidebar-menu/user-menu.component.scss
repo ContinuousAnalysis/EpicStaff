@@ -65,12 +65,14 @@
     list-style: none;
     margin: 0;
     padding: 0;
+    max-height: 160px;
+    overflow-y: auto;
 }
 
 .org-row {
     display: flex;
     align-items: center;
-    cursor: pointer;
+    //cursor: pointer;
     transition: background-color 0.15s ease;
     padding: 4px 0;
 
