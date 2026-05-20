@@ -32,6 +32,40 @@ class GraphVersioningService:
         )
 
     @transaction.atomic
+    def create_graph_from_version(self, version: GraphVersion) -> dict:
+        """
+        Create a brand-new Graph from a version snapshot.
+        The new graph is fully independent — own id/uuid, zero GraphVersion rows.
+        """
+        source_graph = version.graph
+        deps = version.dependencies or {}
+
+        snapshot = self._manager.convert_snapshot_to_current_version(version.snapshot)
+        deps_validation = self._manager.validate_dependencies(deps)
+        filtered_snapshot, warnings = self._manager.filter_snapshot(
+            snapshot, deps_validation["missing"]
+        )
+
+        graph_name = snapshot.get("name", "Flow")
+        new_graph, node_mapper = self._manager.create_graph_from_snapshot(
+            filtered_snapshot,
+            deps_validation["available"],
+            graph_name=graph_name,
+            version_name=version.name,
+        )
+
+        # Copy labels from source graph
+        new_graph.labels.set(source_graph.labels.all())
+
+        self._manager.change_old_warnings_ids(warnings, node_mapper)
+
+        return {
+            "created": True,
+            "graph_id": new_graph.id,
+            "warnings": warnings,
+        }
+
+    @transaction.atomic
     def restore_version(self, version: GraphVersion, *, backup: bool = False) -> dict:
         """
         Restore a graph to the state captured in ``version``.

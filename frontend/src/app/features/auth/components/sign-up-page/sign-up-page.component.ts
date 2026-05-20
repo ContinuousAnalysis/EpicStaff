@@ -69,7 +69,7 @@ export class SignUpPageComponent {
     onSubmit(): void {
         this.serverErrorsRef.clear();
         this.form.markAllAsTouched();
-        if (this.form.invalid) return;
+        if (this.form.invalid || !this.termsControl.value) return;
 
         this.state.set('loading');
 

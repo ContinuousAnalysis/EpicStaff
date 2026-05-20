@@ -6,6 +6,7 @@ from tables.graph_versioning.manager import GraphVersioningManager
 from tables.import_export.enums import EntityType, NodeType
 from tables.import_export.id_mapper import IDMapper
 from tables.import_export.constants import NODE_MAPPING_KEY
+from tables.models import Graph, Edge, CrewNode, StartNode, GraphOrganization
 from tests.fixtures import *  # noqa: F401,F403
 
 
@@ -467,3 +468,155 @@ def test_apply_snapshot_to_graph_round_trip(manager, graph, crew):
     # Recreated node references the same crew
     recreated = graph.crew_node_list.first()
     assert recreated.crew_id == crew.id
+
+
+# ---------------------------------------------------------------------------
+# Group G: create_graph_from_snapshot — DB tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_create_graph_from_snapshot_returns_graph_and_idmapper(
+    manager, graph, default_org
+):
+    snapshot = manager.create_snapshot(graph)
+
+    result = manager.create_graph_from_snapshot(
+        snapshot, available_deps={}, version_name="v1"
+    )
+
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    new_graph, node_mapper = result
+    assert isinstance(new_graph, Graph)
+    assert isinstance(node_mapper, IDMapper)
+
+
+@pytest.mark.django_db
+def test_create_graph_from_snapshot_creates_new_graph_row(manager, graph, default_org):
+    snapshot = manager.create_snapshot(graph)
+
+    new_graph, _ = manager.create_graph_from_snapshot(
+        snapshot, available_deps={}, version_name="v1"
+    )
+
+    assert Graph.objects.filter(id=new_graph.id).exists()
+    assert new_graph.id != graph.id
+
+
+@pytest.mark.django_db
+def test_create_graph_from_snapshot_uses_version_name_as_graph_name(
+    manager, graph, default_org
+):
+    snapshot = manager.create_snapshot(graph)
+
+    new_graph, _ = manager.create_graph_from_snapshot(
+        snapshot, available_deps={}, version_name="My Version"
+    )
+
+    assert new_graph.name == "My Version"
+
+
+@pytest.mark.django_db
+def test_create_graph_from_snapshot_deduplicates_name_when_taken(
+    manager, graph, default_org
+):
+    Graph.objects.create(name="My Version")
+    snapshot = manager.create_snapshot(graph)
+
+    new_graph, _ = manager.create_graph_from_snapshot(
+        snapshot, available_deps={}, version_name="My Version"
+    )
+
+    assert new_graph.name == "My Version (2)"
+
+
+@pytest.mark.django_db
+def test_create_graph_from_snapshot_does_not_mutate_input_snapshot(
+    manager, graph, default_org
+):
+    snapshot = manager.create_snapshot(graph)
+    original_id = snapshot.get("id")
+    original_nodes_len = len(snapshot.get("nodes", []))
+
+    manager.create_graph_from_snapshot(snapshot, available_deps={}, version_name="v1")
+
+    assert snapshot.get("id") == original_id
+    assert len(snapshot.get("nodes", [])) == original_nodes_len
+
+
+@pytest.mark.django_db
+def test_create_graph_from_snapshot_links_to_default_organization(
+    manager, graph, default_org
+):
+    snapshot = manager.create_snapshot(graph)
+
+    new_graph, _ = manager.create_graph_from_snapshot(
+        snapshot, available_deps={}, version_name="v1"
+    )
+
+    assert GraphOrganization.objects.filter(graph=new_graph).exists()
+    graph_org = GraphOrganization.objects.get(graph=new_graph)
+    assert graph_org.organization == default_org
+
+
+@pytest.mark.django_db
+def test_create_graph_from_snapshot_recreates_crew_node(
+    manager, graph, crew, default_org
+):
+    CrewNode.objects.create(graph=graph, node_name="cn", crew=crew)
+    snapshot = manager.create_snapshot(graph)
+    available_deps = {EntityType.CREW.value: [crew.id]}
+
+    new_graph, _ = manager.create_graph_from_snapshot(
+        snapshot, available_deps=available_deps, version_name="v1"
+    )
+
+    assert new_graph.crew_node_list.count() == 1
+    assert new_graph.crew_node_list.first().crew_id == crew.id
+
+
+@pytest.mark.django_db
+def test_create_graph_from_snapshot_node_mapper_maps_old_to_new_node_id(
+    manager, graph, crew, default_org
+):
+    CrewNode.objects.create(graph=graph, node_name="cn", crew=crew)
+    snapshot = manager.create_snapshot(graph)
+    available_deps = {EntityType.CREW.value: [crew.id]}
+
+    crew_node_entry = next(
+        n for n in snapshot["nodes"] if n["node_type"] == NodeType.CREW_NODE
+    )
+    old_node_id = crew_node_entry["id"]
+
+    new_graph, node_mapper = manager.create_graph_from_snapshot(
+        snapshot, available_deps=available_deps, version_name="v1"
+    )
+
+    new_crew_node = new_graph.crew_node_list.first()
+    assert node_mapper.get(NODE_MAPPING_KEY, old_node_id) == new_crew_node.id
+
+
+@pytest.mark.django_db
+def test_create_graph_from_snapshot_recreates_edge_with_remapped_node_ids(
+    manager, graph, crew, default_org
+):
+    start_node = StartNode.objects.create(graph=graph, variables={})
+    crew_node = CrewNode.objects.create(graph=graph, node_name="cn", crew=crew)
+    Edge.objects.create(
+        graph=graph,
+        start_node_id=start_node.id,
+        end_node_id=crew_node.id,
+    )
+    snapshot = manager.create_snapshot(graph)
+    available_deps = {EntityType.CREW.value: [crew.id]}
+
+    new_graph, _ = manager.create_graph_from_snapshot(
+        snapshot, available_deps=available_deps, version_name="v1"
+    )
+
+    assert new_graph.edge_list.count() == 1
+    new_edge = new_graph.edge_list.first()
+    original_node_ids = {start_node.id, crew_node.id}
+    assert new_edge.start_node_id not in original_node_ids
+    assert new_edge.end_node_id not in original_node_ids
