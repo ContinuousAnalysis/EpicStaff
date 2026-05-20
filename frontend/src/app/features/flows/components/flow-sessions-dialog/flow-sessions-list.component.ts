@@ -22,9 +22,7 @@ import {
     IconButtonComponent,
     PaginationControlsComponent,
 } from '@shared/components';
-import { finalize, Subject, takeUntil } from 'rxjs';
-import { IconButtonComponent, PaginationControlsComponent } from '@shared/components';
-import { catchError, EMPTY, interval, map, merge, Subject, switchMap, takeUntil } from 'rxjs';
+import { catchError, EMPTY, finalize, interval, map, merge, Subject, switchMap, takeUntil } from 'rxjs';
 import { NodeGroup } from 'src/app/shared/models/node-group.model';
 
 import { ExportFormat, ImportExportService } from '../../../../core/services/import-export.service';
