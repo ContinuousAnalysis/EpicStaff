@@ -291,6 +291,17 @@ class GraphSessionMessage(models.Model):
     execution_order = models.IntegerField(default=0)
     message_data = models.JSONField()
     uuid = models.UUIDField(null=False, editable=False, unique=True)
+    parent_subgraph_execution_id = models.UUIDField(
+        null=True, blank=True, db_index=True
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["session", "parent_subgraph_execution_id", "id"],
+                name="gsm_session_parent_id_idx",
+            ),
+        ]
 
 
 class StartNode(BaseGraphEntity, BaseGlobalNode):

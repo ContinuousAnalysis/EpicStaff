@@ -1049,11 +1049,28 @@ class ConditionalEdgeViewSet(ContentHashPreconditionMixin, viewsets.ModelViewSet
     serializer_class = ConditionalEdgeSerializer
 
 
+class GraphSessionMessageFilter(FilterSet):
+    session_id = NumberFilter(field_name="session_id", lookup_expr="exact")
+    parent_subgraph_execution_id = filters.UUIDFilter(
+        field_name="parent_subgraph_execution_id", lookup_expr="exact"
+    )
+
+    class Meta:
+        model = GraphSessionMessage
+        fields = ["session_id", "parent_subgraph_execution_id"]
+
+
 class GraphSessionMessageReadOnlyViewSet(ReadOnlyModelViewSet):
     queryset = GraphSessionMessage.objects.all().order_by("id")
     serializer_class = GraphSessionMessageSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["session_id"]
+    filterset_class = GraphSessionMessageFilter
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if not self.request.query_params.get("parent_subgraph_execution_id"):
+            qs = qs.filter(parent_subgraph_execution_id__isnull=True)
+        return qs
 
 
 class MemoryFilter(FilterSet):

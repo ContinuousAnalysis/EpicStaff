@@ -372,6 +372,13 @@ class RedisPubSub:
                 value=json.dumps(data),
             )
 
+            subgraph_execution_ids = (
+                graph_session_message_data.message_data or {}
+            ).get("subgraph_execution_ids") or []
+            parent_subgraph_execution_id = (
+                subgraph_execution_ids[0] if subgraph_execution_ids else None
+            )
+
             # Save in buffer.
             buffer.append(
                 dict(
@@ -381,6 +388,7 @@ class RedisPubSub:
                     execution_order=graph_session_message_data.execution_order,
                     message_data=graph_session_message_data.message_data,
                     uuid=message_uuid,
+                    parent_subgraph_execution_id=parent_subgraph_execution_id,
                 )
             )
 
@@ -596,17 +604,30 @@ class RedisPubSub:
             ]
             exec_id_messages[exec_id] = matching
 
-            copies = [
-                dict(
-                    session_id=session.pk,
-                    created_at=msg.created_at,
-                    name=msg.name,
-                    execution_order=msg.execution_order,
-                    message_data=msg.message_data,
-                    uuid=uuid4(),
+            copies = []
+            for msg in matching:
+                # Re-derive ancestry within this subgraph's session scope.
+                src_message_data = msg.message_data or {}
+                ids = src_message_data.get("subgraph_execution_ids") or []
+                inner_ids = ids[: ids.index(exec_id)] if exec_id in ids else []
+                new_parent = inner_ids[0] if inner_ids else None
+
+                scoped_message_data = {
+                    **src_message_data,
+                    "subgraph_execution_ids": inner_ids,
+                }
+
+                copies.append(
+                    dict(
+                        session_id=session.pk,
+                        created_at=msg.created_at,
+                        name=msg.name,
+                        execution_order=msg.execution_order,
+                        message_data=scoped_message_data,
+                        uuid=uuid4(),
+                        parent_subgraph_execution_id=new_parent,
+                    )
                 )
-                for msg in matching
-            ]
 
             if copies:
                 buffer.extend(copies)
