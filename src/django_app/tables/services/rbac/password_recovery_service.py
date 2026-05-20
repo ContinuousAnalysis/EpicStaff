@@ -4,9 +4,7 @@ from uuid import UUID
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
-from tables.services.rbac.auth_service import TokenPair
 from tables.services.rbac.rbac_exceptions import (
-    InvalidCurrentPasswordError,
     InvalidOrExpiredTokenError,
     SuperadminRequiredError,
     UserNotFoundError,
@@ -83,21 +81,6 @@ class PasswordRecoveryService:
             self._password_writer.set(user, new_password)
             self._token_repo.mark_used(token_row)
         self._session_invalidator.blacklist_all_for_user(user)
-
-    # ---- authenticated self-service ----
-
-    def change_password(
-        self, user, current_password: str, new_password: str
-    ) -> TokenPair:
-        if not user.check_password(current_password):
-            raise InvalidCurrentPasswordError()
-        with transaction.atomic():
-            self._password_writer.set(user, new_password)
-        # Invalidate every session the user (or an attacker holding their
-        # refresh token) might have open, then mint a fresh pair so the
-        # caller stays logged in on *this* device without a second trip.
-        self._session_invalidator.blacklist_all_for_user(user)
-        return TokenPair.for_user(user)
 
     # ---- admin flow ----
 

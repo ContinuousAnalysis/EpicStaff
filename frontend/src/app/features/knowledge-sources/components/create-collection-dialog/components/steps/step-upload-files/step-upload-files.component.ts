@@ -2,7 +2,7 @@ import { UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, model, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { HelpTooltipComponent, ValidationErrorsComponent } from '@shared/components';
+import { FileUploaderComponent, HelpTooltipComponent, ValidationErrorsComponent } from '@shared/components';
 import { MATERIAL_FORMS } from '@shared/material-forms';
 import { EMPTY, filter } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -14,7 +14,6 @@ import { DisplayedListDocument } from '../../../../../models/document.model';
 import { CollectionsStorageService } from '../../../../../services/collections-storage.service';
 import { DocumentsStorageService } from '../../../../../services/documents-storage.service';
 import { FileListService } from '../../../../../services/files-list.service';
-import { FileUploaderComponent } from '../../file-uploader/file-uploader.component';
 import { FilePreviewComponent } from './file-preview/file-preview.component';
 import { FilesListComponent } from './files-list/files-list.component';
 

@@ -1,3 +1,5 @@
+import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -9,20 +11,25 @@ import {
     CustomInputComponent,
     ValidationErrorsComponent,
 } from '@shared/components';
+import { ServerErrorsDirective, ServerErrorsRef } from '@shared/directives';
 import { strictEmailValidator } from '@shared/form-validators';
+import { HttpStatus } from '@shared/models';
 import { interval, take } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 import { AuthService } from '../../../../services/auth/auth.service';
 
 @Component({
     selector: 'app-login-page',
     imports: [
+        CommonModule,
         ReactiveFormsModule,
         CustomInputComponent,
         ValidationErrorsComponent,
         ButtonComponent,
         CheckboxComponent,
         AppSvgIconComponent,
+        ServerErrorsDirective,
     ],
     templateUrl: './login-page.component.html',
     styleUrls: ['./login-page.component.scss'],
@@ -34,7 +41,9 @@ export class LoginPageComponent {
     private readonly route = inject(ActivatedRoute);
     private readonly destroyRef = inject(DestroyRef);
 
-    form = new FormGroup({
+    readonly serverErrorsRef = new ServerErrorsRef();
+
+    readonly form = new FormGroup({
         email: new FormControl('', { nonNullable: true, validators: [Validators.required, strictEmailValidator()] }),
         password: new FormControl('', {
             nonNullable: true,
@@ -43,43 +52,42 @@ export class LoginPageComponent {
         rememberMe: new FormControl(false, { nonNullable: true }),
     });
 
-    loading = signal(false);
-    serverError = signal<string | null>('');
-    throttleSecondsLeft = signal(0);
-
-    constructor() {
-        this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-            this.serverError.set(null);
-        });
-    }
+    readonly loading = signal(false);
+    readonly throttleSecondsLeft = signal(0);
 
     onSubmit(): void {
+        this.form.markAllAsTouched();
         if (this.form.invalid) return;
 
         this.loading.set(true);
-        this.serverError.set(null);
+        this.serverErrorsRef.clear();
 
-        const email = this.form.getRawValue().email.toString();
-        const password = this.form.getRawValue().password.toString();
-        const rememberMe = this.form.getRawValue().rememberMe;
+        const { email, password, rememberMe } = this.form.getRawValue();
+
         this.authService
             .login(email, password, rememberMe)
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => this.loading.set(false))
+            )
             .subscribe({
                 next: () => {
                     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/projects';
                     void this.router.navigateByUrl(returnUrl);
                 },
-                error: (err) => {
-                    this.loading.set(false);
-                    if (err.error.status_code === 429) {
-                        this.handleThrottleError(err?.error?.message);
+                error: (err: HttpErrorResponse) => {
+                    if (err.status === HttpStatus.TooManyRequests) {
+                        this.handleThrottleError(err.error?.message);
                         return;
                     }
-                    this.serverError.set(err?.error?.message || 'Login failed. Please try again.');
-                },
-                complete: () => {
-                    this.loading.set(false);
+                    if (err.validationErrors?.length) {
+                        this.serverErrorsRef.setErrors(err.validationErrors);
+                        return;
+                    }
+                    // Login failure on bad credentials — show as form-level error.
+                    this.serverErrorsRef.setErrors([
+                        { field: '', value: '', reason: err.error?.message ?? 'Login failed. Please try again.' },
+                    ]);
                 },
             });
     }
@@ -92,10 +100,7 @@ export class LoginPageComponent {
             .pipe(take(seconds), takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.throttleSecondsLeft.update((v) => v - 1),
-                complete: () => {
-                    this.serverError.set(null);
-                    this.throttleSecondsLeft.set(0);
-                },
+                complete: () => this.throttleSecondsLeft.set(0),
             });
     }
 

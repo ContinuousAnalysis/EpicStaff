@@ -1,0 +1,188 @@
+<div class="toolbar">
+    <app-search
+        placeholder="Search by name or email..."
+        [width]="'240px'"
+        [(searchTerm)]="searchTerm"
+    />
+    <span class="count-label">{{ filteredUsers().length }} of {{ usersData().length }} users</span>
+    <div class="toolbar-actions">
+        <app-button
+            type="primary"
+            leftIcon="plus"
+            (click)="onCreateUser()"
+            >Create User</app-button
+        >
+        <!--        <button-->
+        <!--            class="settings-btn"-->
+        <!--            type="button"-->
+        <!--        >-->
+        <!--            <app-svg-icon-->
+        <!--                icon="settings"-->
+        <!--                size="18px"-->
+        <!--            />-->
+        <!--        </button>-->
+    </div>
+</div>
+
+@if (isLoading()) {
+    <app-loading-spinner size="sm" />
+} @else {
+    <app-table
+        [columns]="columns()"
+        [data]="filteredUsers()"
+        [selectable]="false"
+        rowId="id"
+    >
+        <!-- USER -->
+        <ng-template
+            appTableCell="user"
+            let-row
+        >
+            <div class="user-cell">
+                <app-user-avatar
+                    [name]="row['display_name'] || row['email']"
+                    [avatarUrl]="row['avatar']"
+                />
+                <div class="user-info">
+                    <span class="user-name">{{ row['name'] }}</span>
+                    <span class="user-email">{{ row['email'] }}</span>
+                </div>
+            </div>
+        </ng-template>
+
+        <!-- ROLE -->
+        <ng-template
+            appTableCell="roles"
+            let-row
+        >
+            @if (row['roles']?.length) {
+                <div
+                    class="role-badges"
+                    appOverflowItems
+                    #roleOverflow="overflowItems"
+                >
+                    @if (row['isSuperadmin']) {
+                        <span
+                            appOverflowItem
+                            class="role-chip"
+                            >Super Admin</span
+                        >
+                    }
+                    @for (role of row['roles']; track role) {
+                        <span
+                            appOverflowItem
+                            class="role-chip"
+                            >{{ role }}</span
+                        >
+                    }
+                    <span
+                        appOverflowBadge
+                        class="overflow-badge"
+                        >+{{ roleOverflow.overflowCount() }}</span
+                    >
+                </div>
+            } @else {
+                <span class="empty-value">-</span>
+            }
+        </ng-template>
+
+        <!-- ORGANIZATION -->
+        <ng-template
+            appTableCell="organization"
+            let-row
+        >
+            @if (row['organizationDetails']?.length) {
+                <div
+                    class="org-badges"
+                    appOverflowItems
+                    #orgOverflow="overflowItems"
+                >
+                    @for (org of row['organizationDetails']; track org.id) {
+                        <app-org-avatar
+                            appOverflowItem
+                            [name]="org.name"
+                            [title]="org.name"
+                        />
+                    }
+                    <span
+                        appOverflowBadge
+                        class="overflow-badge"
+                        >+{{ orgOverflow.overflowCount() }}</span
+                    >
+                </div>
+            } @else {
+                <span class="empty-value">-</span>
+            }
+        </ng-template>
+
+        <!-- ACTIVE -->
+        <ng-template
+            appTableCell="lastActive"
+            let-row
+        >
+            @if (row['lastActive']) {
+                <div class="last-active">
+                    <span class="date">{{ formatDate(row['lastActive']) }}</span>
+                    <span class="relative">{{ getRelativeTime(row['lastActive']) }}</span>
+                </div>
+            } @else {
+                <span class="empty-value">-</span>
+            }
+        </ng-template>
+
+        <!-- STATUS -->
+        <ng-template
+            appTableCell="status"
+            let-row
+        >
+            @if (row['status']) {
+                <app-status-badge
+                    [modifier]="row['status']"
+                    [label]="statusLabel(row['status'])"
+                />
+            } @else {
+                <span class="empty-value">-</span>
+            }
+        </ng-template>
+
+        <!-- ACTIONS -->
+        <ng-template
+            appTableCell="actions"
+            let-row
+        >
+            <div class="actions-cell">
+                <!--                <button-->
+                <!--                    class="action-btn"-->
+                <!--                    type="button"-->
+                <!--                    title="View"-->
+                <!--                >-->
+                <!--                    <app-svg-icon-->
+                <!--                        icon="eye"-->
+                <!--                        size="16px"-->
+                <!--                    />-->
+                <!--                </button>-->
+                <button
+                    class="action-btn"
+                    type="button"
+                    title="Edit"
+                    (click)="onEditUser(row['id'])"
+                >
+                    <app-svg-icon
+                        icon="edit"
+                        size="16px"
+                    />
+                </button>
+                <!--                <button-->
+                <!--                    class="action-btn action-btn&#45;&#45;danger"-->
+                <!--                    type="button"-->
+                <!--                    title="Delete"-->
+                <!--                >-->
+                <!--                    <app-svg-icon-->
+                <!--                        icon="trash"-->
+                <!--                        size="16px"-->
+                <!--                    />-->
+                <!--                </button>-->
+            </div>
+        </ng-template>
+    </app-table>
+}

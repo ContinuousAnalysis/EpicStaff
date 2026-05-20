@@ -1,60 +1,110 @@
 name: Publish Release
 
 on:
-  workflow_call
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release (e.g. v1.0.7). Must already exist in the repo.'
+        required: true
+        type: string
 
 permissions:
   contents: write
-  
+  packages: write
+
 jobs:
+  resolve:
+    name: Resolve release tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.r.outputs.tag }}
+    steps:
+      - id: r
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "push" ]; then
+            TAG="$REF_NAME"
+          else
+            TAG="$INPUT_TAG"
+          fi
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: '$TAG' (must match v[0-9]+.[0-9]+.[0-9]+)" >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo ">> release tag: $TAG"
+
+  build-images:
+    name: Build & push release images
+    needs: resolve
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      ref: ${{ needs.resolve.outputs.tag }}
+      tag: ${{ needs.resolve.outputs.tag }}
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+
   publish-release:
+    name: Publish GitHub Release
+    needs: [resolve, build-images]
     runs-on: self-hosted
-    if: startsWith(github.ref_name, 'release-')
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ needs.resolve.outputs.tag }}
 
-      - name: Download installer artifacts
-        uses: actions/download-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v6
         with:
-          path: artifacts/
-        continue-on-error: true
+          python-version: "3.12.10"
 
-      - name: Archive installers if available
+      - name: Install python deps
+        run: pip install ruamel.yaml
+
+      - name: Prepare release-archives dir
+        shell: bash
+        run: mkdir -p release-archives
+
+      - name: Generate customer docker-compose.yaml
+        shell: bash
         run: |
-          mkdir -p release-archives
+          set -euo pipefail
+          python ./.github/scripts/strip_build_blocks.py \
+            src/docker-compose.yaml \
+            release-archives/docker-compose.yaml
 
-          if [ -d "artifacts/macos-installer" ]; then
-            tar -czf release-archives/macos-epicstaff.tar.gz -C artifacts/macos-installer .
-          fi
-
-          if [ -d "artifacts/windows-installer" ]; then
-            zip -r release-archives/windows-epicstaff.zip artifacts/windows-installer/*
-          fi
-
-          if [ -d "artifacts/linux-installer" ]; then
-            tar -czf release-archives/linux-epicstaff.tar.gz -C artifacts/linux-installer .
-          fi
-
-          ls -la release-archives || echo "No archives found"
-
-      - name: Extract tag from branch name
-        id: extract_tag
+      - name: Copy .env.example
+        shell: bash
         run: |
-            BRANCH_NAME="${GITHUB_REF_NAME}"
-            TAG_NAME="${BRANCH_NAME#release-}"
-            echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-            echo "Extracted tag: $TAG_NAME"
+          set -euo pipefail
+          if [ -f src/.env.example ]; then
+            cp src/.env.example release-archives/.env.example
+            echo ">> copied src/.env.example to release-archives/"
+          else
+            echo "ERROR: src/.env.example not found (it should be checked into the repo)" >&2
+            exit 1
+          fi
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-            tag_name: ${{ steps.extract_tag.outputs.tag_name }}
-            name: "Release ${{ steps.extract_tag.outputs.tag_name }}"
-            body: ${{ github.event.inputs.release_notes }}
-            files: release-archives/*
+          tag_name: ${{ needs.resolve.outputs.tag }}
+          name: "Release ${{ needs.resolve.outputs.tag }}"
+          files: |
+            release-archives/*
+            release-archives/.env.example
         env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
