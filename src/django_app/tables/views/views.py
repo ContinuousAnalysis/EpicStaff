@@ -102,6 +102,7 @@ from tables.swagger_schemas.crews_schema import CREW_DELETE
 from tables.swagger_schemas.knowledge_schemas.naive_rag_schemas import (
     PROCESS_RAG_INDEXING_POST,
 )
+from tables.swagger_schemas.realtime_schemas import INIT_REALTIME_POST
 from tables.swagger_schemas.sessions_schema import (
     ANSWER_TO_LLM,
     GET_UPDATES_GET,
@@ -681,13 +682,7 @@ class RunPythonCodeAPIView(APIView):
 
 
 class InitRealtimeAPIView(APIView):
-    @extend_schema(
-        request=InitRealtimeSerializer,
-        responses={
-            201: OpenApiResponse(description="Realtime agent created successfully"),
-            400: OpenApiResponse(description="Bad Request - Invalid Input"),
-        },
-    )
+    @extend_schema(**INIT_REALTIME_POST)
     def post(self, request):
         logger.info("Received POST request to start a new session.")
 
