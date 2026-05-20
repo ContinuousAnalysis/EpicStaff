@@ -16,6 +16,7 @@ import { GraphMessagesComponent } from 'src/app/pages/running-graph/components/g
 
 import { GraphDto } from '../../models/graph.model';
 import { GraphSessionLight, GraphSessionStatus } from '../../services/flows-sessions.service';
+import { FlowNameFilterDropdownComponent } from './flow-name-filter-dropdown.component';
 import { FlowSessionStatusBadgeComponent } from './flow-session-status-badge.component';
 import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-filter-dropdown.component';
 @Component({
@@ -29,6 +30,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
         IconButtonComponent,
         GraphMessagesComponent,
         FlowSessionStatusFilterDropdownComponent,
+        FlowNameFilterDropdownComponent,
     ],
     template: `
         <div class="sessions-table-wrapper">
@@ -51,7 +53,13 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
                             >
                             </app-flow-session-status-filter-dropdown>
                         </th>
-                        <th *ngIf="showFlowName">Flow Name</th>
+                        <th *ngIf="showFlowName">
+                            <app-flow-name-filter-dropdown
+                                [flows]="flows"
+                                [value]="flowNameFilter"
+                                (valueChange)="flowNameFilterChange.emit($event)"
+                            ></app-flow-name-filter-dropdown>
+                        </th>
                         <th
                             [class.sortable]="sortable"
                             (click)="sortable && toggleSort()"
@@ -203,6 +211,8 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     @Input() sortable: boolean = false;
     @Input() sortOrder: 'asc' | 'desc' = 'desc';
     @Input() statusFilter: string[] = ['all'];
+    @Input() flows: { id: number; name: string }[] = [];
+    @Input() flowNameFilter: string | null = null;
 
     @Input() externalPreview: boolean = false;
 
@@ -211,6 +221,7 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     @Output() stopSession = new EventEmitter<number>();
     @Output() sortChange = new EventEmitter<'asc' | 'desc'>();
     @Output() statusFilterChange = new EventEmitter<string[]>();
+    @Output() flowNameFilterChange = new EventEmitter<string | null>();
     @Output() selectedIdsChange = new EventEmitter<Set<number>>();
     @Output() previewSession = new EventEmitter<number | null>();
 

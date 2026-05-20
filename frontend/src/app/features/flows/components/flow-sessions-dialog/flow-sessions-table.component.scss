@@ -72,6 +72,9 @@ table {
     td:nth-child(4) {
         width: 200px;
         min-width: 100px;
+    }
+
+    td:nth-child(4) {
         overflow: hidden;
     }
 
@@ -102,6 +105,8 @@ table {
 
     thead {
         display: table-header-group;
+        position: relative;
+        z-index: 2;
     }
 
     tbody {

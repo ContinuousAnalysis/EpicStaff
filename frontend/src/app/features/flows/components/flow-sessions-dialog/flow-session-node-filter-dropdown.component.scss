@@ -112,7 +112,6 @@
     align-items: center;
     gap: 8px;
     justify-content: space-between;
-    padding: 6px 14px;
     border: 1px solid var(--color-divider-regular, #333);
     border-radius: 6px;
     background: var(--color-background-body, #23232a);
@@ -138,7 +137,6 @@
 }
 
 .dropdown-arrow-wrapper {
-    margin-left: auto;
     display: flex;
     align-items: center;
 }

@@ -16,7 +16,6 @@ import { AppSvgIconComponent, PaginationControlsComponent } from '@shared/compon
 import { Subject, takeUntil } from 'rxjs';
 import { GraphMessagesComponent } from 'src/app/pages/running-graph/components/graph-messages/graph-messages.component';
 
-import { FlowNameFilterDropdownComponent } from '../../components/flow-sessions-dialog/flow-name-filter-dropdown.component';
 import { FlowSessionsTableComponent } from '../../components/flow-sessions-dialog/flow-sessions-table.component';
 import { GetGraphLightRequest } from '../../models/graph.model';
 import { FlowsApiService } from '../../services/flows-api.service';
@@ -28,7 +27,6 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
     imports: [
         CommonModule,
         FlowSessionsTableComponent,
-        FlowNameFilterDropdownComponent,
         PaginationControlsComponent,
         AppSvgIconComponent,
         RouterModule,
@@ -53,21 +51,6 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
             <!-- LEFT PANEL: filters + table + pagination -->
             <div class="left-panel">
                 <div class="filter-controls">
-                    <app-flow-name-filter-dropdown
-                        [flows]="availableFlows()"
-                        [value]="flowFilter()"
-                        (valueChange)="onFlowFilterChange($event)"
-                    ></app-flow-name-filter-dropdown>
-                    <label class="error-cause-filter">
-                        <span>Show first failed</span>
-                        <div
-                            class="toggle-switch"
-                            [class.active]="isErrorCauseFilter()"
-                            (click)="onIsErrorCauseChange()"
-                        >
-                            <div class="toggle-thumb"></div>
-                        </div>
-                    </label>
                     <button
                         class="delete-btn"
                         [class.invisible]="selectedIds().size === 0"
@@ -90,6 +73,9 @@ import { GraphSessionLight, GraphSessionService, GraphSessionStatus } from '../.
                         [sortable]="true"
                         [sortOrder]="sortOrder()"
                         [statusFilter]="statusFilter()"
+                        [flows]="availableFlows()"
+                        [flowNameFilter]="flowFilter()"
+                        (flowNameFilterChange)="onFlowFilterChange($event)"
                         [isLoading]="!isLoaded()"
                         [showEmptyState]="isLoaded() && sessions().length === 0"
                         [externalPreview]="true"
