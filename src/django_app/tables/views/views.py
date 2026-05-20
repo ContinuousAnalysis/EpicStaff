@@ -116,7 +116,7 @@ from tables.swagger_schemas.sessions_schema import (
     SESSION_WARNINGS_GET,
     STOP_SESSION_POST,
 )
-
+from tables.swagger_schemas.webhook_schemas import REGISTER_WEBHOOKS_POST
 from .default_config import *
 
 
@@ -911,9 +911,7 @@ class RegisterTelegramTriggerApiView(APIView):
 
 
 class RegisterWebhooksApiView(APIView):
-    @extend_schema(
-        responses={200: OpenApiResponse(description="OK")},
-    )
+    @extend_schema(**REGISTER_WEBHOOKS_POST)
     def post(self, request):
         webhook_trigger_service = WebhookTriggerService()
         webhook_trigger_service.register_webhooks()
