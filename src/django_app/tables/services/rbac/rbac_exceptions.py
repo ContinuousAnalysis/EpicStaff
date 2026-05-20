@@ -137,3 +137,112 @@ class OrganizationNotFoundError(CustomAPIExeption):
     status_code = 404
     default_detail = "Organization not found."
     default_code = "organization_not_found"
+
+
+class EmailAlreadyExistsError(CustomAPIExeption):
+    """Raised by UserManagementService.create_user / add_membership when the
+    submitted email already belongs to an existing user. Admin-gated endpoint
+    so enumeration is not a concern."""
+
+    status_code = 400
+    default_detail = "A user with this email already exists."
+    default_code = "email_already_exists"
+
+
+class MembershipAlreadyExistsError(CustomAPIExeption):
+    """Raised by UserManagementService.add_membership when a (user, org)
+    pair already has an OrganizationUser row. Caught from IntegrityError
+    fired by the DB-level UniqueConstraint."""
+
+    status_code = 400
+    default_detail = "This user is already a member of this organization."
+    default_code = "membership_already_exists"
+
+
+class LastSuperadminError(CustomAPIExeption):
+    """Raised by UserManagementService.revoke_superadmin when revoking
+    would leave zero (is_superadmin=True, is_active=True) users in the
+    system."""
+
+    status_code = 400
+    default_detail = (
+        "Cannot revoke superadmin from the last active superadmin. "
+        "At least one active superadmin must remain."
+    )
+    default_code = "last_superadmin"
+
+
+class LastOrgAdminError(CustomAPIExeption):
+    """Raised by UserManagementService.remove_membership /change_role when
+    the operation would leave the organization with zero Org Admins."""
+
+    status_code = 400
+    default_detail = (
+        "Cannot remove or demote the last Org Admin of this organization. "
+        "Promote another member to Org Admin first."
+    )
+    default_code = "last_org_admin"
+
+
+class InvalidRoleAssignmentError(CustomAPIExeption):
+    """Raised by UserManagementGuards.assert_role_is_assignable when the
+    target role cannot be assigned via membership — either because it is
+    the global Superadmin role (use grant-superadmin instead) or because
+    it is a custom role belonging to a different organization."""
+
+    status_code = 400
+    default_detail = "This role cannot be assigned via membership."
+    default_code = "invalid_role_assignment"
+
+
+class RoleNotFoundError(CustomAPIExeption):
+    """Raised by UserManagementService when a role_id does not match any
+    existing Role row."""
+
+    status_code = 404
+    default_detail = "Role not found."
+    default_code = "role_not_found"
+
+
+class CannotSelfAssignError(CustomAPIExeption):
+    """Raised by UserManagementService.assign_users when a non-superadmin
+    caller includes their own user_id in the batch. Superadmins bypass
+    this rule. Caller-relationship UX safety, not a system-integrity
+    invariant — the single-row PATCH endpoint exists for deliberate
+    self-modification."""
+
+    status_code = 400
+    default_detail = "You cannot include yourself in the assignment batch."
+    default_code = "cannot_self_assign"
+
+
+class InvalidPasswordChangeTicketError(CustomAPIExeption):
+    """Raised by UserProfileService.password_change_confirm when the
+    submitted ticket is unknown, already used, expired, or does not belong
+    to the calling user. Generic message — does not distinguish the cases
+    so a third party cannot probe whether a ticket exists."""
+
+    status_code = 400
+    default_detail = "Password-change ticket is invalid, expired, or already used."
+    default_code = "invalid_password_change_ticket"
+
+
+class InvalidAvatarError(CustomAPIExeption):
+    """Raised by UserAvatarStorageService when Pillow verification fails
+    or the decoded image format is outside settings.AVATAR_ALLOWED_FORMATS.
+    Generic message — does not expose Pillow's internal reason."""
+
+    status_code = 400
+    default_detail = "Uploaded file is not a valid JPEG or PNG image."
+    default_code = "invalid_avatar"
+
+
+class AvatarTooLargeError(CustomAPIExeption):
+    """Raised by UserAvatarStorageService when an avatar upload exceeds
+    settings.AVATAR_MAX_BYTES. The default_detail is overridden at
+    raise-site with the actual maximum so the FE can render it without
+    hardcoding the number."""
+
+    status_code = 400
+    default_detail = "Avatar file exceeds the maximum allowed size."
+    default_code = "avatar_too_large"

@@ -6,7 +6,7 @@ from tests.fixtures import *
 
 @pytest.mark.django_db
 def test_init_realtime(
-    wikipedia_agent_with_configured_realtime, api_client, redis_client_mock
+    wikipedia_agent_with_configured_realtime, auth_client, redis_client_mock
 ):
     agent_id = wikipedia_agent_with_configured_realtime.pk
 
@@ -14,7 +14,7 @@ def test_init_realtime(
 
     data = {"agent_id": agent_id}
 
-    response = api_client.post(url, data=data, format="json")
+    response = auth_client.post(url, data=data, format="json")
     response_data = response.json()
 
     # Assert that the response status code is 201

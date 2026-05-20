@@ -96,7 +96,9 @@ def test_login_invalid_credentials_returns_401(api_client, regular_user):
 
 @pytest.mark.django_db
 def test_protected_route_without_token_returns_401_project_envelope(api_client):
-    r = api_client.get(reverse("auth_me"))
+    # /api/profile/ is the canonical user-context protected endpoint
+    # after Story 6 (replaces the removed /api/auth/me/).
+    r = api_client.get("/api/profile/")
     assert r.status_code == 401
     body = r.json()
     assert body["status_code"] == 401
@@ -104,35 +106,11 @@ def test_protected_route_without_token_returns_401_project_envelope(api_client):
     assert "message" in body
 
 
-# ---------------- /me ----------------
-
-
-@pytest.mark.django_db
-def test_me_via_jwt_returns_user_and_memberships(auth_client, regular_user):
-    r = auth_client.get(reverse("auth_me"))
-    assert r.status_code == 200
-    body = r.json()
-    assert body["email"] == regular_user.email
-    assert isinstance(body["memberships"], list)
-    assert len(body["memberships"]) == 1
-    assert body["memberships"][0]["role"]["name"] == "Org Admin"
-
-
-@pytest.mark.django_db
-def test_me_via_env_api_key_returns_403(api_client, env_api_key):
-    raw, _ = env_api_key
-    api_client.credentials(HTTP_X_API_KEY=raw)
-    r = api_client.get(reverse("auth_me"))
-    assert r.status_code == 403
-
-
-@pytest.mark.django_db
-def test_me_via_user_api_key_returns_user(api_client, user_api_key, regular_user):
-    raw, _ = user_api_key
-    api_client.credentials(HTTP_X_API_KEY=raw)
-    r = api_client.get(reverse("auth_me"))
-    assert r.status_code == 200
-    assert r.json()["email"] == regular_user.email
+# /me/-specific tests removed in Story 6 — the endpoint was deleted in favor
+# of /api/profile/. Equivalent coverage lives in
+# tests/api_tests/test_rbac_user_profile.py::TestProfileGet (happy path with
+# memberships, env-api-key 403). The user-api-key positive case is not
+# replicated; flag a follow-up if regression coverage is desired.
 
 
 # ---------------- Refresh rotation / logout / blacklist ----------------
@@ -410,8 +388,8 @@ def test_login_wrong_credentials_has_no_errors_array(api_client, regular_user):
 
 
 @pytest.mark.django_db
-def test_reset_user_rejects_weak_password_with_structured_errors(auth_client):
-    r = auth_client.post(
+def test_reset_user_rejects_weak_password_with_structured_errors(superadmin_client):
+    r = superadmin_client.post(
         reverse("reset_user"),
         data={"email": "new@example.com", "password": "12345"},
         format="json",
@@ -432,7 +410,7 @@ def test_reset_user_requires_authentication(api_client):
 
 
 @pytest.mark.django_db
-def test_reset_user_creates_default_org_membership(auth_client):
+def test_reset_user_creates_default_org_membership(superadmin_client):
     """Bug 1 regression: after POST /api/auth/reset-user/, the new superadmin
     must have an OrganizationUser row in the DEFAULT_ORGANIZATION_NAME-named
     org with role 'Superadmin'.
@@ -440,7 +418,7 @@ def test_reset_user_creates_default_org_membership(auth_client):
     from django.conf import settings
     from tables.models.rbac_models import Organization, OrganizationUser
 
-    r = auth_client.post(
+    r = superadmin_client.post(
         reverse("reset_user"),
         data={"email": "new-admin@example.com", "password": "StrongPass123!"},
         format="json",
@@ -455,7 +433,7 @@ def test_reset_user_creates_default_org_membership(auth_client):
 
 
 @pytest.mark.django_db
-def test_reset_user_creates_default_org_when_missing(auth_client):
+def test_reset_user_creates_default_org_when_missing(superadmin_client):
     """If the default org doesn't exist at reset time (e.g. it was deleted
     out of band), reset-user creates it via SuperadminBootstrap and the
     new superadmin's membership lands in the freshly-created org.
@@ -467,7 +445,7 @@ def test_reset_user_creates_default_org_when_missing(auth_client):
         name__iexact=settings.DEFAULT_ORGANIZATION_NAME
     ).delete()
 
-    r = auth_client.post(
+    r = superadmin_client.post(
         reverse("reset_user"),
         data={"email": "new-admin2@example.com", "password": "StrongPass123!"},
         format="json",
@@ -784,83 +762,11 @@ def test_password_reset_confirm_token_is_single_use(api_client, regular_user):
     assert second.json()["code"] == OPAQUE_RESET_CODE
 
 
-# ---------------- Password recovery: self-service change ----------------
-
-
-@pytest.mark.django_db
-def test_password_change_happy_path_returns_fresh_tokens(
-    auth_client, regular_user, jwt_tokens
-):
-    r = auth_client.post(
-        reverse("password_change"),
-        data={
-            "current_password": "UserStrongPass123!",
-            "new_password": "EvenStrongerPass456!",
-        },
-        format="json",
-    )
-    assert r.status_code == 200
-    body = r.json()
-    assert "access" in body and "refresh" in body
-    regular_user.refresh_from_db()
-    assert regular_user.check_password("EvenStrongerPass456!")
-    # Old refresh token blacklisted.
-    assert BlacklistedToken.objects.filter(token__user=regular_user).exists()
-
-
-@pytest.mark.django_db
-def test_password_change_wrong_current_returns_400(auth_client, regular_user):
-    r = auth_client.post(
-        reverse("password_change"),
-        data={
-            "current_password": "wrong",
-            "new_password": "EvenStrongerPass456!",
-        },
-        format="json",
-    )
-    assert r.status_code == 400
-    assert r.json()["code"] == "invalid_current_password"
-    regular_user.refresh_from_db()
-    assert regular_user.check_password("UserStrongPass123!")
-
-
-@pytest.mark.django_db
-def test_password_change_weak_new_password_returns_structured_400(
-    auth_client, regular_user
-):
-    r = auth_client.post(
-        reverse("password_change"),
-        data={
-            "current_password": "UserStrongPass123!",
-            "new_password": "12345",
-        },
-        format="json",
-    )
-    assert r.status_code == 400
-    assert any(e["field"] == "new_password" for e in r.json()["errors"])
-    regular_user.refresh_from_db()
-    assert regular_user.check_password("UserStrongPass123!")
-
-
-@pytest.mark.django_db
-def test_password_change_requires_authentication(api_client):
-    r = api_client.post(
-        reverse("password_change"),
-        data={
-            "current_password": "UserStrongPass123!",
-            "new_password": "EvenStrongerPass456!",
-        },
-        format="json",
-    )
-    assert r.status_code == 401
-
-
-@pytest.mark.django_db
-def test_password_change_missing_fields_returns_structured_400(auth_client):
-    r = auth_client.post(reverse("password_change"), data={}, format="json")
-    assert r.status_code == 400
-    fields = {e["field"] for e in r.json()["errors"]}
-    assert {"current_password", "new_password"} <= fields
+# Self-service password-change tests removed in Story 6 — the single-step
+# /api/auth/password-change/ endpoint was deleted in favor of the two-step
+# /api/profile/password-change/{request,confirm}/ flow. Equivalent test
+# coverage now lives in tests/api_tests/test_rbac_user_profile.py under
+# TestPasswordChangeRequest / TestPasswordChangeConfirm.
 
 
 # ---------------- Password recovery: admin reset ----------------
@@ -1094,22 +1000,11 @@ class TestPasswordResetConfirmAlphabet:
         _assert_password_rejected(r)
 
 
-@pytest.mark.django_db
-class TestPasswordChangeAlphabet:
-    """POST /api/auth/password-change/ rejects passwords outside the alphabet."""
-
-    @pytest.mark.parametrize("password", _BAD_PASSWORDS)
-    def test_rejects(self, auth_client, password):
-        # `auth_client` is JWT-authed regular_user (password "UserStrongPass123!")
-        r = auth_client.post(
-            reverse("password_change"),
-            data={
-                "current_password": "UserStrongPass123!",
-                "new_password": password,
-            },
-            format="json",
-        )
-        _assert_password_rejected(r)
+# TestPasswordChangeAlphabet removed in Story 6 — single-step password-change
+# endpoint was deleted. Alphabet enforcement is still covered for the
+# admin-reset and password-reset confirm endpoints (below and above) and for
+# the two-step profile flow in tests/api_tests/test_rbac_user_profile.py
+# (TestPasswordChangeConfirm.test_weak_new_password_returns_400).
 
 
 @pytest.mark.django_db

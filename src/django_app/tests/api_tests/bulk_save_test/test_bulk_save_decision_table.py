@@ -79,7 +79,7 @@ def decision_table_node(graph) -> DecisionTableNode:
 
 @pytest.mark.django_db
 def test_create_dtn_with_default_and_error_routing(
-    api_client, graph, python_node_a, python_node_b
+    auth_client, graph, python_node_a, python_node_b
 ):
     """Create DTN with default_next_node_id and next_error_node_id pointing to existing nodes."""
     payload = {
@@ -92,7 +92,7 @@ def test_create_dtn_with_default_and_error_routing(
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_200_OK, resp.content
     node = DecisionTableNode.objects.get(graph=graph, node_name="dt_routed")
@@ -106,7 +106,7 @@ def test_create_dtn_with_default_and_error_routing(
 
 
 @pytest.mark.django_db
-def test_create_dtn_with_routing_temp_ids(api_client, graph):
+def test_create_dtn_with_routing_temp_ids(auth_client, graph):
     """default_next and next_error both reference new PythonNodes via temp_id."""
     temp_a = "aaaa0001-0001-0001-0001-aaaaaaaaaaaa"
     temp_b = "aaaa0002-0002-0002-0002-aaaaaaaaaaaa"
@@ -125,7 +125,7 @@ def test_create_dtn_with_routing_temp_ids(api_client, graph):
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_200_OK, resp.content
     pn_default = PythonNode.objects.get(graph=graph, node_name="pn_default")
@@ -142,7 +142,7 @@ def test_create_dtn_with_routing_temp_ids(api_client, graph):
 
 @pytest.mark.django_db
 def test_create_dtn_with_groups_routing_to_real_nodes(
-    api_client, graph, python_node_a, python_node_b
+    auth_client, graph, python_node_a, python_node_b
 ):
     payload = {
         "decision_table_node_list": [
@@ -166,7 +166,7 @@ def test_create_dtn_with_groups_routing_to_real_nodes(
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_200_OK, resp.content
     dt = DecisionTableNode.objects.get(graph=graph, node_name="dt_groups_real")
@@ -184,7 +184,7 @@ def test_create_dtn_with_groups_routing_to_real_nodes(
 
 
 @pytest.mark.django_db
-def test_create_dtn_with_groups_routing_via_temp_ids(api_client, graph):
+def test_create_dtn_with_groups_routing_via_temp_ids(auth_client, graph):
     temp_a = "bbbb0001-0001-0001-0001-bbbbbbbbbbbb"
     temp_b = "bbbb0002-0002-0002-0002-bbbbbbbbbbbb"
 
@@ -204,7 +204,7 @@ def test_create_dtn_with_groups_routing_via_temp_ids(api_client, graph):
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_200_OK, resp.content
     pn_high = PythonNode.objects.get(graph=graph, node_name="pn_high")
@@ -221,7 +221,7 @@ def test_create_dtn_with_groups_routing_via_temp_ids(api_client, graph):
 
 
 @pytest.mark.django_db
-def test_create_dtn_mixed_real_and_temp_routing(api_client, graph, python_node_a):
+def test_create_dtn_mixed_real_and_temp_routing(auth_client, graph, python_node_a):
     temp_new = "cccc0001-0001-0001-0001-cccccccccccc"
 
     payload = {
@@ -246,7 +246,7 @@ def test_create_dtn_mixed_real_and_temp_routing(api_client, graph, python_node_a
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_200_OK, resp.content
     pn_new = PythonNode.objects.get(graph=graph, node_name="pn_new")
@@ -267,7 +267,7 @@ def test_create_dtn_mixed_real_and_temp_routing(api_client, graph, python_node_a
 
 
 @pytest.mark.django_db
-def test_update_dtn_clear_all_groups(api_client, graph, decision_table_node):
+def test_update_dtn_clear_all_groups(auth_client, graph, decision_table_node):
     ConditionGroup.objects.create(
         decision_table_node=decision_table_node,
         group_name="old",
@@ -289,7 +289,7 @@ def test_update_dtn_clear_all_groups(api_client, graph, decision_table_node):
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_200_OK, resp.content
     assert (
@@ -305,7 +305,7 @@ def test_update_dtn_clear_all_groups(api_client, graph, decision_table_node):
 
 @pytest.mark.django_db
 def test_update_dtn_replace_groups_with_temp_routing(
-    api_client, graph, decision_table_node
+    auth_client, graph, decision_table_node
 ):
     old_group = ConditionGroup.objects.create(
         decision_table_node=decision_table_node,
@@ -338,7 +338,7 @@ def test_update_dtn_replace_groups_with_temp_routing(
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_200_OK, resp.content
 
@@ -363,7 +363,7 @@ def test_update_dtn_replace_groups_with_temp_routing(
 
 
 @pytest.mark.django_db
-def test_create_dtn_group_with_all_fields(api_client, graph, python_node_a):
+def test_create_dtn_group_with_all_fields(auth_client, graph, python_node_a):
     payload = {
         "decision_table_node_list": [
             {
@@ -382,7 +382,7 @@ def test_create_dtn_group_with_all_fields(api_client, graph, python_node_a):
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_200_OK, resp.content
     dt = DecisionTableNode.objects.get(graph=graph, node_name="dt_full_fields")
@@ -399,7 +399,7 @@ def test_create_dtn_group_with_all_fields(api_client, graph, python_node_a):
 
 
 @pytest.mark.django_db
-def test_dtn_with_edge_chain_to_new_python_nodes(api_client, graph):
+def test_dtn_with_edge_chain_to_new_python_nodes(auth_client, graph):
     temp_dt = "eeee0001-0001-0001-0001-eeeeeeeeeeee"
     temp_pn1 = "eeee0002-0002-0002-0002-eeeeeeeeeeee"
     temp_pn2 = "eeee0003-0003-0003-0003-eeeeeeeeeeee"
@@ -435,7 +435,7 @@ def test_dtn_with_edge_chain_to_new_python_nodes(api_client, graph):
             },
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_200_OK, resp.content
 
@@ -462,7 +462,7 @@ def test_dtn_with_edge_chain_to_new_python_nodes(api_client, graph):
 
 @pytest.mark.django_db
 def test_dtn_both_default_next_id_and_temp_id_rejected(
-    api_client, graph, python_node_a
+    auth_client, graph, python_node_a
 ):
     temp = "ffff0001-0001-0001-0001-ffffffffffff"
     payload = {
@@ -478,7 +478,7 @@ def test_dtn_both_default_next_id_and_temp_id_rejected(
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_400_BAD_REQUEST, resp.content
     assert "decision_table_node_list" in resp.data["errors"]
@@ -486,7 +486,7 @@ def test_dtn_both_default_next_id_and_temp_id_rejected(
 
 @pytest.mark.django_db
 def test_dtn_group_both_next_node_id_and_temp_id_rejected(
-    api_client, graph, python_node_a
+    auth_client, graph, python_node_a
 ):
     temp = "ffff0002-0002-0002-0002-ffffffffffff"
     payload = {
@@ -508,7 +508,7 @@ def test_dtn_group_both_next_node_id_and_temp_id_rejected(
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_400_BAD_REQUEST, resp.content
     assert "decision_table_node_list" in resp.data["errors"]
@@ -520,7 +520,7 @@ def test_dtn_group_both_next_node_id_and_temp_id_rejected(
 
 
 @pytest.mark.django_db
-def test_dtn_unknown_default_next_temp_id_rejected(api_client, graph):
+def test_dtn_unknown_default_next_temp_id_rejected(auth_client, graph):
     payload = {
         "decision_table_node_list": [
             {
@@ -530,14 +530,14 @@ def test_dtn_unknown_default_next_temp_id_rejected(api_client, graph):
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_400_BAD_REQUEST, resp.content
     assert "decision_table_node_list" in resp.data["errors"]
 
 
 @pytest.mark.django_db
-def test_dtn_group_unknown_next_node_temp_id_rejected(api_client, graph):
+def test_dtn_group_unknown_next_node_temp_id_rejected(auth_client, graph):
     payload = {
         "decision_table_node_list": [
             {
@@ -553,7 +553,7 @@ def test_dtn_group_unknown_next_node_temp_id_rejected(api_client, graph):
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_400_BAD_REQUEST, resp.content
     assert "decision_table_node_list" in resp.data["errors"]
@@ -565,7 +565,7 @@ def test_dtn_group_unknown_next_node_temp_id_rejected(api_client, graph):
 
 
 @pytest.mark.django_db
-def test_dtn_nonexistent_default_next_node_id_rejected(api_client, graph):
+def test_dtn_nonexistent_default_next_node_id_rejected(auth_client, graph):
     payload = {
         "decision_table_node_list": [
             {
@@ -575,6 +575,6 @@ def test_dtn_nonexistent_default_next_node_id_rejected(api_client, graph):
             }
         ],
     }
-    resp = api_client.post(_save_url(graph.id), payload, format="json")
+    resp = auth_client.post(_save_url(graph.id), payload, format="json")
 
     assert resp.status_code == status.HTTP_400_BAD_REQUEST, resp.content

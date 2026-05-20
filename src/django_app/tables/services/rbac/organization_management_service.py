@@ -1,7 +1,8 @@
 from django.db import IntegrityError, transaction
-from django.db.models import Count, QuerySet
+from django.db.models import Count, Prefetch, QuerySet
 
-from tables.models.rbac_models import Organization
+from tables.models.rbac_models import Organization, OrganizationUser, User
+from tables.models.rbac_models.rbac_enums import BuiltInRole
 from tables.services.rbac.rbac_exceptions import (
     LastActiveOrganizationError,
     OrganizationNameConflictError,
@@ -18,7 +19,50 @@ class OrganizationManagementService:
     that any future caller (CLI, async job) can reuse the same rule.
     """
 
-    def list_organizations(
+    def list_organizations_with_admins(
+        self, is_active: bool | None = None
+    ) -> list[Organization]:
+        """Public read for GET /api/admin/organizations/.
+
+        Returns orgs annotated with `member_count`, ordered as in
+        `_list_organizations`, with each org carrying an `admins` attribute:
+        a list of `User` instances who hold the built-in `Org Admin` role
+        in that org (ordered by `joined_at, user_id`).
+
+        Business rule: if an org has zero Org Admin memberships, its
+        `admins` attribute falls back to `[oldest_active_superadmin]`. If
+        no active superadmin exists, the attribute is `[]`. The fallback
+        user is fetched at most once per call, lazily — only if at least
+        one org needs it.
+        """
+        admin_memberships_qs = (
+            OrganizationUser.objects.filter(
+                role__name=BuiltInRole.ORG_ADMIN, role__is_built_in=True
+            )
+            .select_related("user")
+            .order_by("joined_at", "user_id")
+        )
+        qs = self._list_organizations(is_active=is_active).prefetch_related(
+            Prefetch(
+                "members",
+                queryset=admin_memberships_qs,
+                to_attr="_admin_memberships",
+            )
+        )
+        orgs = list(qs)
+        fallback_resolved = False
+        fallback: list[User] = []
+        for org in orgs:
+            org.admins = [m.user for m in org._admin_memberships]
+            if not org.admins:
+                if not fallback_resolved:
+                    user = self._get_fallback_admin_user()
+                    fallback = [user] if user is not None else []
+                    fallback_resolved = True
+                org.admins = fallback
+        return orgs
+
+    def _list_organizations(
         self, is_active: bool | None = None
     ) -> QuerySet[Organization]:
         qs = Organization.objects.annotate(member_count=Count("members")).order_by(
@@ -69,9 +113,19 @@ class OrganizationManagementService:
 
     def _get_organization_with_member_count(self, org_id: int) -> Organization:
         try:
-            return self.list_organizations().get(pk=org_id)
+            return self._list_organizations().get(pk=org_id)
         except Organization.DoesNotExist as exc:
             raise OrganizationNotFoundError() from exc
+
+    def _get_fallback_admin_user(self) -> User | None:
+        """Oldest active superadmin — fallback for orgs with no Org Admins
+        in `list_organizations_with_admins`. Returns None if no active
+        superadmin exists (theoretical edge case)."""
+        return (
+            User.objects.filter(is_superadmin=True, is_active=True)
+            .order_by("created_at", "id")
+            .first()
+        )
 
     def _get_locked_org(self, org_id: int) -> Organization:
         """Row-locked fetch for write operations. Translates DoesNotExist

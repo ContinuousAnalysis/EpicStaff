@@ -1,13 +1,16 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { FileUploaderComponent } from '@shared/components';
 
 import { ToastService } from '../../../../services/notifications/toast.service';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
+import { DragDropAreaComponent } from '../../../../shared/components/drag-drop-area/drag-drop-area.component';
 import { Spinner2Component } from '../../../../shared/components/spinner-type2/spinner.component';
 import { StorageApiService } from '../../services/storage-api.service';
 
@@ -43,7 +46,16 @@ export interface FolderNode {
 
 @Component({
     selector: 'app-create-folder-dialog',
-    imports: [FormsModule, AppSvgIconComponent, Spinner2Component, MatIconModule, MatTooltipModule],
+    imports: [
+        FormsModule,
+        AppSvgIconComponent,
+        Spinner2Component,
+        MatIconModule,
+        MatTooltipModule,
+        OverlayModule,
+        FileUploaderComponent,
+        DragDropAreaComponent,
+    ],
     templateUrl: './create-folder-dialog.component.html',
     styleUrls: ['./create-folder-dialog.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -100,8 +112,16 @@ export class CreateFolderDialogComponent {
     ]);
 
     readonly folderName = signal('');
-    readonly isDragging = signal(false);
     readonly files = signal<File[]>([]);
+    readonly viewAllOpen = signal(false);
+
+    toggleViewAll(): void {
+        this.viewAllOpen.update((v) => !v);
+    }
+
+    closeViewAll(): void {
+        this.viewAllOpen.set(false);
+    }
 
     // Destination folder dropdown
     readonly dropdownOpen = signal(false);
@@ -183,31 +203,9 @@ export class CreateFolderDialogComponent {
         this.rootNodes.update((n) => [...n]);
     }
 
-    onDragOver(event: DragEvent): void {
-        event.preventDefault();
-        this.isDragging.set(true);
-    }
-
-    onDragLeave(event: DragEvent): void {
-        event.preventDefault();
-        const target = event.currentTarget as HTMLElement;
-        const rect = target.getBoundingClientRect();
-        if (
-            event.clientX <= rect.left ||
-            event.clientX >= rect.right ||
-            event.clientY <= rect.top ||
-            event.clientY >= rect.bottom
-        ) {
-            this.isDragging.set(false);
-        }
-    }
-
-    onDrop(event: DragEvent): void {
-        event.preventDefault();
-        this.isDragging.set(false);
-        const dropped = event.dataTransfer?.files;
-        if (dropped?.length) {
-            this.addFiles(Array.from(dropped));
+    onFilesUploaded(files: FileList): void {
+        if (files.length) {
+            this.addFiles(Array.from(files));
         }
     }
 

@@ -1,0 +1,41 @@
+<div class="dialog">
+    <div class="header">
+        <span class="title">{{ editMode() ? 'Edit User' : 'Create New User' }}</span>
+
+        <div class="actions">
+            <app-button
+                type="outline-primary"
+                (click)="onClose()"
+            >
+                Cancel
+            </app-button>
+            <app-button
+                type="primary"
+                [disabled]="submitDisabled()"
+                (click)="onSubmit()"
+            >
+                {{ editMode() ? 'Save' : 'Create' }}
+            </app-button>
+        </div>
+    </div>
+
+    <div class="body">
+        <app-step-user-details
+            [canToggleSuperadmin]="isSuperAdmin()"
+            [editMode]="editMode()"
+            [userData]="editUser()"
+        />
+
+        @if (loadingOrganizations()) {
+            <app-loading-spinner
+                size="sm"
+                message="Fetching organizations"
+            />
+        } @else {
+            <app-step-assign-to-org
+                [organizations]="availableOrganizations()"
+                [existingMemberships]="existingMemberships()"
+            />
+        }
+    </div>
+</div>

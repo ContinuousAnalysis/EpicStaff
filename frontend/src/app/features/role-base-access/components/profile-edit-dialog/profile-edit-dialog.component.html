@@ -1,0 +1,78 @@
+<div class="dialog">
+    <div class="header">
+        <span class="title">Edit Profile</span>
+        <button
+            class="close"
+            type="button"
+            (click)="onCancel()"
+        >
+            <app-svg-icon
+                icon="x"
+                size="18px"
+            />
+        </button>
+    </div>
+
+    <form
+        class="body"
+        [formGroup]="form"
+    >
+        <div class="control">
+            <label class="label">
+                Full Name<span class="required">*</span>
+                <app-help-tooltip
+                    [text]="'Your display name shown across the platform.'"
+                    position="right"
+                />
+            </label>
+            <app-custom-input
+                placeholder="Enter full name..."
+                formControlName="full_name"
+            />
+            <app-validation-errors [control]="form.get('full_name')!" />
+        </div>
+
+        <div class="control">
+            <label class="label">
+                Email
+                <app-help-tooltip
+                    [text]="'Email address is read-only and cannot be changed here.'"
+                    position="right"
+                />
+            </label>
+            <app-custom-input
+                placeholder="Enter email..."
+                formControlName="email"
+            />
+        </div>
+
+        <div class="control top">
+            <label class="label">
+                Picture
+                <app-help-tooltip
+                    [text]="'Upload a profile photo. Supported formats: JPG, PNG.'"
+                    position="right"
+                />
+            </label>
+            <app-avatar-upload
+                [initialUrl]="data.avatarUrl"
+                (imageChange)="onAvatarChanged($event)"
+                (existingRemoved)="onExistingAvatarRemoved()"
+            />
+        </div>
+    </form>
+
+    <div class="footer">
+        <app-button
+            type="outline-primary"
+            (click)="onCancel()"
+            >Cancel</app-button
+        >
+        <app-button
+            type="primary"
+            [disabled]="loading()"
+            (click)="onSave()"
+            >Save Changes</app-button
+        >
+    </div>
+</div>
