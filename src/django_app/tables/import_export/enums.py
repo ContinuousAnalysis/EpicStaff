@@ -17,6 +17,7 @@ class EntityType(str, Enum):
     AGENT = "Agent"
     CREW = "Project"
     GRAPH = "Flow"
+    SESSION = "Session"
 
     AGENT_TAG = "AgentTag"
     CREW_TAG = "CrewTag"

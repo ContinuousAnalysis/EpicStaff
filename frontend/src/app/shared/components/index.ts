@@ -1,3 +1,4 @@
+export * from './action-dropdown-button/action-dropdown-button.component';
 export * from './app-icon/app-icon.component';
 export * from './app-input-number/input-number.component';
 export * from './app-svg-icon/app-svg-icon.component';

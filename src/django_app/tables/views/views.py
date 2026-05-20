@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from collections import defaultdict
 from drf_yasg.utils import swagger_auto_schema
@@ -67,6 +68,7 @@ from tables.enums import SessionWarningType
 
 from tables.models import (
     Session,
+    # DocumentMetadata,
     GraphOrganization,
     GraphOrganizationUser,
     OrganizationUser,
@@ -82,12 +84,14 @@ from tables.serializers.model_serializers import (
 from tables.serializers.storage_serializers import SessionOutputFileSerializer
 from tables.serializers.serializers import (
     AnswerToLLMSerializer,
+    BulkExportSerializer,
     EnvironmentConfigSerializer,
     InitRealtimeSerializer,
     ProcessRagIndexingSerializer,
     RunSessionSerializer,
     RegisterTelegramTriggerSerializer,
     RunPythonCodeSerializer,
+    SessionExportAllSerializer,
 )
 
 from tables.serializers.quickstart_serializers import (
@@ -96,8 +100,14 @@ from tables.serializers.quickstart_serializers import (
     QuickstartStatusSerializer,
 )
 from tables.serializers.default_config_serializers import DefaultModelsSerializer
-from tables.models.default_models import DefaultModels
 from tables.filters import SessionFilter  # CollectionFilter,
+from tables.services.import_export_service import ViewSetImportExportService
+from tables.import_export.enums import EntityType
+from tables.import_export.export_format_strategies import (
+    JsonExportFormatStrategy,
+    CsvExportFormatStrategy,
+)
+from tables.import_export.tabular.session import SessionTabularProjection
 
 from .default_config import *
 
@@ -129,6 +139,19 @@ class SessionViewSet(
 
     serializer_class = SessionSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.import_export_service = ViewSetImportExportService(
+            entity_type=EntityType.SESSION,
+            export_prefix="session",
+            filename_attr="id",
+            format_strategies={
+                "json": JsonExportFormatStrategy(),
+                "csv": CsvExportFormatStrategy(SessionTabularProjection()),
+            },
+        )
+
     filterset_class = SessionFilter
     ordering_fields = [
         "created_at",
@@ -172,6 +195,128 @@ class SessionViewSet(
             )
 
         return qs
+
+    _FORMAT_QUERY_PARAM = OpenApiParameter(
+        name="export_format",
+        location=OpenApiParameter.QUERY,
+        description="Export format: 'json' (default) returns a structured JSON file; 'csv' returns a flat CSV of session messages.",
+        required=False,
+        type=str,
+        enum=["json", "csv"],
+        default="json",
+    )
+
+    @extend_schema(
+        description="Export a single session's messages as a downloadable file. "
+        "Includes messages from all nested sub-sessions.",
+        parameters=[_FORMAT_QUERY_PARAM],
+        responses={
+            200: OpenApiResponse(
+                description="File download (application/json or text/csv)."
+            ),
+        },
+    )
+    @action(detail=True, methods=["get"])
+    def export(self, request, pk: int):
+        fmt = request.query_params.get("export_format", "json")
+        return self.import_export_service.export_entity(self.get_object(), fmt=fmt)
+
+    @extend_schema(
+        description="Export messages from multiple sessions as a single downloadable file. "
+        "Includes messages from all nested sub-sessions for each requested session.",
+        request=BulkExportSerializer,
+        parameters=[_FORMAT_QUERY_PARAM],
+        responses={
+            200: OpenApiResponse(
+                description="File download (application/json or text/csv)."
+            ),
+            400: OpenApiResponse(
+                description="Invalid request body or one or more session IDs do not exist."
+            ),
+        },
+    )
+    @action(detail=False, methods=["post"], url_path="bulk-export")
+    def bulk_export(self, request):
+        serializer = BulkExportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        entity_ids = serializer.validated_data["ids"]
+
+        existing_ids = Session.objects.filter(id__in=entity_ids).values_list(
+            "id", flat=True
+        )
+        if len(existing_ids) != len(entity_ids):
+            return Response(
+                {"message": "Some entity IDs do not exist"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        fmt = request.query_params.get("export_format", "json")
+        return self.import_export_service.bulk_export(entity_ids, fmt=fmt)
+
+    @extend_schema(
+        description="Export messages from top-level sessions matching the given filters as a single downloadable file. "
+        "Includes messages from all nested sub-sessions.",
+        request=SessionExportAllSerializer,
+        parameters=[_FORMAT_QUERY_PARAM],
+        responses={
+            200: OpenApiResponse(
+                description="File download (application/json or text/csv)."
+            ),
+            400: OpenApiResponse(description="Invalid request body."),
+            404: OpenApiResponse(description="No sessions match the given filters."),
+        },
+    )
+    @action(detail=False, methods=["post"], url_path="export_all")
+    def export_all(self, request):
+        serializer = SessionExportAllSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if (
+            "graph_id" in data
+            and not Graph.objects.filter(id=data["graph_id"]).exists()
+        ):
+            raise NotFound(f"Graph {data['graph_id']} not found")
+
+        qs = Session.objects.filter(parent_session_id=None)
+
+        if "graph_id" in data:
+            qs = qs.filter(graph_id=data["graph_id"])
+        if "graph_name" in data:
+            qs = qs.filter(graph__name__iexact=data["graph_name"])
+        if "status" in data:
+            qs = qs.filter(status__in=data["status"])
+        if "created_at_after" in data:
+            qs = qs.filter(created_at__gte=data["created_at_after"])
+        if "created_at_before" in data:
+            qs = qs.filter(created_at__lte=data["created_at_before"])
+        if "finished_at_after" in data:
+            qs = qs.filter(finished_at__gte=data["finished_at_after"])
+        if "finished_at_before" in data:
+            qs = qs.filter(finished_at__lte=data["finished_at_before"])
+
+        node_name = data.get("node_name")
+        if node_name:
+            qs = qs.filter(graphsessionmessage__name=node_name).distinct()
+
+        if data.get("is_error_cause"):
+            error_messages = GraphSessionMessage.objects.filter(
+                session=OuterRef("pk"), message_data__message_type="error"
+            )
+            if node_name:
+                error_messages = error_messages.filter(name=node_name)
+            qs = qs.filter(Exists(error_messages)).distinct()
+
+        session_ids = list(qs.values_list("id", flat=True))
+
+        if not session_ids:
+            return Response(
+                {"message": "No sessions match the given filters"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        fmt = request.query_params.get("export_format", "json")
+        return self.import_export_service.bulk_export(session_ids, fmt=fmt)
 
     @extend_schema(
         description="Get counts of each status grouped by graph ID",

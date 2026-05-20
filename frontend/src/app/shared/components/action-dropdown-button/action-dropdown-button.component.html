@@ -1,0 +1,60 @@
+<div
+    #origin="cdkOverlayOrigin"
+    cdkOverlayOrigin
+    class="adb"
+    [class.adb--disabled]="disabled() || loading()"
+>
+    <button
+        class="adb__main"
+        [disabled]="disabled() || loading()"
+        (click)="onMainClick()"
+    >
+        @if (leftIcon()) {
+            <app-svg-icon
+                [icon]="leftIcon()!"
+                size="1rem"
+            />
+        }
+        <span>{{ label() }}</span>
+    </button>
+    <button
+        class="adb__chevron"
+        [disabled]="disabled() || loading()"
+        (click)="toggle($event)"
+    >
+        <app-svg-icon
+            icon="chevron-down"
+            size="1rem"
+        />
+    </button>
+</div>
+
+<ng-template
+    cdkConnectedOverlay
+    [cdkConnectedOverlayOrigin]="origin"
+    [cdkConnectedOverlayOpen]="isOpen()"
+    [cdkConnectedOverlayWidth]="160"
+    cdkConnectedOverlayPanelClass="action-dropdown-panel"
+    [cdkConnectedOverlayPositions]="[
+        {
+            originX: 'end',
+            originY: 'bottom',
+            overlayX: 'end',
+            overlayY: 'top',
+            offsetY: 6,
+        },
+    ]"
+    (overlayOutsideClick)="close()"
+    (detach)="close()"
+>
+    <div class="action-dropdown-panel__inner">
+        @for (item of items(); track item.value) {
+            <button
+                class="action-dropdown-panel__item"
+                (click)="onItemClick(item)"
+            >
+                {{ item.label }}
+            </button>
+        }
+    </div>
+</ng-template>

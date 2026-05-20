@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import {
+    ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
     EventEmitter,
@@ -199,6 +200,7 @@ import { FlowSessionStatusFilterDropdownComponent } from './flow-session-status-
         </div>
     `,
     styleUrls: ['./flow-sessions-table.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     @Input() sessions: GraphSessionLight[] = [];
@@ -211,6 +213,8 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     @Input() sortOrder: 'asc' | 'desc' = 'desc';
     @Input() statusFilter: string[] = ['all'];
 
+    @Input() selectedIds: Set<number> = new Set();
+
     @Output() deleteSelected = new EventEmitter<number[]>();
     @Output() viewSession = new EventEmitter<number>();
     @Output() stopSession = new EventEmitter<number>();
@@ -218,7 +222,6 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
     @Output() statusFilterChange = new EventEmitter<string[]>();
     @Output() selectedIdsChange = new EventEmitter<Set<number>>();
 
-    public selectedIds = signal<Set<number>>(new Set());
     public expandedSessionId = signal<number | null>(null);
 
     public readonly GraphSessionStatus = GraphSessionStatus;
@@ -262,34 +265,29 @@ export class FlowSessionsTableComponent implements OnChanges, OnDestroy {
         this.cdr.markForCheck();
     }
 
-    isSelected(id: number) {
-        return this.selectedIds().has(id);
+    isSelected(id: number): boolean {
+        return this.selectedIds.has(id);
     }
 
-    toggleSelection(id: number, checked: boolean) {
-        this.selectedIds.update((set) => {
-            const s = new Set(set);
-            checked ? s.add(id) : s.delete(id);
-            return s;
-        });
-        this.selectedIdsChange.emit(this.selectedIds());
+    toggleSelection(id: number, checked: boolean): void {
+        const next = new Set(this.selectedIds);
+        checked ? next.add(id) : next.delete(id);
+        this.selectedIdsChange.emit(next);
         this.cdr.markForCheck();
     }
 
-    areAllSelected() {
-        return this.sessions.length > 0 && this.sessions.every((s) => this.selectedIds().has(s.id));
+    areAllSelected(): boolean {
+        return this.sessions.length > 0 && this.sessions.every((s) => this.selectedIds.has(s.id));
     }
 
-    toggleSelectAll(checked: boolean) {
-        this.selectedIds.set(checked ? new Set(this.sessions.map((s) => s.id)) : new Set());
-        this.selectedIdsChange.emit(this.selectedIds());
-        this.cdr.markForCheck();
-    }
-
-    bulkDelete() {
-        this.deleteSelected.emit(Array.from(this.selectedIds()));
-        this.selectedIds.set(new Set());
-        this.selectedIdsChange.emit(this.selectedIds());
+    toggleSelectAll(checked: boolean): void {
+        const next = new Set(this.selectedIds);
+        if (checked) {
+            this.sessions.forEach((s) => next.add(s.id));
+        } else {
+            this.sessions.forEach((s) => next.delete(s.id));
+        }
+        this.selectedIdsChange.emit(next);
         this.cdr.markForCheck();
     }
 
