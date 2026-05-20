@@ -17,6 +17,7 @@ class EntityType(str, Enum):
     AGENT = "Agent"
     CREW = "Project"
     GRAPH = "Flow"
+    SESSION = "Session"
 
     AGENT_TAG = "AgentTag"
     CREW_TAG = "CrewTag"
@@ -40,3 +41,4 @@ class NodeType(str, Enum):
     END_NODE = "EndNode"
     NOTE_NODE = "GraphNote"
     CODE_AGENT_NODE = "CodeAgentNode"
+    SCHEDULE_TRIGGER_NODE = "ScheduleTriggerNode"

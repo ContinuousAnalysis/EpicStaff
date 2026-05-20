@@ -2,7 +2,8 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ButtonComponent } from '@shared/components';
+import { ButtonComponent, StepConfig } from '@shared/components';
+import { StepperComponent } from '@shared/components';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -13,19 +14,10 @@ import { CreateCollectionStep } from '../../models/collection.model';
 import { DisplayedListDocument } from '../../models/document.model';
 import { RagConfiguration } from '../../models/rag-configuration';
 import { CollectionsStorageService } from '../../services/collections-storage.service';
-import { StepperComponent } from './components/stepper/stepper.component';
 import { StepSelectRagComponent } from './components/steps/step-select-rag/step-select-rag.component';
 import { StepUploadFilesComponent } from './components/steps/step-upload-files/step-upload-files.component';
 import { RagCreationStrategy } from './factory/interfaces/rag-creation-strategy.interface';
 import { RagStrategyFactory } from './factory/rag-creation.factory';
-
-export interface StepConfig {
-    id: CreateCollectionStep;
-    label: string;
-    onProceed: () => Observable<boolean>;
-    canProceed: () => boolean;
-    proceedLabel: string;
-}
 
 @Component({
     selector: 'app-create-collection-dialog',

@@ -2,7 +2,17 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 @Component({
     selector: 'app-user-avatar',
-    template: `{{ initials() }}`,
+    template: `
+        @if (avatarUrl()) {
+            <img
+                [src]="avatarUrl()"
+                alt="User avatar"
+                class="avatar-img"
+            />
+        } @else {
+            {{ initials() }}
+        }
+    `,
     styles: [
         `
             :host {
@@ -17,6 +27,13 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
                 color: var(--text-secondary-60);
                 font-size: 12px;
                 font-weight: 500;
+                overflow: hidden;
+            }
+
+            .avatar-img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
             }
         `,
     ],
@@ -24,6 +41,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 })
 export class UserAvatarComponent {
     name = input.required<string>();
+    avatarUrl = input<string | null>(null);
 
     readonly initials = computed(() => {
         const parts = this.name().trim().split(/\s+/);

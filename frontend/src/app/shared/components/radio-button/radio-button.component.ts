@@ -1,8 +1,13 @@
-import { ChangeDetectionStrategy, Component, forwardRef, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, forwardRef, input, model, output, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-import { SelectItem } from '../select/select.component';
 import { TooltipComponent } from '../tooltip/tooltip.component';
+
+type RadioOption<T = unknown> = {
+    value: T;
+    label?: string;
+    name?: string;
+};
 
 @Component({
     selector: 'app-radio-button',
@@ -24,12 +29,22 @@ export class RadioButtonComponent implements ControlValueAccessor {
     required = input<boolean>(false);
     tooltipText = input<string>('');
 
-    mod = input<'default' | 'small'>('default');
-    options = input.required<SelectItem[]>();
+    mod = input<'default' | 'small' | 'segmented'>('default');
+    options = input.required<RadioOption[]>();
     disabled = input(false);
 
     value = model<unknown | null>(null);
     valueChange = output<unknown>();
+
+    private _disabled = signal(false);
+    isDisabled = computed(() => this.disabled() || this._disabled());
+
+    activeIndex = computed(() => {
+        const idx = this.options().findIndex((o) => o.value === this.value());
+        return idx === -1 ? 0 : idx;
+    });
+
+    sliderTransform = computed(() => `translateX(${this.activeIndex() * 100}%)`);
 
     private onChange: (value: unknown) => void = () => {};
     private onTouched: () => void = () => {};
@@ -47,17 +62,15 @@ export class RadioButtonComponent implements ControlValueAccessor {
     }
 
     setDisabledState(isDisabled: boolean): void {
-        void isDisabled;
+        this._disabled.set(isDisabled);
     }
 
-    select(option: SelectItem) {
-        if (this.disabled()) return;
+    select(option: RadioOption): void {
+        if (this.isDisabled()) return;
 
         this.value.set(option.value);
-
         this.onChange(option.value);
         this.onTouched();
-
         this.valueChange.emit(option.value);
     }
 }

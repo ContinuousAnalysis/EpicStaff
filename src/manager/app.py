@@ -23,6 +23,7 @@ from services.tool_image_service import ToolImageService
 from services.tool_container_service import ToolContainerService
 from services.redis_service import RedisService
 from services.session_timeout_service import SessionTimeoutService
+from services.schedule_service import ScheduleService
 from helpers.yaml_parser import load_env_from_yaml_config
 from helpers.logger import logger
 
@@ -49,6 +50,8 @@ session_timeout_service = SessionTimeoutService(
     ),
     session_repository=session_repository,
 )
+
+schedule_service = ScheduleService(redis_service=redis_service)
 
 
 @app.post(
@@ -136,6 +139,9 @@ async def start_up():
         # TODO: ? remove listen_redis() because it newer use
         # asyncio.create_task(redis_service.listen_redis())
 
+        await schedule_service.start()
+        logger.info("ScheduleService started successfully.")
+
     except Exception as e:
         logger.error(f"Error during initialization: {e}")
 
@@ -144,6 +150,9 @@ async def start_up():
 async def shutdown_event():
     if session_timeout_service:
         await session_timeout_service.stop()
+
+    if schedule_service.scheduler.running:
+        schedule_service.scheduler.shutdown(wait=False)
     await redis_service.aioredis_client.close()
 
 

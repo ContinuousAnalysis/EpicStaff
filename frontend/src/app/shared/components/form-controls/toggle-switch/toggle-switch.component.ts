@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, forwardRef, Input, input, Output } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    EventEmitter,
+    forwardRef,
+    inject,
+    Input,
+    input,
+    Output,
+} from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 import { TooltipComponent } from '../../tooltip/tooltip.component';
@@ -27,6 +37,8 @@ export class ToggleSwitchComponent implements ControlValueAccessor {
     @Input() checked = false;
     @Output() checkedChange = new EventEmitter<boolean>();
 
+    private readonly cdr = inject(ChangeDetectorRef);
+
     private onChange: (value: boolean) => void = () => {};
     private onTouched = () => {};
     private isDisabled = false;
@@ -41,6 +53,7 @@ export class ToggleSwitchComponent implements ControlValueAccessor {
 
     writeValue(value: boolean): void {
         this.checked = value;
+        this.cdr.markForCheck();
     }
 
     registerOnChange(fn: (value: boolean) => void): void {

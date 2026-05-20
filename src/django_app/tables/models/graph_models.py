@@ -79,8 +79,8 @@ class BaseNode(BaseGraphEntity, BaseGlobalNode):
         if not self.node_name:
             super().save(*args, **kwargs)
             self.node_name = f"{self.__class__.__name__.lower()}_{self.pk}"
-            kwargs.pop("force_insert", None)  # Remove `force_insert` if present
-            kwargs["force_update"] = True  # Ensure only update happens
+            self.__class__.objects.filter(pk=self.pk).update(node_name=self.node_name)
+            return
         super().save(*args, **kwargs)
 
 
@@ -182,9 +182,11 @@ class SubGraphNode(BaseNode):
         "Graph", on_delete=models.CASCADE, related_name="subgraph_node_list"
     )
     subgraph = models.ForeignKey(
-        "Graph", on_delete=models.CASCADE, related_name="as_subgraph"
+        "Graph",
+        on_delete=models.SET_NULL,
+        related_name="as_subgraph",
+        null=True,
     )
-    # TODO: maybe SET_NULL on delete?
 
 
 class CodeAgentNode(BaseNode):
@@ -561,6 +563,68 @@ class TelegramTriggerNodeField(ContentHashMixin, models.Model):
                 name="unique_telegram_trigger_node_field_name_parent",
             )
         ]
+
+
+class ScheduleTriggerNode(BaseGraphEntity, BaseGlobalNode):
+    class RunMode(models.TextChoices):
+        ONCE = "once", "Once"
+        REPEAT = "repeat", "Repeat"
+
+    class TimeUnit(models.TextChoices):
+        SECONDS = "seconds", "Seconds"
+        MINUTES = "minutes", "Minutes"
+        HOURS = "hours", "Hours"
+        DAYS = "days", "Days"
+        WEEKS = "weeks", "Weeks"
+        MONTHS = "months", "Months"
+
+    class EndType(models.TextChoices):
+        NEVER = "never", "Never"
+        ON_DATE = "on_date", "On Date"
+        AFTER_N_RUNS = "after_n_runs", "After N Runs"
+
+    ALLOWED_WEEKDAYS = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+
+    node_name = models.CharField(max_length=255, blank=False)
+    graph = models.ForeignKey(
+        "Graph", on_delete=models.CASCADE, related_name="schedule_trigger_node_list"
+    )
+    is_active = models.BooleanField(default=False)
+    timezone = models.CharField(max_length=64, default="UTC", blank=True)
+    run_mode = models.CharField(
+        max_length=10, choices=RunMode.choices, null=True, blank=True
+    )
+    start_date_time = models.DateTimeField(null=True, blank=True)
+    every = models.IntegerField(null=True, blank=True)
+    unit = models.CharField(
+        max_length=10, null=True, blank=True, choices=TimeUnit.choices
+    )
+    weekdays = models.JSONField(null=True, blank=True)
+    end_type = models.CharField(
+        max_length=15, choices=EndType.choices, null=True, blank=True
+    )
+    end_date_time = models.DateTimeField(null=True, blank=True)
+    max_runs = models.IntegerField(null=True, blank=True)
+    current_runs = models.IntegerField(default=0)
+    next_run_date_time = models.DateTimeField(null=True, blank=True)
+
+    def generate_hash(self):
+        excluded_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "content_hash",
+            "metadata",
+            "current_runs",
+            "next_run_date_time",
+        ]
+        data = {
+            f.name: str(getattr(self, f.attname))
+            for f in self._meta.fields
+            if f.name not in excluded_fields
+        }
+        data_string = json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(data_string).hexdigest()
 
 
 class GraphNote(BaseGraphEntity, BaseGlobalNode):

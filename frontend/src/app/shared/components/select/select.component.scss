@@ -37,6 +37,10 @@
             border-color: var(--accent-color, #685fff);
         }
 
+        &--open {
+            border-color: var(--accent-color, #685fff);
+        }
+
         &--default {
             height: 40px;
             padding: 0.5rem 2rem 0.5rem 1rem;
@@ -115,10 +119,11 @@
         border: 1px solid var(--color-input-border);
         background-color: var(--color-input-background);
         color: var(--color-text-primary);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
         z-index: 1005;
         max-height: 240px;
         overflow-y: auto;
+        overflow-x: hidden;
         white-space: nowrap;
     }
 
@@ -135,6 +140,7 @@
         white-space: nowrap;
         flex: 1;
         min-width: 0;
+        transition: background 0.15s ease;
     }
 
     &__option {
@@ -143,27 +149,43 @@
         gap: 0.5rem;
 
         &--default {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 0.75rem;
             font-size: 0.875rem;
-            font-weight: 200;
+            font-weight: 400;
             line-height: 130%;
+            border-bottom: 1px solid var(--color-divider-subtle);
+
+            &:last-child {
+                border-bottom: none;
+            }
         }
 
         &--small {
-            font-weight: 200;
+            font-weight: 400;
             font-size: 0.625rem;
             padding: 0.625rem 0.5rem;
+            border-bottom: 1px solid var(--color-divider-subtle);
+
+            &:last-child {
+                border-bottom: none;
+            }
         }
 
         &--exists {
             cursor: pointer;
+
             &:hover {
-                background: var(--color-ks-transparent-black-72);
+                background: var(--color-ks-hover-row);
             }
         }
 
+        &--selected {
+            color: var(--accent-color, #685fff);
+            font-weight: 500;
+        }
+
         &--empty {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 0.75rem;
             color: var(--color-input-text-placeholder);
         }
     }

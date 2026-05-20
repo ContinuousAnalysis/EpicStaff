@@ -1,3 +1,4 @@
+import { ScheduleTriggerNodeData } from '../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 import { NODE_COLORS } from '../enums/node-config';
 import { NodeType } from '../enums/node-type';
 
@@ -55,6 +56,22 @@ export const DEFAULT_NODE_DATA: Partial<Record<NodeType, () => unknown>> = {
         telegram_bot_api_key: '',
         fields: [],
     }),
+    [NodeType.SCHEDULE_TRIGGER]: (): ScheduleTriggerNodeData => {
+        const rawTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        return {
+            isActive: false,
+            runMode: 'once',
+            startDateTime: '',
+            intervalEvery: null,
+            intervalUnit: null,
+            weekdays: [],
+            endType: 'never',
+            endDateTime: null,
+            maxRuns: null,
+            currentRuns: 0,
+            timezone: rawTz === 'Europe/Kiev' ? 'Europe/Kyiv' : rawTz,
+        };
+    },
     [NodeType.END]: () => ({
         output_map: { context: 'variables' },
     }),

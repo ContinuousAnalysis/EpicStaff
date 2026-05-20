@@ -626,7 +626,13 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     public emitSave(): void {
-        this.commitSidePanelToFlow();
+        if (this.nodePanelShell?.hasPanelInstance()) {
+            const updatedNode = this.nodePanelShell.captureCurrentNodeState();
+            if (updatedNode === null) {
+                return;
+            }
+            this.flowService.updateNode(updatedNode);
+        }
         this.save.emit(this.flowService.getFlowState());
     }
 
@@ -927,7 +933,7 @@ export class FlowGraphComponent implements OnInit, OnChanges, OnDestroy {
         }
     }
 
-    private openNodePanel(nodeId: string): void {
+    public openNodePanel(nodeId: string): void {
         this.sidePanelService.setSelectedNodeId(nodeId);
         afterNextRender(() => this.nodePanelShell?.expandPanel(), { injector: this.injector });
     }

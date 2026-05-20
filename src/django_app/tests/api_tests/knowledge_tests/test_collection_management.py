@@ -13,18 +13,18 @@ from tables.models.knowledge_models import SourceCollection
 class TestCollectionList:
     """Tests for listing collections."""
 
-    def test_list_empty_collections(self, api_client):
+    def test_list_empty_collections(self, auth_client):
         """Test listing when no collections exist."""
         url = reverse("sourcecollection-list")
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
 
-    def test_list_collections(self, api_client, source_collection, empty_collection):
+    def test_list_collections(self, auth_client, source_collection, empty_collection):
         """Test listing existing collections."""
         url = reverse("sourcecollection-list")
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -38,12 +38,12 @@ class TestCollectionList:
 class TestCollectionCreate:
     """Tests for creating collections."""
 
-    def test_create_collection_with_name(self, api_client):
+    def test_create_collection_with_name(self, auth_client):
         """Test creating a collection with a specific name."""
         url = reverse("sourcecollection-list")
         data = {"collection_name": "My New Collection"}
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         response_data = response.json()
@@ -57,18 +57,18 @@ class TestCollectionCreate:
         )
         assert collection.collection_name == "My New Collection"
 
-    def test_create_collection_with_blank_name(self, api_client):
+    def test_create_collection_with_blank_name(self, auth_client):
         """Test creating a collection without specifying a name."""
         url = reverse("sourcecollection-list")
         data = {"collection_name": ""}
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         response_data = response.json()
         assert "Untitled Collection" in response_data["collection_name"]
 
-    def test_create_duplicate_collection_name(self, api_client, source_collection):
+    def test_create_duplicate_collection_name(self, auth_client, source_collection):
         """Test that duplicate collection names are handled correctly.
 
         The model has auto-rename logic, but the serializer validates uniqueness
@@ -105,10 +105,10 @@ class TestCollectionCreate:
 class TestCollectionRetrieve:
     """Tests for retrieving a single collection."""
 
-    def test_retrieve_collection(self, api_client, source_collection):
+    def test_retrieve_collection(self, auth_client, source_collection):
         """Test retrieving a collection by ID."""
         url = reverse("sourcecollection-detail", args=[source_collection.collection_id])
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -116,10 +116,10 @@ class TestCollectionRetrieve:
         assert data["collection_name"] == source_collection.collection_name
         assert "document_count" in data
 
-    def test_retrieve_nonexistent_collection(self, api_client):
+    def test_retrieve_nonexistent_collection(self, auth_client):
         """Test retrieving a collection that doesn't exist."""
         url = reverse("sourcecollection-detail", args=[99999])
-        response = api_client.get(url)
+        response = auth_client.get(url)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -128,12 +128,12 @@ class TestCollectionRetrieve:
 class TestCollectionUpdate:
     """Tests for updating collections."""
 
-    def test_update_collection_name(self, api_client, source_collection):
+    def test_update_collection_name(self, auth_client, source_collection):
         """Test updating a collection's name."""
         url = reverse("sourcecollection-detail", args=[source_collection.collection_id])
         data = {"collection_name": "Updated Name"}
 
-        response = api_client.patch(url, data, format="json")
+        response = auth_client.patch(url, data, format="json")
 
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
@@ -143,21 +143,21 @@ class TestCollectionUpdate:
         source_collection.refresh_from_db()
         assert source_collection.collection_name == "Updated Name"
 
-    def test_update_collection_with_empty_name(self, api_client, source_collection):
+    def test_update_collection_with_empty_name(self, auth_client, source_collection):
         """Test updating with empty name fails validation."""
         url = reverse("sourcecollection-detail", args=[source_collection.collection_id])
         data = {"collection_name": ""}
 
-        response = api_client.patch(url, data, format="json")
+        response = auth_client.patch(url, data, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_update_nonexistent_collection(self, api_client):
+    def test_update_nonexistent_collection(self, auth_client):
         """Test updating a collection that doesn't exist."""
         url = reverse("sourcecollection-detail", args=[99999])
         data = {"collection_name": "New Name"}
 
-        response = api_client.patch(url, data, format="json")
+        response = auth_client.patch(url, data, format="json")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -166,12 +166,12 @@ class TestCollectionUpdate:
 class TestCollectionDelete:
     """Tests for deleting collections."""
 
-    def test_delete_empty_collection(self, api_client, empty_collection):
+    def test_delete_empty_collection(self, auth_client, empty_collection):
         """Test deleting an empty collection."""
         collection_id = empty_collection.collection_id
         url = reverse("sourcecollection-detail", args=[collection_id])
 
-        response = api_client.delete(url)
+        response = auth_client.delete(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -182,14 +182,14 @@ class TestCollectionDelete:
         assert not SourceCollection.objects.filter(collection_id=collection_id).exists()
 
     def test_delete_collection_with_documents(
-        self, api_client, source_collection, multiple_documents
+        self, auth_client, source_collection, multiple_documents
     ):
         """Test deleting a collection with documents cascades properly."""
         collection_id = source_collection.collection_id
         document_ids = [doc.document_id for doc in multiple_documents]
         url = reverse("sourcecollection-detail", args=[collection_id])
 
-        response = api_client.delete(url)
+        response = auth_client.delete(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -201,10 +201,10 @@ class TestCollectionDelete:
         for doc_id in document_ids:
             assert not DocumentMetadata.objects.filter(document_id=doc_id).exists()
 
-    def test_delete_nonexistent_collection(self, api_client):
+    def test_delete_nonexistent_collection(self, auth_client):
         """Test deleting a collection that doesn't exist."""
         url = reverse("sourcecollection-detail", args=[99999])
-        response = api_client.delete(url)
+        response = auth_client.delete(url)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -214,7 +214,7 @@ class TestCollectionBulkDelete:
     """Tests for bulk deleting collections."""
 
     def test_bulk_delete_collections(
-        self, api_client, source_collection, empty_collection
+        self, auth_client, source_collection, empty_collection
     ):
         """Test bulk deleting multiple collections."""
         url = reverse("sourcecollection-bulk-delete")
@@ -225,7 +225,7 @@ class TestCollectionBulkDelete:
             ]
         }
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
@@ -239,21 +239,21 @@ class TestCollectionBulkDelete:
             ]
         ).exists()
 
-    def test_bulk_delete_with_empty_list(self, api_client):
+    def test_bulk_delete_with_empty_list(self, auth_client):
         """Test bulk delete with empty collection_ids list."""
         url = reverse("sourcecollection-bulk-delete")
         data = {"collection_ids": []}
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_bulk_delete_with_missing_ids(self, api_client, source_collection):
+    def test_bulk_delete_with_missing_ids(self, auth_client, source_collection):
         """Test bulk delete with some nonexistent IDs."""
         url = reverse("sourcecollection-bulk-delete")
         data = {"collection_ids": [source_collection.collection_id, 99999]}
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         # Should delete the existing one and ignore the missing one
         assert response.status_code == status.HTTP_200_OK
@@ -265,12 +265,12 @@ class TestCollectionBulkDelete:
 class TestCollectionCopy:
     """Tests for copying collections."""
 
-    def test_copy_collection(self, api_client, source_collection, multiple_documents):
+    def test_copy_collection(self, auth_client, source_collection, multiple_documents):
         """Test copying a collection creates new metadata but shares content."""
         url = reverse("sourcecollection-copy", args=[source_collection.collection_id])
         data = {"new_collection_name": "Copied Collection"}
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         response_data = response.json()
@@ -289,23 +289,23 @@ class TestCollectionCopy:
         ).count()
         assert original_count == copied_count
 
-    def test_copy_collection_without_name(self, api_client, source_collection):
+    def test_copy_collection_without_name(self, auth_client, source_collection):
         """Test copying without providing a new name."""
         url = reverse("sourcecollection-copy", args=[source_collection.collection_id])
         data = {}
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
         response_data = response.json()
         # Should auto-generate name with "(Copy)" suffix
         assert "(Copy)" in response_data["collection"]["collection_name"]
 
-    def test_copy_nonexistent_collection(self, api_client):
+    def test_copy_nonexistent_collection(self, auth_client):
         """Test copying a collection that doesn't exist."""
         url = reverse("sourcecollection-copy", args=[99999])
         data = {}
 
-        response = api_client.post(url, data, format="json")
+        response = auth_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND

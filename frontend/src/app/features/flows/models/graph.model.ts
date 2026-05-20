@@ -9,6 +9,10 @@ import { GetFileExtractorNodeRequest } from '../../../pages/flows-page/component
 import { GraphNote } from '../../../pages/flows-page/components/flow-visual-programming/models/graph-note.model';
 import { GetLLMNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/llm-node.model';
 import { PythonNode } from '../../../pages/flows-page/components/flow-visual-programming/models/python-node.model';
+import {
+    CreateScheduleTriggerNodeRequest,
+    GetScheduleTriggerNodeRequest,
+} from '../../../pages/flows-page/components/flow-visual-programming/models/schedule-trigger.model';
 import { StartNode } from '../../../pages/flows-page/components/flow-visual-programming/models/start-node.model';
 import { SubGraphNode } from '../../../pages/flows-page/components/flow-visual-programming/models/subgraph-node.model';
 import { GetTelegramTriggerNodeRequest } from '../../../pages/flows-page/components/flow-visual-programming/models/telegram-trigger.model';
@@ -55,6 +59,7 @@ export interface GraphDto extends GetGraphLightRequest {
     audio_transcription_node_list: GetAudioToTextNodeRequest[];
     graph_note_list: GraphNote[];
     code_agent_node_list: GetCodeAgentNodeRequest[];
+    schedule_trigger_node_list: GetScheduleTriggerNodeRequest[];
 }
 
 export interface CreateGraphDtoRequest {
@@ -75,6 +80,7 @@ export interface CreateGraphDtoRequest {
     end_node_list?: EndNode[];
     subgraph_node_list?: SubGraphNode[];
     decision_table_node_list?: GetDecisionTableNodeRequest[];
+    schedule_trigger_node_list?: CreateScheduleTriggerNodeRequest[];
 }
 
 export interface UpdateGraphDtoRequest {
@@ -103,4 +109,27 @@ export interface GraphVersionDto {
 export interface GraphVersionUpdateRequest {
     name: string;
     description: string;
+}
+
+export interface RestoreWarning {
+    type: 'node_skipped' | 'edge_dropped' | string;
+    node_name?: string;
+    node_type?: string;
+    node_id?: number;
+    missing_node_id?: number;
+    reason: string;
+}
+
+export interface GraphRestoreResponse {
+    restored: boolean;
+    graph_id: number;
+    warnings: RestoreWarning[];
+    auto_backup_version_id?: number;
+    node_id_map?: Record<string, number>;
+}
+
+export interface CreateGraphFromVersionResponse {
+    created: boolean;
+    graph_id: number;
+    warnings: RestoreWarning[];
 }

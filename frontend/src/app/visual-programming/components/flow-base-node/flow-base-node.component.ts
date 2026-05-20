@@ -27,6 +27,7 @@ import {
     NodeModel,
     ProjectNodeModel,
     PythonNodeModel,
+    ScheduleTriggerNodeModel,
     StartNodeModel,
     SubGraphNodeModel,
     TaskNodeModel,
@@ -196,6 +197,13 @@ export class FlowBaseNodeComponent {
 
     onNodeSizeChanged(size: { width: number; height: number }): void {
         this.fNodeSizeChange.emit(size);
+    }
+
+    get isScheduleTriggerActive(): boolean {
+        return (
+            this.node.type === NodeType.SCHEDULE_TRIGGER &&
+            (this.node as ScheduleTriggerNodeModel).data?.isActive === true
+        );
     }
 
     public getSelectedFlowUrl(): string | null {

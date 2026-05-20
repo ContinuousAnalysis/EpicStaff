@@ -331,6 +331,12 @@ class UnknownRagTypeException(RagException):
         super().__init__(f"Unknown RAG type: '{rag_type}'")
 
 
+class ScheduleTriggerValidationError(CustomAPIExeption):
+    status_code = 400
+    default_detail = "ValidationError occurred in ScheduleTriggerValidator"
+    default_code = "schedule_trigger_validation_error"
+
+
 class BulkSaveValidationError(CustomAPIExeption):
     def __init__(self, errors: dict):
         self.errors = errors

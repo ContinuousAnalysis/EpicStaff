@@ -158,99 +158,83 @@
         <!-- /.settings -->
 
         <!-- Drop zone + file list -->
-        <div
-            class="create-folder-dialog__field create-folder-dialog__field--files"
-            (dragover)="onDragOver($event)"
-            (dragleave)="onDragLeave($event)"
-            (drop)="onDrop($event)"
-            [class.create-folder-dialog__field--dragging]="isDragging()"
-        >
+        <div class="create-folder-dialog__field create-folder-dialog__field--files">
             @if (files().length === 0) {
-                <div class="create-folder-dialog__empty-state">
-                    <span class="create-folder-dialog__drop-text">Drag and drop files here or click to upload</span>
-                    <label class="create-folder-dialog__upload-box">
-                        <app-svg-icon
-                            icon="upload"
-                            size="32px"
-                            class="create-folder-dialog__drop-icon"
-                        ></app-svg-icon>
-                        <input
-                            type="file"
-                            multiple
-                            hidden
-                            (change)="onFileInputChange($event)"
-                        />
-                    </label>
-                </div>
+                <app-file-uploader (filesUploaded)="onFilesUploaded($event)" />
             } @else {
-                <div class="create-folder-dialog__file-list-header">
-                    <label class="create-folder-dialog__label">
-                        Selected Files: <span class="create-folder-dialog__count">({{ totalSize() }})</span>
-                    </label>
-                    @if (hasBlockedFiles()) {
-                        <span class="create-folder-dialog__file-validation-error">File validation errors</span>
-                    }
-                    <label class="create-folder-dialog__add-more-btn">
-                        + Add More Files
-                        <input
-                            type="file"
-                            multiple
-                            hidden
-                            (change)="onFileInputChange($event)"
-                        />
-                    </label>
-                </div>
-                <ul class="create-folder-dialog__file-list">
-                    @for (file of files(); track file.name; let i = $index) {
-                        <li class="create-folder-dialog__file-item">
-                            <span class="create-folder-dialog__file-index">{{ i + 1 }}</span>
-                            <app-svg-icon
-                                icon="file-flat"
-                                size="12px"
-                                class="create-folder-dialog__file-icon"
-                            ></app-svg-icon>
-                            <div class="create-folder-dialog__file-info">
-                                <span
-                                    class="create-folder-dialog__file-name"
-                                    [title]="file.name"
-                                    >{{ file.name }}</span
-                                >
-                                @if (getFileError(file); as serverError) {
-                                    <span
-                                        class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
-                                        >{{ serverError }}</span
-                                    >
-                                } @else if (isZeroSize(file)) {
-                                    <span
-                                        class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
-                                        >Empty file</span
-                                    >
-                                } @else if (isArchive(file)) {
-                                    <span
-                                        class="create-folder-dialog__file-badge create-folder-dialog__file-badge--unpack"
-                                        >Will be unpacked</span
-                                    >
-                                } @else if (isBlocked(file)) {
-                                    <span
-                                        class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
-                                        >Invalid file type</span
-                                    >
-                                }
-                            </div>
-                            <span class="create-folder-dialog__file-size">{{ formatSize(file.size) }}</span>
-                            <button
-                                class="create-folder-dialog__file-remove"
-                                aria-label="Remove file"
-                                (click)="removeFile(i)"
-                            >
+                <app-drag-drop-area
+                    class="create-folder-dialog__drop-wrapper"
+                    (filesDropped)="onFilesUploaded($event)"
+                >
+                    <div class="create-folder-dialog__file-list-header">
+                        <label class="create-folder-dialog__label">
+                            Selected Files: <span class="create-folder-dialog__count">({{ totalSize() }})</span>
+                        </label>
+                        @if (hasBlockedFiles()) {
+                            <span class="create-folder-dialog__file-validation-error">File validation errors</span>
+                        }
+                        <label class="create-folder-dialog__add-more-btn">
+                            + Add More Files
+                            <input
+                                type="file"
+                                multiple
+                                hidden
+                                (change)="onFileInputChange($event)"
+                            />
+                        </label>
+                    </div>
+                    <ul class="create-folder-dialog__file-list">
+                        @for (file of files(); track file.name; let i = $index) {
+                            <li class="create-folder-dialog__file-item">
+                                <span class="create-folder-dialog__file-index">{{ i + 1 }}</span>
                                 <app-svg-icon
-                                    icon="x"
-                                    size="16px"
+                                    icon="file-flat"
+                                    size="12px"
+                                    class="create-folder-dialog__file-icon"
                                 ></app-svg-icon>
-                            </button>
-                        </li>
-                    }
-                </ul>
+                                <div class="create-folder-dialog__file-info">
+                                    <span
+                                        class="create-folder-dialog__file-name"
+                                        [title]="file.name"
+                                        >{{ file.name }}</span
+                                    >
+                                    @if (getFileError(file); as serverError) {
+                                        <span
+                                            class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
+                                            >{{ serverError }}</span
+                                        >
+                                    } @else if (isZeroSize(file)) {
+                                        <span
+                                            class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
+                                            >Empty file</span
+                                        >
+                                    } @else if (isArchive(file)) {
+                                        <span
+                                            class="create-folder-dialog__file-badge create-folder-dialog__file-badge--unpack"
+                                            >Will be unpacked</span
+                                        >
+                                    } @else if (isBlocked(file)) {
+                                        <span
+                                            class="create-folder-dialog__file-badge create-folder-dialog__file-badge--blocked"
+                                            >Invalid file type</span
+                                        >
+                                    }
+                                </div>
+                                <span class="create-folder-dialog__file-size">{{ formatSize(file.size) }}</span>
+                                <button
+                                    class="create-folder-dialog__file-remove"
+                                    aria-label="Remove file"
+                                    (click)="removeFile(i)"
+                                >
+                                    <app-svg-icon
+                                        icon="x"
+                                        size="16px"
+                                    ></app-svg-icon>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                </app-drag-drop-area>
             }
         </div>
     </div>

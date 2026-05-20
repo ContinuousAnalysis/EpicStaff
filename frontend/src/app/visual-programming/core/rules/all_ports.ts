@@ -7,6 +7,7 @@ import { DEFAULT_FILE_EXTRACTOR_NODE_PORTS } from './file-extractor-ports/file-e
 import { DEFAULT_LLM_NODE_PORTS } from './llm-ports/llm-node-default-ports';
 import { DEFAULT_PROJECT_NODE_PORTS } from './project-ports/project-node-default-ports';
 import { DEFAULT_PYTHON_NODE_PORTS } from './python-ports/python-node-default-ports';
+import { DEFAULT_SCHEDULE_TRIGGER_NODE_PORTS } from './schedule-trigger-ports/schedule-trigger-default-ports';
 import { DEFAULT_START_NODE_PORTS } from './start-ports/start-node-default-ports';
 import { DEFAULT_SUBGRAPH_NODE_PORTS } from './subgraph-ports/subgraph-node-default-ports';
 import { DEFAULT_TABLE_NODE_PORTS } from './table-ports/table-ports';
@@ -18,7 +19,6 @@ import { DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS } from './webhook-trigger-ports/webh
 export const PORTS_DICTIONARY: { [role: string]: BasePort } = Object.fromEntries(
     [
         ...DEFAULT_TASK_NODE_PORTS,
-
         ...DEFAULT_LLM_NODE_PORTS,
         ...DEFAULT_TOOL_NODE_PORTS,
         ...DEFAULT_PROJECT_NODE_PORTS,
@@ -29,6 +29,7 @@ export const PORTS_DICTIONARY: { [role: string]: BasePort } = Object.fromEntries
         ...DEFAULT_FILE_EXTRACTOR_NODE_PORTS,
         ...DEFAULT_WEBHOOK_TRIGGER_NODE_PORTS,
         ...DEFAULT_TELEGRAM_TRIGGER_NODE_PORTS,
+        ...DEFAULT_SCHEDULE_TRIGGER_NODE_PORTS,
         ...DEFAULT_END_NODE_PORTS,
         ...DEFAULT_SUBGRAPH_NODE_PORTS,
         ...DEFAULT_AUDIO_TO_TEXT_NODE_PORTS,

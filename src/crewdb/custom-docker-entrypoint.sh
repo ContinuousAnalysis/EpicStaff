@@ -165,6 +165,17 @@ BEGIN
     ELSE
         RAISE NOTICE '[manager] tables_session not found, skipping';
     END IF;
+
+    IF EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'tables_scheduletriggernode'
+    ) THEN
+        REVOKE ALL ON TABLE tables_scheduletriggernode FROM "${manager_user}";
+        GRANT SELECT, UPDATE ON TABLE tables_scheduletriggernode TO "${manager_user}";
+        RAISE NOTICE '[manager] Granted SELECT, UPDATE on tables_scheduletriggernode';
+    ELSE
+        RAISE NOTICE '[manager] tables_scheduletriggernode not found, skipping';
+    END IF;
 END
 \$\$;
 EOF
@@ -382,6 +393,12 @@ BEGIN
         IF tbl_name = 'tables_session' THEN
             EXECUTE format('GRANT SELECT ON TABLE %I TO %I', tbl_name, '${manager_user}');
             RAISE NOTICE '[auto-grant] SELECT on % to ${manager_user}', tbl_name;
+        END IF;
+
+        -- manager: SELECT + UPDATE for schedule trigger
+        IF tbl_name = 'tables_scheduletriggernode' THEN
+            EXECUTE format('GRANT SELECT, UPDATE ON TABLE %I TO %I', tbl_name, '${manager_user}');
+            RAISE NOTICE '[auto-grant] SELECT,UPDATE on % to ${manager_user}', tbl_name;
         END IF;
 
         -- knowledge: read-only tables

@@ -22,6 +22,15 @@ export enum GraphSessionStatus {
     STOP = 'stop',
 }
 
+export const TERMINAL_SESSION_STATUSES: ReadonlySet<GraphSessionStatus> = new Set([
+    GraphSessionStatus.ENDED,
+    GraphSessionStatus.ERROR,
+    GraphSessionStatus.STOP,
+    GraphSessionStatus.EXPIRED,
+]);
+
+export const isTerminalSessionStatus = (status: GraphSessionStatus): boolean => TERMINAL_SESSION_STATUSES.has(status);
+
 export interface GraphSession {
     id: number;
     graph: GraphSessionGraph;

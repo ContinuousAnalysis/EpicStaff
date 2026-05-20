@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Any
+from typing import Any, Literal
 from pydantic import ConfigDict
 from .graph_nodes import GraphData, SubGraphData
 
@@ -33,6 +33,14 @@ class WebhookEventData(BaseModel):
     path: str
     payload: dict
     config_id: str | None = None
+
+
+class ScheduleEventData(BaseModel):
+    node_id: int
+    graph_id: int
+    trigger_type: Literal["schedule"] = "schedule"
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StorageMutation(BaseModel):

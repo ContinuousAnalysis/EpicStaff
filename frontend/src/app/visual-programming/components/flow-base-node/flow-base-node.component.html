@@ -88,6 +88,9 @@
                 class="title"
                 [title]="getNodeTitle()"
             >
+                @if (isScheduleTriggerActive) {
+                    <span class="active-dot"></span>
+                }
                 {{ getNodeTitle() }}
             </div>
             <div

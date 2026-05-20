@@ -35,6 +35,8 @@ Every endpoint returns the same payload (single object or list):
 }
 ```
 
+The list endpoint (`GET /api/admin/organizations/`) returns this same shape **plus** an `admins` array. The single-org endpoints (create / rename / deactivate / reactivate) keep the shape above unchanged.
+
 `member_count` reflects the count of `OrganizationUser` rows for the org,
 across all roles, regardless of `user.is_active`. Story 5 may introduce
 `active_member_count` later as a separate field.
@@ -98,9 +100,38 @@ curl http://localhost:8000/api/admin/organizations/ \
 
 ```json
 [
-  {"id": 1, "name": "Default Organization", "is_active": true, "member_count": 1, "created_at": "...", "updated_at": "..."},
-  {"id": 7, "name": "Acme Inc", "is_active": true, "member_count": 12, "created_at": "...", "updated_at": "..."},
-  {"id": 4, "name": "Old Co", "is_active": false, "member_count": 3, "created_at": "...", "updated_at": "..."}
+  {
+    "id": 1,
+    "name": "Default Organization",
+    "is_active": true,
+    "member_count": 1,
+    "created_at": "...",
+    "updated_at": "...",
+    "admins": [
+      {
+        "id": 1,
+        "email": "email@a.com",
+        "display_name": "John Doe",
+        "avatar_url": "http://host/media/avatars/1/abc.png"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Acme Inc",
+    "is_active": true,
+    "member_count": 12,
+    "created_at": "...",
+    "updated_at": "...",
+    "admins": [
+      {
+        "id": 4,
+        "email": "boss@acme.com",
+        "display_name": "Acme Boss",
+        "avatar_url": null
+      }
+    ]
+  }
 ]
 ```
 
@@ -180,9 +211,10 @@ Inverse of deactivate. No guards — always succeeds for an existing org.
 | Behavior | Note |
 |---|---|
 | Default org name | The org named `DEFAULT_ORGANIZATION_NAME` is **not** treated specially. It can be renamed, deactivated (subject to last-active guard), and reactivated like any other org. The env var only controls bootstrap. |
-| Inactive orgs in the org switcher | Until Story 7 lands, `/api/auth/me/` still includes inactive-org memberships in `memberships[]`. The FE should grey out orgs with `is_active=false` and prevent selecting them as the active org. |
+| Inactive orgs in the org switcher | `/api/profile/` filters inactive-org memberships out of `memberships[]` server-side. The user never sees deactivated orgs in their own profile. Admin endpoints still show every membership unchanged. |
 | Renaming behavior | Surrounding whitespace is trimmed. Empty / whitespace-only is rejected. Case-insensitive uniqueness — `"Acme"` and `"acme"` collide. |
 | 401 vs 403 | 401 = no/expired token (re-login). 403 = valid JWT but `is_superadmin: false` (redirect away from admin panel). |
+| `admins[]` in list | Only the list endpoint includes `admins[]`. Items are users with role `Org Admin` for that org, ordered by `joined_at, id`. If an org has zero Org Admins, the field falls back to a single-item list containing the **oldest active superadmin** in the system. The same superadmin may appear under multiple orgs. If no active superadmin exists, the array is `[]`. |
 
 ---
 
@@ -191,7 +223,7 @@ Inverse of deactivate. No guards — always succeeds for an existing org.
 After Story 4, a successful `POST /api/auth/reset-user/` always leaves
 exactly one `OrganizationUser` row for the new superadmin in the
 `DEFAULT_ORGANIZATION_NAME`-named org with role `Superadmin`. If no such org
-exists at the time of reset, one is created. `GET /api/auth/me/` returns
+exists at the time of reset, one is created. `GET /api/profile/` returns
 `memberships[]` with that one entry.
 
 This restores the Bug 1 reproduction's expected end state.

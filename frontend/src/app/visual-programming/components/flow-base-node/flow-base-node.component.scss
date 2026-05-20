@@ -141,6 +141,9 @@
             }
 
             .title {
+                display: flex;
+                align-items: center;
+                gap: 6px;
                 font-size: 16px;
                 font-weight: 500;
                 letter-spacing: 0.5px;
@@ -148,6 +151,15 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+
+                .active-dot {
+                    display: inline-block;
+                    flex-shrink: 0;
+                    width: 7px;
+                    height: 7px;
+                    border-radius: 50%;
+                    background-color: #22c55e;
+                }
             }
 
             .blocked-badge {

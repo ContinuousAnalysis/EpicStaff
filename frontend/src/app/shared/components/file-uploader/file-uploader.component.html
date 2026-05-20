@@ -1,0 +1,31 @@
+<div class="file-uploader">
+    <div
+        class="file-uploader__area"
+        [class.file-uploader__area--active]="isDragging()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+    >
+        <p class="file-uploader__label">{{ label() }}</p>
+        @if (hint()) {
+            <p class="file-uploader__hint">{{ hint() }}</p>
+        }
+        <label
+            class="file-uploader__button"
+            (click)="fileInput.click()"
+        >
+            <app-svg-icon
+                icon="upload"
+                size="2rem"
+            />
+        </label>
+        <input
+            #fileInput
+            type="file"
+            [accept]="accept()"
+            [multiple]="multiple()"
+            style="display: none"
+            (change)="onFileSelect($event)"
+        />
+    </div>
+</div>

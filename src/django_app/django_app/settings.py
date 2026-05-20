@@ -194,7 +194,7 @@ TELEGRAM_TRIGGER_FIELDS_PATH = (
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = os.getenv("TIMEZONE", "UTC")
 
 USE_I18N = True
 
@@ -282,6 +282,17 @@ DEFAULT_ORGANIZATION_NAME = os.getenv(
     "DEFAULT_ORGANIZATION_NAME", "Default Organization"
 )
 
+# Story 6 — User profile
+PASSWORD_CHANGE_TICKET_TTL_SECONDS = int(
+    os.getenv("PASSWORD_CHANGE_TICKET_TTL_SECONDS", "300")
+)
+AVATAR_MAX_BYTES = int(os.getenv("AVATAR_MAX_BYTES", str(5 * 1024 * 1024)))
+AVATAR_ALLOWED_FORMATS = [
+    fmt.strip()
+    for fmt in os.getenv("AVATAR_ALLOWED_FORMATS", "JPEG,PNG").split(",")
+    if fmt.strip()
+]
+
 # Object storage
 STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "s3")
 STORAGE_ENDPOINT = os.getenv("STORAGE_ENDPOINT", "")
@@ -330,6 +341,7 @@ STORAGE_MUTATION_CHANNEL = os.environ.get(
     "STORAGE_MUTATION_CHANNEL", "storage_mutations"
 )
 TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
+SCHEDULE_CHANNEL = os.environ.get("SCHEDULE_CHANNEL", "schedule_channel")
 
 
 WEBHOOK_HOST_NAME = os.getenv("WEBHOOK_HOST_NAME", "localhost")

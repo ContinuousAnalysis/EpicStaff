@@ -17,6 +17,18 @@ export function patchFlowStateWithBackendIds(
         pythonCodeIdByBackendId.set(pn.id, pn.python_code?.id ?? null);
     }
 
+    const scheduleDataByBackendId = new Map<
+        number,
+        { nextRunDateTime: string | null; isActive: boolean; currentRuns: number }
+    >();
+    for (const sn of responseGraph.schedule_trigger_node_list ?? []) {
+        scheduleDataByBackendId.set(sn.id, {
+            nextRunDateTime: sn.schedule?.next_run_date_time ?? null,
+            isActive: sn.is_active,
+            currentRuns: sn.current_runs,
+        });
+    }
+
     const patchedNodes = currentFlow.nodes.map((node) => {
         const mappedBackendId = uiToBackendId.get(node.id);
         let patched = mappedBackendId != null ? { ...node, backendId: mappedBackendId } : node;
@@ -25,6 +37,22 @@ export function patchFlowStateWithBackendIds(
             const resolvedBackendId = mappedBackendId ?? patched.backendId;
             if (resolvedBackendId != null && pythonCodeIdByBackendId.has(resolvedBackendId)) {
                 patched = { ...patched, python_code_id: pythonCodeIdByBackendId.get(resolvedBackendId) ?? null };
+            }
+        }
+
+        if (patched.type === NodeType.SCHEDULE_TRIGGER) {
+            const resolvedBackendId = mappedBackendId ?? patched.backendId;
+            if (resolvedBackendId != null && scheduleDataByBackendId.has(resolvedBackendId)) {
+                const scheduleData = scheduleDataByBackendId.get(resolvedBackendId)!;
+                patched = {
+                    ...patched,
+                    data: {
+                        ...patched.data,
+                        nextRunDateTime: scheduleData.nextRunDateTime ?? patched.data.nextRunDateTime,
+                        isActive: scheduleData.isActive,
+                        currentRuns: scheduleData.currentRuns,
+                    },
+                };
             }
         }
 
@@ -135,6 +163,11 @@ function buildCreatedNodeIdMap(
     );
     mapByNewIds(nodeDiff.endNodes.toCreate, responseGraph.end_node_list ?? [], existingIdsByType(NodeType.END));
     mapByNewIds(nodeDiff.noteNodes.toCreate, responseGraph.graph_note_list ?? [], existingIdsByType(NodeType.NOTE));
+    mapByNewIds(
+        nodeDiff.scheduleNodes.toCreate,
+        responseGraph.schedule_trigger_node_list ?? [],
+        existingIdsByType(NodeType.SCHEDULE_TRIGGER)
+    );
 
     return mapping;
 }
