@@ -19,6 +19,7 @@ from tables.serializers.model_serializers.node_serializers.basic_node_serializer
 from tables.serializers.model_serializers.node_serializers.trigger_serializers import (
     TelegramTriggerNodeSerializer,
     WebhookTriggerNodeSerializer,
+    ScheduleTriggerNodeSerializer,
 )
 from tables.serializers.model_serializers.tag_serializers import GraphTagSerializer
 from tables.models.graph_models import (
@@ -154,6 +155,9 @@ class GraphSerializer(serializers.ModelSerializer):
     telegram_trigger_node_list = TelegramTriggerNodeSerializer(
         many=True, read_only=True
     )
+    schedule_trigger_node_list = ScheduleTriggerNodeSerializer(
+        many=True, read_only=True
+    )
     label_ids = serializers.PrimaryKeyRelatedField(
         many=True, source="labels", queryset=Label.objects.all(), required=False
     )
@@ -184,6 +188,7 @@ class GraphSerializer(serializers.ModelSerializer):
             "persistent_variables",
             "epicchat_enabled",
             "telegram_trigger_node_list",
+            "schedule_trigger_node_list",
             "label_ids",
             "graph_note_list",
         ]

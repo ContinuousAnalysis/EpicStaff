@@ -19,6 +19,7 @@ from tables.models.graph_models import (
     LLMNode,
     GraphNote,
     PythonNode,
+    ScheduleTriggerNode,
     StartNode,
     SubGraphNode,
     TelegramTriggerNode,
@@ -177,6 +178,30 @@ def copy_code_agent_node(graph: Graph, node: CodeAgentNode) -> CodeAgentNode:
     )
 
 
+def copy_schedule_trigger_node(
+    graph: Graph, node: ScheduleTriggerNode
+) -> ScheduleTriggerNode:
+    # Schedule config is preserved verbatim; activation state is reset so the
+    # copy does not start firing on its own — user must enable it explicitly.
+    return ScheduleTriggerNode.objects.create(
+        graph=graph,
+        node_name=node.node_name,
+        timezone=node.timezone,
+        run_mode=node.run_mode,
+        start_date_time=node.start_date_time,
+        every=node.every,
+        unit=node.unit,
+        weekdays=node.weekdays,
+        end_type=node.end_type,
+        end_date_time=node.end_date_time,
+        max_runs=node.max_runs,
+        metadata=node.metadata,
+        is_active=False,
+        current_runs=0,
+        next_run_date_time=None,
+    )
+
+
 def copy_decision_table_node(
     graph: Graph, node: DecisionTableNode
 ) -> DecisionTableNode:
@@ -233,6 +258,10 @@ NODE_COPY_HANDLERS: dict[NodeType, tuple[str, Callable]] = {
     NodeType.TELEGRAM_TRIGGER_NODE: (
         "telegram_trigger_node_list",
         copy_telegram_trigger_node,
+    ),
+    NodeType.SCHEDULE_TRIGGER_NODE: (
+        "schedule_trigger_node_list",
+        copy_schedule_trigger_node,
     ),
     NodeType.DECISION_TABLE_NODE: (
         "decision_table_node_list",

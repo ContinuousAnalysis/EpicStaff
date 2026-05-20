@@ -17,6 +17,7 @@ from .basic_node_serializers import (
     SubGraphNodeSerializer,
 )
 from .trigger_serializers import (
+    ScheduleTriggerNodeSerializer,
     TelegramTriggerNodeDataFieldsSerializer,
     TelegramTriggerNodeFieldSerializer,
     TelegramTriggerNodeSerializer,

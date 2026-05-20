@@ -15,6 +15,7 @@ from tables.models.graph_models import (
     DecisionTableNode,
     GraphSessionMessage,
     LLMNode,
+    ScheduleTriggerNode,
     StartNode,
     SubGraphNode,
     TelegramTriggerNode,
@@ -94,11 +95,12 @@ class SessionManagerService(metaclass=SingletonMeta):
         # it might not exist if graph has no start node
         start_node = StartNode.objects.filter(graph_id=graph_id).first()
 
-        if variables and start_node.variables:
-            start_node_variables = self._get_actual_variables(start_node.variables)
-            variables = self._deep_merge_dicts(start_node_variables, variables)
-        elif start_node.variables:
-            variables = start_node.variables
+        if start_node is not None:
+            if variables and start_node.variables:
+                start_node_variables = self._get_actual_variables(start_node.variables)
+                variables = self._deep_merge_dicts(start_node_variables, variables)
+            elif start_node.variables:
+                variables = start_node.variables
 
         variables = self._get_actual_variables(variables)
 
@@ -321,6 +323,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             graph=graph.pk
         ).select_related("python_code")
         telegram_trigger_node_list = TelegramTriggerNode.objects.filter(graph=graph.pk)
+        schedule_trigger_node_list = ScheduleTriggerNode.objects.filter(graph=graph.pk)
         code_agent_node_list = CodeAgentNode.objects.filter(graph=graph.pk)
 
         if file_extractor_node_list:
@@ -347,6 +350,7 @@ class SessionManagerService(metaclass=SingletonMeta):
             subgraph_node_list,
             webhook_trigger_node_list,
             telegram_trigger_node_list,
+            schedule_trigger_node_list,
             code_agent_node_list,
         ):
             for n in node_list:
@@ -398,6 +402,12 @@ class SessionManagerService(metaclass=SingletonMeta):
                 telegram_trigger_node=item, resolver=resolver
             )
             for item in telegram_trigger_node_list
+        ]
+        schedule_trigger_node_data_list = [
+            cv.convert_schedule_trigger_node_to_pydantic(
+                schedule_trigger_node=item, resolver=resolver
+            )
+            for item in schedule_trigger_node_list
         ]
         file_extractor_node_data_list = [
             cv.convert_file_extractor_node_to_pydantic(
@@ -525,4 +535,5 @@ class SessionManagerService(metaclass=SingletonMeta):
             entrypoint=entrypoint,
             end_node=end_node_data,
             telegram_trigger_node_data_list=telegram_trigger_node_data_list,
+            schedule_trigger_node_data_list=schedule_trigger_node_data_list,
         )

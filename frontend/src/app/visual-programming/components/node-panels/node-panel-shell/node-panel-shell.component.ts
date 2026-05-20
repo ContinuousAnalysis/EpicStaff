@@ -15,6 +15,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { AppSvgIconComponent } from '../../../../shared/components/app-svg-icon/app-svg-icon.component';
 import { ShortcutListenerDirective } from '../../../core/directives/shortcut-listener.directive';
 import { PANEL_COMPONENT_MAP } from '../../../core/enums/node-panel.map';
+import { NodeType } from '../../../core/enums/node-type';
 import { NodeModel } from '../../../core/models/node.model';
 import { NodePanel } from '../../../core/models/node-panel.interface';
 import { SidePanelService } from '../../../services/side-panel.service';
@@ -127,7 +128,7 @@ export class NodePanelShellComponent {
 
     public readonly shouldShowExpandButton = computed(() => {
         const node = this.node();
-        return node && node.type !== 'table';
+        return node && node.type !== 'table' && node.type !== NodeType.SCHEDULE_TRIGGER;
     });
 
     protected readonly outlet = viewChild(NgComponentOutlet);
@@ -172,6 +173,10 @@ export class NodePanelShellComponent {
         effect(() => {
             const node = this.node();
             if (node) {
+                if (this.previousNodeId !== node.id) {
+                    this.isExpanded.set(false);
+                }
+
                 // Auto-expand for decision table nodes
                 if (node.type === 'table') {
                     this.isExpanded.set(true);
@@ -253,6 +258,7 @@ export class NodePanelShellComponent {
     }
 
     public expandPanel(): void {
+        if (!this.shouldShowExpandButton()) return;
         this.isExpanded.set(true);
     }
 
@@ -261,8 +267,10 @@ export class NodePanelShellComponent {
             const updatedNode = this.panelInstance.onSave();
             if (updatedNode) {
                 this.save.emit(updatedNode);
+                return;
             }
         }
+        this.sidePanelService.clearSelection();
     }
 
     private performAutosave(): void {
@@ -292,5 +300,9 @@ export class NodePanelShellComponent {
             console.error('Failed to capture node panel state via onSave', error);
             return null;
         }
+    }
+
+    public hasPanelInstance(): boolean {
+        return this.panelInstance !== null;
     }
 }

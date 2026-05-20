@@ -14,7 +14,8 @@
     --vp-node-color: #242424;
     --vp-node-border-color: #333;
     --vp-node-selected-color: hsl(0, 0%, 57%);
-    //nodes
+
+    // nodes
     --agent-node-accent-color: #8e5cd9;
     --task-node-accent-color: #30a46c;
     --tool-node-accent-color: #9f6a00;
@@ -23,12 +24,12 @@
     --python-node-accent-color: #ffcf3f;
     --edge-node-accent-color: #8e5cd9;
     --default-node-accent-color: #9f6a00;
+    --schedule-trigger-node-accent-color: var(--color-ks-status-processing);
 
-    //connections:
+    // connections
     --db-text-1: rgba(60, 60, 67);
     --db-primary-1: #3e63dd;
     --db-snap-connection: rgba(180, 180, 180);
-    //i used this for resize handle
     --db-background: #000000;
     --db-primary-1: #5672cd;
 
@@ -60,6 +61,27 @@
         --vp-minimap-view-color: rgba(100, 108, 255, 0.16);
 
         --vp-node-color: #242424;
+        --vp-node-border-color: #333;
+        --vp-node-selected-color: hsl(0, 0%, 57%);
+
+        // nodes
+        --agent-node-accent-color: #8e5cd9;
+        --task-node-accent-color: #30a46c;
+        --tool-node-accent-color: #9f6a00;
+        --llm-node-accent-color: #e0575b;
+        --project-node-accent-color: #5672cd;
+        --python-node-accent-color: #ffcf3f;
+        --edge-node-accent-color: #8e5cd9;
+        --default-node-accent-color: #9f6a00;
+        --schedule-trigger-node-accent-color: var(--color-ks-status-processing);
+
+        // connections
+        --db-text-1: rgba(60, 60, 67);
+        --db-primary-1: #3e63dd;
+        --db-snap-connection: rgba(180, 180, 180);
+        --db-background: #000000;
+        --db-primary-1: #5672cd;
+
         --vp-selected-node-background-color: rgba(101, 117, 133, 0.16);
         --vp-hover-node-background-color: rgba(101, 117, 133, 0.16);
         --vp-selected-node-border-color: #3e63dd;

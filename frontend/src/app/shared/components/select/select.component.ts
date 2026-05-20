@@ -98,8 +98,15 @@ export class SelectComponent implements ControlValueAccessor {
                         overlayY: 'top',
                         offsetY: 4,
                     },
+                    {
+                        originX: 'start',
+                        originY: 'top',
+                        overlayX: 'start',
+                        overlayY: 'bottom',
+                        offsetY: -4,
+                    },
                 ])
-                .withPush(true);
+                .withPush(false);
 
             this.overlayRef = this.overlay.create({
                 positionStrategy,

@@ -32,6 +32,7 @@ TAG_MAP = [
     ("api/file-extractor-nodes", "Graphs & Nodes"),
     ("api/audio-transcription-nodes", "Graphs & Nodes"),
     ("api/decision-table-node", "Graphs & Nodes"),
+    ("api/schedule-trigger-nodes", "Graphs & Nodes"),
     ("api/sessions", "Sessions"),
     ("api/run-session", "Sessions"),
     ("api/answer-to-llm", "Sessions"),

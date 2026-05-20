@@ -38,14 +38,15 @@
         }
 
         <input
-            type="number"
+            [type]="integer() ? 'text' : 'number'"
+            [attr.inputmode]="integer() ? 'numeric' : null"
             class="number-stepper__input"
             [class]="'number-stepper__input--' + size()"
             [placeholder]="placeholder()"
             [value]="displayValue()"
             (input)="onInputChange($event)"
             (keydown)="onKeyDown($event)"
-            (blur)="onTouched()"
+            (blur)="onBlur()"
             [disabled]="isDisabled()"
         />
 

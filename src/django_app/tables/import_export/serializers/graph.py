@@ -21,7 +21,7 @@ from tables.models import (
     Condition,
     SubGraphNode,
 )
-from tables.models.graph_models import CodeAgentNode, GraphNote
+from tables.models.graph_models import CodeAgentNode, GraphNote, ScheduleTriggerNode
 from tables.import_export.serializers.python_tools import PythonCodeImportSerializer
 
 
@@ -196,3 +196,18 @@ class GraphImportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Graph
         exclude = ["tags", "created_at", "updated_at", "labels"]
+
+
+class ScheduleTriggerNodeImportSerializer(BaseNodeImportSerializer):
+    class Meta(BaseNodeImportSerializer.Meta):
+        model = ScheduleTriggerNode
+        exclude = ["created_at", "updated_at"]
+
+    def create(self, validated_data):
+        # Schedule config is preserved verbatim; activation state is reset so
+        # an imported flow never starts firing on its own — user must enable
+        # it explicitly after reviewing the imported schedule.
+        validated_data["is_active"] = False
+        validated_data["current_runs"] = 0
+        validated_data["next_run_date_time"] = None
+        return super().create(validated_data)

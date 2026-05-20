@@ -32,6 +32,7 @@ export class NumberStepperComponent implements ControlValueAccessor {
     step = input<number>(1);
     size = input<StepperSize>('md');
     control = input<FormControl | null>(null);
+    integer = input<boolean>(false);
 
     value = model<number | null>(null);
     changed = output<number | null>();
@@ -94,6 +95,10 @@ export class NumberStepperComponent implements ControlValueAccessor {
     displayValue = computed(() => {
         const val = this.value();
         if (val === null || val === undefined) return '';
+        if (this.integer()) {
+            const maxVal = this.max() ?? Number.MAX_SAFE_INTEGER;
+            return String(Math.min(Math.round(val), maxVal));
+        }
         return val.toString();
     });
 
@@ -146,7 +151,7 @@ export class NumberStepperComponent implements ControlValueAccessor {
             return;
         }
 
-        if (event.key === '.' && !currentValue.includes('.')) {
+        if (event.key === '.' && !this.integer() && !currentValue.includes('.')) {
             return;
         }
 
@@ -156,11 +161,43 @@ export class NumberStepperComponent implements ControlValueAccessor {
         }
     }
 
+    onBlur(): void {
+        if (this.integer()) {
+            const minVal = this.min();
+            const maxVal = this.max() ?? Number.MAX_SAFE_INTEGER;
+            const val = this.value();
+            if (val === null || (minVal !== null && val < minVal)) {
+                this.updateValue(minVal ?? 0);
+            } else if (val > maxVal) {
+                this.updateValue(maxVal);
+            }
+        }
+        this.onTouched();
+    }
+
     onInputChange(event: Event) {
         const target = event.target as HTMLInputElement;
-        const newValue: number | null = target.value === '' ? null : parseFloat(target.value);
-
+        let newValue: number | null;
+        if (target.value === '') {
+            newValue = null;
+        } else if (this.integer()) {
+            const parsed = parseInt(target.value, 10);
+            const maxVal = this.max() ?? Number.MAX_SAFE_INTEGER;
+            newValue = isNaN(parsed) ? null : Math.min(parsed, maxVal);
+        } else {
+            newValue = parseFloat(target.value);
+        }
         this.updateValue(newValue);
+        // In integer mode, force the DOM to show the clamped/sanitized value.
+        // OnPush skips re-rendering when the signal value hasn't changed (e.g., value
+        // was already at max from the previous keystroke), so the raw typed string
+        // would remain visible without this direct DOM update.
+        if (this.integer()) {
+            const expected = newValue === null ? '' : String(newValue);
+            if (target.value !== expected) {
+                target.value = expected;
+            }
+        }
     }
 
     onStepDown() {

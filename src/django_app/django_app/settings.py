@@ -194,7 +194,7 @@ TELEGRAM_TRIGGER_FIELDS_PATH = (
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = os.getenv("TIMEZONE", "UTC")
 
 USE_I18N = True
 
@@ -341,6 +341,7 @@ STORAGE_MUTATION_CHANNEL = os.environ.get(
     "STORAGE_MUTATION_CHANNEL", "storage_mutations"
 )
 TELEGRAM_TRIGGER_PREFIX = "telegram-trigger/"
+SCHEDULE_CHANNEL = os.environ.get("SCHEDULE_CHANNEL", "schedule_channel")
 
 
 WEBHOOK_HOST_NAME = os.getenv("WEBHOOK_HOST_NAME", "localhost")

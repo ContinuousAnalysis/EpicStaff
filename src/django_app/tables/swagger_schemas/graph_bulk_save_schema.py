@@ -58,6 +58,9 @@ SAVE_FLOW_SWAGGER = dict(
             "telegram_trigger_node_list": drf_serializers.ListField(
                 child=drf_serializers.DictField(), required=False
             ),
+            "schedule_trigger_node_list": drf_serializers.ListField(
+                child=drf_serializers.DictField(), required=False
+            ),
             "edge_list": drf_serializers.ListField(
                 child=drf_serializers.DictField(), required=False
             ),
@@ -80,6 +83,7 @@ SAVE_FLOW_SWAGGER = dict(
                     "graph_note_ids": _id_list_field,
                     "webhook_trigger_node_ids": _id_list_field,
                     "telegram_trigger_node_ids": _id_list_field,
+                    "schedule_trigger_node_ids": _id_list_field,
                     "edge_ids": _id_list_field,
                     "conditional_edge_ids": _id_list_field,
                 },

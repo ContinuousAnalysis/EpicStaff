@@ -2,10 +2,17 @@ from rest_framework import serializers
 
 from tables.serializers.model_serializers.python_serializers import PythonCodeSerializer
 from tables.models.graph_models import (
+    Graph,
     TelegramTriggerNode,
     TelegramTriggerNodeField,
     WebhookTriggerNode,
+    ScheduleTriggerNode,
 )
+from tables.validators.schedule_trigger_validator import (
+    ScheduleTriggerInputParser,
+    ScheduleTriggerValidator,
+)
+from tables.services.schedule_trigger_service import ScheduleTriggerService
 from tables.models.webhook_models import WebhookTrigger
 from tables.serializers.base_serializer import (
     BaseGraphEntityMixin,
@@ -164,3 +171,98 @@ class TelegramTriggerNodeSerializer(
 
 class TelegramTriggerNodeDataFieldsSerializer(serializers.Serializer):
     data = serializers.JSONField()
+
+
+class _ScheduleIntervalInputSerializer(serializers.Serializer):
+    every = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    unit = serializers.ChoiceField(
+        choices=ScheduleTriggerNode.TimeUnit.choices,
+        required=False,
+        allow_null=True,
+    )
+    weekdays = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_null=True,
+        allow_empty=True,
+    )
+
+
+class _ScheduleEndInputSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=ScheduleTriggerNode.EndType.choices)
+    date_time = serializers.CharField(required=False, allow_null=True)
+    max_runs = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+
+
+class _ScheduleConfigInputSerializer(serializers.Serializer):
+    """Wire-shape DTO for the nested `schedule` block. Primitive shape only.
+
+    Used both as the OpenAPI schema for the `schedule` field on
+    ScheduleTriggerNodeSerializer and as the shape validator inside
+    ScheduleTriggerInputParser. Domain rules and wire↔model translation live
+    in tables.validators.schedule_trigger_validator.
+    """
+
+    run_mode = serializers.ChoiceField(
+        choices=ScheduleTriggerNode.RunMode.choices,
+        required=False,
+        allow_null=True,
+    )
+    timezone = serializers.CharField(required=False, allow_null=True)
+    start_date_time = serializers.CharField(required=False, allow_null=True)
+    interval = _ScheduleIntervalInputSerializer(required=False, allow_null=True)
+    end = _ScheduleEndInputSerializer(required=False, allow_null=True)
+
+
+class ScheduleTriggerNodeSerializer(serializers.Serializer):
+    """Shape/type validation only. Domain rules → ScheduleTriggerValidator.
+    Persistence → ScheduleTriggerService.
+
+    Translates the nested `schedule` block to/from the model's flat columns and
+    converts naive ISO datetimes between the user's tz and UTC at the boundary.
+    """
+
+    id = serializers.IntegerField(read_only=True)
+    graph = serializers.PrimaryKeyRelatedField(queryset=Graph.objects.all())
+    node_name = serializers.CharField(max_length=255)
+    is_active = serializers.BooleanField(required=False)
+    metadata = serializers.JSONField(required=False)
+    content_hash = serializers.CharField(required=False, allow_null=True)
+    schedule = _ScheduleConfigInputSerializer(
+        required=False, allow_null=True, write_only=True
+    )
+    current_runs = serializers.IntegerField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+
+    def to_internal_value(self, data):
+        if not isinstance(data, dict):
+            return super().to_internal_value(data)
+        data = dict(data)
+        raw_schedule = data.pop("schedule", serializers.empty)
+        attrs = super().to_internal_value(data)
+        if raw_schedule is not serializers.empty:
+            attrs.update(
+                ScheduleTriggerInputParser().parse_to_internal_value(
+                    raw_schedule, self.instance
+                )
+            )
+        return attrs
+
+    def validate(self, attrs):
+        state = ScheduleTriggerValidator.compose_state(
+            self.instance, attrs, self.initial_data
+        )
+        ScheduleTriggerValidator().validate(state)
+        return attrs
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["schedule"] = ScheduleTriggerInputParser.render_to_representation(instance)
+        return rep
+
+    def create(self, validated_data):
+        return ScheduleTriggerService().create_node(validated_data)
+
+    def update(self, instance, validated_data):
+        return ScheduleTriggerService().update_node(instance, validated_data)

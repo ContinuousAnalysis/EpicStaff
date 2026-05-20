@@ -13,6 +13,7 @@ from django_app.settings import (
     CODE_RESULT_CHANNEL,
     GRAPH_MESSAGE_UPDATE_CHANNEL,
     GRAPH_MESSAGES_CHANNEL,
+    SCHEDULE_CHANNEL,
     SESSION_STATUS_CHANNEL,
     STORAGE_MUTATION_CHANNEL,
     TELEGRAM_TRIGGER_PREFIX,
@@ -29,6 +30,7 @@ from tables.models import (
 )
 from tables.services.telegram_trigger_service import TelegramTriggerService
 from tables.services.webhook_trigger_service import WebhookTriggerService
+from tables.services.schedule_trigger_service import ScheduleTriggerService
 from src.shared.models import (
     CodeResultData,
     GraphSessionMessageData,
@@ -196,7 +198,7 @@ class RedisPubSub:
         Only updates values that exist in the persistent_variables structure.
         """
         try:
-            variables = data["status_data"]["variables"]
+            variables = data.get("status_data", {}).get("variables")
             if not variables:
                 return
 
@@ -211,6 +213,7 @@ class RedisPubSub:
 
             if (
                 session.graph_user
+                and graph_organization
                 and graph_organization.user_variables
                 and not session.graph_user.persistent_variables
             ):
@@ -424,6 +427,7 @@ class RedisPubSub:
         self.set_handler(
             REQUEST_WEBHOOK_UPDATE_CHANNEL, self.request_webhook_update_handler
         )
+        self.set_handler(SCHEDULE_CHANNEL, self.schedule_channel_handler)
         self.set_handler(STORAGE_MUTATION_CHANNEL, self.storage_mutations_handler)
         self.subscribe_to_channels()
 
@@ -671,3 +675,73 @@ class RedisPubSub:
                 )
 
         return total_usage
+
+    def schedule_channel_handler(self, message: dict):
+        """Router for schedule_channel messages coming from Manager.
+
+        Channel direction rules:
+          - 'node_update' is Django → Manager; we see the echo of our own
+            post_save publish and skip it silently here.
+          - 'run_session' and 'deactivate' are Manager → Django and are the
+            only actions consumed on this side.
+
+        Supported actions:
+          - 'run_session' → start a session via ScheduleTriggerService
+            (guard checks + run_session + increment_runs — all atomic)
+          - 'deactivate'  → set is_active=False (published by Manager after a
+            once-mode fire or when APScheduler auto-removes a job, e.g. when
+            end_date is reached)
+
+        Input:
+            message["data"] — JSON string:
+            {"action": "run_session"|"deactivate", "node_id": <int>}
+        """
+        try:
+            logger.debug(f"[SchedulePubSub] Received: {message}")
+            data = json.loads(message["data"])
+            action = data.get("action")
+
+            if action == "node_update":
+                return
+
+            node_id = data.get("node_id")
+            if not node_id:
+                logger.warning("[SchedulePubSub] node_id missing in message")
+                return
+
+            if action == "run_session":
+                self._handle_schedule_run_session(node_id)
+            elif action == "deactivate":
+                self._handle_schedule_deactivate(node_id)
+            else:
+                logger.warning(f"[SchedulePubSub] Unknown action: {action}")
+        except Exception as e:
+            logger.error(f"[SchedulePubSub] Error handling message: {e}")
+
+    def _handle_schedule_run_session(self, node_id: int):
+        """
+        Starts a graph session via ScheduleTriggerService.
+
+        All business logic is encapsulated in the service:
+          - guard checks (start_date, end_date, max_runs)
+          - select_for_update(skip_locked=True) for race condition protection
+          - run_session()
+          - atomic current_runs increment via F()
+
+        Input:  node_id — PK of the ScheduleTriggerNode
+        """
+        try:
+            close_old_connections()
+            ScheduleTriggerService().handle_schedule_trigger(node_id)
+            logger.info(f"[SchedulePubSub] run_session completed for node {node_id}")
+        except Exception as e:
+            logger.error(
+                f"[SchedulePubSub] Error in run_session for node {node_id}: {e}"
+            )
+
+    def _handle_schedule_deactivate(self, node_id: int):
+        try:
+            close_old_connections()
+            ScheduleTriggerService().deactivate_node(node_id)
+        except Exception as e:
+            logger.error(f"[SchedulePubSub] Error deactivating node {node_id}: {e}")
