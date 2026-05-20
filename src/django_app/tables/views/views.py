@@ -116,6 +116,10 @@ from tables.swagger_schemas.sessions_schema import (
     SESSION_WARNINGS_GET,
     STOP_SESSION_POST,
 )
+from tables.swagger_schemas.telegram_schemas import (
+    TELEGRAM_TRIGGER_AVAILABLE_FIELDS_GET,
+    REGISTER_TELEGRAM_TRIGGER_POST,
+)
 from tables.swagger_schemas.webhook_schemas import REGISTER_WEBHOOKS_POST
 from .default_config import *
 
@@ -871,6 +875,7 @@ class TelegramTriggerNodeAvailableFieldsView(APIView):
     for TelegramTriggerNode.
     """
 
+    @extend_schema(**TELEGRAM_TRIGGER_AVAILABLE_FIELDS_GET)
     def get(self, request, format=None):
         data = load_telegram_trigger_fields()
         serializer = TelegramTriggerNodeDataFieldsSerializer({"data": data})
@@ -878,14 +883,7 @@ class TelegramTriggerNodeAvailableFieldsView(APIView):
 
 
 class RegisterTelegramTriggerApiView(APIView):
-    @extend_schema(
-        request=RegisterTelegramTriggerSerializer,
-        responses={
-            200: OpenApiResponse(description="OK"),
-            404: OpenApiResponse(description="TelegramTriggerNode not found"),
-            503: OpenApiResponse(description="No webhook tunnel available"),
-        },
-    )
+    @extend_schema(**REGISTER_TELEGRAM_TRIGGER_POST)
     def post(self, request):
         serializer = RegisterTelegramTriggerSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
