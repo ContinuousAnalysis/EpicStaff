@@ -127,3 +127,9 @@ export interface GraphRestoreResponse {
     auto_backup_version_id?: number;
     node_id_map?: Record<string, number>;
 }
+
+export interface CreateGraphFromVersionResponse {
+    created: boolean;
+    graph_id: number;
+    warnings: RestoreWarning[];
+}

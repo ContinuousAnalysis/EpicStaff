@@ -8,6 +8,7 @@ import { GetScheduleTriggerNodeRequest } from '../../../pages/flows-page/compone
 import { ConfigService } from '../../../services/config/config.service';
 import {
     CreateGraphDtoRequest,
+    CreateGraphFromVersionResponse,
     GetGraphLightRequest,
     GraphDto,
     GraphRestoreResponse,
@@ -142,6 +143,14 @@ export class FlowsApiService {
     getScheduleTriggerNode(id: number): Observable<GetScheduleTriggerNodeRequest> {
         return this.http.get<GetScheduleTriggerNodeRequest>(
             `${this.configService.apiUrl}schedule-trigger-nodes/${id}/`
+        );
+    }
+
+    createGraphFromVersion(versionId: number): Observable<CreateGraphFromVersionResponse> {
+        return this.http.post<CreateGraphFromVersionResponse>(
+            `${this.configService.apiUrl}graph-versions/${versionId}/create-graph/`,
+            {},
+            { headers: this.httpHeaders }
         );
     }
 }

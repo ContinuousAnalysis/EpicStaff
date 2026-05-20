@@ -63,7 +63,7 @@ class GraphStrategy(EntityImportExportStrategy):
     def create_entity(self, data: dict, id_mapper: IDMapper, **kwargs) -> Graph:
         preserve_uuids = kwargs.get("preserve_uuids", False)
         import_data = data.copy()
-        import_data["metadata"] = self._update_metadata(
+        import_data["metadata"] = self.update_metadata(
             import_data["metadata"], id_mapper
         )
 
@@ -257,7 +257,7 @@ class GraphStrategy(EntityImportExportStrategy):
         serializer.is_valid(raise_exception=True)
         return serializer.save()
 
-    def _update_metadata(self, metadata: dict, id_mapper: IDMapper) -> dict:
+    def update_metadata(self, metadata: dict, id_mapper: IDMapper) -> dict:
         # TODO: Remove metadata when save functionality reworked
         metadata_copy = deepcopy(metadata)
 

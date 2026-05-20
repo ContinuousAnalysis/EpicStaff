@@ -911,6 +911,18 @@ class GraphLightViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ],
     ),
+    create_graph=extend_schema(
+        request=None,
+        responses={
+            201: inline_serializer(
+                name="CreateFromVersionResponse",
+                fields={
+                    "graph_id": serializers.IntegerField(),
+                    "warnings": serializers.ListField(child=serializers.DictField()),
+                },
+            )
+        },
+    ),
 )
 class GraphVersionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
@@ -958,6 +970,12 @@ class GraphVersionViewSet(viewsets.ModelViewSet):
         backup = request.query_params.get("backup", "").lower() == "true"
         result = GraphVersioningService().restore_version(version, backup=backup)
         return Response(result, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="create-graph")
+    def create_graph(self, request, *args, **kwargs):
+        version = self.get_object()
+        result = GraphVersioningService().create_graph_from_version(version)
+        return Response(result, status=status.HTTP_201_CREATED)
 
 
 class IdempotentNodeCreateMixin:
