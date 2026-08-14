@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from django.db.models import Case, When, Count, F
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
@@ -18,15 +16,10 @@ from loguru import logger
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.views import APIView
-from django.conf import settings
-
-from src.shared.communication import Message
-from django_app.communication import producer, consumer
-from src.shared.models import (
-    PrechunkRequest,
-    PrechunkResponse,
-    CancelRequest,
-)
+from src.shared.enums.knowledge_new import RAGStrategy
+from src.shared.models.knowledge_new import ChunkingConfig
+from tables.clients import KnowledgeClient
+from tables.clients.errors import ClientError
 from tables.models.knowledge_models import (
     NaiveRag,
     NaiveRagDocumentConfig,
@@ -61,12 +54,11 @@ from tables.exceptions import (
     CollectionNotFoundException,
     InvalidFieldType,
 )
-from tables.constants.knowledge_constants import CHUNKING_TIMEOUT
 from tables.swagger_schemas.knowledge_schemas.naive_rag_schemas import (
     NAIVE_RAG_DOCUMENT_CONFIGS_GET,
     NAIVE_RAG_DOCUMENT_CONFIGS_CHUNK_GET,
     NAIVE_RAG_DOCUMENT_CONFIGS_PROCESS_CHUNKING_POST,
-    NAIVE_RAG_DOCUMENT_CONFIGS_CANCEL_CHUNKING_POST,
+    NAIVE_RAG_DOCUMENT_CONFIGS_CANCEL_CHUNKING_DELETE,
     NAIVE_RAG_DOCUMENT_CONFIG_GET,
     NAIVE_RAG_DOCUMENT_CONFIG_PUT,
     NAIVE_RAG_DOCUMENT_CONFIG_DELETE,
@@ -541,78 +533,7 @@ class ProcessNaiveRagDocumentChunkingView(APIView):
         serializer = ChunkingConfigSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            config = (
-                NaiveRagDocumentConfig.objects
-                .select_related("naive_rag", "document")
-                .get(
-                    naive_rag_document_id=document_config_id,
-                    naive_rag_id=naive_rag_id,
-                )
-            )  # fmt: off
-        except NaiveRagDocumentConfig.DoesNotExist:
-            return Response(
-                {
-                    "error": f"DocumentConfig {document_config_id} not found "
-                    f"for NaiveRag {naive_rag_id}"
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        prechunk_request = PrechunkRequest(
-            rag_strategy="naive",
-            rag_id=naive_rag_id,
-            document_id=document_config_id,
-            document_extension=Path(config.document.file_name).suffix,
-            content=bytes(config.document.document_content.content),
-            **serializer.validated_data,
-        )
-
-        producer.send(
-            settings.KNOWLEDGE_PRECHUNK_REQUEST_CHANNEL,
-            Message(payload=prechunk_request.model_dump(mode="json")),
-        )
-        logger.info(
-            "Sent prechunk request rag_id=%s document_id=%s",
-            naive_rag_id,
-            config.document_id,
-        )
-
-        msg = consumer.receive(
-            settings.KNOWLEDGE_PRECHUNK_RESPONSE_CHANNEL,
-            timeout=CHUNKING_TIMEOUT,
-        )
-        if msg is None:
-            return Response(
-                {
-                    "naive_rag_id": naive_rag_id,
-                    "document_config_id": document_config_id,
-                    "status": "timeout",
-                    "message": "Chunking is taking longer than expected. "
-                    "Check status later or retry.",
-                },
-                status=status.HTTP_202_ACCEPTED,
-            )
-
-        response = PrechunkResponse(**msg.payload)
-        return Response(
-            {
-                "naive_rag_id": naive_rag_id,
-                "document_config_id": document_config_id,
-                "status": "completed",
-                "chunk_count": len(response.chunks),
-                "chunks": [chunk.model_dump() for chunk in response.chunks],
-            },
-            status=status.HTTP_200_OK,
-        )
-
-
-class CancelNaiveRagDocumentChunkingView(APIView):
-    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIGS_CANCEL_CHUNKING_POST)
-    def post(self, request, naive_rag_id: int, document_config_id: int):
-        serializer = ChunkingConfigSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        try:
-            NaiveRagDocumentConfig.objects.get(
+            config = NaiveRagDocumentConfig.objects.get(
                 naive_rag_document_id=document_config_id,
                 naive_rag_id=naive_rag_id,
             )
@@ -625,30 +546,44 @@ class CancelNaiveRagDocumentChunkingView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        target_request = PrechunkRequest(
-            rag_strategy="naive",
-            rag_id=naive_rag_id,
-            document_id=document_config_id,
-            **serializer.validated_data,
-        ).model_dump()
-        producer.send(
-            settings.KNOWLEDGE_CANCEL_REQUEST_CHANNEL,
-            Message(payload=CancelRequest(target_request=target_request).model_dump()),
+        validated = serializer.validated_data
+        chunking_config = ChunkingConfig(
+            chunk_strategy=validated["chunk_strategy"],
+            chunk_size=validated["chunk_size"],
+            chunk_overlap=validated["chunk_overlap"],
+            extra=validated["additional_params"],
         )
-        logger.info(
-            "Sent prechunk cancellation rag_id=%s document_config_id=%s",
-            naive_rag_id,
-            document_config_id,
-        )
+        try:
+            with KnowledgeClient() as client:
+                client.prechunk(
+                    strategy=RAGStrategy.NAIVE,
+                    rag_id=naive_rag_id,
+                    document_id=document_config_id,
+                    chunking_config=chunking_config,
+                )
+        except ClientError as e:
+            return Response({"error": str(e)}, status=e.status_code)
 
         return Response(
             {
-                "detail": "Chunking cancellation requested",
                 "naive_rag_id": naive_rag_id,
                 "document_config_id": document_config_id,
+                "status": "completed",
+                "chunk_count": config.preview_chunks.count(),
             },
-            status=status.HTTP_202_ACCEPTED,
+            status=status.HTTP_200_OK,
         )
+
+
+class CancelNaiveRagDocumentChunkingView(APIView):
+    @extend_schema(**NAIVE_RAG_DOCUMENT_CONFIGS_CANCEL_CHUNKING_DELETE)
+    def delete(self, request, naive_rag_id: int, document_config_id: int):
+        try:
+            with KnowledgeClient() as client:
+                client.cancel(strategy=RAGStrategy.NAIVE, rag_id=naive_rag_id, operation="prechunk")
+        except ClientError:
+            pass
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class NaiveRagChunkPreviewView(APIView):
