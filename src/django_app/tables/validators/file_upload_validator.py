@@ -85,6 +85,33 @@ class FileValidator:
     def is_unsupported_archive(self, filename: str) -> bool:
         return os.path.splitext(filename)[1].lower() in self.BLOCKED_ARCHIVE_EXTENSIONS
 
+    def validate_name(self, filename: str, size: int | None = None) -> None:
+        """Name+size gate for streaming uploads (no content read). Raises 400."""
+        if self.is_unsupported_archive(filename):
+            ext = os.path.splitext(filename)[1].lower()
+            raise serializers.ValidationError(
+                f"'{ext}' archives are not supported. Use ZIP or TAR instead."
+            )
+        if self.is_executable_filename(filename):
+            raise serializers.ValidationError(f"'{filename}' has a blocked executable extension")
+        if size is not None and size > self._limits.max_file_bytes:
+            raise serializers.ValidationError(
+                f"'{filename}' is too large: {size} bytes, over the limit of "
+                f"{self._limits.max_file_bytes} bytes"
+            )
+
+    def validate_stream(self, file_obj, filename: str, size: int | None = None) -> None:
+        """Full validation for a buffered archive (name+size+content scan). Raises 400."""
+        self.validate_name(filename, size)
+        archive_blocked = self.scan_archive_for_executables(file_obj)
+        if archive_blocked:
+            raise serializers.ValidationError(
+                f"Archive '{filename}' contains executable files: " + ", ".join(archive_blocked)
+            )
+        expansion_problem = self.scan_archive_expansion(file_obj)
+        if expansion_problem:
+            raise serializers.ValidationError(f"Archive '{filename}' {expansion_problem}")
+
     def scan_archive_for_executables(self, file_obj) -> list[str]:
         """
         Inspect a ZIP or TAR archive in memory and return entry paths that

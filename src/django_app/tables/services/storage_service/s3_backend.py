@@ -1,6 +1,8 @@
+import asyncio
 import io
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from tables.services.storage_service.base import AbstractStorageBackend
 from tables.services.storage_service.dataclasses import (
@@ -37,7 +39,76 @@ class S3StorageBackend(AbstractStorageBackend):
             endpoint_url=endpoint_url,
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
+            config=Config(connect_timeout=10, read_timeout=300),
         )
+
+    async def stream_upload(self, path, chunk_aiter, *, part_size, size_guard=None) -> int:
+        """Stream chunks into MinIO via S3 multipart (bounded RAM: one part buffered).
+
+        Async so it can consume the ASGI body iterator; each boto3 call is offloaded
+        with asyncio.to_thread so the event loop is not blocked. size_guard(total) is
+        called as bytes accumulate and raises to abort (over per-file cap / quota).
+        Any error aborts the multipart so no object materializes. Returns bytes written."""
+        full_key = self._full_path(path)
+        total = 0
+        mpu = await asyncio.to_thread(
+            self.client.create_multipart_upload, Bucket=self.bucket_name, Key=full_key
+        )
+        upload_id = mpu["UploadId"]
+        parts: list[dict] = []
+        part_number = 1
+        buffer = bytearray()
+        try:
+            async for chunk in chunk_aiter:
+                if not chunk:
+                    continue
+                buffer.extend(chunk)
+                total += len(chunk)
+                if size_guard is not None:
+                    size_guard(total)
+                while len(buffer) >= part_size:
+                    body = bytes(buffer[:part_size])
+                    del buffer[:part_size]
+                    resp = await asyncio.to_thread(
+                        self.client.upload_part,
+                        Bucket=self.bucket_name,
+                        Key=full_key,
+                        PartNumber=part_number,
+                        UploadId=upload_id,
+                        Body=body,
+                    )
+                    parts.append({"ETag": resp["ETag"], "PartNumber": part_number})
+                    part_number += 1
+            if buffer or not parts:
+                resp = await asyncio.to_thread(
+                    self.client.upload_part,
+                    Bucket=self.bucket_name,
+                    Key=full_key,
+                    PartNumber=part_number,
+                    UploadId=upload_id,
+                    Body=bytes(buffer),
+                )
+                parts.append({"ETag": resp["ETag"], "PartNumber": part_number})
+            await asyncio.to_thread(
+                self.client.complete_multipart_upload,
+                Bucket=self.bucket_name,
+                Key=full_key,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": parts},
+            )
+        except BaseException:
+            await asyncio.to_thread(
+                self.client.abort_multipart_upload,
+                Bucket=self.bucket_name,
+                Key=full_key,
+                UploadId=upload_id,
+            )
+            raise
+        return total
+
+    async def delete_object_async(self, path) -> None:
+        full_key = self._full_path(path)
+        await asyncio.to_thread(self.client.delete_object, Bucket=self.bucket_name, Key=full_key)
 
     def _full_path(self, path: str) -> str:
         """Prepend the organization prefix to a caller-provided path."""

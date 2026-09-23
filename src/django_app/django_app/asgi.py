@@ -18,13 +18,24 @@ django_asgi_app = get_asgi_application()
 
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
+from tables.asgi_upload import UPLOAD_STREAM_PATH, upload_stream_asgi
 from tables.graph_collab.ws_auth import TicketAuthMiddleware
 
 from django_app.routing import websocket_urlpatterns
 
+
+async def http_dispatcher(scope, receive, send):
+    # OPTIONS stays with Django so corsheaders answers the preflight; every other
+    # method goes to the handler, which replies 405 instead of a Django HTML 404.
+    if scope.get("path") == UPLOAD_STREAM_PATH and scope.get("method") != "OPTIONS":
+        await upload_stream_asgi(scope, receive, send)
+        return
+    await django_asgi_app(scope, receive, send)
+
+
 application = ProtocolTypeRouter(
     {
-        "http": django_asgi_app,
+        "http": http_dispatcher,
         "websocket": AllowedHostsOriginValidator(
             TicketAuthMiddleware(URLRouter(websocket_urlpatterns))
         ),
