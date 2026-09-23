@@ -8,8 +8,6 @@ class ArchiveLimitExceeded(ValueError):  # noqa: N818
 class ArchiveExtractionGuard:
     """Bounds one archive extraction in entry count and decompressed byte total."""
 
-    CHUNK_BYTES = 1024 * 1024
-
     def __init__(self, *, max_entries: int, max_total_bytes: int):
         self.max_entries = max_entries
         self.max_total_bytes = max_total_bytes
@@ -29,28 +27,6 @@ class ArchiveExtractionGuard:
             raise ArchiveLimitExceeded(
                 f"Archive member '{name}' pushes the extraction past {self.max_total_bytes} bytes"
             )
-
-    def read_member(self, member_file, name: str) -> bytes:
-        """Read one member, stopping as soon as it would outgrow the remaining budget."""
-        remaining = self.max_total_bytes - self.bytes_read
-        parts: list[bytes] = []
-
-        while True:
-            chunk = member_file.read(min(self.CHUNK_BYTES, remaining + 1))
-            if not chunk:
-                break
-
-            self.bytes_read += len(chunk)
-            remaining -= len(chunk)
-            if remaining < 0:
-                raise ArchiveLimitExceeded(
-                    f"Archive member '{name}' pushes the extraction past "
-                    f"{self.max_total_bytes} bytes"
-                )
-
-            parts.append(chunk)
-
-        return b"".join(parts)
 
 
 class GuardedMemberReader:

@@ -1,10 +1,13 @@
 import io
+import lzma
+import tarfile
 import zipfile
 from unittest.mock import AsyncMock
 
 import httpx
 import pytest
 from asgiref.sync import sync_to_async
+from django.conf import settings
 from django.test import override_settings
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -248,3 +251,38 @@ async def test_disallowed_origin_gets_no_cors_headers(org_user, monkeypatch):
             headers={"Origin": "http://evil.example"},
         )
     assert "access-control-allow-origin" not in resp.headers
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+@override_settings(ORG_STORAGE_QUOTA=10**9, MAX_ARCHIVE_UNCOMPRESSED_SIZE=5 * 1024 * 1024)
+async def test_zip_bomb_rejection_reaches_the_client_unlabelled(org_user, monkeypatch):
+    # ported from the serializer suite when the multipart upload was removed: a
+    # bomb must come back as a readable sentence, not "filename: <something>"
+    backend = InMemoryStorageBackend(organization_prefix="")
+    monkeypatch.setattr(svc, "_default_backend", lambda: backend)
+
+    payload = b"\0" * (6 * 1024 * 1024)
+    raw_tar = io.BytesIO()
+    with tarfile.open(fileobj=raw_tar, mode="w") as tf:
+        info = tarfile.TarInfo(name="big.bin")
+        info.size = len(payload)
+        tf.addfile(info, io.BytesIO(payload))
+    bomb = lzma.compress(raw_tar.getvalue())
+
+    token = await _token(org_user)
+    async with _client() as client:
+        resp = await _post(
+            client,
+            "filename=5-mb-example-file.tar.xz",
+            token=token,
+            org_id=org_user.org_id,
+            body=bomb,
+        )
+
+    assert resp.status_code == 400
+    assert resp.json()["message"] == (
+        "Archive '5-mb-example-file.tar.xz' expands to "
+        f"more than {settings.MAX_ARCHIVE_UNCOMPRESSED_SIZE} bytes"
+    )
+    assert not backend._objects

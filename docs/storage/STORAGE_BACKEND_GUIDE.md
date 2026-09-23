@@ -117,11 +117,21 @@ superadmin. See `docs/rbac/organization_scoping.md`.
 
 ### Archive auto-extraction
 
-`upload_file()` detects ZIP and TAR archives and extracts them into the target directory automatically. Supported formats: `.zip`, `.tar`, `.tar.gz`, `.tar.bz2`, `.tar.xz`.
+Uploads go through the streaming endpoint (`tables/asgi_upload.py` →
+`upload_stream_service`), which routes on the file name: `is_archive_name()`
+covers `.zip`, `.tar`, `.tgz`, `.taz`, `.tar.gz`, `.tar.bz2`, `.tbz`, `.tbz2`,
+`.tar.xz`, `.txz`. Once buffered, `is_archive_content()` confirms the bytes
+really are an archive — a plain file carrying an archive extension is stored as
+a file rather than failing extraction.
 
-Archives extract into a subfolder named after the archive stem (e.g., `data.zip` → `data/`). If the subfolder already exists, the name auto-increments: `data` → `data (1)` → `data (2)`.
+Members stream out through `iter_archive_members_streaming()`, one reader at a
+time, and `ArchiveExtractionGuard` is charged as each is read, so a bomb is
+rejected mid-member instead of after extraction.
 
-Password-protected ZIP files are rejected.
+Archives extract into a subfolder named `<archive stem>-<uuid>`, so a repeated
+upload never collides with an earlier one.
+
+Password-protected ZIP files, zip-slip members and symlinked tar members are rejected.
 
 Document formats (`.xlsx`, `.docx`, `.pptx`, `.epub`, `.jar`, `.apk`, `.war`, `.xpi`, etc.) are NOT extracted even though they are ZIP-based.
 

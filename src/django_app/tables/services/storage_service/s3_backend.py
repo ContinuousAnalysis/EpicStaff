@@ -1,5 +1,4 @@
 import asyncio
-import io
 
 import boto3
 from botocore.config import Config
@@ -590,27 +589,3 @@ class S3StorageBackend(AbstractStorageBackend):
             )
 
         return build(nodes_by_path[full_prefix]), truncated
-
-    def upload_archive(self, prefix: str, archive_file, archive_name: str) -> list[str]:
-        self._check_archive_password(archive_file, archive_name)
-
-        stem = archive_name
-        for ext in (".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".tar"):
-            if stem.lower().endswith(ext):
-                stem = stem[: -len(ext)]
-                break
-
-        safe_stem = sanitize_storage_path(stem, allow_empty=False)
-        folder_key = f"{prefix.rstrip('/')}/{safe_stem}" if prefix else safe_stem
-        full_folder_key = self._full_path(folder_key)
-        unique_full_key = self._unique_key(full_folder_key, is_folder=True)
-        unique_folder_path = self._strip_prefix(unique_full_key)
-
-        extracted_paths = []
-
-        for relative_path, file_bytes in self._iter_archive_entries(archive_file):
-            destination_path = unique_folder_path.rstrip("/") + "/" + relative_path
-            self.upload(destination_path, io.BytesIO(file_bytes))
-            extracted_paths.append(destination_path)
-
-        return extracted_paths
