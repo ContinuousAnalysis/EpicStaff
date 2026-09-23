@@ -276,3 +276,47 @@ async def test_ingest_archive_rejects_a_bad_path_before_reading_the_body():
     with pytest.raises(ValidationError):
         await svc.ingest_archive(org.id, "../escape", "b.zip", _watched(), backend=backend)
     assert not consumed  # body never touched
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+@override_settings(ORG_STORAGE_QUOTA=10**9, MAX_ARCHIVE_UNCOMPRESSED_SIZE=10**6)
+async def test_encrypted_archive_is_rejected_before_anything_is_written():
+    org = await Organization.objects.acreate(name="Acme")
+    backend = InMemoryStorageBackend(organization_prefix="")
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("plain.txt", "readable")
+        zf.writestr("secret.txt", "data")
+    raw = bytearray(buf.getvalue())
+    raw[6] |= 0x01
+    cd = raw.find(b"PK\x01\x02")
+    raw[cd + 8] |= 0x01
+
+    with pytest.raises(ValidationError, match="password-protected"):
+        await svc.ingest_archive(org.id, "", "secret.zip", _aiter(bytes(raw)), backend=backend)
+
+    # the pre-flight runs before extraction, so not even the readable member lands
+    assert not backend._objects
+    assert not await StorageFile.objects.filter(org=org).aexists()
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+@override_settings(ORG_STORAGE_QUOTA=10**9, MAX_ARCHIVE_UNCOMPRESSED_SIZE=10**6)
+async def test_damaged_archive_answers_400_instead_of_a_server_fault():
+    # a corrupt member body raises zipfile.BadZipFile, which is NOT a ValueError:
+    # uncaught it would reach the handler's catch-all and be logged as our fault
+    org = await Organization.objects.acreate(name="Acme")
+    backend = InMemoryStorageBackend(organization_prefix="")
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("a.txt", "x" * 5000)
+    raw = bytearray(buf.getvalue())
+    raw[60:200] = b"\xff" * 140
+
+    with pytest.raises(ValidationError):
+        await svc.ingest_archive(org.id, "", "broken.zip", _aiter(bytes(raw)), backend=backend)
+    assert not await StorageFile.objects.filter(org=org).aexists()

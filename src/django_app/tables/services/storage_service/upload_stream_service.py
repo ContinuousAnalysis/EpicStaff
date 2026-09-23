@@ -1,11 +1,17 @@
 import asyncio
+import tarfile
 import tempfile
 import uuid
+import zipfile
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from rest_framework.exceptions import APIException, ValidationError
-from tables.services.storage_service.archive_formats import ARCHIVE_SUFFIXES, is_archive_content
+from tables.services.storage_service.archive_formats import (
+    ARCHIVE_SUFFIXES,
+    assert_zip_is_extractable,
+    is_archive_content,
+)
 from tables.services.storage_service.archive_limits import ArchiveExtractionGuard
 from tables.services.storage_service.path_utils import sanitize_storage_path
 from tables.services.storage_service.quota_service import (
@@ -151,7 +157,13 @@ async def ingest_archive(
                 return await asyncio.to_thread(
                     _process_archive_sync, org_id, path, filename, spooled, backend, validator
                 )
-            except ValueError as exc:
+            except (
+                ValueError,
+                zipfile.BadZipFile,
+                tarfile.TarError,
+                RuntimeError,
+                EOFError,
+            ) as exc:
                 # zip bomb, zip-slip, symlink member, encrypted or corrupt archive:
                 # the caller sent a bad archive, so answer 400 with the reason instead
                 # of letting it look like a server fault in the logs.
@@ -185,6 +197,8 @@ def _process_archive_sync(org_id, path, filename, spooled, backend, validator) -
     # upload does keeps storing it as a file instead of failing the request.
     if not is_archive_content(spooled, filename=filename):
         return _store_spooled_as_flat(org_id, path, filename, spooled, backend)
+
+    assert_zip_is_extractable(spooled, filename)
     spooled.seek(0)
 
     remaining = remaining_quota(org_id)

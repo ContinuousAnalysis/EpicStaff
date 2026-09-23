@@ -2,7 +2,13 @@ import tarfile
 import zipfile
 from io import BytesIO
 
-from tables.services.storage_service.archive_formats import is_archive_content, is_archive_name
+import pytest
+
+from tables.services.storage_service.archive_formats import (
+    assert_zip_is_extractable,
+    is_archive_content,
+    is_archive_name,
+)
 
 
 def test_routing():
@@ -59,4 +65,46 @@ class TestIsArchiveContent:
     def test_restores_the_file_position(self):
         buf = _zip("a.txt", "data")
         is_archive_content(buf, "archive.zip")
+        assert buf.tell() == 0
+
+
+def _encrypted_zip() -> BytesIO:
+    """A ZIP with the encryption flag set on the entry and the directory record."""
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("secret.txt", "data")
+    raw = bytearray(buf.getvalue())
+    raw[6] |= 0x01
+    cd = raw.find(b"PK\x01\x02")
+    if cd >= 0:
+        raw[cd + 8] |= 0x01
+    return BytesIO(bytes(raw))
+
+
+class TestAssertZipIsExtractable:
+    """Pre-flight that survived the removal of the multipart upload's
+    _check_archive_password: extraction must not start on an archive it cannot
+    finish, or the members before the bad one get written and rolled back."""
+
+    def test_passes_a_healthy_zip(self):
+        assert_zip_is_extractable(_zip("a.txt", "data"), "a.zip") is None
+
+    def test_ignores_non_zip_input(self):
+        assert_zip_is_extractable(BytesIO(b"plain text"), "a.txt") is None
+
+    def test_rejects_an_encrypted_zip(self):
+        with pytest.raises(ValueError, match="password-protected"):
+            assert_zip_is_extractable(_encrypted_zip(), "secret.zip")
+
+    def test_rejects_an_unreadable_central_directory(self):
+        buf = _zip("a.txt", "data")
+        raw = bytearray(buf.getvalue())
+        cd = raw.find(b"PK\x01\x02")
+        raw[cd + 4 : cd + 40] = b"\xff" * 36  # keep the EOCD, wreck the entry
+        with pytest.raises(ValueError, match="damaged or unreadable"):
+            assert_zip_is_extractable(BytesIO(bytes(raw)), "broken.zip")
+
+    def test_restores_the_file_position(self):
+        buf = _zip("a.txt", "data")
+        assert_zip_is_extractable(buf, "a.zip")
         assert buf.tell() == 0
