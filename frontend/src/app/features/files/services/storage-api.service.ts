@@ -1,9 +1,9 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { ConfirmationDialogData, ConfirmationDialogService } from '@shared/components';
 import { ActionCode, ResourceCode } from '@shared/models';
-import { catchError, EMPTY, Observable, of, switchMap, throwError } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { catchError, EMPTY, from, Observable, of, switchMap, throwError } from 'rxjs';
+import { map, mergeMap, toArray } from 'rxjs/operators';
 
 import { withPermission } from '../../../core/http/permission-context';
 import { ConfigService } from '../../../services/config';
@@ -14,10 +14,20 @@ import {
     StorageFileRecord,
     StorageItem,
     StorageItemInfo,
+    StorageStreamUploadResponse,
     StorageTreeResponse,
     StorageUploadResponse,
+    StorageUploadResult,
 } from '../models/storage.models';
 import { isArchiveFileName } from '../utils/storage-file.utils';
+
+const UPLOAD_CONCURRENCY = 3;
+
+function toUploadResult(response: StorageStreamUploadResponse): StorageUploadResult {
+    return response.extracted
+        ? { type: 'archive', extracted: response.extracted }
+        : { type: 'file', path: response.path, size: response.size ?? 0 };
+}
 
 interface OverwritePreview {
     fileConflicts: string[];
@@ -243,11 +253,30 @@ export class StorageApiService {
     }
 
     uploadMany(path: string, files: File[]): Observable<StorageUploadResponse> {
-        const formData = new FormData();
-        files.forEach((file) => formData.append('files', file));
-        formData.append('path', this.normalizePath(path) || '/');
+        if (!files.length) return of({ uploaded: [] });
 
-        return this.http.post<StorageUploadResponse>(`${this.apiUrl}upload/`, formData);
+        // One request per file now, so a multi-file drop fans out; a few in flight
+        // at a time keeps the bounded-memory proxy on the backend from queueing.
+        return from(files).pipe(
+            mergeMap((file) => this.uploadStream(path, file), UPLOAD_CONCURRENCY),
+            map(toUploadResult),
+            toArray(),
+            map((uploaded) => ({ uploaded }))
+        );
+    }
+
+    uploadStream(path: string, file: File): Observable<StorageStreamUploadResponse> {
+        const normalized = this.normalizePath(path);
+        // Built by hand because HttpParams leaves "+" unescaped and Django reads it
+        // back as a space, silently renaming files like "a+b.txt".
+        const query =
+            `?filename=${encodeURIComponent(file.name)}` + (normalized ? `&path=${encodeURIComponent(normalized)}` : '');
+
+        // The File itself is the body: the browser streams it from disk. Wrapping it
+        // in FormData, or reading it into memory first, defeats the whole endpoint.
+        return this.http.post<StorageStreamUploadResponse>(`${this.apiUrl}upload/stream${query}`, file, {
+            headers: new HttpHeaders({ 'Content-Type': 'application/octet-stream' }),
+        });
     }
 
     downloadZip(paths: string[]): Observable<Blob> {

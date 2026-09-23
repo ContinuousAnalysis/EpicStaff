@@ -68,6 +68,15 @@ export interface StorageUploadResponse {
     uploaded: StorageUploadResult[];
 }
 
+/** One file streamed to POST storage/upload/stream: `size` on a plain file,
+ *  `extracted` when the backend unpacked an archive into a new folder. */
+export interface StorageStreamUploadResponse {
+    status: 'DONE';
+    path: string;
+    size?: number;
+    extracted?: string[];
+}
+
 export interface SessionOutputFile {
     id: number;
     path: string;
